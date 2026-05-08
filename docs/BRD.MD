@@ -1,6 +1,3 @@
-¡Claro que sí! Aquí tienes el documento completo en código Markdown puro, listo para que lo copies y lo pegues directamente en el archivo `docs/visión-negocio.md` de tu repositorio:
-
-```markdown
 # Business Requirements Document (BRD) - EduSync
 
 ## 1. Resumen ejecutivo

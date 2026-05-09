@@ -176,4 +176,3 @@ Actualmente, las instituciones educativas sufren de una grave ineficiencia debid
 | Versión | Fecha | Autor | Cambio |
 | ------ | ------ | ------ | ------ |
 | v1.0 | 09/05/2026 | Consultor Estratégico | Creación inicial y consolidación del BMC. |
-```

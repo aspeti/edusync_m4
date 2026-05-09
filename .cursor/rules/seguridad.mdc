@@ -1,0 +1,44 @@
+---
+description: Java/Spring — prohibir secretos en código y datos sensibles en logs (OWASP ASVS L2).
+globs: "**/*.{java,kt,yml,yaml,properties,xml}"
+alwaysApply: false
+---
+
+# Seguridad: secretos y registros sensibles (OWASP ASVS L2)
+
+Aplica esta regla al editar código Spring/Java y configuración. No introducir credenciales ni exponer datos sensibles en logs.
+
+## Prohibido en código y configuración
+
+- Claves API, tokens OAuth/OpenID, `client_secret`, refresh tokens, JWT firmados o claves privadas embebidas.
+- Contraseñas de BD, usuarios de servicio, connection strings con usuario/contraseña en texto plano.
+- Claves privadas (PEM, PKCS#8, JKS con contraseña en repo), seeds de HMAC/simetría en fuente.
+- Valores reales en `application.yml` / `.properties` para producción; usar variables de entorno, `spring.config.import`, Spring Cloud Vault u otro almacén de secretos.
+- “Secretos de ejemplo” que parezcan reales; usar placeholders (`${VAR}`, `<REDACTED>`) y documentar el nombre de la variable.
+- Secretos en comentarios, nombres de constantes obvios (`AWS_SECRET_KEY = "..."`) o historial de tests.
+
+## Prohibido en logs (`slf4j`, `Logback`, `System.out`, trazas)
+
+- Contraseñas, PINs, OTP, tokens de sesión, cookies completas, cabeceras `Authorization` / `Cookie` íntegras.
+- Cuerpos de petición/respuesta con PII o credenciales; números de documento, tarjetas, CVV.
+- Stack traces o mensajes que incluyan query strings con secretos o parámetros sensibles.
+
+## Patrones a evitar (no escribir ni sugerir)
+
+- `password=`, `secret=`, `api_key`, `apikey`, `AWS_ACCESS_KEY`, `BEGIN PRIVATE KEY`, `client_secret`.
+- `log.info(..., password)` / `log.debug(token)` / imprimir `Authentication` o `HttpServletRequest` completos.
+- `@Value("${hardcoded.secret}")` con valor literal en YAML.
+
+## Hacer en su lugar
+
+- Secretos solo desde entorno, vault o parámetros gestionados; rotación y mínimo privilegio (ASVS V2/V7/V8).
+- Logging estructurado con **redacción** explícita; truncar IDs (últimos 4 caracteres si aplica); usar niveles adecuados (`DEBUG` solo en desarrollo acotado).
+- Para diagnóstico: correlación con IDs no sensibles (`traceId`, `userId` interno hasheado), nunca la credencial en sí.
+
+## Checklist antes de completar un cambio
+
+1. ¿Hay literales que parezcan claves, tokens o contraseñas?
+2. ¿Algún `log` imprime autenticación, PII o payloads completos?
+3. ¿La configuración usa placeholders y documentación de variables, no valores reales?
+
+Si cualquier respuesta es “sí”, corregir antes de dar el código por terminado.

@@ -1,49 +1,68 @@
 Rol: Actúa como un Arquitecto de Software y Analista de Sistemas Senior.
-Contexto: El usuario está desarrollando EduSync, una plataforma SaaS multitenant diseñada para centralizar el registro de calificaciones y la gestión académica en unidades educativas de Bolivia.
 
-1. Visión General del Producto
-Nombre: EduSync.
+Contexto: El usuario está desarrollando EduSync, una plataforma SaaS multitenant para unidades educativas de Bolivia, enfocada en eliminar errores de consolidación manual y acelerar el cierre académico con trazabilidad y cumplimiento normativo ante el Ministerio de Educación (SIE).
 
-Problema central: Ineficiencia y errores críticos (desfases de datos, alteraciones de listas) derivados de la consolidación manual de calificaciones mediante hojas de cálculo.
+## 1) Visión General del Producto
+**Nombre:** EduSync.
 
-Objetivo principal: Digitalizar la gestión académica para garantizar la integridad de los datos ante el Ministerio de Educación y reducir el tiempo de consolidación de días a segundos.
+**Problema central:**  
+La gestión académica depende de hojas de cálculo y procesos manuales de triple digitación, lo que provoca desfases de listas, errores de decimales, alteraciones retroactivas no trazadas y sobrecarga operativa (incluyendo jornadas de madrugada para carga al SIE).
 
-2. Perfiles de Usuario y Capacidades
-Docente (Usuario Operativo): * Ingreso de calificaciones por dimensiones académicas.
+**Objetivo principal:**  
+Convertir a EduSync en la **fuente única de verdad académica**, reduciendo el cierre administrativo de días/madrugadas a minutos y garantizando integridad, auditabilidad e inmutabilidad de datos.
 
-Control de asistencia.
+## 2) Perfiles de Usuario y Capacidades
+### Docente (Usuario Operativo)
+- Registrar calificaciones por dimensión (Ser, Saber, Hacer, Decidir) con validación de rangos.
+- Controlar asistencia en su materia.
+- Ejecutar cierre operativo de su área para liberar consolidación institucional.
 
-Carga y cierre operativo de su área específica.
+### Secretaría / Administrativo (Usuario Gestor)
+- Monitorear avance de carga docente por curso y periodo.
+- Consolidar automáticamente centralizadores y generar boletines oficiales.
+- Sincronizar/exportar al SIE por RUDE con trazabilidad de resultado.
 
-Secretaría / Administrativo (Usuario Gestor):
+### Director (Usuario Estratégico)
+- Supervisar el estado global de carga y cierre académico.
+- Revisar indicadores institucionales (rendimiento, reprobación, cumplimiento).
+- Autorizar/rechazar cambios retroactivos en periodos cerrados bajo control jerárquico.
 
-Supervisión del centralizador de notas de todos los cursos.
+## 3) Requerimientos Funcionales Críticos
+1. **Ingreso descentralizado con RBAC estricto:** cada docente solo opera su materia/curso asignado.
+2. **Validación en tiempo real:** bloqueo de valores fuera de norma y prevención de errores de captura.
+3. **Consolidación automática:** cálculo inmediato de centralizadores trimestrales/anuales.
+4. **Gestión inmutable de nóminas y periodos:** listas protegidas y periodos cerrados en Solo Lectura.
+5. **Auditoría completa:** registro de quién, cuándo, qué cambió y valor anterior/nuevo.
+6. **Exportación/Sincronización SIE:** mapeo por RUDE (nunca por posición), manejo de altas/bajas y confirmación de resultado.
+7. **Reportería oficial:** boletines, reportes estadísticos y salidas listas para trámite estatal.
 
-Gestión de usuarios,Materias, profesores, cursos, listas de estudiantes y generación de boletines.
+## 4) Reglas de Negocio (Constraints)
+1. **Mapeo por identidad única (RUDE):** obligatorio para toda exportación al SIE.
+2. **Rangos de calificación por dimensión:** validación paramétrica estricta.
+3. **Estandarización decimal:** redondeo/truncado uniforme para evitar descuadres.
+4. **Inmutabilidad por cierre:** periodo cerrado = Solo Lectura; cambios solo por flujo autorizado.
+5. **Integridad institucional:** docentes no pueden alterar nóminas ni notas fuera de su alcance.
 
-Sincronización y exportación segura de datos al sistema oficial SIE.
+## 5) Escenario Crítico (Parte más difícil)
+**Proceso:** Sincronización automática al SIE con cierre operativo.
 
-3. Requerimientos Funcionales Críticos
-Ingreso Descentralizado: Cada docente gestiona únicamente su materia.
+**Flujo esperado:**
+1. Secretaría selecciona curso y periodo con estado “completo”.
+2. EduSync valida estructura, rangos y consistencia por estudiante.
+3. Se exportan notas asociadas por RUDE (incluye alumnos nuevos, excluye retirados).
+4. El sistema registra evidencia de sincronización (resultado, timestamp, actor).
+5. Se emite boletín oficial PDF y el periodo queda bloqueado en Solo Lectura.
 
-Validación en Tiempo Real: Detección de anomalías durante la entrada de datos para prevenir errores humanos.
+## 6) Criterios de Éxito (KPIs)
+- Reducción del tiempo de cierre y carga ministerial: de jornadas extensas a minutos.
+- 0% de errores de transcripción manual.
+- Eliminación de ciclos redundantes de revisión humana.
+- Disminución de incidencias/sanciones por inconsistencias académicas.
+- Trazabilidad completa en auditorías internas y externas.
 
-Consolidación Automática: Generación instantánea de centralizadores trimestrales y anuales sin intervención manual.
-
-Auditoría y Seguridad: Registro histórico (logs) de modificaciones y bloqueo de edición (inmutabilidad) tras el cierre del periodo académico.
-
-Gestión de Reportes: Impresión de libretas y reportes oficiales listos para el trámite estatal.
-
-4. Reglas de Negocio (Constraints)
-Rango de Calificaciones: Validación estricta según la dimensión (ej. 1-35 o 1-100).
-
-Precisión de Cálculo: Estandarización de decimales para evitar discrepancias en los promedios.
-
-Estados de Periodo: Los periodos cerrados pasan automáticamente a Solo Lectura.
-
-5. Criterios de Éxito (KPIs)
-Reducción drástica del tiempo de consolidación (de días a minutos).
-
-Eliminación total (0%) de errores por copiado manual.
-
-Supresión de los ciclos de revisión redundantes (anteriormente hasta 10 verificaciones).
+## 7) Instrucción para el asistente
+Con base en esta visión:
+- Diseña arquitectura funcional y técnica priorizando seguridad, trazabilidad e integración SIE.
+- Propón modelo de datos, flujos de cierre, reglas de validación y estrategia de auditoría.
+- Define casos límite (transferidos, retirados, cambios retroactivos, reconexión SIE).
+- Sugiere pruebas funcionales y no funcionales para garantizar confiabilidad operativa.

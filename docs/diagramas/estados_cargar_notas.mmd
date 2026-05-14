@@ -1,0 +1,186 @@
+%% ============================================================
+%% EduSync — Diagrama de Estados: Carga de Notas (Docente)
+%% Versión : v0.1
+%% Fecha   : 14/05/2026
+%% Autores : Equipo G013
+%% Fuente  : arquitectura_funcional_EduSync.md (UC-01..UC-05, UC-09)
+%% ============================================================
+%%
+%% DECISIONES DE DISEÑO ASUMIDAS (ver arquitectura_funcional_EduSync.md):
+%%  D1 - "Borrador" = notas auto-guardadas con periodo ABIERTO (UC-01 persiste inmediatamente)
+%%  D2 - No existe revisión previa por Secretaría/Director en flujo normal;
+%%       el Docente cierra directamente (UC-02). La aprobación aplica solo al flujo retroactivo (UC-05).
+%%  D3 - "Publicación" es automática cuando el 100% de materias del curso están CERRADAS (UC-03).
+%% ============================================================
+
+stateDiagram-v2
+
+    %% ── Punto de entrada ─────────────────────────────────────
+    [*] --> VerificandoAcceso : Docente accede\nal módulo de notas
+
+    %% ── Verificación inicial de habilitación ─────────────────
+    state VerificandoAcceso {
+        [*] --> ComprobandoRBAC
+        ComprobandoRBAC --> ComprobandoPeriodo : RBAC válido\n(rol DOCENTE asignado)
+        ComprobandoRBAC --> SinRBAC            : Sin materia\nasignada al docente
+        ComprobandoPeriodo --> AccesoOtorgado  : Periodo en estado ABIERTO
+        ComprobandoPeriodo --> PeriodoBloqueado : Periodo CERRADO\no SOLO_LECTURA
+    }
+
+    VerificandoAcceso --> NoHabilitado       : Sin RBAC o periodo\nno disponible
+    VerificandoAcceso --> HabilitadoParaCarga : Acceso otorgado
+
+    %% ── Estado terminal: sin acceso ──────────────────────────
+    NoHabilitado : No Habilitado\n──────────────────\nRequiere intervención\nadministrativa o\napertura de periodo
+
+    NoHabilitado --> [*] : Fin del intento\n(sin acción posible)
+
+    %% ─────────────────────────────────────────────────────────
+    %% FLUJO NORMAL DE CARGA
+    %% ─────────────────────────────────────────────────────────
+
+    HabilitadoParaCarga : Habilitado para Carga\n──────────────────\nRBAC ✓  Periodo ABIERTO ✓\nSin evaluaciones registradas
+
+    HabilitadoParaCarga --> BorradorActivo : Docente inicia\nel ingreso de notas
+
+    %% ── Borrador activo (carga parcial auto-guardada) ────────
+    state BorradorActivo {
+        %% Cada nota ingresada pasa por validación en tiempo real
+        [*] --> IngresandoEvaluacion
+
+        IngresandoEvaluacion --> ValidacionEnTiempoReal : Docente envía\nuna nota
+
+        state ValidacionEnTiempoReal {
+            [*] --> Analizando
+            Analizando --> DentroDeRango   : Valor ≤ rango\nparamétrico del periodo
+            Analizando --> FueraDeRango    : Valor excede\nlímite normativo
+            FueraDeRango --> Analizando    : Docente corrige\nel valor ingresado
+        }
+
+        ValidacionEnTiempoReal --> EvaluacionGuardada  : Nota válida →\npersistida + audit_log
+        ValidacionEnTiempoReal --> IngresandoEvaluacion : Error de validación\nnota NO persistida
+
+        EvaluacionGuardada --> VistaProvisionaActualizada : Motor UC-03 recalcula\npromedios provisionales
+
+        VistaProvisionaActualizada --> IngresandoEvaluacion  : Quedan evaluaciones\npendientes
+        VistaProvisionaActualizada --> TodasEvaluacionesLlenas : 100% evaluaciones\npara todos los estudiantes
+
+        %% El docente puede agregar más evaluaciones dentro de una dimensión
+        IngresandoEvaluacion --> AgregarEvaluacionEnDimension : Docente declara\nnueva evaluación\nen una dimensión
+        AgregarEvaluacionEnDimension --> IngresandoEvaluacion : Nueva evaluación\ndisponible para carga
+    }
+
+    BorradorActivo --> EvaluacionesCompletas : Todas las evaluaciones\ndeclaradas completadas
+
+    %% ── Notas completas: listo para cierre ───────────────────
+    EvaluacionesCompletas : Notas Completas\n──────────────────\nTodas las evaluaciones de\ntodas las dimensiones para\ntodos los estudiantes ✓
+
+    EvaluacionesCompletas --> BorradorActivo         : Docente agrega\nuna nueva evaluación\na alguna dimensión
+    EvaluacionesCompletas --> SolicitandoCierre      : Docente pulsa\n"Cerrar Materia"
+
+    %% ── Verificación pre-cierre ──────────────────────────────
+    SolicitandoCierre --> VerificandoCompletitud : Sistema lanza\nverificación final
+
+    state VerificandoCompletitud {
+        [*] --> AuditandoRegistros
+        AuditandoRegistros --> TodoCompleto    : Sin huecos\ndetectados
+        AuditandoRegistros --> HuecosDetectados : Al menos 1 evaluación\nsin nota
+    }
+
+    VerificandoCompletitud --> CompletitudFallida : Huecos detectados\n(cierre bloqueado)
+    VerificandoCompletitud --> MateriaCerrada     : Verificación exitosa\n→ transición a SOLO_LECTURA
+
+    %% ── Error de completitud ─────────────────────────────────
+    CompletitudFallida : Completitud Fallida\n──────────────────\nSistema lista estudiantes\ny evaluaciones faltantes
+
+    CompletitudFallida --> BorradorActivo : Docente completa\nlos registros faltantes
+
+    %% ─────────────────────────────────────────────────────────
+    %% MATERIA CERRADA (SOLO_LECTURA)
+    %% ─────────────────────────────────────────────────────────
+
+    MateriaCerrada : Materia Cerrada\n──────────────────\nEstado: SOLO_LECTURA\nInmutable sin autorización\nNotificación → Secretaría ✓
+
+    MateriaCerrada --> ContribuyendoAlCentralizador : Sistema UC-03 verifica\nsi 100% materias cerradas
+
+    state ContribuyendoAlCentralizador {
+        [*] --> VerificandoOtrasMaterias
+        VerificandoOtrasMaterias --> CentralizadorProvisional : Otras materias\naún ABIERTAS
+        VerificandoOtrasMaterias --> CentralizadorOficial     : Todas las materias\ndel curso CERRADAS
+        CentralizadorProvisional --> [*] : Centralizador marcado\ncomo PROVISIONAL
+        CentralizadorOficial     --> [*] : Centralizador OFICIAL\ngenerado → boletines\nhabilitados (UC-07)
+    }
+
+    %% ── Cierre institucional del periodo ─────────────────────
+    MateriaCerrada --> PeriodoCerradoInstitucional : Director cierra\nel periodo institucional\n(UC-09: todos los cursos cerrados)
+
+    PeriodoCerradoInstitucional : Periodo Cerrado Institucionalmente\n──────────────────\nTodo el periodo en SOLO_LECTURA\nExportación SIE habilitada (UC-04)\nBoletines disponibles (UC-07)
+
+    PeriodoCerradoInstitucional --> [*] : Gestión finalizada\npara este trimestre
+
+    %% ─────────────────────────────────────────────────────────
+    %% FLUJO RETROACTIVO (UC-05)
+    %% Post-cierre: solo vía autorización del Director
+    %% ─────────────────────────────────────────────────────────
+
+    MateriaCerrada --> SolicitudRetroactivaEnviada : Docente detecta error\ny solicita corrección\n(requiere justificación escrita)
+
+    %% ── Solicitud pendiente ───────────────────────────────────
+    SolicitudRetroactivaEnviada : Solicitud Retroactiva Enviada\n──────────────────\nEstado: PENDIENTE\nRegistro original intacto\nEsperando decisión del Director
+
+    SolicitudRetroactivaEnviada --> EsperandoDecisionDirector : Notificación\nenviada al Director
+
+    %% ── Decisión del Director ────────────────────────────────
+    state EsperandoDecisionDirector {
+        [*] --> RevisionPorDirector
+        RevisionPorDirector --> Aprobada  : Director aprueba +\ndefine alcance y ventana\n(1 h – 72 h; default: 24 h)
+        RevisionPorDirector --> Rechazada : Director rechaza\ncon observación
+    }
+
+    EsperandoDecisionDirector --> SolicitudRechazada    : Director rechaza
+    EsperandoDecisionDirector --> VentanaRetroactivaActiva : Director aprueba\n→ ventana activada
+
+    %% ── Solicitud rechazada ───────────────────────────────────
+    SolicitudRechazada : Solicitud Rechazada\n──────────────────\nMateria permanece SOLO_LECTURA\nDocente recibe observación\ndel Director
+
+    SolicitudRechazada --> SolicitudRetroactivaEnviada : Docente reformula\nla solicitud con nueva\njustificación
+
+    %% ── Ventana activa ───────────────────────────────────────
+    VentanaRetroactivaActiva : Ventana Retroactiva Activa\n──────────────────\nPermiso temporal de escritura\nAlcance: estudiante o curso\nTemporizador en cuenta regresiva\nValidaciones UC-01 activas
+
+    VentanaRetroactivaActiva --> ModificandoNotaRetroactiva   : Docente corrige\nnota dentro del alcance\nautorizado
+
+    ModificandoNotaRetroactiva : Modificando Nota Retroactiva\n──────────────────\nNuevo registro versionado\n(append-only, original intacto)\nCentralizador provisional\nrecalculado automáticamente
+
+    ModificandoNotaRetroactiva --> VentanaRetroactivaActiva   : Cambio guardado\n(puede continuar\ndentro del plazo)
+    ModificandoNotaRetroactiva --> VentanaRetroactivaActiva   : Docente agrega\nnueva evaluación\ndentro del alcance
+
+    VentanaRetroactivaActiva --> AlertaProximoVencimiento     : Faltan ≤ 30 minutos\npara el vencimiento
+
+    AlertaProximoVencimiento : Alerta: Próximo Vencimiento\n──────────────────\nNotificación automática al docente\n"30 min para el cierre de ventana"
+
+    AlertaProximoVencimiento --> ModificandoNotaRetroactiva   : Docente continúa\nantes de que venza
+    AlertaProximoVencimiento --> VentanaExpirada              : Tiempo agotado\nsin acción
+
+    VentanaRetroactivaActiva --> VentanaExpirada              : Tiempo agotado\n(revocación automática\nsin intervención manual)
+
+    VentanaRetroactivaActiva --> MateriaCerrada               : Docente finaliza\nantes del vencimiento\n(cierra la ventana)
+
+    %% ── Ventana expirada ──────────────────────────────────────
+    VentanaExpirada : Ventana Expirada\n──────────────────\nPermiso revocado automáticamente\nResumen de cambios realizados\ny notas pendientes → audit_log\nMateria vuelve a SOLO_LECTURA
+
+    VentanaExpirada --> MateriaCerrada              : Sistema bloquea\nel acceso y registra\nel cierre de ventana
+
+    VentanaExpirada --> SolicitudRetroactivaEnviada : Docente necesita\nmás tiempo → debe\nenviar nueva solicitud\nal Director
+
+    %% ─────────────────────────────────────────────────────────
+    %% CASO EXCEPCIONAL: Periodo cerrado mientras docente trabaja
+    %% ─────────────────────────────────────────────────────────
+
+    BorradorActivo --> PeriodoCerradoInesperadamente : Administrador cierra\nel periodo mientras\nel docente cargaba notas
+
+    PeriodoCerradoInesperadamente : Periodo Cerrado Inesperadamente\n──────────────────\nError PERIODO_NO_MODIFICABLE\nNotas en curso NO persistidas\nDocente notificado\nSesión bloqueada para escritura
+
+    PeriodoCerradoInesperadamente --> SolicitudRetroactivaEnviada : Docente solicita\napertura de ventana\nal Director
+
+    PeriodoCerradoInesperadamente --> [*] : Docente no puede\ncontinuar sin autorización

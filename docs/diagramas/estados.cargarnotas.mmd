@@ -1,0 +1,228 @@
+%% EduSync - Diagrama de Estados: Carga de Notas (Docente)
+%% Version: v0.2 - Corregido para compatibilidad con parsers Mermaid estandar
+%% Fecha: 14/05/2026
+%% Fuente: arquitectura_funcional_EduSync.md (UC-01..UC-05, UC-09)
+%%
+%% DECISIONES DE DISENO:
+%%  D1 - "Borrador" = notas auto-guardadas con periodo ABIERTO (UC-01 persiste inmediatamente)
+%%  D2 - No existe revision previa en flujo normal; el Docente cierra directamente (UC-02)
+%%  D3 - "Publicacion" es automatica cuando el 100% de materias estan CERRADAS (UC-03)
+
+stateDiagram-v2
+
+    %% --- Punto de entrada ---
+    [*] --> VerificandoAcceso : Docente accede\nal modulo de notas
+
+    %% --- VERIFICACION INICIAL DE HABILITACION ---
+    state VerificandoAcceso {
+        [*] --> ComprobandoRBAC
+        ComprobandoRBAC --> ComprobandoPeriodo : RBAC valido\n(rol DOCENTE asignado)
+        ComprobandoRBAC --> SinRBAC : Sin materia\nasignada al docente
+        ComprobandoPeriodo --> AccesoOtorgado : Periodo en estado ABIERTO
+        ComprobandoPeriodo --> PeriodoBloqueado : Periodo CERRADO\no SOLO_LECTURA
+    }
+
+    VerificandoAcceso --> NoHabilitado : Sin RBAC o periodo\nno disponible
+    VerificandoAcceso --> HabilitadoParaCarga : Acceso otorgado
+
+    NoHabilitado : No Habilitado
+    note right of NoHabilitado
+        Sin RBAC asignado o periodo no ABIERTO.
+        Requiere intervencion administrativa
+        o apertura de periodo por el Director.
+    end note
+
+    NoHabilitado --> [*] : Fin del intento
+
+    %% ---------------------------------------------------
+    %% FLUJO NORMAL DE CARGA
+    %% ---------------------------------------------------
+
+    HabilitadoParaCarga : Habilitado para Carga
+    note right of HabilitadoParaCarga
+        RBAC valido. Periodo ABIERTO.
+        Sin evaluaciones registradas aun.
+    end note
+
+    HabilitadoParaCarga --> BorradorActivo : Docente inicia\nel ingreso de notas
+
+    %% --- Borrador activo (carga parcial auto-guardada) ---
+    state BorradorActivo {
+        [*] --> IngresandoEvaluacion
+        IngresandoEvaluacion --> ValidacionTiempoReal : Docente envia una nota
+
+        state ValidacionTiempoReal {
+            [*] --> Analizando
+            Analizando --> DentroDeRango : Valor dentro del\nrango parametrico
+            Analizando --> FueraDeRango : Valor excede\nlimite normativo
+            FueraDeRango --> Analizando : Docente corrige el valor
+        }
+
+        ValidacionTiempoReal --> EvaluacionGuardada : Nota valida,\npersistida + audit_log
+        ValidacionTiempoReal --> IngresandoEvaluacion : Error de validacion,\nnota NO persistida
+
+        EvaluacionGuardada --> VistaProvisionActualizada : Motor UC-03 recalcula\npromedios provisionales
+
+        VistaProvisionActualizada --> IngresandoEvaluacion : Quedan evaluaciones\npendientes
+        VistaProvisionActualizada --> TodasLasEvaluacionesLlenas : 100% evaluaciones\npara todos los estudiantes
+
+        IngresandoEvaluacion --> AgregarEvaluacionDimension : Docente declara\nnueva evaluacion\nen una dimension
+        AgregarEvaluacionDimension --> IngresandoEvaluacion : Nueva evaluacion\ndisponible para carga
+    }
+
+    BorradorActivo --> EvaluacionesCompletas : Todas las evaluaciones\ndeclaradas completadas
+
+    %% --- Notas completas: listo para cierre ---
+    EvaluacionesCompletas : Notas Completas
+    note right of EvaluacionesCompletas
+        Todas las evaluaciones de todas
+        las dimensiones para todos los
+        estudiantes completadas.
+    end note
+
+    EvaluacionesCompletas --> BorradorActivo : Docente agrega\nnueva evaluacion\na alguna dimension
+    EvaluacionesCompletas --> SolicitandoCierre : Docente pulsa\nCerrar Materia
+
+    %% --- Verificacion pre-cierre ---
+    SolicitandoCierre --> VerificandoCompletitud : Sistema lanza\nverificacion final
+
+    state VerificandoCompletitud {
+        [*] --> AuditandoRegistros
+        AuditandoRegistros --> TodoCompleto : Sin huecos detectados
+        AuditandoRegistros --> HuecosDetectados : Al menos 1 evaluacion\nsin nota
+    }
+
+    VerificandoCompletitud --> CompletitudFallida : Huecos detectados,\ncierre bloqueado
+    VerificandoCompletitud --> MateriaCerrada : Verificacion exitosa,\ntransicion a SOLO_LECTURA
+
+    CompletitudFallida : Completitud Fallida
+    note right of CompletitudFallida
+        Sistema lista estudiantes
+        y evaluaciones faltantes.
+    end note
+
+    CompletitudFallida --> BorradorActivo : Docente completa\nlos registros faltantes
+
+    %% ---------------------------------------------------
+    %% MATERIA CERRADA (SOLO_LECTURA)
+    %% ---------------------------------------------------
+
+    MateriaCerrada : Materia Cerrada
+    note right of MateriaCerrada
+        Estado: SOLO_LECTURA. Inmutable.
+        Notificacion enviada a Secretaria.
+    end note
+
+    MateriaCerrada --> ContribuyendoCentralizador : Sistema UC-03 verifica\nsi 100% materias cerradas
+
+    state ContribuyendoCentralizador {
+        [*] --> VerificandoOtrasMaterias
+        VerificandoOtrasMaterias --> CentralizadorProvisional : Otras materias\naun ABIERTAS
+        VerificandoOtrasMaterias --> CentralizadorOficial : Todas las materias\ndel curso CERRADAS
+        CentralizadorProvisional --> [*] : Centraliz. marcado PROVISIONAL
+        CentralizadorOficial --> [*] : Centraliz. OFICIAL generado,\nboletines habilitados (UC-07)
+    }
+
+    MateriaCerrada --> PeriodoCerradoInstitucional : Director cierra\nel periodo (UC-09)
+
+    PeriodoCerradoInstitucional : Periodo Cerrado Institucionalmente
+    note right of PeriodoCerradoInstitucional
+        Todo el periodo en SOLO_LECTURA.
+        Exportacion SIE habilitada (UC-04).
+        Boletines disponibles (UC-07).
+    end note
+
+    PeriodoCerradoInstitucional --> [*] : Gestion finalizada\npara este trimestre
+
+    %% ---------------------------------------------------
+    %% FLUJO RETROACTIVO (UC-05)
+    %% ---------------------------------------------------
+
+    MateriaCerrada --> SolicitudRetroActivaEnviada : Docente detecta error\ny solicita correccion
+
+    SolicitudRetroActivaEnviada : Solicitud Retroactiva Enviada
+    note right of SolicitudRetroActivaEnviada
+        Estado: PENDIENTE.
+        Registro original intacto.
+        Esperando decision del Director.
+    end note
+
+    SolicitudRetroActivaEnviada --> EsperandoDecisionDirector : Notificacion\nenviada al Director
+
+    state EsperandoDecisionDirector {
+        [*] --> RevisionDirector
+        RevisionDirector --> Aprobada : Director aprueba\ncon alcance y ventana\n(1h - 72h, default 24h)
+        RevisionDirector --> Rechazada : Director rechaza\ncon observacion
+    }
+
+    EsperandoDecisionDirector --> SolicitudRechazada : Director rechaza
+    EsperandoDecisionDirector --> VentanaRetroactivaActiva : Director aprueba,\nventana activada
+
+    SolicitudRechazada : Solicitud Rechazada
+    note right of SolicitudRechazada
+        Materia permanece SOLO_LECTURA.
+        Docente recibe observacion del Director.
+        Puede reformular la solicitud.
+    end note
+
+    SolicitudRechazada --> SolicitudRetroActivaEnviada : Docente reformula\nla solicitud
+
+    VentanaRetroactivaActiva : Ventana Retroactiva Activa
+    note right of VentanaRetroactivaActiva
+        Permiso temporal de escritura activo.
+        Alcance: estudiante o curso (define Director).
+        Temporizador en cuenta regresiva.
+        Validaciones UC-01 siguen activas.
+    end note
+
+    VentanaRetroactivaActiva --> ModificandoNota : Docente corrige nota\ndentro del alcance
+
+    ModificandoNota : Modificando Nota Retroactiva
+    note right of ModificandoNota
+        Nuevo registro versionado (append-only).
+        Registro original intacto.
+        Centralizador provisional recalculado.
+    end note
+
+    ModificandoNota --> VentanaRetroactivaActiva : Cambio guardado,\npuede continuar
+
+    VentanaRetroactivaActiva --> AlertaVencimiento : Faltan 30 min\npara el vencimiento
+
+    AlertaVencimiento : Alerta Proximo Vencimiento
+    note right of AlertaVencimiento
+        Notificacion automatica al docente.
+        "30 min para el cierre de ventana".
+    end note
+
+    AlertaVencimiento --> ModificandoNota : Docente continua\nantes de que venza
+    AlertaVencimiento --> VentanaExpirada : Tiempo agotado\nsin accion
+
+    VentanaRetroactivaActiva --> VentanaExpirada : Tiempo agotado,\nrevocacion automatica
+    VentanaRetroactivaActiva --> MateriaCerrada : Docente finaliza\nantes del vencimiento
+
+    VentanaExpirada : Ventana Expirada
+    note right of VentanaExpirada
+        Permiso revocado automaticamente.
+        Resumen de cambios registrado en audit_log.
+        Materia vuelve a SOLO_LECTURA.
+    end note
+
+    VentanaExpirada --> MateriaCerrada : Sistema bloquea el acceso
+    VentanaExpirada --> SolicitudRetroActivaEnviada : Docente necesita\nmas tiempo, nueva solicitud
+
+    %% ---------------------------------------------------
+    %% CASO EXCEPCIONAL: Periodo cerrado mientras docente trabaja
+    %% ---------------------------------------------------
+
+    BorradorActivo --> PeriodoCerradoInesperado : Administrador cierra\nel periodo durante\nla sesion activa
+
+    PeriodoCerradoInesperado : Periodo Cerrado Inesperadamente
+    note right of PeriodoCerradoInesperado
+        Error: PERIODO_NO_MODIFICABLE.
+        Notas en curso NO persistidas.
+        Docente notificado.
+        Sesion bloqueada para escritura.
+    end note
+
+    PeriodoCerradoInesperado --> SolicitudRetroActivaEnviada : Docente solicita\napertura de ventana\nal Director
+    PeriodoCerradoInesperado --> [*] : Sin autorizacion\nno puede continuar

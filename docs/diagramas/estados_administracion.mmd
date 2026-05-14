@@ -1,0 +1,264 @@
+%% EduSync - Diagrama de Estados: Administracion de Gestion Academica (Director)
+%% Version: v0.2 - Corregido para compatibilidad con parsers Mermaid estandar
+%% Fecha: 14/05/2026
+%% Fuente: arquitectura_funcional_EduSync.md (UC-05, UC-09, UC-10, DA-01, DA-02)
+
+stateDiagram-v2
+
+    %% --- Punto de entrada ---
+    [*] --> VerificandoContexto : Director accede al modulo
+
+    %% --- VERIFICACION INICIAL ---
+    state VerificandoContexto {
+        [*] --> ComprobandoGestionActiva
+        ComprobandoGestionActiva --> SinGestionActiva : No hay gestion activa
+        ComprobandoGestionActiva --> GestionYaActiva : Existe gestion abierta
+    }
+
+    VerificandoContexto --> BloqueadoPorGestionActiva : Gestion previa sin cerrar
+    VerificandoContexto --> CreandoGestion : Sin gestion activa - procede
+
+    BloqueadoPorGestionActiva : Bloqueado - Gestion Previa Activa
+    note right of BloqueadoPorGestionActiva
+        No se puede crear una nueva gestion
+        mientras exista una activa.
+        El Director debe cerrar la anterior (UC-09)
+    end note
+
+    BloqueadoPorGestionActiva --> [*] : Fin del intento
+
+    %% ---------------------------------------------------
+    %% FASE 1 - CREACION DE LA GESTION ACADEMICA
+    %% ---------------------------------------------------
+
+    state CreandoGestion {
+        [*] --> IngresandoDatos
+        IngresandoDatos --> ValidandoDatos : Director completa\nnombre y anio lectivo
+        ValidandoDatos --> ErrorDatos : Anio duplicado o\ndatos incompletos
+        ValidandoDatos --> GestionRegistrada : Datos validos
+        ErrorDatos --> IngresandoDatos : Director corrige
+    }
+
+    CreandoGestion --> GestionEnBorrador : Gestion creada sin periodos
+
+    GestionEnBorrador : Gestion en Borrador
+    note right of GestionEnBorrador
+        Registro creado para el anio lectivo.
+        Sin fechas, parametros ni asignaciones.
+        El Director puede cancelar en este punto.
+    end note
+
+    GestionEnBorrador --> GestionDescartada : Director cancela
+    GestionDescartada --> [*] : Gestion eliminada
+
+    %% ---------------------------------------------------
+    %% FASE 2 - CONFIGURACION DEL CALENDARIO
+    %% (Fechas de inicio y fin de los 3 trimestres)
+    %% ---------------------------------------------------
+
+    GestionEnBorrador --> ConfigurandoCalendario : Director define\nfechas de trimestres
+
+    state ConfigurandoCalendario {
+        [*] --> DefiniFechasT1
+        DefiniFechasT1 --> DefiniFechasT2 : Rango T1 ingresado
+        DefiniFechasT2 --> DefiniFechasT3 : Rango T2 ingresado
+        DefiniFechasT3 --> ValidandoCalendario : Rango T3 ingresado
+        ValidandoCalendario --> ConflictoCalendario : Solapamiento o\nfecha invalida
+        ValidandoCalendario --> CalendarioAceptado : Sin conflictos
+        ConflictoCalendario --> DefiniFechasT1 : Director corrige fechas
+    }
+
+    ConfigurandoCalendario --> CalendarioConfirmado : Calendario T1-T2-T3 guardado
+
+    CalendarioConfirmado : Calendario Confirmado
+    note right of CalendarioConfirmado
+        Fechas de T1, T2 y T3 guardadas.
+        Secuencia T1 -> T2 -> T3 valida.
+        Apertura sigue siendo manual y secuencial.
+    end note
+
+    %% ---------------------------------------------------
+    %% FASE 3 - CONFIGURACION DE PARAMETROS ACADEMICOS
+    %% (Por periodo: dimensiones, pesos, reglas - DA-02)
+    %% ---------------------------------------------------
+
+    CalendarioConfirmado --> ConfigurandoParametros : Director fija\nparametros por trimestre
+
+    state ConfigurandoParametros {
+        [*] --> ParametrosT1
+        ParametrosT1 --> ParametrosT2 : Parametros T1 completos
+        ParametrosT2 --> ParametrosT3 : Parametros T2 completos
+        ParametrosT3 --> ValidandoParametros : Parametros T3 completos
+        ValidandoParametros --> ParametrosInvalidos : Peso != 100 pts\no campo vacio
+        ValidandoParametros --> ParametrosAceptados : Configuracion consistente
+        ParametrosInvalidos --> ParametrosT1 : Director corrige
+    }
+
+    ConfigurandoParametros --> ParametrosPublicados : Parametros fijados\ne inmutables por periodo
+
+    ParametrosPublicados : Parametros Publicados
+    note right of ParametrosPublicados
+        Dimensiones, pesos y reglas fijados
+        con alcance tenant+periodo (DA-02).
+        Inmutables una vez abierto el periodo.
+        Disponibles para validacion en UC-01.
+    end note
+
+    %% ---------------------------------------------------
+    %% FASE 4 - HABILITACION DE ACCESOS Y ASIGNACIONES
+    %% (Roles del personal + mapeo docente-materia/curso)
+    %% ---------------------------------------------------
+
+    ParametrosPublicados --> HabilitandoAccesos : Director configura\npersonal y asignaciones
+
+    state HabilitandoAccesos {
+        [*] --> AsignandoRoles
+        AsignandoRoles --> AsignandoDocentes : Roles configurados
+        AsignandoDocentes --> VerificandoCobertura : Asignaciones ingresadas
+        VerificandoCobertura --> CoberturaIncompleta : Materia sin docente
+        VerificandoCobertura --> CoberturaCompleta : Cobertura total
+        CoberturaIncompleta --> AsignandoDocentes : Director completa
+    }
+
+    HabilitandoAccesos --> GestionListaParaApertura : Accesos habilitados\nDocentes notificados
+
+    GestionListaParaApertura : Gestion Lista para Apertura
+    note right of GestionListaParaApertura
+        Gestion creada OK
+        Calendario definido OK
+        Parametros fijados OK
+        Docentes asignados OK
+        Listo para abrir el 1er Trimestre.
+    end note
+
+    %% ---------------------------------------------------
+    %% FASE 5 - TRIMESTRE 1
+    %% ---------------------------------------------------
+
+    GestionListaParaApertura --> GestionandoT1 : Director abre\nel 1er Trimestre
+
+    state GestionandoT1 {
+        [*] --> T1_Abierto
+        T1_Abierto --> T1_Monitoreando : Docentes notificados\ny comenzando carga
+        T1_Monitoreando --> T1_AutorizandoModif : Docente solicita\ncorreccion retroactiva
+        T1_AutorizandoModif --> T1_DecisionDirector : Director revisa solicitud
+        T1_DecisionDirector --> T1_Monitoreando : Solicitud resuelta
+        T1_Monitoreando --> T1_SolicitandoCierre : Director inicia\nel cierre del trimestre
+        T1_SolicitandoCierre --> T1_VerificandoCentraliz : Sistema verifica\n100% cursos cerrados
+        T1_VerificandoCentraliz --> T1_CursosPendientes : Hay cursos\ncon materias abiertas
+        T1_VerificandoCentraliz --> T1_CerradoOK : Todos los centralizadores\ncerrados
+        T1_CursosPendientes --> T1_Monitoreando : Director notifica\na docentes pendientes
+    }
+
+    GestionandoT1 --> Trimestre1Cerrado : Trimestre 1 cerrado\nReportes T1 disponibles
+
+    Trimestre1Cerrado : Trimestre 1 Cerrado
+    note right of Trimestre1Cerrado
+        Centralizadores T1: CERRADOS.
+        Indicadores T1 disponibles (UC-10).
+        Boletines T1 habilitados (UC-07).
+        Modificaciones solo via UC-05.
+    end note
+
+    %% ---------------------------------------------------
+    %% FASE 6 - TRIMESTRE 2
+    %% ---------------------------------------------------
+
+    Trimestre1Cerrado --> GestionandoT2 : Director abre\nel 2do Trimestre
+
+    state GestionandoT2 {
+        [*] --> T2_Abierto
+        T2_Abierto --> T2_Monitoreando : Docentes notificados\ny comenzando carga
+        T2_Monitoreando --> T2_AutorizandoModif : Docente solicita\ncorreccion retroactiva
+        T2_AutorizandoModif --> T2_DecisionDirector : Director revisa solicitud
+        T2_DecisionDirector --> T2_Monitoreando : Solicitud resuelta
+        T2_Monitoreando --> T2_SolicitandoCierre : Director inicia\nel cierre del trimestre
+        T2_SolicitandoCierre --> T2_VerificandoCentraliz : Sistema verifica\n100% cursos cerrados
+        T2_VerificandoCentraliz --> T2_CursosPendientes : Hay cursos\ncon materias abiertas
+        T2_VerificandoCentraliz --> T2_CerradoOK : Todos los centralizadores\ncerrados
+        T2_CursosPendientes --> T2_Monitoreando : Director notifica\na docentes pendientes
+    }
+
+    GestionandoT2 --> Trimestre2Cerrado : Trimestre 2 cerrado\nReportes T2 disponibles
+
+    Trimestre2Cerrado : Trimestre 2 Cerrado
+    note right of Trimestre2Cerrado
+        Centralizadores T2: CERRADOS.
+        Indicadores T2 disponibles (UC-10).
+        Boletines T2 habilitados (UC-07).
+    end note
+
+    %% ---------------------------------------------------
+    %% FASE 7 - TRIMESTRE 3 (ultimo del anio)
+    %% ---------------------------------------------------
+
+    Trimestre2Cerrado --> GestionandoT3 : Director abre\nel 3er Trimestre
+
+    state GestionandoT3 {
+        [*] --> T3_Abierto
+        T3_Abierto --> T3_Monitoreando : Docentes notificados\ny comenzando carga
+        T3_Monitoreando --> T3_AutorizandoModif : Docente solicita\ncorreccion retroactiva
+        T3_AutorizandoModif --> T3_DecisionDirector : Director revisa solicitud
+        T3_DecisionDirector --> T3_Monitoreando : Solicitud resuelta
+        T3_Monitoreando --> T3_SolicitandoCierre : Director inicia\nel cierre del trimestre
+        T3_SolicitandoCierre --> T3_VerificandoCentraliz : Sistema verifica\n100% cursos cerrados
+        T3_VerificandoCentraliz --> T3_CursosPendientes : Hay cursos\ncon materias abiertas
+        T3_VerificandoCentraliz --> T3_CerradoOK : Todos los centralizadores\ncerrados
+        T3_CursosPendientes --> T3_Monitoreando : Director notifica\na docentes pendientes
+    }
+
+    GestionandoT3 --> Trimestre3Cerrado : Trimestre 3 cerrado\nPromedio anual calculado
+
+    Trimestre3Cerrado : Trimestre 3 Cerrado
+    note right of Trimestre3Cerrado
+        Todos los trimestres CERRADOS.
+        Promedio anual calculado (UC-03).
+        Indicadores anuales disponibles (UC-10).
+        Exportacion SIE habilitada (UC-04).
+    end note
+
+    %% ---------------------------------------------------
+    %% FASE 8 - CIERRE DE LA GESTION ACADEMICA ANUAL
+    %% ---------------------------------------------------
+
+    Trimestre3Cerrado --> CerrandoGestion : Director inicia\nel cierre anual formal
+
+    state CerrandoGestion {
+        [*] --> VerificandoCierreTotal
+        VerificandoCierreTotal --> TrimestresPendientes : Algun trimestre\nsin cerrar
+        VerificandoCierreTotal --> GenerandoResumenAnual : Los 3 trimestres cerrados
+        GenerandoResumenAnual --> CierreAnualConfirmado : Indicadores anuales\ngenerados y sellados
+        TrimestresPendientes --> VerificandoCierreTotal : Director cierra\nlos pendientes
+    }
+
+    CerrandoGestion --> GestionCerrada : Gestion academica\ncerrada oficialmente
+
+    GestionCerrada : Gestion Academica Cerrada
+    note right of GestionCerrada
+        Todos los trimestres: CERRADO.
+        Promedio anual: calculado e inmutable.
+        Dashboard anual disponible (UC-10).
+        Boletines finales habilitados (UC-07).
+        Exportacion SIE habilitada (UC-04).
+        Nueva gestion puede iniciarse.
+    end note
+
+    GestionCerrada --> [*] : Anio academico finalizado
+
+    %% ---------------------------------------------------
+    %% CASO EXCEPCIONAL - Reasignacion docente durante trimestre
+    %% ---------------------------------------------------
+
+    GestionandoT1 --> AjustandoAsignaciones : Docente dado de baja\no reasignado en T1
+    GestionandoT2 --> AjustandoAsignaciones : Docente dado de baja\no reasignado en T2
+
+    AjustandoAsignaciones : Ajustando Asignaciones en Curso
+    note right of AjustandoAsignaciones
+        Reasignacion o sustitucion de docente.
+        Notas previas del docente saliente:
+        inmutables en audit_log.
+        Nuevo docente hereda nomina en solo lectura.
+    end note
+
+    AjustandoAsignaciones --> GestionandoT1 : Reasignacion completada en T1
+    AjustandoAsignaciones --> GestionandoT2 : Reasignacion completada en T2

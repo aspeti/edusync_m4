@@ -1,7 +1,7 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG`. Versión activa: `v0.4`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG`. Versión activa: `v0.5`.
 > Cada prompt sigue la estructura de `plantillas/PROMPT_TEMPLATE.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
 
@@ -28,6 +28,7 @@
 | PR-MRD-001 | `docs/MRD-EduSync.md` (MRD v1.0 — 10 MRD-N-*, 3 personas, JTBD, go-to-market) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado |
 | PR-PRD-001 | `docs/PRD_EduSync.md` (PRD v1.0 — 17 US, 6 épicas, RICE, NFRs, journeys) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado |
 | PR-FSD-001 | `docs/fsd/FSD-EduSync.md` (FSD Clásico v1.0 — 5 FSD-UC, ER, 3 contratos, 14 tasks) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado |
+| PR-LFSD-001 | `docs/lfsd/LFSD-EduSync.md` (LFSD v1.0 — 20 §§, 15 APIs, 14 tablas DDL, 4 diagramas secuencia, 16 tasks) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado |
 
 ---
 
@@ -40,6 +41,7 @@ flowchart TD
     MRD["PR-MRD-001\nMRD EduSync\n(docs-agent)"]
     PRD["PR-PRD-001\nPRD EduSync\n(docs-agent)"]
     FSD["PR-FSD-001\nFSD EduSync\n(docs-agent)"]
+    LFSD["PR-LFSD-001\nLFSD EduSync\n(docs-agent)"]
     ARCH["PR-ARCH-001\nArquitectura funcional\n(docs-agent)"]
 
     subgraph DOMINIO["Capa de Dominio — dev-agent"]
@@ -93,6 +95,7 @@ flowchart TD
     BRD2 --> PRD
     PRD --> FSD
     ARCH --> FSD
+    FSD --> LFSD
 ```
 
 ---
@@ -101,7 +104,7 @@ flowchart TD
 
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
-| `docs-agent` | PR-ARCH-001, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD); versionar y consolidar ante nuevos artefactos funcionales | `.md` en `docs/` y `docs/fsd/` |
+| `docs-agent` | PR-ARCH-001, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD); versionar y consolidar ante nuevos artefactos funcionales o de bajo nivel | `.md` en `docs/`, `docs/fsd/` y `docs/lfsd/` |
 | `dev-agent` | PR-UC-001..UC-010 | Generar contratos de UC, código de dominio y pruebas unitarias | Código en `src/`, contratos en `docs/prompts/` |
 | `arch-agent` | PR-ADR-001..005 | Evaluar alternativas y documentar decisiones arquitectónicas | ADRs en `docs/adr/` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
@@ -476,6 +479,87 @@ guardado en docs/fsd/FSD-EduSync.md, listo para implementación y QA testing.
 - E_RLS_FALTANTE: nueva tabla sin tenant_id o sin política RLS — rechazar migración.
 - E_APPEND_ONLY_VIOLADO: modificación que sobreescribe registro original — rechazar.
 - E_PLACEHOLDER_VACIO: sección del FSD con marcadores sin completar — completar.
+```
+
+---
+
+### PR-LFSD-001 — Generación del LFSD EduSync (Low-Level Functional Specification)
+
+```markdown
+# Role
+Eres un experto en Software Engineering, Solution Design, Low-Level Design y
+documentación técnica detallada para sistemas empresariales Java/Spring Boot.
+Tienes experiencia creando LFSD que trasladan especificaciones funcionales a
+diseño de bajo nivel implementable, con arquitectura hexagonal, DDD y SOLID.
+
+# Task
+Genera docs/lfsd/LFSD-EduSync.md traduciendo los requerimientos del FSD v1.0
+a especificaciones técnicas de bajo nivel listas para implementación y QA.
+El documento debe cubrir: arquitectura de componentes, diseño de módulos,
+contratos API, DTOs, entidades JPA, DDL, workflows (secuencia), eventos,
+seguridad, auditoría, schedulers, manejo de errores y edge cases.
+
+# Context
+- Insumo principal: docs/FSD_EduSync.md (5 FSD-UC, 12 BR, 16 entidades, 16 NFRs).
+- Insumo funcional: docs/PRD_EduSync.md (20 PRD-REQ-*, 15 NFRs).
+- Contexto de negocio: docs/BRD_EduSync_V2.md, docs/MRD_EduSync.md.
+- Arquitectura base: hexagonal (Domain / Application / Infrastructure).
+- Stack: Java 21 LTS, Spring Boot 3.3, Spring Security 6 (JWT+RBAC),
+  Spring Data JPA, PostgreSQL 15 (RLS), Angular 17, AWS.
+- Invariantes absolutas del código:
+    * floor() es la UNICA función de truncado (BR-003).
+    * audit_log inalterable: sin UPDATE ni DELETE.
+    * tenant_id en toda tabla + política RLS activa.
+    * Cálculos de promedio SOLO en ConsolidacionDomainService (BR-008).
+    * Modelo append-only en UC-005: original NUNCA sobreescrito.
+- Ruta de salida: docs/lfsd/LFSD-EduSync.md.
+
+# Reasoning
+1. Mapear la arquitectura hexagonal en estructura de paquetes Java
+   (domain/, application/, infrastructure/) con responsabilidades por capa.
+2. Diseñar clases para 5 módulos críticos (Calificaciones, Consolidación,
+   Exportación SIE, Corrección Retroactiva, Gestión Académica) con
+   diagramas de clases Mermaid y pseudoalgoritmos línea a línea.
+3. Definir 15+ contratos API REST con request/response JSON completos,
+   validaciones Bean Validation y tabla de errores por endpoint.
+4. Documentar entidades JPA con anotaciones, índices y constraints.
+5. Generar DDL lógico completo (14 tablas) con políticas RLS e inyección de tenant.
+6. Crear 4 diagramas de secuencia Mermaid (UC-001, UC-002/003, UC-004, UC-005)
+   con todos los participantes y transacciones.
+7. Definir el sistema de eventos de dominio (Spring Events) con
+   @TransactionalEventListener(AFTER_COMMIT) y pool de threads.
+8. Diseñar Spring Security 6: JwtAuthFilter, RBAC por endpoint, TenantContext.
+9. Documentar AuditLogAspect (AOP) con invariantes de misma transacción.
+10. Definir schedulers: VentanaExpiracionScheduler (60s) + SIERetryScheduler (5min).
+11. Diseñar GlobalExceptionHandler con jerarquía de excepciones de dominio.
+12. Documentar 7+ edge cases con comportamiento esperado e implementación.
+13. Listar restricciones técnicas innegociables con enforcement en CI/ArchUnit.
+14. Generar 16 tasks técnicas con componentes, dependencias y estimaciones.
+
+# Stop condition
+Detente cuando el LFSD tenga: estructura de paquetes Java, 5 diagramas de clases,
+15+ APIs con contratos completos, 4 diagramas de secuencia, entidades JPA,
+DDL con 14 tablas y RLS, eventos de dominio, seguridad Spring Security 6,
+AOP de auditoría, 2 schedulers, GlobalExceptionHandler, 7 edge cases,
+16 tasks, glosario técnico y checklist verificado. Sin placeholders vacíos.
+
+# Output
+Markdown completo (20 secciones §0–§20 + checklist) guardado en
+docs/lfsd/LFSD-EduSync.md, listo para implementación, code review y QA técnico.
+
+# Invariants
+- Ningún cálculo de promedio puede aparecer fuera de ConsolidacionDomainService.
+- Todo endpoint DOCENTE debe tener verificación de asignación antes de persistir.
+- El audit_log se escribe en la misma transacción que la operación principal.
+- Toda tabla del DDL debe tener tenant_id + política RLS declarada.
+- Los diagramas Mermaid deben usar nombres reales del dominio (no genéricos).
+
+# Failure modes
+- E_DOMINIO_SIN_PSEUDOCODIGO: módulo crítico sin pseudoalgoritmo detallado — completar.
+- E_API_SIN_ERRORES: endpoint sin tabla de códigos HTTP y error codes — agregar.
+- E_DDL_SIN_RLS: tabla en DDL sin política RLS — agregar antes de entregar.
+- E_DIAGRAMA_GENERICO: diagrama con nombres ficticios o genéricos — reemplazar con dominio real.
+- E_PLACEHOLDER_VACIO: sección con marcadores sin completar — completar.
 ```
 
 ---
@@ -1276,6 +1360,7 @@ Dos archivos sincronizados:
 | BRD v2 + Arq. funcional + Entrevistas UX + Excel reales | `BR-001..BR-012, MRD-N-01..10, DA-01..DA-05` | PR-MRD-001 | `docs-agent` | MRD EduSync v1.0 | `docs/MRD-EduSync.md` |
 | MRD v1.0 + BRD v2.0 + Arquitectura funcional + Diagramas de estado | `MRD-N-01..10, BR-001..BR-012, UC-01..UC-10` | PR-PRD-001 | `docs-agent` | PRD EduSync v1.0 (17 US, 6 épicas) | `docs/PRD_EduSync.md` |
 | PRD v1.0 + BRD v2.0 + MRD v1.0 + Arquitectura funcional | `PRD-REQ-001..020, UC-01..UC-10, DA-01..DA-05` | PR-FSD-001 | `docs-agent` | FSD EduSync v1.0 (FSD Clásico, 5 FSD-UC) | `docs/fsd/FSD-EduSync.md` |
+| FSD v1.0 + PRD v1.0 + BRD v2.0 + MRD v1.0 + Arquitectura funcional | `FSD-UC-001..005, PRD-REQ-001..020, BR-001..BR-012, DA-01..DA-05` | PR-LFSD-001 | `docs-agent` | LFSD EduSync v1.0 (hex. architecture, 14 tablas DDL, 16 tasks) | `docs/lfsd/LFSD-EduSync.md` |
 
 ---
 
@@ -1287,3 +1372,4 @@ Dos archivos sincronizados:
 | v0.2 | 14/05/2026 | Equipo G013 | Incorporacion de PR-DIAG-001 (estados Docente) y PR-DIAG-002 (estados Director); nuevo agente `process-agent`; capa "Modelado de Procesos" en el flujo general; 2 invariantes adicionales IG-09 e IG-10 sobre sincronizacion `.mmd`↔`.md` y compatibilidad de parsers; trazabilidad ampliada a 13 prompts |
 | v0.3 | 14/05/2026 | Equipo G013 | Incorporación de PR-BRD-002 (BRD EduSync V2 consolidado); actualización del índice, flowchart (nodo BRD2 con conexiones desde BRD, ARCH, DIAG1 y DIAG2), matriz de responsabilidades del docs-agent y trazabilidad ampliada a 14 prompts |
 | v0.4 | 15/05/2026 | Equipo G013 | Incorporación de PR-MRD-001 (MRD EduSync v1.0), PR-PRD-001 (PRD EduSync v1.0) y PR-FSD-001 (FSD EduSync v1.0 — FSD Clásico); actualización del índice (3 nuevos prompts), áreas de IDs (MRD/PRD/FSD), flowchart (cadena MRD→PRD→FSD), matriz del docs-agent y trazabilidad ampliada a 17 prompts |
+| v0.5 | 15/05/2026 | Equipo G013 | Incorporación de PR-LFSD-001 (LFSD EduSync v1.0 — Low-Level Functional Specification, arquitectura hexagonal, 20 secciones, 14 tablas DDL, 15+ APIs, 4 diagramas de secuencia, 16 tasks); actualización del índice (18 prompts), áreas de IDs (LFSD), flowchart (cadena FSD→LFSD), matriz del docs-agent y trazabilidad ampliada a 18 prompts |

@@ -4,7 +4,7 @@
 | Campo | Valor |
 | ------ | ------ |
 | Producto | EduSync |
-| Grupo | G013 |
+| Grupo | G-EduSync |
 | Versión | v1.0 |
 | Fecha | 09/05/2026 |
 | Sponsor de negocio | Dirección Institucional / Propietarios de Unidades Educativas |

@@ -22,7 +22,7 @@
 | **PROMPT_MAPPING** | `docs/PROMPT_MAPPING.md` | Catálogo de 18 prompt-contratos (PR-ARCH-001..PR-LFSD-001) |
 | **APORTES** | `docs/APORTES_EduSync.md` | Informe de aportes individuales — release 1.0.0 |
 | **Regla de seguridad** | `.cursor/rules/seguridad.mdc` | OWASP ASVS L2 — Java/Spring (secretos, PII en logs) |
-| **DTI** | *(pendiente de creación)* | Documento Técnico Inicial — a generar con plantilla `plantillas/DOCUMENTO_TECNICO_INICIAL_TEMPLATE.md` |
+| **DTI** | `docs/DTI.md` | Documento Técnico Inicial v0.1 — §0–§23, C4 L1/L2/L3, 2 POCs, 5 ADRs provisionales, 4 golden tests |
 | **ADRs** | *(pendiente de creación)* | Decisiones arquitectónicas formales — a generar en `docs/adr/` usando `plantillas/ADR_TEMPLATE.md` |
 
 ---
@@ -410,7 +410,8 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 - [x] 6 agentes documentados con sus límites estrictos.
 - [x] 4 golden tests obligatorios de zero-tolerance definidos.
 - [x] Guardrails probados con lista de prompts prohibidos.
-- [ ] `docs/adr/` pendiente de creación con DA-01..DA-05 formalizados (usar `plantillas/ADR_TEMPLATE.md`).
-- [ ] `docs/DTI.md` pendiente de creación (usar `plantillas/DOCUMENTO_TECNICO_INICIAL_TEMPLATE.md`).
+- [x] `docs/DTI.md` creado v0.1 — §0–§23, C4 L1/L2/L3, 2 POCs, 5 ADRs provisionales (17/05/2026).
+- [ ] `docs/adr/` pendiente — crear 0001..0005 formalizando DA-01..DA-05 (usar `plantillas/ADR_TEMPLATE.md`).
+- [ ] `docs/diagrams/c4_level3_api_gateway.mmd` pendiente — C4 Level 3 formal en archivo .mmd.
 - [ ] Stack y versiones a verificar contra `pom.xml` cuando el proyecto de código sea inicializado.
 - [ ] Revisado por al menos un humano del grupo antes de cada release.

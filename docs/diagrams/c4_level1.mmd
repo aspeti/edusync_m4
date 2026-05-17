@@ -1,0 +1,25 @@
+C4Context
+  title EduSync  -  Diagrama de Contexto del Sistema (C4 Nivel 1)
+
+  %% -- Actores internos ------------------------------------------------------
+  Person(director, "Director", "Jeanneth  -  configura gestiones academicas,\nhabilita periodos, autoriza correcciones\nretroactivas de calificaciones")
+  Person(docente, "Docente", "Marcela  -  carga calificaciones por dimension\n(Ser / Saber / Hacer / Decidir / Autoevaluacion)\ndesde su lista de estudiantes por materia")
+  Person(secretaria, "Secretaria", "Wendy  -  gestiona nominas de estudiantes,\nconsulta centralizadores y exporta\ncalificaciones al sistema SIE ministerial")
+
+  %% -- Sistema principal -----------------------------------------------------
+  System(edusync, "EduSync", "Plataforma SaaS B2B multitenant para\nunidades educativas privadas y de convenio\nen Bolivia. Centraliza el registro de\ncalificaciones por rol, consolida\ncentralizadores automaticamente y\nsincroniza con el SIE por RUDE.\n[Java 21 / Spring Boot 3.3 / PostgreSQL 15\nAngular 17 / AWS ECS Fargate]")
+
+  %% -- Sistemas externos -----------------------------------------------------
+  System_Ext(sie, "SIE  -  Ministerio de Educacion de Bolivia", "Sistema de Informacion Educativa estatal.\nRecibe exportacion de calificaciones\nidentificadas por codigo RUDE.\nCumplimiento obligatorio  -  Ley 070\nAvelino Sinani. [DA-05]")
+
+  System_Ext(kms, "AWS KMS", "Servicio de gestion de claves de Amazon.\nCifra en reposo los datos PII de estudiantes:\nRUDE, nombre completo, fecha de nacimiento.\n[NFR-007, alias/edusync-pii-key]")
+
+  %% -- Relaciones ------------------------------------------------------------
+  Rel(director, edusync, "Configura gestion academica,\nhabilita/cierra periodos,\nautoriza correcciones (24-72 h)", "HTTPS / Angular SPA")
+  Rel(docente, edusync, "Carga y corrige calificaciones\npor dimension y materia.\nSolicita autorizacion de correccion", "HTTPS / Angular SPA")
+  Rel(secretaria, edusync, "Gestiona nominas, consulta\ncentralizadores y exporta\ncalificaciones al SIE", "HTTPS / Angular SPA")
+  Rel(edusync, sie, "Exporta calificaciones por RUDE\nde forma idempotente con\ncircuit breaker y reintentos", "HTTPS / REST [DA-05]")
+  Rel(edusync, kms, "Cifra y descifra datos PII\nde estudiantes en reposo", "AWS SDK / TLS [NFR-007]")
+
+  %% -- Hint de layout --------------------------------------------------------
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")

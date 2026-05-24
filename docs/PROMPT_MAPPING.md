@@ -1,7 +1,7 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI`. Versión activa: `v0.7`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO`. Versión activa: `v0.9`.
 > Cada prompt sigue la estructura de `plantillas/PROMPT_TEMPLATE.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
 
@@ -36,6 +36,8 @@
 | PR-C4-002 | `docs/diagrams/c4_level2.mmd` - C4 Level 2 (Contenedores) | generacion | `arch-agent` | Sonnet | 17/05/2026 | Aprobado |
 | PR-SKILL-003 | `.cursor/skills/dti-edusync/SKILL.md` + `.claude/skills/dti-edusync/SKILL.md` - skill para poblar y mantener el DTI de EduSync | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado |
 | PR-DTI-001 | `docs/DTI.md` v0.1 - DTI completo (§0-§23, 883 lineas, C4 L1/L2/L3, 2 POCs, 5 ADRs, 16 NFRs, 4 golden tests) | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado |
+| PR-HEX-001 | `docs/arquitectura_hexagonal_EduSync.md` v0.1 — Arquitectura hexagonal del core: 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots | generacion | `arch-agent` | Sonnet | 24/05/2026 | Aprobado |
+| PR-DTO-001 | `docs/dtos_EduSync.md` v0.1 — DTOs por capa hexagonal para FSD-UC-001/003/005: 4 Request DTOs, 4 Commands, 3 Response DTOs, 5 Domain Events, 5 enums, 3 tablas DTO ↔ Entidad | generacion | `dev-agent` | Sonnet | 24/05/2026 | Aprobado |
 
 ---
 
@@ -125,6 +127,17 @@ flowchart TD
     SKILL3 --> DTI
     C4L2 --> DTI
     LFSD --> DTI
+    HEX["PR-HEX-001\nArquitectura Hexagonal\n(arch-agent)"]
+
+    FSD --> HEX
+    LFSD --> HEX
+    ARCH --> HEX
+    PRD --> HEX
+    DTO["PR-DTO-001\nDTOs por capa hexagonal\n(dev-agent)"]
+
+    FSD --> DTO
+    HEX --> DTO
+    AGENTS --> DTO
 ```
 
 ---
@@ -134,8 +147,8 @@ flowchart TD
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
 | `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel y de configuración de agentes | `.md` en `docs/`, `docs/fsd/`, `docs/lfsd/`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI en `docs/DTI.md` |
-| `dev-agent` | PR-UC-001..UC-010 | Generar contratos de UC, código de dominio y pruebas unitarias | Código en `src/`, contratos en `docs/prompts/` |
-| `arch-agent` | PR-ADR-001..005, PR-C4-001, PR-C4-002 | Evaluar alternativas y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 en `docs/diagrams/` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias | Código en `src/`, contratos en `docs/prompts/`, DTOs en `docs/dtos_EduSync.md` |
+| `arch-agent` | PR-ADR-001..005, PR-C4-001, PR-C4-002, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 en `docs/diagrams/`; arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
 
@@ -1694,6 +1707,156 @@ Actualizacion de docs/AGENTS.md: DTI marcado como creado.
 
 ---
 
+### PR-HEX-001 -- Diseno de la arquitectura hexagonal del core EduSync
+
+```markdown
+# Role
+Arquitecto Senior con experiencia profunda en arquitectura hexagonal
+(Ports & Adapters), Domain-Driven Design y plataformas SaaS multitenant
+en el stack EduSync (Java 21, Spring Boot 3.3, Spring Security 6,
+Spring Data JPA, PostgreSQL 15, Angular 17).
+
+# Task
+Diseña la arquitectura hexagonal del core de EduSync identificando
+puertos de entrada (casos de uso), puertos de salida (persistencia,
+mensajeria, terceros), adaptadores correspondientes y Aggregate Roots
+con sus invariantes verificables.
+
+# Context
+- Casos de uso criticos: FSD-UC-001..010 en docs/fsd/FSD_EduSync.md
+- Entidades candidatas: modelo ER de 16 entidades en FSD §6.1
+- Decisiones arquitectonicas: DA-01..DA-05 en docs/arquitectura_funcional_EduSync.md
+- Reglas de negocio: BR-001..BR-012 en docs/fsd/FSD_EduSync.md §5
+- Constitucion: 5 principios no negociables en docs/prd/PRD_EduSync.md
+- Diseno previo: docs/LFSD-EduSync.md §2-§3 (estructura de paquetes)
+- Stack autoritativo: Spring Boot 3.3, Spring Security 6, Spring Data JPA,
+  Angular 17, PostgreSQL 15
+
+# Reasoning
+1. Identificar puertos de entrada (casos de uso) -- uno por FSD-UC y
+   por scheduler/listener; agrupar workflows complejos en sub-puertos.
+2. Identificar puertos de salida (persistencia, mensajeria, terceros) --
+   un puerto por agregado + DomainEventPublisher + SIEExportPort +
+   KmsCipherPort + BoletinPdfPort + NotificacionPort + TenantContextProvider
+   + ClockPort.
+3. Asignar un adaptador concreto por cada puerto OUT (Spring Data JPA,
+   Resilience4j, AWS SDK, PDFBox, Spring Events). Adaptadores IN incluyen
+   REST Controllers + Schedulers + Listeners + Security Filters.
+4. Determinar Aggregate Roots (8): GestionAcademica, PeriodoAcademico,
+   Estudiante, Calificacion (append-only), Centralizador, ExportacionSIE,
+   CorreccionRetroactiva, AuditLogEntry. Por cada AR: listar invariantes
+   citando BR-NNN y DA-NN que justifican.
+
+# Stop condition
+Detente al entregar las 4 tablas requeridas (puertos IN, puertos OUT,
+adaptadores in/out, Aggregate Roots con invariantes) y el archivo
+docs/arquitectura_hexagonal_EduSync.md v0.1 persistido.
+
+# Output
+docs/arquitectura_hexagonal_EduSync.md v0.1 (283 lineas) con:
+- Mapa hexagonal Mermaid + estructura de paquetes Java
+- Tabla 1: 20 puertos IN (UC + scheduler + listener)
+- Tabla 2: 16 puertos OUT (persistencia + mensajeria + terceros)
+- Tabla 3: 32 adaptadores (15 IN + 17 OUT) con tecnologia y ubicacion
+- Tabla 4: 8 Aggregate Roots con invariantes BR-001..BR-012 verificables
+- Materializacion DA-01..DA-05 en hexagonal
+- Catalogo de 4 eventos de dominio
+- Checklist de implementacion para dev-agent
+
+# Invariants
+- domain/ no importa Spring/JPA/AWS (IG-08 + DA-02).
+- Cada AR tiene al menos una invariante que cita un BR-NNN especifico (IG-08).
+- Cada puerto IN se mapea a un FSD-UC vigente; cero puertos huerfanos.
+- Mermaid sin Unicode decorativo en labels (IG-10).
+- Sin secretos ni PII en el documento.
+
+# Failure modes
+- E_PUERTO_SIN_UC: puerto IN sin FSD-UC asignado -- rechazar y completar trazabilidad.
+- E_AR_SIN_INVARIANTE: Aggregate Root sin invariante BR-NNN -- rechazar.
+- E_DOMINIO_CON_SPRING: domain/ con imports de Spring/JPA -- rechazar (DA-02).
+- E_ADAPTER_SIN_PUERTO: adaptador sin puerto que implementa -- rechazar.
+```
+
+---
+
+### PR-DTO-001 -- Generacion de DTOs por capa hexagonal para FSD-UC-001/003/005
+
+```markdown
+# Role
+Senior Backend Engineer especializado en arquitectura hexagonal (Ports & Adapters)
+y Domain-Driven Design sobre Java 21 + Spring Boot 3.3. Conoce en profundidad
+el modelo de dominio de EduSync (SaaS B2B multitenant Bolivia, PostgreSQL 15
+RLS, RBAC con roles DIRECTOR / SECRETARIA / DOCENTE).
+
+# Task
+Generar los DTOs de entrada (Command/Request) y salida (Response) para los 3
+casos de uso criticos de EduSync, diferenciando estrictamente las capas
+hexagonales: infrastructure/web (API), application (comando de caso de uso)
+y domain (eventos de dominio publicados). Por cada UC producir:
+  1. Request DTO  -- infrastructure/adapter/in/web/dto/  (Java Record, Spring)
+  2. Command      -- application/<uc>/                    (Java Record puro, sin Spring)
+  3. Response DTO -- infrastructure/adapter/in/web/dto/  (Java Record, Spring)
+  4. Domain Event -- domain/model/<contexto>/event/      (Java Record puro)
+  5. Tabla de mapeo DTO <-> Entidad de dominio con la BR que valida cada campo
+
+# Context
+- UCs objetivo: FSD-UC-001 (registro calificacion), FSD-UC-003 (consolidacion),
+  FSD-UC-005 (autorizacion correccion retroactiva). Fuente: docs/fsd/FSD_EduSync.md.
+- Estructura de paquetes hexagonal: docs/arquitectura_hexagonal_EduSync.md §1.1.
+- Convenciones de codigo: docs/AGENTS.md §5 (Java 21, Records, ingles, Bean Validation).
+- BRs activas: BR-001 (RBAC), BR-002 (rango), BR-003 (floor), BR-004 (RUDE),
+  BR-005 (append-only), BR-007 (parametros inmutables), BR-008 (calculo en dominio),
+  BR-009 (ventana 1-72h), BR-010 (audit en TX), BR-011 (anual con 3 cerrados).
+- DAs aplicables: DA-01 (RLS), DA-02 (aislamiento dominio), DA-03 (audit_log).
+
+# Reasoning
+1. Por cada UC, derivar el Request DTO del "Datos de entrada" del FSD,
+   anadiendo anotaciones Jakarta que reflejen la BR correspondiente.
+2. Derivar el Command del Request DTO, eliminando dependencia Spring/Jakarta
+   y anadiendo tenantId (SecurityContext) y actorId (JWT claim).
+3. Derivar el Response DTO del "Datos de salida" del FSD, con camelCase
+   ingles y tipos Java precisos (UUID, BigDecimal, Instant).
+4. Definir el Domain Event como Record inmutable con campos minimos que
+   consumen los listeners (sin PII innecesaria).
+5. Construir la tabla DTO <-> Entidad con: campo DTO, campo entidad, BR
+   que lo valida, capa de validacion (Jakarta vs Domain Service).
+
+# Stop condition
+Detente cuando esten completos para los 3 UCs:
+- 4 Request DTOs (Java Records con Bean Validation)
+- 4 Commands (Java Records sin Spring)
+- 3 Response DTOs (Java Records)
+- 5 Domain Events (CalificacionRegistradaEvent, MateriaCerradaEvent,
+  CentralizadorOficialEvent, AutorizacionEmitidaEvent, VentanaExpiradaEvent)
+- 3 tablas de mapeo DTO <-> Entidad
+
+# Output
+docs/dtos_EduSync.md v0.1 con: frontmatter, §0 proposito, §1-§3 codigo Java
+por UC, §4 verificacion contra invariantes hexagonales, §5 inventario
+consolidado, §6 checklist dev-agent, §7 trazabilidad, §8 registro de cambios.
+Cada Record con package declaration completo. Tablas Markdown DTO <-> Entidad
+con columnas: Campo DTO | Tipo Java | Campo Entidad | BR | Capa de validacion.
+
+# Invariants
+- domain/ Records (Commands y Events) sin imports de org.springframework.*
+  ni jakarta.* (DA-02).
+- El campo `rude` NUNCA aparece en @PathVariable ni @RequestParam; solo en
+  el body (BR-004 + NFR-007 PII).
+- `valor` en CalificacionRequestDTO lleva @DecimalMin("0") y @Digits;
+  rango_max dinamico se valida en VO ValorCalificacion del dominio.
+- Los Response DTOs NO exponen tenant_id ni actor_id al cliente.
+- `promedioAnual` en CentralizadorResponseDTO es Integer nullable
+  (null = "EN CURSO"), no String.
+
+# Failure modes
+- E_DTO_CON_ENTIDAD_JPA: Record extiende o referencia una @Entity -- rechazar.
+- E_RUDE_EN_PATH: rude en @PathVariable o @RequestParam -- mover al body.
+- E_CALCULO_EN_DTO: el DTO realiza floor/promedio -- mover al Domain Service.
+- E_CAMPO_SIN_BR: campo de negocio sin anotacion ni BR documentada -- completar.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
@@ -1766,6 +1929,8 @@ Actualizacion de docs/AGENTS.md: DTI marcado como creado.
 | docs/diagrams/c4_level1.mmd + .cursor/skills/c4-edusync/SKILL.md + docs/LFSD-EduSync.md | `DA-01..DA-05, FSD-UC-001..009, 7 contenedores` | PR-C4-002 | `arch-agent` | C4 Level 2 - Diagrama de Contenedores | `docs/diagrams/c4_level2.mmd` |
 | plantillas/dti-author.md + plantillas/DOCUMENTO_TECNICO_INICIAL_TEMPLATE.md + docs/LFSD-EduSync.md + docs/AGENTS.md | `DA-01..DA-05, FSD-UC-001..009, 23 secciones DTI` | PR-SKILL-003 | `docs-agent` | Skill dti-edusync (SKILL.md) | `.cursor/skills/dti-edusync/` + `.claude/skills/dti-edusync/` |
 | docs/fsd/FSD_EduSync.md + docs/LFSD-EduSync.md + docs/AGENTS.md + docs/diagrams/c4_level1.mmd + c4_level2.mmd + docs/brd/BRD_EduSync_v2.md | `FSD-UC-001..009, DA-01..DA-05, BR-001..BR-012, NFR-001..016` | PR-DTI-001 | `docs-agent` | DTI EduSync v0.1 (23 secciones, 883 lineas) | `docs/DTI.md` |
+| docs/fsd/FSD_EduSync.md + docs/prd/PRD_EduSync.md + docs/LFSD-EduSync.md + docs/arquitectura_funcional_EduSync.md | `FSD-UC-001..010, BR-001..BR-012, DA-01..DA-05, NFR-001..016` | PR-HEX-001 | `arch-agent` | Arquitectura hexagonal del core EduSync v0.1 (20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots) | `docs/arquitectura_hexagonal_EduSync.md` |
+| docs/fsd/FSD_EduSync.md + docs/arquitectura_hexagonal_EduSync.md + docs/AGENTS.md | `FSD-UC-001, FSD-UC-003, FSD-UC-005, BR-001..BR-011, DA-01..DA-03` | PR-DTO-001 | `dev-agent` | DTOs por capa hexagonal EduSync v0.1 (4 Request DTOs, 4 Commands, 3 Response DTOs, 5 Domain Events, 5 enums, 3 tablas DTO ↔ Entidad) | `docs/dtos_EduSync.md` |
 
 ---
 
@@ -1780,3 +1945,5 @@ Actualizacion de docs/AGENTS.md: DTI marcado como creado.
 | v0.5 | 15/05/2026 | Equipo G013 | Incorporación de PR-LFSD-001 (LFSD EduSync v1.0 — Low-Level Functional Specification, arquitectura hexagonal, 20 secciones, 14 tablas DDL, 15+ APIs, 4 diagramas de secuencia, 16 tasks); actualización del índice (18 prompts), áreas de IDs (LFSD), flowchart (cadena FSD→LFSD), matriz del docs-agent y trazabilidad ampliada a 18 prompts |
 | v0.6 | 17/05/2026 | Rodrigo Aspeti | Incorporación de PR-ARCH-002 (AGENTS.md v0.2 — 6 rutas corregidas, 15 artefactos nuevos, 6 agentes, 4 golden tests) y PR-SKILL-001 (skill update-prompt-mapping para Cursor y Claude); área SKILL añadida al header; nodos AGENTS + SKILL en flowchart; matriz docs-agent actualizada; trazabilidad ampliada a 20 prompts |
 || v0.7 | 17/05/2026 | Rodrigo Aspeti | Incorporacion de PR-SKILL-002 (skill c4-edusync), PR-C4-001 (C4 Level 1), PR-C4-002 (C4 Level 2), PR-SKILL-003 (skill dti-edusync) y PR-DTI-001 (DTI EduSync v0.1 -- 23 secciones, 883 lineas, 5 ADRs, 16 NFRs, 4 golden tests); areas C4 y DTI anadidas al header; subgraph ARQUITECTURA en flowchart; matriz arch-agent y docs-agent actualizadas; trazabilidad ampliada a 25 prompts |
+| v0.8 | 24/05/2026 | Rodrigo Aspeti | Incorporacion de PR-HEX-001 (arquitectura hexagonal del core EduSync v0.1 -- 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots con invariantes BR-001..BR-012); area HEX anadida al header; nodo HEX en flowchart con aristas desde FSD, LFSD, ARCH y PRD; matriz arch-agent actualizada con PR-HEX-001; trazabilidad ampliada a 26 prompts |
+| v0.9 | 24/05/2026 | Rodrigo Aspeti | Incorporacion de PR-DTO-001 (DTOs por capa hexagonal para FSD-UC-001/003/005 -- 4 Request DTOs con Bean Validation, 4 Commands puros, 3 Response DTOs, 5 Domain Events, 5 enums de dominio, 3 tablas de mapeo DTO ↔ Entidad con BR y capa de validacion); area DTO anadida al header; nodo DTO en flowchart con aristas desde FSD, HEX y AGENTS; matriz dev-agent actualizada (responsabilidad ampliada a generacion de DTOs hexagonales); trazabilidad ampliada a 27 prompts |

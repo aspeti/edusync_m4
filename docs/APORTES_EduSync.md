@@ -12,8 +12,8 @@
 | **Producto** | EduSync — Plataforma SaaS de gestión académica multitenant |
 | **Grupo** | G-EduSync |
 | **Release evaluable** | `release/1.0.1` |
-| **Sesiones cubiertas** | S5 (especificación), S6–S7 (arquitectura, skills, DTI) |
-| **Fecha de cierre** | 17/05/2026 |
+| **Sesiones cubiertas** | S5 (especificación), S6–S7 (arquitectura, skills, DTI), S8 (diseño hexagonal) |
+| **Fecha de cierre** | 24/05/2026 |
 | **Integrante(s)** | Rodrigo Aspeti — Dev Lead / PM (n = 1) |
 | **Branch del release** | `release/1.0.1` |
 | **Commit de cierre (HEAD)** | `pendiente de commit formal` |
@@ -24,12 +24,13 @@
 
 El presente informe documenta los aportes realizados por el integrante del grupo G-EduSync durante el release `1.0.1`, que amplía el release anterior `1.0.0` (S5) incorporando la capa de arquitectura visual (diagramas C4), el ecosistema de skills agénticos y el Documento Técnico Inicial completo del producto.
 
-Este release cubre íntegramente dos fases del proyecto:
+Este release cubre íntegramente tres fases del proyecto:
 
 - **Fase de especificación** (S5 — tareas #1–#32): cadena documental BRD → MRD → PRD → FSD → LFSD, decisiones arquitectónicas DA-01..DA-05 y ecosistema de 18 prompt-contratos.
 - **Fase de arquitectura e ingeniería de agentes** (S6–S7 — tareas #33–#41): actualización de `AGENTS.md` v0.2, creación de 3 skills de agente (update-prompt-mapping, c4-edusync, dti-edusync), generación de los diagramas C4 Level 1 y Level 2, y producción del Documento Técnico Inicial (DTI) completo con 23 secciones.
+- **Fase de diseño técnico hexagonal** (S8 — tareas #42–#45): diseño formal de la arquitectura hexagonal del core con identificación de 20 puertos IN, 16 puertos OUT, 32 adaptadores y 8 Aggregate Roots con invariantes verificables; diseño de los DTOs por capa hexagonal (Request/Command/Response/Event) para los 3 UCs críticos de EduSync con tablas de mapeo DTO ↔ Entidad y BR validadora; más el registro de los prompt-contratos `PR-HEX-001` y `PR-DTO-001` en el ecosistema (PROMPT_MAPPING v0.8 y v0.9).
 
-EduSync es una plataforma SaaS B2B multitenant construida en Java 21, Spring Boot 3.3 y PostgreSQL 15, orientada a eliminar la "triple digitación manual" en las unidades educativas de Bolivia durante los cierres trimestrales del SIE del Ministerio de Educación. El trabajo documentado en este informe abarca **41 tareas** distribuidas en 14 categorías, todas verificables en el repositorio del proyecto.
+EduSync es una plataforma SaaS B2B multitenant construida en Java 21, Spring Boot 3.3 y PostgreSQL 15, orientada a eliminar la "triple digitación manual" en las unidades educativas de Bolivia durante los cierres trimestrales del SIE del Ministerio de Educación. El trabajo documentado en este informe abarca **45 tareas** distribuidas en 15 categorías, todas verificables en el repositorio del proyecto.
 
 ---
 
@@ -80,8 +81,12 @@ Las tareas se presentan en orden cronológico y lógico de ejecución. Cada entr
 | 39 | Rodrigo Aspeti | Skill `dti-edusync` para Cursor y Claude Code: guía de 5 pasos adaptada a EduSync para poblar y mantener el DTI; incluye tabla de mapeo de 25 secciones DTI con datos reales del proyecto (stack, agentes, golden tests, bounded contexts, eventos, ADRs), checklist de 12 ítems y anti-patrones EduSync específicos | Skill | `.cursor/skills/dti-edusync/SKILL.md` + `.claude/skills/dti-edusync/SKILL.md` | 17/05 |
 | 40 | Rodrigo Aspeti | DTI EduSync v0.1: Documento Técnico Inicial completo con 23 secciones (§0–§23, 883 líneas): frontmatter YAML con audiencia dual, tabla de 6 agentes SDLC, visión con North Star, C4 L1/L2 embebidos, C4 L3 flowchart del API Gateway, secuencia FSD-UC-001, 5 bounded contexts, 9 entidades, 6 DTOs, 11 puertos, 7 adaptadores, catálogo de eventos, mapa AWS, 16 NFRs, 2 POCs con criterio medible, STRIDE resumido, 5 ADRs provisionales (DA-01..DA-05), 4 golden tests CI y checklist 24/27 completado | FSD | `docs/DTI.md` v0.1 (883 líneas) | 17/05 |
 | 41 | Rodrigo Aspeti | PROMPT_MAPPING.md v0.7: registro de 5 nuevos prompt-contratos (PR-SKILL-002, PR-C4-001, PR-C4-002, PR-SKILL-003, PR-DTI-001); áreas C4 y DTI añadidas; subgraph ARQUITECTURA en flowchart; matrices docs-agent y arch-agent actualizadas; trazabilidad ampliada a 25 prompt-contratos | Prompt | `docs/PROMPT_MAPPING.md` v0.7 | 17/05 |
+| 42 | Rodrigo Aspeti | Arquitectura Hexagonal del core EduSync v0.1: diseño técnico de bajo nivel con 20 puertos IN (uno por FSD-UC), 16 puertos OUT (persistencia, mensajería, terceros, seguridad, tiempo), 32 adaptadores (15 IN + 17 OUT) con tecnología y ubicación, y 8 Aggregate Roots (GestionAcademica, PeriodoAcademico, Estudiante, Calificacion, Centralizador, ExportacionSIE, CorreccionRetroactiva, AuditLogEntry) con invariantes verificables BR-001..BR-012; estructura de paquetes Java completa, materialización DA-01..DA-05, catálogo de 4 eventos de dominio y checklist de implementación para dev-agent | Arquitectura | `docs/arquitectura_hexagonal_EduSync.md` v0.1 (283 líneas) | 24/05 |
+| 43 | Rodrigo Aspeti | PROMPT_MAPPING.md v0.8: registro del prompt-contrato PR-HEX-001 (arquitectura hexagonal del core EduSync); área `HEX` añadida al header; nodo HEX en flowchart Mermaid con aristas desde FSD, LFSD, ARCH y PRD; matriz `arch-agent` actualizada (responsabilidad ampliada a diseño hexagonal); trazabilidad ampliada a 26 prompt-contratos | Prompt | `docs/PROMPT_MAPPING.md` v0.8 | 24/05 |
+| 44 | Rodrigo Aspeti | DTOs por capa hexagonal EduSync v0.1: diseño técnico vinculante para los 3 UCs críticos (FSD-UC-001, UC-003, UC-005) con 4 Request DTOs (Java Records + Bean Validation), 4 Commands puros (sin Spring/Jakarta — DA-02), 3 Response DTOs (sin exponer `tenant_id`/`actor_id`), 5 Domain Events inmutables (`CalificacionRegistradaEvent`, `MateriaCerradaEvent`, `CentralizadorOficialEvent`, `AutorizacionEmitidaEvent`, `VentanaExpiradaEvent`), 5 enums de dominio (`Dimension`, `TipoCalificacion`, `EstadoCentralizador`, `AlcanceCorreccion`, `EstadoAutorizacion`) y 3 tablas DTO ↔ Entidad mapeando cada campo a su BR (BR-001..BR-011) y capa de validación (Jakarta vs. Domain Service); checklist de implementación para `dev-agent` y verificación contra invariantes hexagonales | Arquitectura | `docs/dtos_EduSync.md` v0.1 (445 líneas) | 24/05 |
+| 45 | Rodrigo Aspeti | PROMPT_MAPPING.md v0.9: registro del prompt-contrato PR-DTO-001 (DTOs por capa hexagonal para FSD-UC-001/003/005); área `DTO` añadida al header; nodo DTO en flowchart Mermaid con aristas desde FSD, HEX y AGENTS; matriz `dev-agent` actualizada (responsabilidad ampliada a generación de DTOs hexagonales con mapeo DTO ↔ Entidad); trazabilidad ampliada a 27 prompt-contratos | Prompt | `docs/PROMPT_MAPPING.md` v0.9 | 24/05 |
 
-**Categorías presentes en este release:** `ADR` · `AGENTS` · `BRD` · `Bitácora` · `Diagrama` · `FSD` · `MRD` · `NFR` · `PRD` · `Prompt` · `Rule` · `Skill` · `UC` · `Otro`
+**Categorías presentes en este release:** `ADR` · `AGENTS` · `Arquitectura` · `BRD` · `Bitácora` · `Diagrama` · `FSD` · `MRD` · `NFR` · `PRD` · `Prompt` · `Rule` · `Skill` · `UC` · `Otro`
 
 ---
 
@@ -91,24 +96,25 @@ El siguiente cuadro consolida el total de tareas registradas en §1, agrupadas p
 
 | Integrante | Total de tareas | Categorías cubiertas | Observación |
 |------------|-----------------|----------------------|-------------|
-| Rodrigo Aspeti | 41 | 14 | Dev Lead / PM del proyecto. Responsable de la totalidad de la cadena documental de especificación (BRD→MRD→PRD→FSD→LFSD→DTI), las 5 decisiones arquitectónicas, los 5 UCs críticos con Gherkin, el ecosistema de 25 prompt-contratos, 3 skills agénticos, diagramas C4 Level 1 y Level 2, y el AGENTS.md v0.2. |
-| **Total grupo** | **41** | — | — |
+| Rodrigo Aspeti | 45 | 15 | Dev Lead / PM del proyecto. Responsable de la totalidad de la cadena documental de especificación (BRD→MRD→PRD→FSD→LFSD→DTI→Arquitectura Hexagonal→DTOs), las 5 decisiones arquitectónicas, los 5 UCs críticos con Gherkin, el ecosistema de 27 prompt-contratos, 3 skills agénticos, diagramas C4 Level 1 y Level 2, AGENTS.md v0.2 y el diseño técnico de bajo nivel hexagonal con 8 Aggregate Roots, invariantes verificables y los 4 Request DTOs + 4 Commands + 3 Response DTOs + 5 Domain Events de los 3 UCs críticos. |
+| **Total grupo** | **45** | — | — |
 
 ### Distribución de tareas por categoría
 
 | Categoría | Cantidad | Artefactos principales |
 |-----------|----------|----------------------|
-| Prompt | 8 | PROMPT_MAPPING.md (v0.5→v0.7) + PR-ARCH-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, v0.6, v0.7 |
-| FSD | 8 | Arquitectura funcional, specs estados Docente/Director, reglas de negocio, FSD completo, LFSD completo, **DTI completo** |
+| Prompt | 10 | PROMPT_MAPPING.md (v0.5→v0.9) + PR-ARCH-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, v0.6, v0.7, v0.8 (PR-HEX-001), **v0.9 (PR-DTO-001)** |
+| FSD | 8 | Arquitectura funcional, specs estados Docente/Director, reglas de negocio, FSD completo, LFSD completo, DTI completo |
 | ADR | 5 | DA-01..DA-05 (multitenancy, parametrización, inmutabilidad, consolidación, SIE) |
 | UC | 5 | FSD-UC-001, UC-003, UC-004, UC-005, UC-009 |
-| Diagrama | 4 | Estados Docente (18 estados), estados Director (23 estados), **C4 Level 1**, **C4 Level 2** |
-| Skill | 3 | **update-prompt-mapping**, **c4-edusync**, **dti-edusync** |
+| Diagrama | 4 | Estados Docente (18 estados), estados Director (23 estados), C4 Level 1, C4 Level 2 |
+| Skill | 3 | update-prompt-mapping, c4-edusync, dti-edusync |
+| Arquitectura | 2 | Arquitectura Hexagonal del core v0.1 (20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots) · **DTOs por capa hexagonal v0.1** (4 Request DTOs, 4 Commands, 3 Response DTOs, 5 Domain Events, 5 enums, 3 tablas DTO ↔ Entidad) |
 | BRD | 2 | BRD EduSync V1 y V2 |
 | NFR | 1 | NFR-001..NFR-016 (16 requerimientos no funcionales) |
 | MRD | 1 | MRD EduSync v1.0 |
 | PRD | 1 | PRD EduSync v1.0 |
-| AGENTS | 1 | **AGENTS.md v0.2** (6 agentes, 4 golden tests) |
+| AGENTS | 1 | AGENTS.md v0.2 (6 agentes, 4 golden tests) |
 | Rule | 1 | `.cursor/rules/seguridad.mdc` (OWASP ASVS L2) |
 | Bitácora | 1 | Análisis comparativo AI-SDLC |
 
@@ -132,15 +138,15 @@ Nota_individual_i     = Nota_grupal × factor_i
 
 ### Datos del cálculo
 
-> Aporte promedio del grupo: **41 tareas / 1 integrante = 41.00 tareas/persona**
+> Aporte promedio del grupo: **45 tareas / 1 integrante = 45.00 tareas/persona**
 
 | Integrante | Tareas (§2) | Factor sin clamp | Factor (clamp 0.5–1.1) | Nota individual |
 |------------|-------------|------------------|------------------------|-----------------|
-| Rodrigo Aspeti | 41 | 41 / 41.00 = **1.00** | **1.00** | Nota_grupal × 1.00 |
+| Rodrigo Aspeti | 45 | 45 / 45.00 = **1.00** | **1.00** | Nota_grupal × 1.00 |
 
 ### Interpretación
 
-Dado que el grupo está compuesto por un único integrante que realizó la totalidad de las 41 tareas documentadas, el factor de aporte resulta en `1.00`. La nota individual es igual a la nota grupal, sin ajuste al alza ni a la baja. El cálculo es matemáticamente consistente: no existe diferencia entre el aporte individual y el promedio del grupo cuando n = 1.
+Dado que el grupo está compuesto por un único integrante que realizó la totalidad de las 45 tareas documentadas, el factor de aporte resulta en `1.00`. La nota individual es igual a la nota grupal, sin ajuste al alza ni a la baja. El cálculo es matemáticamente consistente: no existe diferencia entre el aporte individual y el promedio del grupo cuando n = 1.
 
 ---
 
@@ -156,7 +162,7 @@ El grupo adoptó íntegramente los criterios estándar del módulo, con las sigu
 - **Una sección de nivel `##`** en BRD/MRD/PRD/FSD/DTI con contenido sustantivo = 1 tarea. Los documentos completos (BRD v1, BRD v2, MRD, PRD, FSD, LFSD, DTI) se contabilizaron cada uno como 1 tarea.
 - **Un ADR aceptado** = 1 tarea. Aplicado en tareas #2–#6 (DA-01..DA-05).
 - **Una cursor rule** específica del dominio = 1 tarea. Aplicado en tarea #7.
-- **Un prompt-contrato** con los 6 elementos + Invariants + Failure modes = 1 tarea. Aplicado en tareas #26–#31 (6 contratos individuales), tarea #25 (PROMPT_MAPPING v0.5 como catálogo), tarea #35 (v0.6) y tarea #41 (v0.7).
+- **Un prompt-contrato** con los 6 elementos + Invariants + Failure modes = 1 tarea. Aplicado en tareas #26–#31 (6 contratos individuales), tarea #25 (PROMPT_MAPPING v0.5 como catálogo), tarea #35 (v0.6), tarea #41 (v0.7), tarea #43 (v0.8 — PR-HEX-001) y tarea #45 (v0.9 — PR-DTO-001).
 - **Un skill propio** accionable (SKILL.md con procedimiento, checklist y reference.md) = 1 tarea. Aplicado en tareas #34 (update-prompt-mapping), #36 (c4-edusync) y #39 (dti-edusync).
 - **Una sección de bitácora** = 1 tarea. Aplicado en tarea #32 (análisis AI-SDLC).
 
@@ -164,7 +170,9 @@ El grupo adoptó íntegramente los criterios estándar del módulo, con las sigu
 
 1. **FSD vs. LFSD vs. DTI**: se contabilizan como tareas separadas (#23, #24 y #40) porque son documentos con propósitos completamente diferenciados: el FSD especifica *qué* hace el sistema; el LFSD especifica *cómo* está diseñado internamente; el DTI es el contrato técnico inicial para humanos y agentes IA con diagramas C4, POCs, ADRs, NFRs y evaluación de guardrails.
 
-2. **PROMPT_MAPPING.md**: se contabiliza como 1 tarea por versión significativa (#25 v0.5, #35 v0.6, #41 v0.7) porque cada actualización implica 7 secciones modificadas simultáneamente (cabecera, índice, Mermaid, matriz de agentes, contrato, trazabilidad, historial) y no es un simple cambio de una sección. Los contratos individuales (#26–#31) son verificables de forma independiente por sección.
+2. **PROMPT_MAPPING.md**: se contabiliza como 1 tarea por versión significativa (#25 v0.5, #35 v0.6, #41 v0.7, #43 v0.8, #45 v0.9) porque cada actualización implica 7 secciones modificadas simultáneamente (cabecera, índice, Mermaid, matriz de agentes, contrato, trazabilidad, historial) y no es un simple cambio de una sección. Los contratos individuales (#26–#31) son verificables de forma independiente por sección.
+
+6. **Diseño técnico hexagonal y DTOs**: las tareas #42 (Arquitectura Hexagonal) y #44 (DTOs por capa) se contabilizan como categoría `Arquitectura` separada porque cada una produce un artefacto técnico vinculante distinto: la #42 define la topología (puertos, adaptadores, Aggregate Roots e invariantes); la #44 define los **contratos de datos** (Java Records con Bean Validation y mapeo explícito DTO ↔ Entidad ↔ BR) que serán consumidos por `dev-agent` y `qa-agent` para implementación y golden tests. Son artefactos con propósitos no superpuestos y entregables independientes.
 
 3. **Skills de agente** (#34, #36, #39): se contabilizan como tareas de categoría `Skill` independientes porque cada skill produce 4 artefactos distintos (SKILL.md Cursor, reference.md Cursor, SKILL.md Claude, reference.md Claude), define un protocolo de procedimiento específico al proyecto y es accionable de forma autónoma por un agente.
 
@@ -182,7 +190,7 @@ El grupo adoptó íntegramente los criterios estándar del módulo, con las sigu
 
 | Integrante | Factor calculado (§3) | Factor final aplicado | Justificación del ajuste |
 |------------|-----------------------|------------------------|---------------------------|
-| Rodrigo Aspeti | 1.00 | *(sin ajuste — a criterio del docente)* | *(ninguno; factor calculado se aplica directamente)* |
+| Rodrigo Aspeti | 1.00 | *(sin ajuste — a criterio del docente)* | *(ninguno; factor calculado se aplica directamente sobre las 45 tareas verificables)* |
 
 ---
 
@@ -190,10 +198,11 @@ El grupo adoptó íntegramente los criterios estándar del módulo, con las sigu
 
 Los siguientes ítems verifican la completitud y validez del presente informe antes de su commit en el repositorio:
 
-- [x] **§0** — Metadatos completos: producto, grupo, release `1.0.1`, sesiones S5+S6–S7, fecha 17/05/2026, integrante y branch declarados.
-- [x] **§1** — Las 41 tareas registradas incluyen integrante, categoría admitida y referencia verificable (archivo + sección).
-- [x] **§2** — La suma de tareas por integrante (41) coincide con el total del grupo (41). Tabla de distribución por 14 categorías incluida.
-- [x] **§3** — Aporte promedio (41.00 tareas/persona) y factor (1.00) calculados y documentados con su interpretación.
-- [x] **§4** — Los criterios estándar del módulo fueron aplicados sin relajación; las 5 adaptaciones específicas del grupo están documentadas explícitamente con justificación.
-- [x] **Nuevas tareas S6–S7** — Las 9 tareas adicionales (#33–#41) están registradas con categoría `AGENTS`, `Skill`, `Diagrama`, `FSD` y `Prompt` según corresponde.
+- [x] **§0** — Metadatos completos: producto, grupo, release `1.0.1`, sesiones S5+S6–S8, fecha 24/05/2026, integrante y branch declarados.
+- [x] **§1** — Las 45 tareas registradas incluyen integrante, categoría admitida y referencia verificable (archivo + sección).
+- [x] **§2** — La suma de tareas por integrante (45) coincide con el total del grupo (45). Tabla de distribución por 15 categorías incluida.
+- [x] **§3** — Aporte promedio (45.00 tareas/persona) y factor (1.00) calculados y documentados con su interpretación.
+- [x] **§4** — Los criterios estándar del módulo fueron aplicados sin relajación; las 6 adaptaciones específicas del grupo están documentadas explícitamente con justificación.
+- [x] **Tareas S6–S7** — Las 9 tareas (#33–#41) registradas con categoría `AGENTS`, `Skill`, `Diagrama`, `FSD` y `Prompt`.
+- [x] **Tareas S8** — Las 4 tareas (#42–#45) de diseño hexagonal, DTOs por capa hexagonal y registro de PR-HEX-001 + PR-DTO-001 incluidas en categorías `Arquitectura` y `Prompt`.
 - [ ] **Commit pendiente** — El archivo debe ser commiteado en el branch `release/1.0.1` con el hash de HEAD actualizado en §0 antes del cierre formal del release.

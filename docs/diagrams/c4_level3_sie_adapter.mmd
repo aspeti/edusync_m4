@@ -1,0 +1,43 @@
+C4Component
+  title SIE Adapter - Diagrama de Componentes (C4 Nivel 3) - EduSync v1.0
+
+  Person(secretaria, "Secretaria", "Wendy - solicita exportacion al SIE")
+  Container_Ext(api, "api-gateway", "Spring Boot 3.3 / Java 21", "ExportacionController invokes ExportarSIEUseCase")
+  Container_Ext(domain, "domain-layer", "Java 21 / Hexagonal Core", "ExportacionDomainService and SIEExportPort")
+  ContainerDb_Ext(db, "postgres-rls", "PostgreSQL 15 / RDS Multi-AZ", "exportacion_sie_estado, centralizador and audit_log with RLS")
+  Container_Ext(scheduler, "scheduler", "Spring Scheduler", "Runs SIERetryScheduler every 5 minutes")
+  System_Ext(sie, "SIE - Ministerio de Educacion Bolivia", "External official system. Receives academic export by RUDE")
+  System_Ext(secrets, "AWS Secrets Manager", "Stores SIE credentials and endpoint configuration")
+  System_Ext(cloudwatch, "CloudWatch", "Metrics and alarms for SIE failure rate and circuit breaker state")
+
+  Container_Boundary(sieAdapter, "sie-adapter - Java 21 / Spring RestClient / Resilience4j") {
+    Component(portImpl, "SIEHttpClientAdapter", "Spring RestClient + Resilience4j annotations", "Implements SIEExportPort. Sends POST requests to SIE with circuit breaker, timeout and retry. DA-05")
+    Component(payloadMapper, "SIEPayloadMapper", "Java mapper", "Maps Centralizador OFICIAL to payload that uses RUDE only. No name, surname, birth date or list position. BR-004, NFR-004")
+    Component(idempotency, "IdempotencyGuard", "Java service", "Checks exportacion_sie_estado before sending. Key = rude + periodo_id. Prevents duplicate records. NFR-011")
+    Component(stateWriter, "ExportacionEstadoWriter", "Spring Data JPA adapter", "Persists PENDIENTE, ENVIADO, FALLIDO, EXCLUIDO_SIN_RUDE and EXCLUIDO_NOTA_INCOMPLETA per record. RLS required. ADR-0005")
+    Component(cbConfig, "SIECircuitBreakerConfig", "Resilience4j config", "failureRateThreshold 50%, timeout 30s, retry 3 with exponential backoff. Parameters adjustable by periodo. NFR-012")
+    Component(errorMapper, "SIEErrorMapper", "Java mapper", "Maps 5xx, timeout and malformed response to domain-level export states without leaking PII in logs. NFR-003")
+    Component(metrics, "SIEMetricsPublisher", "Micrometer / CloudWatch", "Publishes success rate, failure rate, circuit state and retry count. Alerts when failure rate > 20% in 5 min.")
+    Component(wiremock, "SIEWireMockStub", "WireMock test adapter", "Simulates partial failure, timeout and recovery for SIERetryIT and CircuitBreakerTest.")
+  }
+
+  Rel(secretaria, api, "Starts export from UI", "HTTPS/REST [FSD-UC-004]")
+  Rel(api, domain, "Invokes ExportarSIEUseCase", "In-process / Port IN")
+  Rel(domain, portImpl, "Calls SIEExportPort for each eligible record", "In-process / Port OUT")
+  Rel(scheduler, domain, "Invokes ReintentarExportacionSIEUseCase", "In-process every 5 min")
+
+  Rel(portImpl, payloadMapper, "Builds SIE payload from official centralizador", "In-process")
+  Rel(payloadMapper, idempotency, "Provides rude + periodo_id key", "In-process [NFR-011]")
+  Rel(idempotency, stateWriter, "Reads current per-record export state", "JDBC / TLS 1.3 [DA-01]")
+  Rel(stateWriter, db, "Persists exportacion_sie_estado with tenant_id and RLS", "JDBC / TLS 1.3 [ADR-0001]")
+  Rel(portImpl, cbConfig, "Applies circuit breaker, timeout and retry policy", "Resilience4j [DA-05]")
+  Rel(portImpl, secrets, "Reads SIE endpoint and credentials", "AWS SDK / TLS 1.3")
+  Rel(portImpl, sie, "POST /registro using RUDE-only payload", "HTTPS/REST [BR-004]")
+  Rel(portImpl, errorMapper, "Normalizes HTTP/network failures", "In-process")
+  Rel(errorMapper, stateWriter, "Marks FALLIDO, PENDIENTE or EXCLUIDO states", "In-process")
+  Rel(portImpl, metrics, "Publishes outcome and circuit state", "Micrometer")
+  Rel(metrics, cloudwatch, "Sends SIE metrics and alarms", "CloudWatch API / TLS 1.3")
+  Rel(wiremock, portImpl, "Provides deterministic failure scenarios in tests", "HTTP local / test profile")
+  Rel(stateWriter, db, "Writes audit-visible export states; no RUDE in logs", "JDBC / TLS 1.3 [NFR-003]")
+
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")

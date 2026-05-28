@@ -36,8 +36,10 @@ owner: G-EduSync
 | Sección(es) del DTI a poblar | Usuario indica `§N` | `docs/DTI.md` existe v0.1 |
 | FSD vigente | `docs/fsd/FSD_EduSync.md` | v1.0 - disponible |
 | LFSD vigente | `docs/LFSD-EduSync.md` | v1.0 - disponible |
-| Stack autoritativo | `docs/AGENTS.md` §4 | Java 21, Spring Boot 3.3, PostgreSQL 15 |
-| C4 diagramas | `docs/diagrams/c4_level*.mmd` | Level 1 y Level 2 generados |
+| Stack autoritativo | `AGENTS.md` §4 | Java 21, Spring Boot 3.3, PostgreSQL 15 |
+| C4 diagramas | `docs/diagrams/c4_level*.mmd` | Level 1 y Level 2 generados; Level 3 pendiente |
+| DTI actual | `docs/DTI.md` | v0.2 — incluye §6.2 seams de descomposición |
+| ADRs formales | `docs/adr/0001-*.md` … `0006-*.md` | 6 ADRs aceptados (ADR-0001..ADR-0006) |
 
 Si falta el FSD: `"Necesito docs/fsd/FSD_EduSync.md antes de poblar el DTI."`
 
@@ -46,12 +48,13 @@ Si falta el FSD: `"Necesito docs/fsd/FSD_EduSync.md antes de poblar el DTI."`
 ## 3. Fuentes de verdad (orden de precedencia)
 
 1. `plantillas/DOCUMENTO_TECNICO_INICIAL_TEMPLATE (1).md` — estructura y frontmatter.
-2. `docs/LFSD-EduSync.md` — diseño técnico de bajo nivel (packages, DDL, APIs, secuencias).
-3. `docs/fsd/FSD_EduSync.md` — FSD-UC-001, 003, 004, 005, 009 + BR-001..BR-012 + NFRs.
-4. `docs/AGENTS.md` v0.2 — stack, agentes, guardrails, golden tests.
+2. **LFSD vigente** — listar `docs/`, leer el mayor N de `LFSD-EduSync[_vN].md` (actual: `LFSD-EduSync.md` = v1.0).
+3. **FSD vigente** — listar `docs/fsd/`, leer el mayor N de `FSD_EduSync[_vN].md` (actual: `FSD_EduSync.md` = v1.0).
+4. `AGENTS.md` v0.2 — stack, agentes, guardrails, golden tests.
 5. `docs/arquitectura_funcional_EduSync.md` — DA-01..DA-05.
-6. `docs/PROMPT_MAPPING.md` v0.6 — 20 prompt-contratos.
-7. `docs/brd/BRD_EduSync_v2.md`, `docs/mrd/MRD_EduSync.md`, `docs/prd/PRD_EduSync.md`.
+6. `docs/PROMPT_MAPPING.md` — última versión disponible (listar `docs/`, no asumir v fija).
+7. `docs/brd/BRD_EduSync_v2.md` (mayor N), `docs/mrd/MRD_EduSync.md`, `docs/prd/PRD_EduSync.md`.
+8. `docs/adr/0001-*.md`..`0006-*.md` — ADRs aceptados; respaldan §21 y §17.
 
 ---
 
@@ -71,7 +74,7 @@ Si falta el FSD: `"Necesito docs/fsd/FSD_EduSync.md antes de poblar el DTI."`
 | §3.5 Contenedores agénticos | [humano+máquina] | N/A — EduSync v1.0 no tiene agentes en runtime; IA solo en construccion |
 | §4 Modelo dominio | [humano+máquina] | 5 BCs, 14 entidades, DTOs del LFSD §4-§5 |
 | §5 Arch hexagonal | [humano+máquina] | Puertos y adaptadores del LFSD §2-§3 |
-| §6 Distribuida | [humano+máquina] | Monolito modular; circuit breaker SIE (DA-05); RLS PostgreSQL (DA-01) |
+| §6 Distribuida | [humano+máquina] | Monolito modular; circuit breaker SIE (DA-05); RLS PostgreSQL (DA-01); §6.2 seams: Seam 1 `calificaciones↔consolidacion` → Romper v2.0; Seam 2 `exportacion` → `edusync-sie-exporter` v2.0 (PR-DTI-SEAMS-001) |
 | §7 Asincrona | [humano+máquina] | Eventos: CalificacionRegistradaEvent, MateriaCerradaEvent, CentralizadorOficialEvent (DA-04) |
 | §8 Despliegue AWS | [humano+máquina] | ECS Fargate, RDS Multi-AZ, SQS, KMS, CloudFront |
 | §9 Capa IA | [humano+máquina] | AI-SDLC multi-agente SOLO en construccion; NO en runtime v1.0 |
@@ -82,7 +85,7 @@ Si falta el FSD: `"Necesito docs/fsd/FSD_EduSync.md antes de poblar el DTI."`
 | §14 Observabilidad | [humano+máquina] | audit_log append-only, AuditLogAspect AOP, structured logs, CloudWatch |
 | §16 Antipatrones | [humano] | floor() fuera de dominio, audit_log fuera de TX, tenant_id sin RLS |
 | §17 Trade-offs | [humano] | DA-01..DA-05 del LFSD |
-| §21 ADRs | [máquina] | DA-01..DA-05 -> pendientes de formalizacion en `docs/adr/` |
+| §21 ADRs | [máquina] | ADR-0001..ADR-0006 ya formalizados en `docs/adr/`; próximo: ADR-0007; candidatos: Strangler Fig, PDFBox, JWT rotation (ver skill `adr-edusync`) |
 | §22 Auditoria IA | [humano+máquina] | audit_log, AuditLogAspect, politica de retencion |
 | §23 Eval agentes | [humano+máquina] | 4 golden tests (FloorTest, SIEPayloadTest, VentanaTest, MultitenantTest) |
 
@@ -136,7 +139,7 @@ Si falta el FSD: `"Necesito docs/fsd/FSD_EduSync.md antes de poblar el DTI."`
 ```
 @dti-edusync §3 - Arquitectura de alto nivel
 
-Fuentes: docs/LFSD-EduSync.md §2, docs/AGENTS.md §4, docs/diagrams/c4_level2.mmd
+Fuentes: docs/LFSD-EduSync.md §2, AGENTS.md §4, docs/diagrams/c4_level2.mmd
 Decisiones: DA-01 (multitenancy RLS), DA-02 (hexagonal), DA-04 (async consolidacion)
 Proponer diff AGENTS.md si alguna decision cambia el stack.
 ```

@@ -1,8 +1,8 @@
 ---
 producto: "EduSync"
 grupo: "G-EduSync"
-version: v0.1
-fecha: "17/05/2026"
+version: v0.8
+fecha: "28/05/2026"
 status: borrador
 audiencia: dual
 stack:
@@ -15,24 +15,37 @@ stack:
   - "AWS SQS"
   - "AWS KMS"
 repo: "e:/Maestria/Modulo4/docs/edusync_m4"
-agents_md: "docs/AGENTS.md"
+agents_md: "AGENTS.md"
 artefactos_relacionados:
   brd: "docs/brd/BRD_EduSync_v2.md"
+  brd_vfinal: "docs/brd/BRD_EduSync_vFinal.md"
   mrd: "docs/mrd/MRD_EduSync.md"
+  mrd_vfinal: "docs/mrd/MRD_EduSync_vFinal.md"
   prd: "docs/prd/PRD_EduSync.md"
+  prd_vfinal: "docs/prd/PRD_EduSync_vFinal.md"
   fsd: "docs/fsd/FSD_EduSync.md"
+  fsd_vfinal: "docs/fsd/FSD_EduSync_vFinal.md"
   lfsd: "docs/LFSD-EduSync.md"
   prompt_mapping: "docs/PROMPT_MAPPING.md"
+  pocs: "docs/pocs/"
+  roadmap: "docs/roadmap.md"
 adrs_vigentes:
-  - "docs/adr/0001-multitenancy-rls.md"
-  - "docs/adr/0002-arquitectura-hexagonal.md"
-  - "docs/adr/0003-audit-log-append-only.md"
-  - "docs/adr/0004-async-consolidacion.md"
-  - "docs/adr/0005-resilience4j-sie.md"
+  - "docs/adr/0001-multitenancy-rls-postgresql.md"
+  - "docs/adr/0002-parametrizacion-reglas-normativas.md"
+  - "docs/adr/0003-persistencia-inmutable-audit-log.md"
+  - "docs/adr/0004-async-consolidacion-spring-events.md"
+  - "docs/adr/0005-resiliencia-integracion-sie-resilience4j.md"
+  - "docs/adr/0006-cloud-provider-y-estilo-de-despliegue.md"
 skills_aplicados:
   - ".cursor/skills/dti-edusync/SKILL.md"
   - ".cursor/skills/c4-edusync/SKILL.md"
   - ".cursor/skills/update-prompt-mapping/SKILL.md"
+  - ".cursor/skills/sync-doc-chain/SKILL.md"
+  - ".cursor/skills/adr-edusync/SKILL.md"
+  - ".cursor/skills/poc-runner-edusync/SKILL.md"
+  - ".cursor/skills/distributed-architecture-reviewer/SKILL.md"
+  - ".cursor/skills/edusync-skill-creator/SKILL.md"
+  - ".cursor/skills/materialize-prompt-files/SKILL.md"
 release_objetivo: "release/1.0.1"
 ---
 
@@ -51,19 +64,25 @@ release_objetivo: "release/1.0.1"
 |-------|-------|
 | Producto | EduSync |
 | Grupo | G-EduSync |
-| Versión | v0.1 |
-| Fecha | 17/05/2026 |
+| Versión | v0.8 |
+| Fecha | 28/05/2026 |
 | Arquitecto responsable | Rodrigo Aspeti |
 | Stakeholders | Directores, Docentes, Secretarias de unidades educativas bolivianas |
 | Estado | Borrador |
 | Repositorio | `e:/Maestria/Modulo4/docs/edusync_m4` |
 | Enlace al BRD v2 | `docs/brd/BRD_EduSync_v2.md` |
+| Alias BRD vFinal | `docs/brd/BRD_EduSync_vFinal.md` (`release/2.0.0`) |
 | Enlace al MRD | `docs/mrd/MRD_EduSync.md` |
+| Alias MRD vFinal | `docs/mrd/MRD_EduSync_vFinal.md` (`release/2.0.0`) |
 | Enlace al PRD | `docs/prd/PRD_EduSync.md` |
+| Alias PRD vFinal | `docs/prd/PRD_EduSync_vFinal.md` (`release/2.0.0`) |
 | Enlace al FSD | `docs/fsd/FSD_EduSync.md` |
+| Alias FSD vFinal | `docs/fsd/FSD_EduSync_vFinal.md` (`release/2.0.0`) |
 | Enlace al LFSD | `docs/LFSD-EduSync.md` |
-| Enlace a `AGENTS.md` | `docs/AGENTS.md` |
-| Enlace a `PROMPT_MAPPING.md` | `docs/PROMPT_MAPPING.md` |
+| Enlace a `AGENTS.md` | `AGENTS.md` v0.11 |
+| Enlace a `PROMPT_MAPPING.md` | `docs/PROMPT_MAPPING.md` v1.9 |
+| Carpeta de POCs | `docs/pocs/` (POC-01, POC-02) |
+| Hoja de ruta canónica | `docs/roadmap.md` v0.1 (§19 es su espejo resumen) |
 
 ---
 
@@ -216,6 +235,10 @@ C4Container
 > Fuente: `docs/diagrams/c4_level2.mmd` (generado con skill `c4-edusync`).
 
 ### 3.3 Diagrama C4 – Nivel 3 (Componentes) del contenedor crítico: `API Gateway`
+
+> **Fuente canónica**: `docs/diagrams/c4_level3_api_gateway.mmd` (cabecera Mermaid `C4Component`) + `docs/diagrams/c4_level3_api_gateway.md` (espejo narrativo IG-09) — generados por `PR-C4-003` (skill `c4-edusync` v0.3.0). El bloque de abajo es una **vista simplificada `flowchart LR`** embebida en el DTI para lectura rápida; cualquier divergencia se resuelve contra el archivo canónico.
+>
+> **Level 3 complementarios**: `docs/diagrams/c4_level3_domain_layer.mmd` + `.md` (`PR-C4-004`) documenta el núcleo hexagonal puro; `docs/diagrams/c4_level3_sie_adapter.mmd` + `.md` (`PR-C4-005`) documenta la integración SIE resiliente. El despliegue AWS vive en `docs/diagrams/deployment_aws.mmd` + `.md` (`PR-C4-006`).
 
 ```mermaid
 flowchart LR
@@ -381,6 +404,8 @@ sequenceDiagram
 
 ### 5.3 Diagrama de puertos y adaptadores
 
+> **Fuente canónica Level 3**: `docs/diagrams/c4_level3_domain_layer.mmd` + `docs/diagrams/c4_level3_domain_layer.md` (PR-C4-004). El bloque siguiente es la vista resumida embebida en el DTI.
+
 ```mermaid
 flowchart LR
   subgraph in[Adapters IN]
@@ -417,6 +442,8 @@ flowchart LR
 EduSync v1.0 es un **monolito modular** desplegado en ECS Fargate. No aplica arquitectura de microservicios en esta versión.
 
 ### 6.1 Patrones de resiliencia aplicados
+
+> **Fuente canónica Level 3 SIE**: `docs/diagrams/c4_level3_sie_adapter.mmd` + `docs/diagrams/c4_level3_sie_adapter.md` (PR-C4-005). El diagrama detalla `SIEHttpClientAdapter`, payload RUDE-only, idempotencia, estado por registro, circuit breaker, métricas y WireMock.
 
 | Patrón | Dónde | Configuración |
 |--------|-------|---------------|
@@ -548,6 +575,8 @@ stateDiagram-v2
 
 ### 8.2 Diagrama de despliegue
 
+> **Fuente canónica Deployment AWS**: `docs/diagrams/deployment_aws.mmd` + `docs/diagrams/deployment_aws.md` (PR-C4-006). El bloque siguiente es una vista resumida; el archivo canónico usa cabecera `C4Deployment` y cubre CloudFront/S3, ALB/WAF, ECS Fargate, RDS Multi-AZ, SQS FIFO/DLQ, KMS, Secrets Manager, CloudWatch, CloudTrail y Terraform.
+
 ```mermaid
 flowchart LR
   U[Usuario Angular SPA] --> CF[CloudFront\nS3 SPA]
@@ -591,7 +620,7 @@ flowchart LR
 
 | Agente | Rol | Herramientas | Guardrails | Observabilidad |
 |--------|-----|-------------|------------|----------------|
-| `docs-agent` | Mantiene cadena documental BRD→DTI | `read`, `edit` | Solo opera en `docs/` | `PROMPT_MAPPING.md` v0.6 |
+| `docs-agent` | Mantiene cadena documental BRD→DTI→roadmap→aportes→vFinal | `read`, `edit` | Solo opera en `docs/` | `PROMPT_MAPPING.md` v1.9 |
 | `arch-agent` | Diseña ADRs y diagramas C4 | `read`, `edit` | Requiere aprobación humana para todo ADR | `docs/adr/` |
 | `dev-agent` | Implementa FSD-UC-001..009 | `read`, `edit`, `run-tests` | MUST NOT tocar `infra/`; MUST usar `floor()` en dominio | `mvn test` + golden tests CI |
 | `qa-agent` | Verifica invariantes y cobertura | `read`, `query-db` (SELECT) | Solo lectura | Cobertura Jacoco > 80% |
@@ -620,19 +649,24 @@ flowchart LR
 
 ## 10. Estrategia de Prompt Mapping `[máquina]`
 
-> Documento completo: `docs/PROMPT_MAPPING.md` v0.6 (20 prompt-contratos).
+> Documento completo: `docs/PROMPT_MAPPING.md` v1.9 (37 prompt-contratos materializados en `prompts/PR-*.md`, incluye `PR-ROADMAP-001`, `PR-APORTES-001` y `PR-VFINAL-001`).
 
 | Área | Prompts | IDs |
 |------|---------|-----|
 | Arquitectura funcional | Diseño de UCs y DAs | `PR-ARCH-001`, `PR-ARCH-002` |
-| BRD | Business Requirements | `PR-BRD-001` |
+| BRD | Business Requirements | `PR-BRD-001`, `PR-BRD-002` |
 | MRD | Market Requirements | `PR-MRD-001` |
 | PRD | Product Requirements | `PR-PRD-001` |
-| FSD | Functional Specification | `PR-FSD-001`, `PR-FSD-002`, `PR-FSD-003` |
+| FSD | Functional Specification | `PR-FSD-001` |
 | LFSD | Low-Level Specification | `PR-LFSD-001` |
-| Diagramas | Mermaid stateDiagram, C4 | `PR-DIAG-001`, `PR-DIAG-002`, `PR-C4-001`, `PR-C4-002` |
+| UC | Contratos de casos de uso | `PR-UC-001`..`PR-UC-005`, `PR-UC-009` |
+| ADR | Decisiones arquitectónicas | `PR-ADR-001`..`PR-ADR-005` |
+| AUD / INF | Auditoría e informes | `PR-AUD-001`, `PR-INF-001` |
+| Diagramas | Mermaid stateDiagram, C4 Level 1/2/3 y Deployment AWS | `PR-DIAG-001`, `PR-DIAG-002`, `PR-C4-001`..`PR-C4-006` |
+| HEX / DTO | Hexagonal + DTOs | `PR-HEX-001`, `PR-DTO-001` |
+| DTI | Documento Técnico Inicial | `PR-DTI-001`, `PR-DTI-SEAMS-001` |
+| POC | POCs documentales (RLS, CB SIE) | `PR-POC-001`, `PR-POC-002` |
 | Skills | Cursor/Claude skills | `PR-SKILL-001`, `PR-SKILL-002`, `PR-SKILL-003` |
-| APORTES | Informe contribuciones | `PR-APORTES-001` |
 
 ---
 
@@ -668,6 +702,7 @@ flowchart LR
 - **Criterio de éxito medible**: `MultitenantTest.no_cross_tenant_data` pasa en 100% de 1000 requests concurrentes de 2 tenants distintos; p95 de INSERT/SELECT < 505 ms.
 - **Alcance**: 2 tablas (`calificacion`, `centralizador`), 2 tenants, 1000 requests mixtos, PostgreSQL 15 real via Testcontainers.
 - **Cronograma**: 3 días.
+- **Ficha y evidencia**: `docs/pocs/POC-01-rls-multitenancy/` (README, runbook, evidencia/) — generada por `PR-POC-001` y ejecutable con el skill `poc-runner-edusync`.
 - **Resultado**: Pendiente de ejecución.
 
 ### 12.2 POC-02: Circuit Breaker SIE con Resilience4j
@@ -677,6 +712,7 @@ flowchart LR
 - **Criterio de éxito medible**: En 100 llamadas simuladas con 60% de timeout, el circuit breaker abre correctamente; el scheduler recupera el 100% de exportaciones `PENDIENTE` en < 15 min; `CircuitBreakerTest` pasa.
 - **Alcance**: `SIEHttpClient` + `SIERetryScheduler`, WireMock para simular SIE, 100 requests.
 - **Cronograma**: 2 días.
+- **Ficha y evidencia**: `docs/pocs/POC-02-circuit-breaker-sie/` (README, runbook, evidencia/) — generada por `PR-POC-002` y ejecutable con el skill `poc-runner-edusync`.
 - **Resultado**: Pendiente de ejecución.
 
 ---
@@ -748,9 +784,15 @@ flowchart LR
 | `.cursor/skills/dti-edusync/` | Poblar y mantener este DTI | dev | G-EduSync |
 | `.cursor/skills/c4-edusync/` | Generar diagramas C4 | dev | G-EduSync |
 | `.cursor/skills/update-prompt-mapping/` | Mantener PROMPT_MAPPING.md | dev | G-EduSync |
+| `.cursor/skills/sync-doc-chain/` | Propagar cambios atómicos BRD→PRD→FSD→ADR→DTI→diagramas | dev | G-EduSync |
+| `.cursor/skills/adr-edusync/` | Crear y mantener ADRs en `docs/adr/` | dev | G-EduSync |
+| `.cursor/skills/poc-runner-edusync/` | Bootstrappear scaffold + ejecutar POC-01 y POC-02 con métricas | dev | G-EduSync |
+| `.cursor/skills/distributed-architecture-reviewer/` | Auditar arquitectura distribuida contra checklist | dev | G-EduSync |
+| `.cursor/skills/edusync-skill-creator/` | Generar nuevos SKILL.md siguiendo plantilla EduSync | dev | G-EduSync |
+| `.cursor/skills/materialize-prompt-files/` | Backfill de archivos `prompts/PR-*.md` desde PROMPT_MAPPING | dev | G-EduSync |
 | `AGENTS.md` sincronía | Convenciones comunes stack + guardrails | dev | G-EduSync |
 
-> Todos los skills declarados aquí viven en `.cursor/skills/` del repo.
+> Todos los skills declarados aquí viven en `.cursor/skills/` del repo. Cobertura actual: **30 skills** (6 EduSync nativos + 19 canónicos Módulo 4 + 5 derivados EduSync). Inventario detallado en `AGENTS.md §3` y en la lista `skills_aplicados` del frontmatter de este DTI.
 
 ### 15.3 Estrategia de release de agentes IA — N/A
 
@@ -800,10 +842,14 @@ EduSync v1.0 no tiene agentes IA en runtime. Los agentes del AI-SDLC (§0.1) no 
 
 ## 19. Roadmap técnico `[humano]`
 
-- **Ahora (Módulo 4 — release/1.0.1)**: DTI completo + 2 POCs (RLS multitenancy, circuit breaker SIE) + 3 ADRs formalizados.
-- **Siguiente módulo (release/1.1.0)**: Implementacion core hexagonal — FSD-UC-001..005, 009; PostgreSQL 15 con RLS; API Gateway JWT + RBAC; Angular SPA por rol.
-- **+2 módulos (release/1.2.0)**: SQS para Event Bus async (reemplazar Spring Events); Scheduler SIE retry; Jacoco > 80%; pipeline CI/CD completo.
-- **Producción (release/2.0.0)**: ECS Fargate; RDS Multi-AZ; KMS PII; onboarding primeras 3 unidades educativas Bolivia.
+> **Fuente canónica detallada**: `docs/roadmap.md` v0.1 (4 horizontes con Gantt Mermaid, tablas de hitos por FSD-UC/ADR/POC, lecciones del ciclo, Definition of Done, métricas BRD/NFR, riesgos y compromisos). Este §19 es su **espejo resumen** y se sincroniza automáticamente vía el skill `sync-doc-chain` cuando el roadmap cambia.
+
+- **Ahora (Módulo 4 — `release/1.0.1` / `release/2.0.0` de defensa)**: DTI v0.6 completo + 6 ADRs aprobados + 2 POCs definidas (pendientes de ejecución) + 10 diagramas Mermaid versionados + 35 prompt-contratos. La entrega evaluable de la defensa final es `release/2.0.0` (regla de la rúbrica del Módulo 4).
+- **Siguiente módulo (`release/1.1.0`)**: Implementación core hexagonal — FSD-UC-001/002/003/009; PostgreSQL 15 con RLS productivo; API Gateway JWT + RBAC; Angular SPA por rol; cobertura Jacoco >= 80 % en `domain/` + `application/`. **Gated** por POC-01 y POC-02 verdes.
+- **+2 módulos (`release/1.2.0`)**: SQS FIFO + DLQ reemplazan Spring Events (ADR-0004); FSD-UC-004/005/006/007 productivos; particionado de `audit_log`; cifrado PII end-to-end con KMS; ADR-0007 Strangler Fig sobre seam `calificaciones ↔ consolidacion` cerrado como Propuesto o Rechazado con datos reales.
+- **Producción (`release/2.0.0+`)**: ECS Fargate Multi-AZ + RDS Multi-AZ + KMS PII en prd; onboarding de las 3 primeras unidades educativas bolivianas; KPI-01 < 10 min y KPI-02 = 0 % validados en cierre trimestral piloto; RTO <= 4 h y RPO <= 1 h ejercitados semestralmente.
+
+> Ver `docs/roadmap.md §6` para las 9 lecciones del ciclo (L-01..L-09), `§7` para métricas de salud, `§8` para riesgos y `§9` para los 5 compromisos hacia `release/1.1.0`.
 
 ---
 
@@ -834,24 +880,30 @@ EduSync v1.0 no tiene agentes IA en runtime. Los agentes del AI-SDLC (§0.1) no 
 - [Resilience4j](https://resilience4j.readme.io)
 - [AWS Well-Architected Framework](https://aws.amazon.com/architecture/well-architected/)
 - `docs/fsd/FSD_EduSync.md` v1.0
-- `docs/LFSD-EduSync.md` v1.0
-- `docs/AGENTS.md` v0.2
+- `docs/LFSD-EduSync.md` v1.0.1
+- `AGENTS.md` v0.9 (movido a raíz del repo en v0.9 según rúbrica del Módulo 4)
+- `docs/PROMPT_MAPPING.md` v1.9 (37 prompt-contratos, incluye `PR-ROADMAP-001`, `PR-APORTES-001`, `PR-VFINAL-001`)
+- `docs/roadmap.md` v0.1 (hoja de ruta canónica; §19 es su espejo resumen)
+- `docs/pocs/POC-01-rls-multitenancy/README.md` v0.1
+- `docs/pocs/POC-02-circuit-breaker-sie/README.md` v0.1
+- `docs/adr/0001..0006-*.md` (6 ADRs aprobados)
 
 ---
 
 ## 21. Registro de Decisiones Arquitectónicas (ADR) `[máquina]`
 
-> Los ADRs formales se crean en `docs/adr/` usando `plantillas/ADR_TEMPLATE.md`. Los DA-01..DA-05 de `docs/arquitectura_funcional_EduSync.md` son la fuente provisional hasta que los ADRs formales sean creados.
+> Los ADRs formales viven en `docs/adr/NNNN-*.md`, creados con `plantillas/ADR_TEMPLATE.md` y mantenidos por el skill `.cursor/skills/adr-edusync/`. La columna **Trazabilidad** referencia los DA-NN originales de `docs/arquitectura_funcional_EduSync.md`.
 
-| ADR | Titulo | Estado | Fecha | Fuente provisional |
-|-----|--------|--------|-------|--------------------|
-| 0001 | Multitenancy con PostgreSQL 15 Row-Level Security | Aceptada | 17/05/2026 | DA-01 en `arquitectura_funcional_EduSync.md` |
-| 0002 | Arquitectura hexagonal (Ports & Adapters) en `domain/` | Aceptada | 17/05/2026 | DA-02 en `arquitectura_funcional_EduSync.md` |
-| 0003 | Auditoria append-only en `audit_log` en misma TX | Aceptada | 17/05/2026 | DA-03 en `arquitectura_funcional_EduSync.md` |
-| 0004 | Consolidacion asincrona via Spring Events post-commit | Aceptada | 17/05/2026 | DA-04 en `arquitectura_funcional_EduSync.md` |
-| 0005 | Resiliencia SIE con Resilience4j circuit breaker + scheduler | Aceptada | 17/05/2026 | DA-05 en `arquitectura_funcional_EduSync.md` |
+| ADR | Titulo | Estado | Fecha | Archivo | Trazabilidad |
+|-----|--------|--------|-------|---------|--------------|
+| 0001 | Multitenancy con PostgreSQL 15 Row-Level Security | Aceptada | 17/05/2026 | `docs/adr/0001-multitenancy-rls-postgresql.md` | DA-01, NFR-010, POC-01 (§12.1) |
+| 0002 | Parametrización de reglas normativas (`floor`, ventana, dimensiones) | Aceptada | 17/05/2026 | `docs/adr/0002-parametrizacion-reglas-normativas.md` | BR-001..BR-002, BR-008, BR-009, NFR-005 |
+| 0003 | Persistencia inmutable en `audit_log` (append-only en misma TX) | Aceptada | 17/05/2026 | `docs/adr/0003-persistencia-inmutable-audit-log.md` | DA-03, BR-010, NFR-006 |
+| 0004 | Consolidación asíncrona vía Spring `ApplicationEventPublisher` post-commit | Aceptada | 17/05/2026 | `docs/adr/0004-async-consolidacion-spring-events.md` | DA-04, FSD-UC-003 |
+| 0005 | Resiliencia SIE con Resilience4j (circuit breaker + retry scheduler) | Aceptada | 17/05/2026 | `docs/adr/0005-resiliencia-integracion-sie-resilience4j.md` | DA-05, NFR-011, NFR-012, POC-02 (§12.2) |
+| 0006 | Cloud provider AWS + estilo de despliegue (ECS Fargate + RDS Multi-AZ) | Aceptada | 28/05/2026 | `docs/adr/0006-cloud-provider-y-estilo-de-despliegue.md` | §8 Mapeo AWS, NFR-002 |
 
-> **Siguiente paso**: Crear `docs/adr/0001-multitenancy-rls.md` .. `0005-resilience4j-sie.md` con `plantillas/ADR_TEMPLATE.md`.
+> **Estado actual**: 6 ADRs creados (`0001`..`0006`). El §6.2 (Seams de descomposición) y la ruta a microservicios (Strangler Fig) se documentarán en un ADR-0007 futuro cuando se ejecuten las POCs y se valide el flujo de extracción de `exportacion` y `consolidacion`.
 
 ---
 
@@ -937,22 +989,25 @@ EduSync v1.0 no tiene agentes IA en runtime. Los agentes del AI-SDLC (§0.1) no 
 - [x] Trade-offs con 5 decisiones (§17)
 - [x] Riesgos tecnicos (§18)
 - [x] Roadmap tecnico (§19)
-- [x] 5 ADRs registrados (provisionalmente como DA-01..DA-05) (§21)
-- [x] AGENTS.md sincronizado con este DTI (§0.1, §3.5, §9)
-- [x] PROMPT_MAPPING.md referenciado (§10)
+- [x] 6 ADRs registrados como archivos formales en `docs/adr/0001..0006-*.md` (§21)
+- [x] AGENTS.md v0.8 sincronizado con este DTI (§0.1, §3.5, §9)
+- [x] PROMPT_MAPPING.md v1.9 (37 prompt-contratos) referenciado (§10)
+- [x] `docs/roadmap.md` v0.1 declarado fuente canónica del horizonte; §19 es su espejo resumen
 - [x] §0.1 Rol agentes IA en SDLC poblado (§0.1)
 - [x] §3.5 Contenedores agénticos marcado N/A con justificacion (§3.5)
 - [x] §15.2 Integraciones agénticas de desarrollo declaradas (§15.2)
 - [x] §15.3 Estrategia release agentes IA marcada N/A con justificacion (§15.3)
 - [x] §22 Auditoria IA con campos + politica + responsable (§22)
 - [x] §23 Eval con guardrails tests ejecutables en CI (§23)
-- [ ] ADRs formales creados en `docs/adr/` (0001..0005) — pendiente
-- [ ] POCs ejecutadas con resultado documentado — pendiente
+- [x] ADRs formales creados en `docs/adr/` (0001..0006)
+- [x] Fichas de POCs creadas en `docs/pocs/POC-01-rls-multitenancy/` y `docs/pocs/POC-02-circuit-breaker-sie/` (PR-POC-001, PR-POC-002)
+- [ ] POCs ejecutadas con métricas reales — pendiente (correr `poc-runner-edusync`)
 - [ ] Suite `tests/guardrails/` implementada — pendiente con codigo fuente
+- [ ] ADR-0007 (Strangler Fig microservicios) — pendiente hasta validación de POCs
 
 ---
 
-*DTI generado con skill `dti-edusync` v0.1.0 | Prompt: `PR-DTI-001` | Agente: `docs-agent` | Modelo: claude-sonnet-4.6 | Fecha: 17/05/2026*
+*DTI generado con skill `dti-edusync` v0.1.0 | Prompts: `PR-DTI-001`, `PR-DTI-SEAMS-001`, `PR-ROADMAP-001`, `PR-VFINAL-001` | Sincronizado con skill `sync-doc-chain` v0.1.1 | Agente: `docs-agent` | Modelo: claude-sonnet-4.6 | Fecha de última sincronización: 28/05/2026 (v0.8)*
 
 ---
 
@@ -962,3 +1017,9 @@ EduSync v1.0 no tiene agentes IA en runtime. Los agentes del AI-SDLC (§0.1) no 
 |---------|------------|----------------|---------------------------------------------------------------------|
 | v0.1    | 17/05/2026 | Rodrigo Aspeti | Versión inicial — §0–§23, C4 L1/L2/L3, 2 POCs, 5 ADRs provisionales |
 | v0.2    | 28/05/2026 | Rodrigo Aspeti | §6.2 Seams de descomposición — Tarea 1 Módulo 4 (PR-DTI-SEAMS-001) |
+| v0.3    | 28/05/2026 | Rodrigo Aspeti | Sincronización con estado real del repo (aplicada vía `sync-doc-chain`): frontmatter `version v0.1→v0.3` + `fecha 17/05→28/05`; `adrs_vigentes` corregido a nombres reales de archivo + ADR-0006 agregado (`docs/adr/0001..0006-*.md`); `skills_aplicados` ampliado de 3 a 9 (incluye `sync-doc-chain`, `adr-edusync`, `poc-runner-edusync`, `distributed-architecture-reviewer`, `edusync-skill-creator`, `materialize-prompt-files`); §0 tabla metadatos actualizada (`AGENTS.md v0.4`, `PROMPT_MAPPING.md v1.3`, nueva fila `docs/pocs/`); §9.2 `PROMPT_MAPPING v0.6 → v1.3`; §10 tabla ampliada a 14 áreas (UC, ADR, AUD, INF, HEX, DTO, DTI, POC); §12.1 / §12.2 referencia a fichas en `docs/pocs/POC-01-*` y `POC-02-*` (PR-POC-001/002); §15.2 ampliado con 6 skills nuevos + nota de cobertura (30 skills totales); §17 referencias actualizadas (`AGENTS v0.4`, `PROMPT_MAPPING v1.3`, `LFSD v1.0.1`, fichas POC, 6 ADRs); §21 tabla ADR convertida a archivos reales con columna `Archivo` y `Trazabilidad`, eliminada nota "siguiente paso: crear ADRs" porque ya están creados; checklist actualizado (6 ADRs ✓, fichas POC ✓, ADR-0007 Strangler Fig pendiente). Sin cambios normativos en BR/DA/NFR/UC. |
+| v0.4    | 28/05/2026 | Rodrigo Aspeti | Incorporación de C4 Level 3 del contenedor `api-gateway` (aplicada vía `sync-doc-chain` minor bump por nuevo diagrama): §3.3 ahora declara como **fuente canónica** `docs/diagrams/c4_level3_api_gateway.mmd` (cabecera `C4Component`) + `docs/diagrams/c4_level3_api_gateway.md` (espejo IG-09) generados por `PR-C4-003`; el bloque `flowchart LR` embebido en §3.3 queda como vista simplificada de lectura rápida; referencias `PROMPT_MAPPING v1.3 → v1.4` (cabecera, índice, flowchart, matriz `arch-agent`, contrato inline, trazabilidad e historial; 30 → 31 prompt-contratos). Sin cambios normativos en BR/DA/NFR/UC. |
+| v0.5    | 28/05/2026 | Rodrigo Aspeti | Incorporación en tanda de 3 diagramas canónicos (aplicada vía `sync-doc-chain` minor bump): `docs/diagrams/c4_level3_domain_layer.mmd` + `.md` (`PR-C4-004`), `docs/diagrams/c4_level3_sie_adapter.mmd` + `.md` (`PR-C4-005`) y `docs/diagrams/deployment_aws.mmd` + `.md` (`PR-C4-006`). §3.3 referencia los Level 3 complementarios; §5.3 declara fuente canónica para el núcleo hexagonal; §6.1 declara fuente canónica SIE; §8.2 declara fuente canónica Deployment AWS; referencias `PROMPT_MAPPING v1.4 → v1.5` (31 → 34 prompt-contratos) y `AGENTS v0.6 → v0.7`. Sin cambios normativos en BR/DA/NFR/UC. |
+| v0.6    | 28/05/2026 | Rodrigo Aspeti | Incorporación del roadmap canónico (aplicada vía `dti-edusync` con sincronía atómica DTI ↔ AGENTS ↔ PROMPT_MAPPING): frontmatter `version v0.5 → v0.6` y nueva clave `artefactos_relacionados.roadmap: "docs/roadmap.md"`; §0 metadatos actualiza `AGENTS.md v0.7 → v0.8` y `PROMPT_MAPPING.md v1.5 → v1.6` y agrega fila "Hoja de ruta canónica"; §19 reescrita como **espejo resumen** de `docs/roadmap.md` v0.1, con 4 horizontes alineados a los release tags y referencias cruzadas a §6/§7/§8/§9 del roadmap; §17 Referencias actualizadas (incorpora `docs/roadmap.md`); checklist marca §19 + roadmap como creados; pie y changelog actualizados. Generado por `PR-ROADMAP-001`. Sin cambios normativos en BR/DA/NFR/UC. |
+| v0.7    | 28/05/2026 | Rodrigo Aspeti | **Move físico de `AGENTS.md` a la raíz** (cumplimiento rúbrica del Módulo 4 y convención GitHub/Cursor): frontmatter `version v0.6 → v0.7` y `agents_md: "docs/AGENTS.md" → "AGENTS.md"`; §0 metadatos actualiza `Enlace a AGENTS.md` a `AGENTS.md v0.9 (movido a raíz)`; §15.2 referencia a inventario de skills `docs/AGENTS.md §3 → AGENTS.md §3`; §17 Referencias actualizadas a `AGENTS.md v0.9` con nota del move. Las menciones de `docs/AGENTS.md` que persisten en este changelog (v0.3..v0.6) se conservan **intencionalmente** porque registran el estado histórico del repo en aquellos cortes. Sin cambios normativos en BR/DA/NFR/UC. |
+| v0.8    | 28/05/2026 | Rodrigo Aspeti | Sincronización con `AGENTS.md` v0.11 + `docs/PROMPT_MAPPING.md` v1.9 tras freeze documental `PR-VFINAL-001`: frontmatter `version v0.7 → v0.8` y `artefactos_relacionados` agrega aliases `brd_vfinal`, `mrd_vfinal`, `prd_vfinal`, `fsd_vfinal`; §0 metadatos añade filas Alias BRD/MRD/PRD/FSD vFinal; §9.2 y §10 actualizan PROMPT_MAPPING a v1.9 (37 prompt-contratos); §17 Referencias actualiza `PR-VFINAL-001`. Los aliases `_vFinal` son snapshots congelados con banner para `release/2.0.0`; no cambian contenido normativo de BRD/MRD/PRD/FSD. |

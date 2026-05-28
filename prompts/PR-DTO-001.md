@@ -44,7 +44,7 @@ y domain (eventos de dominio publicados). Por cada UC producir:
 - UCs objetivo: FSD-UC-001 (registro calificacion), FSD-UC-003 (consolidacion),
   FSD-UC-005 (autorizacion correccion retroactiva). Fuente: docs/fsd/FSD_EduSync.md.
 - Estructura de paquetes hexagonal: docs/arquitectura_hexagonal_EduSync.md §1.1.
-- Convenciones de codigo: docs/AGENTS.md §5 (Java 21, Records, ingles, Bean Validation).
+- Convenciones de codigo: AGENTS.md §5 (Java 21, Records, ingles, Bean Validation).
 - BRs activas: BR-001 (RBAC), BR-002 (rango), BR-003 (floor), BR-004 (RUDE),
   BR-005 (append-only), BR-007 (parametros inmutables), BR-008 (calculo en dominio),
   BR-009 (ventana 1-72h), BR-010 (audit en TX), BR-011 (anual con 3 cerrados).

@@ -7,7 +7,7 @@
 | Campo | Valor |
 |-------|-------|
 | **Producto** | EduSync |
-| **Grupo** | G013 |
+| **Grupo** | G-EduSync |
 | **Versión del documento** | v1.0 |
 | **Fecha** | 15/05/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
@@ -935,7 +935,7 @@ Paso 13 → audit_log entry + notificación
 
 | Versión | Fecha | Autor | Cambio |
 |---------|-------|-------|--------|
-| v1.0 | 15/05/2026 | Equipo G013 — Rodrigo Aspeti | Creación inicial del FSD en modo FSD Clásico. Basado en BRD v2.0, MRD v1.0, PRD v1.0, arquitectura_funcional_EduSync.md (10 UCs, 5 DAs) y diagramas de estado del Docente (18 estados) y Director (23 estados). 5 FSD-UC con flujos completos (UC-001, UC-003, UC-004, UC-005, UC-009), 12 reglas de negocio, modelo ER con 16 entidades, diccionario de datos completo, 3 prompt-contratos con invariantes y failure modes, 16 NFRs con umbrales y verificación, trazabilidad MRD→PRD→FSD, plan de pruebas y glosario. |
+| v1.0 | 15/05/2026 | Equipo G-EduSync — Rodrigo Aspeti | Creación inicial del FSD en modo FSD Clásico. Basado en BRD v2.0, MRD v1.0, PRD v1.0, arquitectura_funcional_EduSync.md (10 UCs, 5 DAs) y diagramas de estado del Docente (18 estados) y Director (23 estados). 5 FSD-UC con flujos completos (UC-001, UC-003, UC-004, UC-005, UC-009), 12 reglas de negocio, modelo ER con 16 entidades, diccionario de datos completo, 3 prompt-contratos con invariantes y failure modes, 16 NFRs con umbrales y verificación, trazabilidad MRD→PRD→FSD, plan de pruebas y glosario. |
 
 ---
 

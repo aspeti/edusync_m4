@@ -1,0 +1,74 @@
+C4Container
+  title EduSync - Diagrama de Contenedores (C4 Nivel 2)
+
+  %% -- Actores externos al sistema --------------------------------------------
+  Person(director, "Director", "Jeanneth - configura gestiones,\nhabilita periodos, autoriza correcciones")
+  Person(docente, "Docente", "Marcela - carga calificaciones\npor dimension y materia")
+  Person(secretaria, "Secretaria", "Wendy - gestiona nominas\ny exporta al SIE")
+
+  %% -- Sistema EduSync --------------------------------------------------------
+  System_Boundary(edusync, "EduSync - Plataforma SaaS B2B Multitenant") {
+
+    Container(spa, "Angular SPA", "Angular 17, TypeScript",
+      "Interfaz web reactiva por rol.\nFormularios reactivos con validacion\nen tiempo real. Un tenant por sesion.")
+
+    Container(api, "API Gateway", "Spring Boot 3.3, Java 21\nAWS ECS Fargate / puerto 443",
+      "Unico punto de entrada REST.\nJWT + RBAC por rol. RLS injection\npor tenant. Rate limiting.\n[FSD-UC-001, 003, 004, 005, 009]")
+
+    Container(domain, "Domain Layer", "Java 21, arquitectura hexagonal\nsin dependencias de Spring/JPA",
+      "Logica de negocio pura:\ncalificaciones, consolidacion,\ncorrecciones retroactivas, periodos.\n[DA-02, BR-001..BR-012]")
+
+    ContainerDb(db, "PostgreSQL 15", "AWS RDS Multi-AZ\nJDBC/TLS, Row-Level Security",
+      "Persistencia principal.\nAislamiento multitenant por RLS:\nSET LOCAL app.tenant_id antes de TX.\nTablas: calificacion, centralizador,\naudit_log (append-only). [DA-01, DA-03]")
+
+    Container(queue, "Event Bus", "Spring Events (sincrono)\n-> AWS SQS (asincrono v1.1+)",
+      "Desacopla cierre de materia de\nconsolidacion de centralizadores.\nIdempotencia garantizada por\nperiodo_id + materia_id. [DA-04]")
+
+    Container(sieadapter, "SIE Adapter", "Java 21, Resilience4j\nHTTPS/REST",
+      "Adaptador de integracion SIE.\nCircuit breaker + timeout 30 s\n+ backoff exponencial.\nIdempotencia por rude+periodo_id.\n[DA-05, FSD-UC-004]")
+
+    Container(scheduler, "Scheduler", "Spring @Scheduled\nIn-process",
+      "VentanaExpiracionScheduler:\nrevoca autorizaciones expiradas (BR-009).\nSIERetryScheduler:\nreintenta exportaciones fallidas c/5 min.")
+  }
+
+  %% -- Sistemas externos ------------------------------------------------------
+  System_Ext(sie, "SIE - Ministerio de Educacion Bolivia",
+    "Receptor de exportaciones academicas.\nIdentifica estudiantes por RUDE.\nCumplimiento Ley 070 Avelino Sinani.")
+
+  System_Ext(kms, "AWS KMS",
+    "Cifrado en reposo de PII:\nRUDE, nombre completo, fecha nacimiento.\n[NFR-007, alias/edusync-pii-key]")
+
+  %% -- Relaciones actores -> SPA ----------------------------------------------
+  Rel(director, spa, "Configura periodos,\nautoriza correcciones", "HTTPS")
+  Rel(docente, spa, "Carga calificaciones\npor dimension", "HTTPS")
+  Rel(secretaria, spa, "Exporta al SIE,\ngestiona nominas", "HTTPS")
+
+  %% -- SPA -> API -------------------------------------------------------------
+  Rel(spa, api, "Llamadas REST autenticadas\ncon Bearer JWT", "HTTPS/REST")
+
+  %% -- API -> Domain ----------------------------------------------------------
+  Rel(api, domain, "Invoca casos de uso\na traves de puertos (Ports & Adapters)", "In-process")
+
+  %% -- Domain -> DB -----------------------------------------------------------
+  Rel(domain, db, "Lee y escribe con RLS activo.\nSET LOCAL app.tenant_id antes de TX.\naudit_log en misma transaccion", "JDBC/TLS [DA-01, DA-03]")
+
+  %% -- Domain -> Queue --------------------------------------------------------
+  Rel(domain, queue, "Publica CalificacionRegistradaEvent\ny MateriaCerradaEvent post-cierre", "Spring Event")
+
+  %% -- Queue -> Domain --------------------------------------------------------
+  Rel(queue, domain, "Dispara ConsolidarCentralizadorUseCase\nde forma asincrona (AFTER_COMMIT)", "Spring Event @Async [DA-04]")
+
+  %% -- Domain -> SIE Adapter --------------------------------------------------
+  Rel(domain, sieadapter, "Delega exportacion de calificaciones\npor RUDE via puerto de salida", "In-process / Port")
+
+  %% -- SIE Adapter -> SIE externo --------------------------------------------
+  Rel(sieadapter, sie, "POST /registro/{rude}\ncon circuit breaker y reintentos", "HTTPS/REST [DA-05]")
+
+  %% -- Scheduler -> Domain ----------------------------------------------------
+  Rel(scheduler, domain, "Revoca ventanas de correccion expiradas\ny reintenta exportaciones PENDIENTE", "In-process")
+
+  %% -- DB -> KMS --------------------------------------------------------------
+  Rel(db, kms, "Cifra y descifra columnas PII\nen reposo", "AWS KMS SDK/TLS [NFR-007]")
+
+  %% -- Hint de layout ---------------------------------------------------------
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")

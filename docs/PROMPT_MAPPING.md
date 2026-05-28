@@ -1,7 +1,7 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG`. Versión activa: `v0.4`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO`. Versión activa: `v0.9`.
 > Cada prompt sigue la estructura de `plantillas/PROMPT_TEMPLATE.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
 
@@ -28,6 +28,16 @@
 | PR-MRD-001 | `docs/MRD-EduSync.md` (MRD v1.0 — 10 MRD-N-*, 3 personas, JTBD, go-to-market) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado |
 | PR-PRD-001 | `docs/PRD_EduSync.md` (PRD v1.0 — 17 US, 6 épicas, RICE, NFRs, journeys) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado |
 | PR-FSD-001 | `docs/fsd/FSD-EduSync.md` (FSD Clásico v1.0 — 5 FSD-UC, ER, 3 contratos, 14 tasks) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado |
+| PR-LFSD-001 | `docs/lfsd/LFSD-EduSync.md` (LFSD v1.0 — 20 §§, 15 APIs, 14 tablas DDL, 4 diagramas secuencia, 16 tasks) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado |
+| PR-ARCH-002 | `docs/AGENTS.md` v0.2 — corrección de 6 rutas rotas, 15 nuevos artefactos, 6 agentes, 4 golden tests | consolidación | `docs-agent` | Sonnet | 17/05/2026 | Aprobado |
+| PR-SKILL-001 | `.cursor/skills/update-prompt-mapping/SKILL.md` + `.claude/skills/update-prompt-mapping/SKILL.md` — skill para actualizar PROMPT_MAPPING | generación | `docs-agent` | Sonnet | 17/05/2026 | Aprobado |
+| PR-SKILL-002 | `.cursor/skills/c4-edusync/SKILL.md` + `.claude/skills/c4-edusync/SKILL.md` - skill para generar diagramas C4 de EduSync | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado |
+| PR-C4-001 | `docs/diagrams/c4_level1.mmd` - C4 Level 1 (Contexto del Sistema) | generacion | `arch-agent` | Sonnet | 17/05/2026 | Aprobado |
+| PR-C4-002 | `docs/diagrams/c4_level2.mmd` - C4 Level 2 (Contenedores) | generacion | `arch-agent` | Sonnet | 17/05/2026 | Aprobado |
+| PR-SKILL-003 | `.cursor/skills/dti-edusync/SKILL.md` + `.claude/skills/dti-edusync/SKILL.md` - skill para poblar y mantener el DTI de EduSync | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado |
+| PR-DTI-001 | `docs/DTI.md` v0.1 - DTI completo (§0-§23, 883 lineas, C4 L1/L2/L3, 2 POCs, 5 ADRs, 16 NFRs, 4 golden tests) | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado |
+| PR-HEX-001 | `docs/arquitectura_hexagonal_EduSync.md` v0.1 — Arquitectura hexagonal del core: 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots | generacion | `arch-agent` | Sonnet | 24/05/2026 | Aprobado |
+| PR-DTO-001 | `docs/dtos_EduSync.md` v0.1 — DTOs por capa hexagonal para FSD-UC-001/003/005: 4 Request DTOs, 4 Commands, 3 Response DTOs, 5 Domain Events, 5 enums, 3 tablas DTO ↔ Entidad | generacion | `dev-agent` | Sonnet | 24/05/2026 | Aprobado |
 
 ---
 
@@ -40,6 +50,7 @@ flowchart TD
     MRD["PR-MRD-001\nMRD EduSync\n(docs-agent)"]
     PRD["PR-PRD-001\nPRD EduSync\n(docs-agent)"]
     FSD["PR-FSD-001\nFSD EduSync\n(docs-agent)"]
+    LFSD["PR-LFSD-001\nLFSD EduSync\n(docs-agent)"]
     ARCH["PR-ARCH-001\nArquitectura funcional\n(docs-agent)"]
 
     subgraph DOMINIO["Capa de Dominio — dev-agent"]
@@ -93,6 +104,40 @@ flowchart TD
     BRD2 --> PRD
     PRD --> FSD
     ARCH --> FSD
+    FSD --> LFSD
+    AGENTS["PR-ARCH-002\nAGENTS.md v0.2\n(docs-agent)"]
+    SKILL["PR-SKILL-001\nSkill update-prompt-mapping\n(docs-agent)"]
+
+    LFSD --> AGENTS
+    ARCH --> AGENTS
+    AGENTS --> SKILL
+    subgraph ARQUITECTURA["Capa de Arquitectura C4 -- arch-agent"]
+        C4L1["PR-C4-001\nC4 Level 1\nContexto (arch-agent)"]
+        C4L2["PR-C4-002\nC4 Level 2\nContenedores (arch-agent)"]
+    end
+    SKILL2["PR-SKILL-002\nSkill c4-edusync\n(docs-agent)"]
+    SKILL3["PR-SKILL-003\nSkill dti-edusync\n(docs-agent)"]
+    DTI["PR-DTI-001\nDTI EduSync\n(docs-agent)"]
+
+    AGENTS --> SKILL2
+    SKILL2 --> C4L1
+    C4L1 --> C4L2
+    LFSD --> SKILL3
+    AGENTS --> SKILL3
+    SKILL3 --> DTI
+    C4L2 --> DTI
+    LFSD --> DTI
+    HEX["PR-HEX-001\nArquitectura Hexagonal\n(arch-agent)"]
+
+    FSD --> HEX
+    LFSD --> HEX
+    ARCH --> HEX
+    PRD --> HEX
+    DTO["PR-DTO-001\nDTOs por capa hexagonal\n(dev-agent)"]
+
+    FSD --> DTO
+    HEX --> DTO
+    AGENTS --> DTO
 ```
 
 ---
@@ -101,9 +146,9 @@ flowchart TD
 
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
-| `docs-agent` | PR-ARCH-001, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD); versionar y consolidar ante nuevos artefactos funcionales | `.md` en `docs/` y `docs/fsd/` |
-| `dev-agent` | PR-UC-001..UC-010 | Generar contratos de UC, código de dominio y pruebas unitarias | Código en `src/`, contratos en `docs/prompts/` |
-| `arch-agent` | PR-ADR-001..005 | Evaluar alternativas y documentar decisiones arquitectónicas | ADRs en `docs/adr/` |
+| `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel y de configuración de agentes | `.md` en `docs/`, `docs/fsd/`, `docs/lfsd/`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI en `docs/DTI.md` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias | Código en `src/`, contratos en `docs/prompts/`, DTOs en `docs/dtos_EduSync.md` |
+| `arch-agent` | PR-ADR-001..005, PR-C4-001, PR-C4-002, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 en `docs/diagrams/`; arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
 
@@ -476,6 +521,87 @@ guardado en docs/fsd/FSD-EduSync.md, listo para implementación y QA testing.
 - E_RLS_FALTANTE: nueva tabla sin tenant_id o sin política RLS — rechazar migración.
 - E_APPEND_ONLY_VIOLADO: modificación que sobreescribe registro original — rechazar.
 - E_PLACEHOLDER_VACIO: sección del FSD con marcadores sin completar — completar.
+```
+
+---
+
+### PR-LFSD-001 — Generación del LFSD EduSync (Low-Level Functional Specification)
+
+```markdown
+# Role
+Eres un experto en Software Engineering, Solution Design, Low-Level Design y
+documentación técnica detallada para sistemas empresariales Java/Spring Boot.
+Tienes experiencia creando LFSD que trasladan especificaciones funcionales a
+diseño de bajo nivel implementable, con arquitectura hexagonal, DDD y SOLID.
+
+# Task
+Genera docs/lfsd/LFSD-EduSync.md traduciendo los requerimientos del FSD v1.0
+a especificaciones técnicas de bajo nivel listas para implementación y QA.
+El documento debe cubrir: arquitectura de componentes, diseño de módulos,
+contratos API, DTOs, entidades JPA, DDL, workflows (secuencia), eventos,
+seguridad, auditoría, schedulers, manejo de errores y edge cases.
+
+# Context
+- Insumo principal: docs/FSD_EduSync.md (5 FSD-UC, 12 BR, 16 entidades, 16 NFRs).
+- Insumo funcional: docs/PRD_EduSync.md (20 PRD-REQ-*, 15 NFRs).
+- Contexto de negocio: docs/BRD_EduSync_V2.md, docs/MRD_EduSync.md.
+- Arquitectura base: hexagonal (Domain / Application / Infrastructure).
+- Stack: Java 21 LTS, Spring Boot 3.3, Spring Security 6 (JWT+RBAC),
+  Spring Data JPA, PostgreSQL 15 (RLS), Angular 17, AWS.
+- Invariantes absolutas del código:
+    * floor() es la UNICA función de truncado (BR-003).
+    * audit_log inalterable: sin UPDATE ni DELETE.
+    * tenant_id en toda tabla + política RLS activa.
+    * Cálculos de promedio SOLO en ConsolidacionDomainService (BR-008).
+    * Modelo append-only en UC-005: original NUNCA sobreescrito.
+- Ruta de salida: docs/lfsd/LFSD-EduSync.md.
+
+# Reasoning
+1. Mapear la arquitectura hexagonal en estructura de paquetes Java
+   (domain/, application/, infrastructure/) con responsabilidades por capa.
+2. Diseñar clases para 5 módulos críticos (Calificaciones, Consolidación,
+   Exportación SIE, Corrección Retroactiva, Gestión Académica) con
+   diagramas de clases Mermaid y pseudoalgoritmos línea a línea.
+3. Definir 15+ contratos API REST con request/response JSON completos,
+   validaciones Bean Validation y tabla de errores por endpoint.
+4. Documentar entidades JPA con anotaciones, índices y constraints.
+5. Generar DDL lógico completo (14 tablas) con políticas RLS e inyección de tenant.
+6. Crear 4 diagramas de secuencia Mermaid (UC-001, UC-002/003, UC-004, UC-005)
+   con todos los participantes y transacciones.
+7. Definir el sistema de eventos de dominio (Spring Events) con
+   @TransactionalEventListener(AFTER_COMMIT) y pool de threads.
+8. Diseñar Spring Security 6: JwtAuthFilter, RBAC por endpoint, TenantContext.
+9. Documentar AuditLogAspect (AOP) con invariantes de misma transacción.
+10. Definir schedulers: VentanaExpiracionScheduler (60s) + SIERetryScheduler (5min).
+11. Diseñar GlobalExceptionHandler con jerarquía de excepciones de dominio.
+12. Documentar 7+ edge cases con comportamiento esperado e implementación.
+13. Listar restricciones técnicas innegociables con enforcement en CI/ArchUnit.
+14. Generar 16 tasks técnicas con componentes, dependencias y estimaciones.
+
+# Stop condition
+Detente cuando el LFSD tenga: estructura de paquetes Java, 5 diagramas de clases,
+15+ APIs con contratos completos, 4 diagramas de secuencia, entidades JPA,
+DDL con 14 tablas y RLS, eventos de dominio, seguridad Spring Security 6,
+AOP de auditoría, 2 schedulers, GlobalExceptionHandler, 7 edge cases,
+16 tasks, glosario técnico y checklist verificado. Sin placeholders vacíos.
+
+# Output
+Markdown completo (20 secciones §0–§20 + checklist) guardado en
+docs/lfsd/LFSD-EduSync.md, listo para implementación, code review y QA técnico.
+
+# Invariants
+- Ningún cálculo de promedio puede aparecer fuera de ConsolidacionDomainService.
+- Todo endpoint DOCENTE debe tener verificación de asignación antes de persistir.
+- El audit_log se escribe en la misma transacción que la operación principal.
+- Toda tabla del DDL debe tener tenant_id + política RLS declarada.
+- Los diagramas Mermaid deben usar nombres reales del dominio (no genéricos).
+
+# Failure modes
+- E_DOMINIO_SIN_PSEUDOCODIGO: módulo crítico sin pseudoalgoritmo detallado — completar.
+- E_API_SIN_ERRORES: endpoint sin tabla de códigos HTTP y error codes — agregar.
+- E_DDL_SIN_RLS: tabla en DDL sin política RLS — agregar antes de entregar.
+- E_DIAGRAMA_GENERICO: diagrama con nombres ficticios o genéricos — reemplazar con dominio real.
+- E_PLACEHOLDER_VACIO: sección con marcadores sin completar — completar.
 ```
 
 ---
@@ -1212,6 +1338,525 @@ Dos archivos sincronizados:
 
 ---
 
+### PR-ARCH-002 — Actualización de AGENTS.md v0.2
+
+```markdown
+# Role
+Eres un Documentation Architect con experiencia en sistemas multiagente y AI-SDLC.
+Tu responsabilidad es mantener docs/AGENTS.md sincronizado con la estructura real
+del repositorio del proyecto EduSync (Java 21, Spring Boot 3.3, PostgreSQL 15).
+
+# Task
+Actualiza docs/AGENTS.md v0.1 corrigiendo las 6 rutas rotas y añadiendo referencias
+a los 15 artefactos nuevos generados en la release 1.0.0 (MRD, PRD, FSD, LFSD,
+APORTES, 5 diagramas, seguridad.mdc, reorganizacion de brd/ mrd/ prd/ fsd/).
+
+# Context
+- Documento a actualizar: docs/AGENTS.md v0.1 (15 secciones, 326 lineas)
+- Nuevos artefactos: docs/brd/BRD_EduSync_v2.md, docs/mrd/MRD_EduSync.md,
+  docs/prd/PRD_EduSync.md, docs/fsd/FSD_EduSync.md, docs/LFSD-EduSync.md,
+  docs/APORTES_EduSync.md, docs/diagrams/*.mmd/*.md, .cursor/rules/seguridad.mdc
+- Rutas rotas: docs/DTI.md (no existe), docs/BRD_EduSync.md (movido a docs/brd/),
+  docs/adr/ADR-001..005 (pendiente de creacion)
+- Stack autoritativo: Java 21, Spring Boot 3.3, PostgreSQL 15, Angular 17, AWS
+
+# Reasoning
+1. Listar todos los archivos del repo (excluyendo .git) y comparar con AGENTS.md.
+2. Identificar 6 rutas rotas y 15 archivos nuevos no referenciados.
+3. Corregir §1 (identidad con tabla de documentos), §2 (orden de lectura),
+   §3 (arbol de estructura real del repositorio).
+4. Añadir 4 nuevos agentes: arch-agent, qa-agent, process-agent, compliance-agent.
+5. Definir 4 golden tests de zero-tolerance; actualizar metricas y registro de cambios.
+
+# Stop condition
+Detente cuando todos los paths esten verificados contra la estructura real del
+repositorio, las 6 rutas rotas corregidas, los 15 archivos nuevos referenciados
+y el registro de cambios incluya la entrada v0.2.
+
+# Output
+docs/AGENTS.md v0.2 (417 lineas) con: tabla de documentos actualizada, arbol de
+estructura real del repositorio, 6 agentes documentados con guardrails, 4 golden
+tests de zero-tolerance, checklist con 10 items completados y 4 pendientes.
+
+# Invariants
+- Todos los paths referenciados deben existir en el repositorio real (IG-08).
+- Archivos pendientes (docs/adr/, docs/DTI.md) marcados como pendiente de creacion.
+- Sin secretos en texto plano.
+
+# Failure modes
+- E_RUTA_ROTA: path referenciado no existe en el repo — corregir o marcar pendiente.
+- E_ARCHIVO_NUEVO_OMITIDO: nuevo artefacto sin referencia — añadir a §1 y §3.
+- E_VERSION_NO_BUMPED: registro de cambios no actualizado — añadir fila v0.2.
+```
+
+---
+
+### PR-SKILL-001 — Creación del skill update-prompt-mapping (Cursor + Claude)
+
+```markdown
+# Role
+Eres un Senior AI Solutions Architect y Prompt Engineer especializado en
+documentacion de proyectos de IA y sistemas de gestion del conocimiento para
+equipos que usan Cursor IDE y Claude Code / Claude Desktop.
+
+# Task
+Crea un Agent Skill para Cursor y Claude Code que guie al agente en la
+actualizacion correcta de docs/PROMPT_MAPPING.md del proyecto EduSync,
+cubriendo los 7 pasos obligatorios del protocolo de registro de prompts.
+
+# Context
+- Documento objetivo del skill: docs/PROMPT_MAPPING.md v0.5 (1375 lineas, 18 prompts)
+- Destinos: .cursor/skills/update-prompt-mapping/ y .claude/skills/update-prompt-mapping/
+- Plantilla del proyecto: plantillas/SKILL_TEMPLATE.md
+- Guia de creacion: .cursor/skills-cursor/create-skill/SKILL.md
+- Protocolo a encapsular: 7 secciones de PROMPT_MAPPING a modificar en orden
+  (cabecera, indice, Mermaid, matriz agentes, contrato, trazabilidad, historial)
+
+# Reasoning
+1. Analizar PROMPT_MAPPING.md completo para identificar las 7 secciones modificables.
+2. Definir entradas obligatorias del skill (ID, artefacto, tipo, agente, modelo, fecha).
+3. Redactar el procedimiento paso a paso con plantillas exactas del proyecto real.
+4. Crear SKILL.md principal (< 500 lineas) y reference.md con plantillas copy-paste.
+5. Copiar ambos archivos a .cursor/skills/ y .claude/skills/.
+
+# Stop condition
+Detente cuando SKILL.md y reference.md existan en ambas rutas de destino,
+SKILL.md tenga < 500 lineas, y el checklist de validacion este completo.
+
+# Output
+.cursor/skills/update-prompt-mapping/SKILL.md (185 lineas) + reference.md (168 lineas)
+.claude/skills/update-prompt-mapping/SKILL.md + reference.md (identicos)
+con: frontmatter valido, 7 pasos de procedimiento, plantillas exactas del proyecto,
+tabla de areas/agentes validos, tabla de proximos IDs disponibles.
+
+# Invariants
+- SKILL.md < 500 lineas (regla del skill creation guide).
+- Plantillas en reference.md usan datos reales del proyecto EduSync, no genericos (IG-08).
+- El skill debe ser activable sin modificacion en Cursor y en Claude Code.
+
+# Failure modes
+- E_SKILL_DEMASIADO_LARGO: SKILL.md supera 500 lineas — mover contenido a reference.md.
+- E_PLANTILLA_GENERICA: plantillas con datos ficticios — reemplazar con ejemplos reales.
+- E_RUTA_INCORRECTA: skill fuera de .cursor/skills/ o .claude/skills/ — verificar y mover.
+```
+
+---
+
+### PR-SKILL-002 -- Creacion del skill c4-edusync (Cursor + Claude)
+
+```markdown
+# Role
+Eres un Senior AI Solutions Architect y Prompt Engineer especializado en
+arquitectura de software C4 y en la creacion de skills para Cursor IDE y
+Claude Code, con dominio del stack EduSync (Java 21, Spring Boot 3.3,
+PostgreSQL 15, Angular 17, AWS ECS Fargate).
+
+# Task
+Crea un Agent Skill para Cursor y Claude Code que guie al agente en la
+generacion de diagramas C4 (Nivel 1, 2 y 3) para el proyecto EduSync,
+usando Mermaid y la arquitectura real del sistema.
+
+# Context
+- Producto objetivo: EduSync (SaaS B2B multitenant, Bolivia)
+- Destinos: .cursor/skills/c4-edusync/ y .claude/skills/c4-edusync/
+- Plantilla base: plantillas/c4.md (skill generico del modulo)
+- Stack real: Java 21, Spring Boot 3.3, PostgreSQL 15, Angular 17, AWS ECS Fargate
+- Actores: Director (Jeanneth), Docente (Marcela), Secretaria (Wendy), SIE, AWS KMS
+- Contenedores: Angular SPA, API Gateway, Domain Layer, PostgreSQL 15,
+  Event Bus, SIE Adapter, Scheduler
+
+# Reasoning
+1. Leer plantillas/c4.md para entender la estructura del skill generico.
+2. Identificar actores, sistemas externos y contenedores del proyecto EduSync
+   desde docs/fsd/FSD_EduSync.md y docs/LFSD-EduSync.md.
+3. Crear SKILL.md con procedimiento de 4 pasos y mapa de trazabilidad FSD-UC <-> C4.
+4. Crear reference.md con bloques Mermaid copy-paste para Level 1, 2 y 3.
+5. Copiar a .cursor/skills/ y .claude/skills/.
+
+# Stop condition
+Detente cuando SKILL.md y reference.md existan en ambas rutas, SKILL.md sea
+< 500 lineas, y los anti-patrones EduSync esten documentados.
+
+# Output
+.cursor/skills/c4-edusync/SKILL.md (< 500 lineas) + reference.md con bloques
+Mermaid para Level 1 (C4Context), Level 2 (C4Container), Level 3 (flowchart).
+.claude/skills/c4-edusync/ (copia identica).
+
+# Invariants
+- Sin caracteres Unicode decorativos en labels Mermaid (IG-10).
+- Cada contenedor cita al menos un FSD-UC o DA/BR que lo justifica (IG-08).
+- SKILL.md < 500 lineas; contenido extenso va en reference.md.
+
+# Failure modes
+- E_UNICODE_EN_LABELS: caracteres especiales en labels Mermaid -- reemplazar con ASCII.
+- E_CONTENEDOR_SIN_UC: contenedor sin FSD-UC asignado -- rechazar hasta completar trazabilidad.
+- E_SKILL_DEMASIADO_LARGO: SKILL.md supera 500 lineas -- mover ejemplos a reference.md.
+```
+
+---
+
+### PR-C4-001 -- Generacion del diagrama C4 Level 1 (Contexto del Sistema)
+
+```markdown
+# Role
+Eres un Senior Solution Architect especializado en el modelo C4 (Simon Brown)
+y en la arquitectura de EduSync (SaaS B2B multitenant Bolivia, Java 21,
+Spring Boot 3.3, PostgreSQL 15, Angular 17, AWS ECS Fargate).
+
+# Task
+Genera el diagrama C4 Level 1 (System Context) de EduSync en Mermaid,
+mostrando los 3 actores humanos, el sistema principal y los 2 sistemas externos.
+
+# Context
+- Skill de referencia: .cursor/skills/c4-edusync/SKILL.md
+- Actores: Director (Jeanneth), Docente (Marcela), Secretaria (Wendy)
+- Sistema principal: EduSync (plataforma SaaS B2B multitenant Bolivia)
+- Sistemas externos: SIE Ministerio de Educacion (DA-05), AWS KMS (NFR-007)
+- Archivo destino: docs/diagrams/c4_level1.mmd
+- Restricciones: sin Unicode decorativo en labels (IG-10); relaciones con protocolo
+
+# Reasoning
+1. Identificar todos los actores externos del sistema desde FSD + AGENTS.md.
+2. Modelar solo lo visible desde fuera: actores, sistema, sistemas externos.
+3. Escribir el bloque C4Context con Person(), System(), System_Ext() y Rel().
+4. Verificar: sin caracteres Unicode raros, relaciones con protocolo en el 4to param.
+
+# Stop condition
+Detente cuando el archivo docs/diagrams/c4_level1.mmd exista y pase la
+validacion del checklist del skill c4-edusync (23/23 checks OK).
+
+# Output
+docs/diagrams/c4_level1.mmd con bloque C4Context (< 35 lineas),
+tabla de trazabilidad actores <-> DA/NFR, checklist de validacion.
+
+# Invariants
+- Sin caracteres Unicode decorativos en labels (IG-10).
+- Cada relacion incluye protocolo en el 4to parametro de Rel() (IG-08).
+- SIE referenciado como System_Ext con nota de cumplimiento Ley 070 (DA-05).
+
+# Failure modes
+- E_UNICODE_EN_LABELS: em-dash u otros Unicode en labels -- reemplazar con ASCII.
+- E_PROTOCOLO_FALTANTE: Rel() sin 4to parametro -- anadir protocolo.
+- E_ACTOR_OMITIDO: actor del FSD no aparece en el diagrama -- anadir.
+```
+
+---
+
+### PR-C4-002 -- Generacion del diagrama C4 Level 2 (Contenedores)
+
+```markdown
+# Role
+Eres un Senior Solution Architect especializado en el modelo C4 y en la
+arquitectura hexagonal de EduSync (7 contenedores, DA-01..DA-05).
+
+# Task
+Genera el diagrama C4 Level 2 (Containers) de EduSync en Mermaid,
+mostrando los 7 contenedores internos con sus tecnologias y las
+relaciones con sistemas externos.
+
+# Context
+- Skill de referencia: .cursor/skills/c4-edusync/SKILL.md
+- Contenedores: Angular SPA, API Gateway, Domain Layer, PostgreSQL 15,
+  Event Bus, SIE Adapter, Scheduler
+- Sistemas externos: SIE Ministerio, AWS KMS
+- Archivo destino: docs/diagrams/c4_level2.mmd
+- Stack: Java 21 / Spring Boot 3.3 / Angular 17 / PostgreSQL 15 / AWS ECS Fargate
+- Restricciones: sin Unicode en labels (IG-10); FSD-UC + DA en descripciones
+
+# Reasoning
+1. Mapear cada FSD-UC a su contenedor principal (UC-001->API+Domain, UC-003->EventBus...).
+2. Construir el bloque C4Container con System_Boundary, Container(), ContainerDb().
+3. Definir todas las relaciones con protocolo y DA/BR citados.
+4. Validar: 7 contenedores, trazabilidad FSD-UC completa, sin Unicode.
+
+# Stop condition
+Detente cuando docs/diagrams/c4_level2.mmd exista, pase 23/23 checks del
+skill c4-edusync, y la tabla de trazabilidad FSD-UC <-> contenedor este completa.
+
+# Output
+docs/diagrams/c4_level2.mmd con bloque C4Container (< 80 lineas),
+tabla de trazabilidad FSD-UC <-> contenedor con DA/BR aplicados.
+
+# Invariants
+- Sin caracteres Unicode decorativos en labels (IG-10).
+- Cada contenedor cita al menos un FSD-UC o DA que lo justifica (IG-08).
+- Domain Layer sin dependencias de Spring/JPA declaradas en la descripcion (DA-02).
+
+# Failure modes
+- E_CONTENEDOR_SIN_UC: contenedor sin FSD-UC asignado -- rechazar hasta completar.
+- E_RLS_NO_DECLARADO: PostgreSQL sin mencion de RLS -- anadir [DA-01] en descripcion.
+- E_UNICODE_EN_LABELS: caracteres especiales -- reemplazar con ASCII.
+```
+
+---
+
+### PR-SKILL-003 -- Creacion del skill dti-edusync (Cursor + Claude)
+
+```markdown
+# Role
+Eres un Senior AI Solutions Architect y Prompt Engineer especializado en
+documentacion tecnica de productos de software y en la creacion de skills
+para Cursor IDE y Claude Code, con dominio del stack y la cadena documental
+de EduSync (BRD -> MRD -> PRD -> FSD -> LFSD -> DTI).
+
+# Task
+Crea un Agent Skill para Cursor y Claude Code que guie al agente en la
+creacion y mantenimiento del Documento Tecnico Inicial (DTI) de EduSync,
+adaptando la plantilla generica plantillas/dti-author.md al proyecto real.
+
+# Context
+- Plantilla base: plantillas/dti-author.md (skill generico del modulo)
+- Plantilla DTI: plantillas/DOCUMENTO_TECNICO_INICIAL_TEMPLATE (1).md (620 lineas, 23 secciones)
+- Destinos: .cursor/skills/dti-edusync/ y .claude/skills/dti-edusync/
+- Stack EduSync: Java 21, Spring Boot 3.3, PostgreSQL 15, Angular 17, AWS ECS Fargate
+- Fuentes de verdad disponibles: FSD v1.0, LFSD v1.0, AGENTS.md v0.2,
+  arquitectura_funcional_EduSync.md (DA-01..DA-05), PROMPT_MAPPING.md v0.6
+- Diagramas C4 ya generados: docs/diagrams/c4_level1.mmd, c4_level2.mmd
+
+# Reasoning
+1. Leer plantillas/dti-author.md para entender estructura del skill generico.
+2. Leer DOCUMENTO_TECNICO_INICIAL_TEMPLATE para mapear las 23 secciones.
+3. Crear tabla de mapeo: cada seccion DTI -> datos reales de EduSync (stack, UCs, DAs...).
+4. Redactar SKILL.md con procedimiento de 5 pasos, checklist y anti-patrones EduSync.
+5. Copiar a .cursor/skills/ y .claude/skills/.
+
+# Stop condition
+Detente cuando SKILL.md exista en ambas rutas, tenga < 500 lineas, y la tabla
+de mapeo de las 25 secciones este completa con datos reales de EduSync.
+
+# Output
+.cursor/skills/dti-edusync/SKILL.md (159 lineas) con: frontmatter valido,
+tabla de mapeo de 25 secciones con datos reales, procedimiento de 5 pasos,
+checklist de 12 items y anti-patrones EduSync.
+.claude/skills/dti-edusync/ (copia identica).
+
+# Invariants
+- Tabla de mapeo usa datos reales del proyecto, no placeholders (IG-08).
+- §3.5 siempre marcado N/A para EduSync v1.0 (sin agentes IA en runtime).
+- SKILL.md < 500 lineas (regla del skill creation guide).
+
+# Failure modes
+- E_SECCION_SIN_DATOS: seccion del DTI mapeada a placeholder generico -- reemplazar con datos EduSync.
+- E_SKILL_DEMASIADO_LARGO: SKILL.md supera 500 lineas -- condensar tabla de mapeo.
+- E_AGENTES_RUNTIME: §3.5 con contenedores agénticos que no existen -- marcar N/A.
+```
+
+---
+
+### PR-DTI-001 -- Generacion del DTI completo de EduSync (§0-§23)
+
+```markdown
+# Role
+Eres un Senior Solution Architect y Technical Writer especializado en
+documentacion tecnica de productos SaaS B2B, con dominio profundo de
+EduSync: stack Java 21 / Spring Boot 3.3 / PostgreSQL 15 / Angular 17 /
+AWS ECS Fargate, arquitectura hexagonal, multitenancy RLS y cumplimiento
+regulatorio boliviano (SIE, Ley 070, Ley 164).
+
+# Task
+Genera el Documento Tecnico Inicial (DTI) completo de EduSync cubriendo las
+23 secciones obligatorias (§0-§23) segun la plantilla del modulo, con
+audiencia dual (humanos + agentes IA).
+
+# Context
+- Skill guia: .cursor/skills/dti-edusync/SKILL.md
+- Plantilla: plantillas/DOCUMENTO_TECNICO_INICIAL_TEMPLATE (1).md (620 lineas)
+- FSD: docs/fsd/FSD_EduSync.md (FSD-UC-001..009, BR-001..BR-012, 16 NFRs)
+- LFSD: docs/LFSD-EduSync.md (puertos, adaptadores, DDL, secuencias, APIs)
+- AGENTS.md v0.2: 6 agentes, golden tests, stack autoritativo
+- Diagramas C4: docs/diagrams/c4_level1.mmd, c4_level2.mmd
+- Decisiones: DA-01 (RLS), DA-02 (hexagonal), DA-03 (audit_log),
+  DA-04 (async), DA-05 (Resilience4j SIE)
+- BRD v2: docs/brd/BRD_EduSync_v2.md (vision, metricas, restricciones)
+
+# Reasoning
+1. Leer el skill dti-edusync para identificar los datos reales de cada seccion.
+2. Generar el frontmatter YAML con producto, version, stack, audiencia.
+3. Poblar §0-§3: metadatos, tabla de agentes SDLC, vision, C4 L1/L2 embebidos,
+   C4 L3 flowchart del contenedor critico (API Gateway), sequence diagram FSD-UC-001.
+4. Poblar §4-§9: modelo de dominio, hexagonal, distribuida, async, AWS, IA SDLC.
+5. Poblar §10-§19: prompt mapping, NFRs x16, 2 POCs, seguridad STRIDE,
+   observabilidad, DevOps, antipatrones, trade-offs, riesgos, roadmap.
+6. Poblar §20-§23: glosario, ADRs (DA-01..DA-05 provisionales),
+   auditoria IA y eval de guardrails (4 golden tests).
+7. Cerrar con checklist de entrega y pie de firma.
+
+# Stop condition
+Detente cuando docs/DTI.md exista, tenga >= 800 lineas, todas las 23 secciones
+esten pobladas (sin placeholders), y el checklist marque >= 24/27 items completados.
+
+# Output
+docs/DTI.md v0.1 (883 lineas) con: frontmatter YAML valido, 23 secciones
+completas, C4 L1/L2/L3 embebidos, sequence diagram FSD-UC-001, 5 bounded
+contexts, 16 NFRs, 2 POCs con criterio medible, 5 ADRs provisionales,
+4 golden tests, checklist 24/27 completado.
+Actualizacion de docs/AGENTS.md: DTI marcado como creado.
+
+# Invariants
+- §3.5 marcado N/A -- EduSync v1.0 no tiene agentes IA en runtime (DA-02).
+- Diagramas Mermaid sin Unicode decorativo en labels (IG-10).
+- Cada decision cita su DA-NN o ADR provisional (IG-08).
+- Cero secretos ni PII en el documento.
+
+# Failure modes
+- E_SECCION_PLACEHOLDER: seccion con texto de plantilla sin reemplazar -- completar con datos EduSync.
+- E_DA_SIN_CITA: decision arquitectonica sin referencia a DA-NN -- anadir cita.
+- E_NFR_SIN_UMBRAL: NFR sin threshold numerico -- completar con valor medible.
+- E_AGENTS_NO_ACTUALIZADO: AGENTS.md sigue con DTI como pendiente -- actualizar.
+```
+
+---
+
+### PR-HEX-001 -- Diseno de la arquitectura hexagonal del core EduSync
+
+```markdown
+# Role
+Arquitecto Senior con experiencia profunda en arquitectura hexagonal
+(Ports & Adapters), Domain-Driven Design y plataformas SaaS multitenant
+en el stack EduSync (Java 21, Spring Boot 3.3, Spring Security 6,
+Spring Data JPA, PostgreSQL 15, Angular 17).
+
+# Task
+Diseña la arquitectura hexagonal del core de EduSync identificando
+puertos de entrada (casos de uso), puertos de salida (persistencia,
+mensajeria, terceros), adaptadores correspondientes y Aggregate Roots
+con sus invariantes verificables.
+
+# Context
+- Casos de uso criticos: FSD-UC-001..010 en docs/fsd/FSD_EduSync.md
+- Entidades candidatas: modelo ER de 16 entidades en FSD §6.1
+- Decisiones arquitectonicas: DA-01..DA-05 en docs/arquitectura_funcional_EduSync.md
+- Reglas de negocio: BR-001..BR-012 en docs/fsd/FSD_EduSync.md §5
+- Constitucion: 5 principios no negociables en docs/prd/PRD_EduSync.md
+- Diseno previo: docs/LFSD-EduSync.md §2-§3 (estructura de paquetes)
+- Stack autoritativo: Spring Boot 3.3, Spring Security 6, Spring Data JPA,
+  Angular 17, PostgreSQL 15
+
+# Reasoning
+1. Identificar puertos de entrada (casos de uso) -- uno por FSD-UC y
+   por scheduler/listener; agrupar workflows complejos en sub-puertos.
+2. Identificar puertos de salida (persistencia, mensajeria, terceros) --
+   un puerto por agregado + DomainEventPublisher + SIEExportPort +
+   KmsCipherPort + BoletinPdfPort + NotificacionPort + TenantContextProvider
+   + ClockPort.
+3. Asignar un adaptador concreto por cada puerto OUT (Spring Data JPA,
+   Resilience4j, AWS SDK, PDFBox, Spring Events). Adaptadores IN incluyen
+   REST Controllers + Schedulers + Listeners + Security Filters.
+4. Determinar Aggregate Roots (8): GestionAcademica, PeriodoAcademico,
+   Estudiante, Calificacion (append-only), Centralizador, ExportacionSIE,
+   CorreccionRetroactiva, AuditLogEntry. Por cada AR: listar invariantes
+   citando BR-NNN y DA-NN que justifican.
+
+# Stop condition
+Detente al entregar las 4 tablas requeridas (puertos IN, puertos OUT,
+adaptadores in/out, Aggregate Roots con invariantes) y el archivo
+docs/arquitectura_hexagonal_EduSync.md v0.1 persistido.
+
+# Output
+docs/arquitectura_hexagonal_EduSync.md v0.1 (283 lineas) con:
+- Mapa hexagonal Mermaid + estructura de paquetes Java
+- Tabla 1: 20 puertos IN (UC + scheduler + listener)
+- Tabla 2: 16 puertos OUT (persistencia + mensajeria + terceros)
+- Tabla 3: 32 adaptadores (15 IN + 17 OUT) con tecnologia y ubicacion
+- Tabla 4: 8 Aggregate Roots con invariantes BR-001..BR-012 verificables
+- Materializacion DA-01..DA-05 en hexagonal
+- Catalogo de 4 eventos de dominio
+- Checklist de implementacion para dev-agent
+
+# Invariants
+- domain/ no importa Spring/JPA/AWS (IG-08 + DA-02).
+- Cada AR tiene al menos una invariante que cita un BR-NNN especifico (IG-08).
+- Cada puerto IN se mapea a un FSD-UC vigente; cero puertos huerfanos.
+- Mermaid sin Unicode decorativo en labels (IG-10).
+- Sin secretos ni PII en el documento.
+
+# Failure modes
+- E_PUERTO_SIN_UC: puerto IN sin FSD-UC asignado -- rechazar y completar trazabilidad.
+- E_AR_SIN_INVARIANTE: Aggregate Root sin invariante BR-NNN -- rechazar.
+- E_DOMINIO_CON_SPRING: domain/ con imports de Spring/JPA -- rechazar (DA-02).
+- E_ADAPTER_SIN_PUERTO: adaptador sin puerto que implementa -- rechazar.
+```
+
+---
+
+### PR-DTO-001 -- Generacion de DTOs por capa hexagonal para FSD-UC-001/003/005
+
+```markdown
+# Role
+Senior Backend Engineer especializado en arquitectura hexagonal (Ports & Adapters)
+y Domain-Driven Design sobre Java 21 + Spring Boot 3.3. Conoce en profundidad
+el modelo de dominio de EduSync (SaaS B2B multitenant Bolivia, PostgreSQL 15
+RLS, RBAC con roles DIRECTOR / SECRETARIA / DOCENTE).
+
+# Task
+Generar los DTOs de entrada (Command/Request) y salida (Response) para los 3
+casos de uso criticos de EduSync, diferenciando estrictamente las capas
+hexagonales: infrastructure/web (API), application (comando de caso de uso)
+y domain (eventos de dominio publicados). Por cada UC producir:
+  1. Request DTO  -- infrastructure/adapter/in/web/dto/  (Java Record, Spring)
+  2. Command      -- application/<uc>/                    (Java Record puro, sin Spring)
+  3. Response DTO -- infrastructure/adapter/in/web/dto/  (Java Record, Spring)
+  4. Domain Event -- domain/model/<contexto>/event/      (Java Record puro)
+  5. Tabla de mapeo DTO <-> Entidad de dominio con la BR que valida cada campo
+
+# Context
+- UCs objetivo: FSD-UC-001 (registro calificacion), FSD-UC-003 (consolidacion),
+  FSD-UC-005 (autorizacion correccion retroactiva). Fuente: docs/fsd/FSD_EduSync.md.
+- Estructura de paquetes hexagonal: docs/arquitectura_hexagonal_EduSync.md §1.1.
+- Convenciones de codigo: docs/AGENTS.md §5 (Java 21, Records, ingles, Bean Validation).
+- BRs activas: BR-001 (RBAC), BR-002 (rango), BR-003 (floor), BR-004 (RUDE),
+  BR-005 (append-only), BR-007 (parametros inmutables), BR-008 (calculo en dominio),
+  BR-009 (ventana 1-72h), BR-010 (audit en TX), BR-011 (anual con 3 cerrados).
+- DAs aplicables: DA-01 (RLS), DA-02 (aislamiento dominio), DA-03 (audit_log).
+
+# Reasoning
+1. Por cada UC, derivar el Request DTO del "Datos de entrada" del FSD,
+   anadiendo anotaciones Jakarta que reflejen la BR correspondiente.
+2. Derivar el Command del Request DTO, eliminando dependencia Spring/Jakarta
+   y anadiendo tenantId (SecurityContext) y actorId (JWT claim).
+3. Derivar el Response DTO del "Datos de salida" del FSD, con camelCase
+   ingles y tipos Java precisos (UUID, BigDecimal, Instant).
+4. Definir el Domain Event como Record inmutable con campos minimos que
+   consumen los listeners (sin PII innecesaria).
+5. Construir la tabla DTO <-> Entidad con: campo DTO, campo entidad, BR
+   que lo valida, capa de validacion (Jakarta vs Domain Service).
+
+# Stop condition
+Detente cuando esten completos para los 3 UCs:
+- 4 Request DTOs (Java Records con Bean Validation)
+- 4 Commands (Java Records sin Spring)
+- 3 Response DTOs (Java Records)
+- 5 Domain Events (CalificacionRegistradaEvent, MateriaCerradaEvent,
+  CentralizadorOficialEvent, AutorizacionEmitidaEvent, VentanaExpiradaEvent)
+- 3 tablas de mapeo DTO <-> Entidad
+
+# Output
+docs/dtos_EduSync.md v0.1 con: frontmatter, §0 proposito, §1-§3 codigo Java
+por UC, §4 verificacion contra invariantes hexagonales, §5 inventario
+consolidado, §6 checklist dev-agent, §7 trazabilidad, §8 registro de cambios.
+Cada Record con package declaration completo. Tablas Markdown DTO <-> Entidad
+con columnas: Campo DTO | Tipo Java | Campo Entidad | BR | Capa de validacion.
+
+# Invariants
+- domain/ Records (Commands y Events) sin imports de org.springframework.*
+  ni jakarta.* (DA-02).
+- El campo `rude` NUNCA aparece en @PathVariable ni @RequestParam; solo en
+  el body (BR-004 + NFR-007 PII).
+- `valor` en CalificacionRequestDTO lleva @DecimalMin("0") y @Digits;
+  rango_max dinamico se valida en VO ValorCalificacion del dominio.
+- Los Response DTOs NO exponen tenant_id ni actor_id al cliente.
+- `promedioAnual` en CentralizadorResponseDTO es Integer nullable
+  (null = "EN CURSO"), no String.
+
+# Failure modes
+- E_DTO_CON_ENTIDAD_JPA: Record extiende o referencia una @Entity -- rechazar.
+- E_RUDE_EN_PATH: rude en @PathVariable o @RequestParam -- mover al body.
+- E_CALCULO_EN_DTO: el DTO realiza floor/promedio -- mover al Domain Service.
+- E_CAMPO_SIN_BR: campo de negocio sin anotacion ni BR documentada -- completar.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
@@ -1276,6 +1921,16 @@ Dos archivos sincronizados:
 | BRD v2 + Arq. funcional + Entrevistas UX + Excel reales | `BR-001..BR-012, MRD-N-01..10, DA-01..DA-05` | PR-MRD-001 | `docs-agent` | MRD EduSync v1.0 | `docs/MRD-EduSync.md` |
 | MRD v1.0 + BRD v2.0 + Arquitectura funcional + Diagramas de estado | `MRD-N-01..10, BR-001..BR-012, UC-01..UC-10` | PR-PRD-001 | `docs-agent` | PRD EduSync v1.0 (17 US, 6 épicas) | `docs/PRD_EduSync.md` |
 | PRD v1.0 + BRD v2.0 + MRD v1.0 + Arquitectura funcional | `PRD-REQ-001..020, UC-01..UC-10, DA-01..DA-05` | PR-FSD-001 | `docs-agent` | FSD EduSync v1.0 (FSD Clásico, 5 FSD-UC) | `docs/fsd/FSD-EduSync.md` |
+| FSD v1.0 + PRD v1.0 + BRD v2.0 + MRD v1.0 + Arquitectura funcional | `FSD-UC-001..005, PRD-REQ-001..020, BR-001..BR-012, DA-01..DA-05` | PR-LFSD-001 | `docs-agent` | LFSD EduSync v1.0 (hex. architecture, 14 tablas DDL, 16 tasks) | `docs/lfsd/LFSD-EduSync.md` |
+| docs/AGENTS.md v0.1 + repositorio EduSync real (brd/, mrd/, prd/, fsd/, LFSD, diagramas, .cursor/rules) | `BR-001..BR-012, DA-01..DA-05, NFR-001..016` | PR-ARCH-002 | `docs-agent` | AGENTS.md v0.2 (417 lineas, 6 agentes, 6 rutas corregidas, 15 artefactos nuevos) | `docs/AGENTS.md` |
+| docs/PROMPT_MAPPING.md v0.5 + plantillas/SKILL_TEMPLATE.md + .cursor/skills-cursor/create-skill/SKILL.md | `18 prompt-contratos PR-ARCH-001..PR-LFSD-001` | PR-SKILL-001 | `docs-agent` | Skill update-prompt-mapping (SKILL.md + reference.md) | `.cursor/skills/update-prompt-mapping/` + `.claude/skills/update-prompt-mapping/` |
+| docs/PROMPT_MAPPING.md v0.6 + plantillas/c4.md + .cursor/skills-cursor/create-skill/SKILL.md + FSD_EduSync.md + LFSD-EduSync.md | `20 prompt-contratos + stack EduSync real` | PR-SKILL-002 | `docs-agent` | Skill c4-edusync (SKILL.md + reference.md) | `.cursor/skills/c4-edusync/` + `.claude/skills/c4-edusync/` |
+| .cursor/skills/c4-edusync/SKILL.md + docs/AGENTS.md + docs/fsd/FSD_EduSync.md | `DA-01..DA-05, FSD-UC-001..009, actores EduSync` | PR-C4-001 | `arch-agent` | C4 Level 1 - Diagrama de Contexto del Sistema | `docs/diagrams/c4_level1.mmd` |
+| docs/diagrams/c4_level1.mmd + .cursor/skills/c4-edusync/SKILL.md + docs/LFSD-EduSync.md | `DA-01..DA-05, FSD-UC-001..009, 7 contenedores` | PR-C4-002 | `arch-agent` | C4 Level 2 - Diagrama de Contenedores | `docs/diagrams/c4_level2.mmd` |
+| plantillas/dti-author.md + plantillas/DOCUMENTO_TECNICO_INICIAL_TEMPLATE.md + docs/LFSD-EduSync.md + docs/AGENTS.md | `DA-01..DA-05, FSD-UC-001..009, 23 secciones DTI` | PR-SKILL-003 | `docs-agent` | Skill dti-edusync (SKILL.md) | `.cursor/skills/dti-edusync/` + `.claude/skills/dti-edusync/` |
+| docs/fsd/FSD_EduSync.md + docs/LFSD-EduSync.md + docs/AGENTS.md + docs/diagrams/c4_level1.mmd + c4_level2.mmd + docs/brd/BRD_EduSync_v2.md | `FSD-UC-001..009, DA-01..DA-05, BR-001..BR-012, NFR-001..016` | PR-DTI-001 | `docs-agent` | DTI EduSync v0.1 (23 secciones, 883 lineas) | `docs/DTI.md` |
+| docs/fsd/FSD_EduSync.md + docs/prd/PRD_EduSync.md + docs/LFSD-EduSync.md + docs/arquitectura_funcional_EduSync.md | `FSD-UC-001..010, BR-001..BR-012, DA-01..DA-05, NFR-001..016` | PR-HEX-001 | `arch-agent` | Arquitectura hexagonal del core EduSync v0.1 (20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots) | `docs/arquitectura_hexagonal_EduSync.md` |
+| docs/fsd/FSD_EduSync.md + docs/arquitectura_hexagonal_EduSync.md + docs/AGENTS.md | `FSD-UC-001, FSD-UC-003, FSD-UC-005, BR-001..BR-011, DA-01..DA-03` | PR-DTO-001 | `dev-agent` | DTOs por capa hexagonal EduSync v0.1 (4 Request DTOs, 4 Commands, 3 Response DTOs, 5 Domain Events, 5 enums, 3 tablas DTO ↔ Entidad) | `docs/dtos_EduSync.md` |
 
 ---
 
@@ -1287,3 +1942,8 @@ Dos archivos sincronizados:
 | v0.2 | 14/05/2026 | Equipo G013 | Incorporacion de PR-DIAG-001 (estados Docente) y PR-DIAG-002 (estados Director); nuevo agente `process-agent`; capa "Modelado de Procesos" en el flujo general; 2 invariantes adicionales IG-09 e IG-10 sobre sincronizacion `.mmd`↔`.md` y compatibilidad de parsers; trazabilidad ampliada a 13 prompts |
 | v0.3 | 14/05/2026 | Equipo G013 | Incorporación de PR-BRD-002 (BRD EduSync V2 consolidado); actualización del índice, flowchart (nodo BRD2 con conexiones desde BRD, ARCH, DIAG1 y DIAG2), matriz de responsabilidades del docs-agent y trazabilidad ampliada a 14 prompts |
 | v0.4 | 15/05/2026 | Equipo G013 | Incorporación de PR-MRD-001 (MRD EduSync v1.0), PR-PRD-001 (PRD EduSync v1.0) y PR-FSD-001 (FSD EduSync v1.0 — FSD Clásico); actualización del índice (3 nuevos prompts), áreas de IDs (MRD/PRD/FSD), flowchart (cadena MRD→PRD→FSD), matriz del docs-agent y trazabilidad ampliada a 17 prompts |
+| v0.5 | 15/05/2026 | Equipo G013 | Incorporación de PR-LFSD-001 (LFSD EduSync v1.0 — Low-Level Functional Specification, arquitectura hexagonal, 20 secciones, 14 tablas DDL, 15+ APIs, 4 diagramas de secuencia, 16 tasks); actualización del índice (18 prompts), áreas de IDs (LFSD), flowchart (cadena FSD→LFSD), matriz del docs-agent y trazabilidad ampliada a 18 prompts |
+| v0.6 | 17/05/2026 | Rodrigo Aspeti | Incorporación de PR-ARCH-002 (AGENTS.md v0.2 — 6 rutas corregidas, 15 artefactos nuevos, 6 agentes, 4 golden tests) y PR-SKILL-001 (skill update-prompt-mapping para Cursor y Claude); área SKILL añadida al header; nodos AGENTS + SKILL en flowchart; matriz docs-agent actualizada; trazabilidad ampliada a 20 prompts |
+|| v0.7 | 17/05/2026 | Rodrigo Aspeti | Incorporacion de PR-SKILL-002 (skill c4-edusync), PR-C4-001 (C4 Level 1), PR-C4-002 (C4 Level 2), PR-SKILL-003 (skill dti-edusync) y PR-DTI-001 (DTI EduSync v0.1 -- 23 secciones, 883 lineas, 5 ADRs, 16 NFRs, 4 golden tests); areas C4 y DTI anadidas al header; subgraph ARQUITECTURA en flowchart; matriz arch-agent y docs-agent actualizadas; trazabilidad ampliada a 25 prompts |
+| v0.8 | 24/05/2026 | Rodrigo Aspeti | Incorporacion de PR-HEX-001 (arquitectura hexagonal del core EduSync v0.1 -- 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots con invariantes BR-001..BR-012); area HEX anadida al header; nodo HEX en flowchart con aristas desde FSD, LFSD, ARCH y PRD; matriz arch-agent actualizada con PR-HEX-001; trazabilidad ampliada a 26 prompts |
+| v0.9 | 24/05/2026 | Rodrigo Aspeti | Incorporacion de PR-DTO-001 (DTOs por capa hexagonal para FSD-UC-001/003/005 -- 4 Request DTOs con Bean Validation, 4 Commands puros, 3 Response DTOs, 5 Domain Events, 5 enums de dominio, 3 tablas de mapeo DTO ↔ Entidad con BR y capa de validacion); area DTO anadida al header; nodo DTO en flowchart con aristas desde FSD, HEX y AGENTS; matriz dev-agent actualizada (responsabilidad ampliada a generacion de DTOs hexagonales); trazabilidad ampliada a 27 prompts |

@@ -13,7 +13,7 @@
 | **Autor** | Rodrigo Aspeti — Dev Lead / Architect |
 | **Revisores** | Tech Lead · QA Engineer · Architect |
 | **Estado** | Borrador técnico |
-| **FSD de referencia** | `docs/FSD_EduSync.md` (v1.0) |
+| **FSD de referencia** | `docs/fsd/FSD_EduSync.md` (v1.0) |
 | **PRD de referencia** | `docs/PRD_EduSync.md` (v1.0) |
 | **Stack** | Java 21 LTS · Spring Boot 3.3 · Spring Security 6 · Spring Data JPA · PostgreSQL 15 · Angular 17 · AWS |
 | **Arquitectura** | Hexagonal (Ports & Adapters) — Domain / Application / Infrastructure |
@@ -2267,6 +2267,7 @@ ORDER BY c.rude, c.dimension, c.indice_evaluacion;
 | Versión | Fecha | Autor | Cambio |
 |---------|-------|-------|--------|
 | v1.0 | 15/05/2026 | Rodrigo Aspeti — Dev Lead | Creación inicial del LFSD. Basado en FSD v1.0, PRD v1.0, BRD v2.0, arquitectura funcional (10 UCs, 5 DAs). Incluye: arquitectura hexagonal completa, estructura de paquetes Java, diagramas de componentes/clases/secuencia/estados (Mermaid), 8 módulos con pseudoalgoritmos, 15 APIs con contratos request/response completos, DTOs con Bean Validation, entidades JPA con anotaciones, DDL lógico con 14 tablas, políticas RLS, AOP de auditoría, configuración Spring Security 6, schedulers de ventanas y reintentos SIE, manejo global de errores, 16 edge cases, 12 restricciones técnicas innegociables, 16 tasks con estimaciones, glosario técnico de 12 términos. |
+| v1.0.1 | 28/05/2026 | Rodrigo Aspeti | Normalización de la referencia al FSD en §0 metadatos: `docs/FSD_EduSync.md` → `docs/fsd/FSD_EduSync.md` (ruta canónica). Sin cambios funcionales ni de contenido técnico. |
 
 ---
 

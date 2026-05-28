@@ -1,7 +1,7 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO`. Versión activa: `v1.0`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO`. Versión activa: `v1.2`.
 > Cada prompt sigue la estructura de `plantillas/PROMPT_TEMPLATE.md`.
 > Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
@@ -28,8 +28,8 @@
 | PR-BRD-002 | `docs/BRD_EduSync_V2.md` (BRD consolidado v2.0 — BR-001..BR-012, RB-01..RB-11) | consolidación | `docs-agent` | Sonnet | 14/05/2026 | Aprobado | `prompts/PR-BRD-002.md` | ~2 500 tk in / ~12 000 tk out \| antes: BRD v1 disperso \| después: `docs/BRD_EduSync_v2.md` (BR-001..BR-012) |
 | PR-MRD-001 | `docs/MRD-EduSync.md` (MRD v1.0 — 10 MRD-N-*, 3 personas, JTBD, go-to-market) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado | `prompts/PR-MRD-001.md` | ~2 000 tk in / ~10 000 tk out \| antes: MRD inexistente \| después: `docs/mrd/MRD_EduSync.md` (10 necesidades, 3 personas) |
 | PR-PRD-001 | `docs/PRD_EduSync.md` (PRD v1.0 — 17 US, 6 épicas, RICE, NFRs, journeys) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado | `prompts/PR-PRD-001.md` | ~2 500 tk in / ~12 000 tk out \| antes: PRD inexistente \| después: `docs/prd/PRD_EduSync.md` (17 US, 6 épicas) |
-| PR-FSD-001 | `docs/fsd/FSD-EduSync.md` (FSD Clásico v1.0 — 5 FSD-UC, ER, 3 contratos, 14 tasks) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado | `prompts/PR-FSD-001.md` | ~4 000 tk in / ~18 000 tk out \| antes: FSD inexistente \| después: `docs/fsd/FSD_EduSync.md` (5 FSD-UC, ER, 14 tasks) |
-| PR-LFSD-001 | `docs/lfsd/LFSD-EduSync.md` (LFSD v1.0 — 20 §§, 15 APIs, 14 tablas DDL, 4 diagramas secuencia, 16 tasks) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado | `prompts/PR-LFSD-001.md` | ~5 000 tk in / ~22 000 tk out \| antes: LFSD inexistente \| después: `docs/lfsd/LFSD-EduSync.md` (20 §§, 14 tablas DDL) |
+| PR-FSD-001 | `docs/fsd/FSD_EduSync.md` (FSD Clásico v1.0 — 5 FSD-UC, ER, 3 contratos, 14 tasks) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado | `prompts/PR-FSD-001.md` | ~4 000 tk in / ~18 000 tk out \| antes: FSD inexistente \| después: `docs/fsd/FSD_EduSync.md` (5 FSD-UC, ER, 14 tasks) |
+| PR-LFSD-001 | `docs/LFSD-EduSync.md` (LFSD v1.0 — 20 §§, 15 APIs, 14 tablas DDL, 4 diagramas secuencia, 16 tasks) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado | `prompts/PR-LFSD-001.md` | ~5 000 tk in / ~22 000 tk out \| antes: LFSD inexistente \| después: `docs/LFSD-EduSync.md` (20 §§, 14 tablas DDL) |
 | PR-ARCH-002 | `docs/AGENTS.md` v0.2 — corrección de 6 rutas rotas, 15 nuevos artefactos, 6 agentes, 4 golden tests | consolidación | `docs-agent` | Sonnet | 17/05/2026 | Aprobado | `prompts/PR-ARCH-002.md` | ~2 000 tk in / ~8 000 tk out \| antes: AGENTS.md v0.1 con rutas rotas \| después: `docs/AGENTS.md` v0.2 (6 agentes, 4 golden tests) |
 | PR-SKILL-001 | `.cursor/skills/update-prompt-mapping/SKILL.md` + `.claude/skills/update-prompt-mapping/SKILL.md` — skill para actualizar PROMPT_MAPPING | generación | `docs-agent` | Sonnet | 17/05/2026 | Aprobado | `prompts/PR-SKILL-001.md` | ~800 tk in / ~3 000 tk out \| antes: actualización manual de PROMPT_MAPPING \| después: skill `update-prompt-mapping` (Cursor + Claude) |
 | PR-SKILL-002 | `.cursor/skills/c4-edusync/SKILL.md` + `.claude/skills/c4-edusync/SKILL.md` - skill para generar diagramas C4 de EduSync | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado | `prompts/PR-SKILL-002.md` | ~700 tk in / ~2 500 tk out \| antes: diagramas C4 sin skill reutilizable \| después: skill `c4-edusync` (Cursor + Claude) |
@@ -39,6 +39,7 @@
 | PR-DTI-001 | `docs/DTI.md` v0.1 - DTI completo (§0-§23, 883 lineas, C4 L1/L2/L3, 2 POCs, 5 ADRs, 16 NFRs, 4 golden tests) | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado | `prompts/PR-DTI-001.md` | ~5 000 tk in / ~20 000 tk out \| antes: DTI inexistente \| después: `docs/DTI.md` v0.1 (883 líneas, §0–§23) |
 | PR-HEX-001 | `docs/arquitectura_hexagonal_EduSync.md` v0.1 — Arquitectura hexagonal del core: 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots | generacion | `arch-agent` | Sonnet | 24/05/2026 | Aprobado | `prompts/PR-HEX-001.md` | ~3 500 tk in / ~12 000 tk out \| antes: arquitectura hexagonal sin documentar \| después: `docs/arquitectura_hexagonal_EduSync.md` v0.1 |
 | PR-DTO-001 | `docs/dtos_EduSync.md` v0.1 — DTOs por capa hexagonal para FSD-UC-001/003/005: 4 Request DTOs, 4 Commands, 3 Response DTOs, 5 Domain Events, 5 enums, 3 tablas DTO ↔ Entidad | generacion | `dev-agent` | Sonnet | 24/05/2026 | Aprobado | `prompts/PR-DTO-001.md` | ~2 500 tk in / ~8 000 tk out \| antes: DTOs sin diseño formal \| después: `docs/dtos_EduSync.md` v0.1 (445 líneas) |
+| PR-DTI-SEAMS-001 | `docs/DTI.md §6.2` — Seams de descomposición para EduSync (calificaciones ↔ consolidacion; exportacion ↔ nucleo) | generacion | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-DTI-SEAMS-001.md` | ~2 800 tk in / ~4 500 tk out \| antes: DTI sin analisis T1.8 de seams \| después: `docs/DTI.md` §6.2 + registro de cambios v0.2 |
 
 ---
 
@@ -139,6 +140,11 @@ flowchart TD
     FSD --> DTO
     HEX --> DTO
     AGENTS --> DTO
+    DTISEAMS["PR-DTI-SEAMS-001\nSeams de Descomposicion\n(docs-agent)"]
+
+    DTI --> DTISEAMS
+    BRD2 --> DTISEAMS
+    FSD --> DTISEAMS
 ```
 
 ---
@@ -147,7 +153,7 @@ flowchart TD
 
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
-| `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel y de configuración de agentes | `.md` en `docs/`, `docs/fsd/`, `docs/lfsd/`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI en `docs/DTI.md` |
+| `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel y de configuración de agentes | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md` |
 | `dev-agent` | PR-UC-001..UC-010, PR-DTO-001 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias | Código en `src/`, contratos en `docs/prompts/`, DTOs en `docs/dtos_EduSync.md` |
 | `arch-agent` | PR-ADR-001..005, PR-C4-001, PR-C4-002, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 en `docs/diagrams/`; arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
@@ -474,7 +480,7 @@ Generas documentos FSD técnicamente precisos, implementables y verificables
 para sistemas Java 21 / Spring Boot 3 con arquitectura hexagonal.
 
 # Task
-Genera docs/fsd/FSD-EduSync.md siguiendo plantillas/FSD_TEMPLATE.md en modo
+Genera docs/fsd/FSD_EduSync.md siguiendo plantillas/FSD_TEMPLATE.md en modo
 FSD Clásico, especificando QUE hace EduSync con nivel técnico suficiente para
 que desarrollo, QA y arquitectura puedan implementar y verificar.
 
@@ -508,7 +514,7 @@ plan de pruebas, glosario y checklist FSD Clásico verificado. Sin placeholders.
 
 # Output
 Markdown completo según FSD_TEMPLATE.md en modo FSD Clásico (secciones 0-15 + checklist)
-guardado en docs/fsd/FSD-EduSync.md, listo para implementación y QA testing.
+guardado en docs/fsd/FSD_EduSync.md, listo para implementación y QA testing.
 
 # Invariants
 - El cálculo de floor() y la conversión SIE solo ocurren en la capa de dominio.
@@ -536,14 +542,14 @@ Tienes experiencia creando LFSD que trasladan especificaciones funcionales a
 diseño de bajo nivel implementable, con arquitectura hexagonal, DDD y SOLID.
 
 # Task
-Genera docs/lfsd/LFSD-EduSync.md traduciendo los requerimientos del FSD v1.0
+Genera docs/LFSD-EduSync.md traduciendo los requerimientos del FSD v1.0
 a especificaciones técnicas de bajo nivel listas para implementación y QA.
 El documento debe cubrir: arquitectura de componentes, diseño de módulos,
 contratos API, DTOs, entidades JPA, DDL, workflows (secuencia), eventos,
 seguridad, auditoría, schedulers, manejo de errores y edge cases.
 
 # Context
-- Insumo principal: docs/FSD_EduSync.md (5 FSD-UC, 12 BR, 16 entidades, 16 NFRs).
+- Insumo principal: docs/fsd/FSD_EduSync.md (5 FSD-UC, 12 BR, 16 entidades, 16 NFRs).
 - Insumo funcional: docs/PRD_EduSync.md (20 PRD-REQ-*, 15 NFRs).
 - Contexto de negocio: docs/BRD_EduSync_V2.md, docs/MRD_EduSync.md.
 - Arquitectura base: hexagonal (Domain / Application / Infrastructure).
@@ -555,7 +561,7 @@ seguridad, auditoría, schedulers, manejo de errores y edge cases.
     * tenant_id en toda tabla + política RLS activa.
     * Cálculos de promedio SOLO en ConsolidacionDomainService (BR-008).
     * Modelo append-only en UC-005: original NUNCA sobreescrito.
-- Ruta de salida: docs/lfsd/LFSD-EduSync.md.
+- Ruta de salida: docs/LFSD-EduSync.md.
 
 # Reasoning
 1. Mapear la arquitectura hexagonal en estructura de paquetes Java
@@ -588,7 +594,7 @@ AOP de auditoría, 2 schedulers, GlobalExceptionHandler, 7 edge cases,
 
 # Output
 Markdown completo (20 secciones §0–§20 + checklist) guardado en
-docs/lfsd/LFSD-EduSync.md, listo para implementación, code review y QA técnico.
+docs/LFSD-EduSync.md, listo para implementación, code review y QA técnico.
 
 # Invariants
 - Ningún cálculo de promedio puede aparecer fuera de ConsolidacionDomainService.
@@ -1858,6 +1864,73 @@ con columnas: Campo DTO | Tipo Java | Campo Entidad | BR | Capa de validacion.
 
 ---
 
+### PR-DTI-SEAMS-001 — Seams de descomposición de EduSync
+
+```markdown
+# Role
+Eres el arquitecto de software del equipo G-EduSync, experto en descomposicion
+de monolitos y patrones de microservicios (Strangler Fig, seams de
+descomposicion). Conoces a fondo EduSync: monolito modular Java 21 / Spring
+Boot 3.3 / PostgreSQL 15 RLS desplegado en AWS ECS Fargate, con bounded
+contexts definidos en docs/DTI.md §4.1 y arquitectura hexagonal en §5.
+
+# Task
+Agregar la subseccion `### 6.2 Seams de descomposición` a `docs/DTI.md`
+inmediatamente despues de `### 6.1 Patrones de resiliencia aplicados`, con un
+analisis tecnico riguroso de los 2 mejores seams de descomposicion para
+EduSync y una fila en el registro de cambios del DTI.
+
+# Context
+- Documentos fuente: `docs/DTI.md`, `docs/brd/BRD_EduSync_v2.md`,
+  `docs/fsd/FSD_EduSync.md`.
+- Bounded contexts: `calificaciones`, `periodos`, `consolidacion`,
+  `exportacion`, `auditoria`.
+- Evidencia arquitectonica: DA-04 (`MateriaCerradaEvent` AFTER_COMMIT,
+  preparado para AWS SQS v1.1) y DA-05 (`SIEHttpClient` con Resilience4j,
+  timeout 30 s y `SIERetryScheduler` cada 5 min).
+- Reglas y NFRs a citar: BR-002, BR-004, BR-005, BR-008, BR-011, NFR-001,
+  NFR-005/NFR-011 segun aplique.
+- Criterios T1.8: equipos independientes, escala diferenciada, aislamiento de
+  fallos, costo de separacion vs beneficio operacional para año 1 (< 50
+  unidades educativas).
+
+# Reasoning
+1. Leer `docs/DTI.md` completo y confirmar que `### 6.1 Patrones de resiliencia aplicados` existe antes de insertar.
+2. Leer `docs/brd/BRD_EduSync_v2.md` para identificar BR-NNN que cruzan bounded contexts y evidencian acoplamiento.
+3. Leer `docs/fsd/FSD_EduSync.md` para confirmar FSD-UC por bounded context y fronteras cruzadas.
+4. Construir el Seam 1 `calificaciones` ↔ `consolidacion` con evidencia FSD-UC/BR/DA/NFR, tabla T1.8 y recomendacion.
+5. Construir el Seam 2 `exportacion` ↔ nucleo (`calificaciones` + `consolidacion` + `periodos`) con evidencia FSD-UC/BR/DA/NFR, tabla T1.8 y recomendacion.
+6. Insertar solo el bloque `### 6.2` despues del cierre de §6.1 y antes de `## 7`.
+7. Agregar una fila al registro de cambios del DTI con version, fecha, Rodrigo Aspeti y el cambio de Tarea 1 Modulo 4.
+
+# Stop condition
+Detente cuando `docs/DTI.md` contenga `### 6.2 Seams de descomposición` con
+los 2 seams completos; cada seam tenga nombre, tabla de evidencia, tabla T1.8
+con 4 criterios y recomendacion; `### 6.1` permanezca intacta; y el registro
+de cambios refleje la actualizacion.
+
+# Output
+Markdown insertado en `docs/DTI.md` con esta estructura: contexto academico,
+separador, `#### Seam 1: calificaciones ↔ consolidacion`, tabla de evidencia,
+tabla T1.8, recomendacion, separador, `#### Seam 2: exportacion ↔ nucleo`,
+tabla de evidencia, tabla T1.8, recomendacion, separador final.
+
+# Invariants
+- No modificar ninguna seccion del DTI fuera de §6 y el registro de cambios.
+- No borrar ni renumerar `### 6.1 Patrones de resiliencia aplicados`.
+- Cada seam referencia al menos 2 FSD-UC, 2 BR/DA y 1 NFR.
+- Las recomendaciones citan explicitamente el numero de criterios T1.8 que las fundamentan.
+- Los nombres de bounded contexts coinciden exactamente con `docs/DTI.md §4.1`.
+
+# Failure modes
+- E_SECTION_NOT_FOUND: no existe `### 6.1` en el DTI -- STOP, verificar version del DTI.
+- E_BC_MISMATCH: nombre de bounded context no coincide con §4.1 -- corregir antes de guardar.
+- E_MISSING_TRACEABILITY: un seam no referencia FSD-UC, BR o DA -- completar la evidencia.
+- E_RECOMMENDATION_UNSUPPORTED: recomendacion sin conteo T1.8 -- agregar SÍ/NO y justificacion.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
@@ -1921,8 +1994,8 @@ con columnas: Campo DTO | Tipo Java | Campo Entidad | BR | Capa de validacion.
 | BRD v1 + Arq. funcional + Diagramas de estado | `BR-001..BR-012, UC-01..UC-10, DA-01..DA-05, estados_cargar_notas.md, estados_administracion.md` | PR-BRD-002 | `docs-agent` | BRD EduSync V2 consolidado | `docs/BRD_EduSync_V2.md` |
 | BRD v2 + Arq. funcional + Entrevistas UX + Excel reales | `BR-001..BR-012, MRD-N-01..10, DA-01..DA-05` | PR-MRD-001 | `docs-agent` | MRD EduSync v1.0 | `docs/MRD-EduSync.md` |
 | MRD v1.0 + BRD v2.0 + Arquitectura funcional + Diagramas de estado | `MRD-N-01..10, BR-001..BR-012, UC-01..UC-10` | PR-PRD-001 | `docs-agent` | PRD EduSync v1.0 (17 US, 6 épicas) | `docs/PRD_EduSync.md` |
-| PRD v1.0 + BRD v2.0 + MRD v1.0 + Arquitectura funcional | `PRD-REQ-001..020, UC-01..UC-10, DA-01..DA-05` | PR-FSD-001 | `docs-agent` | FSD EduSync v1.0 (FSD Clásico, 5 FSD-UC) | `docs/fsd/FSD-EduSync.md` |
-| FSD v1.0 + PRD v1.0 + BRD v2.0 + MRD v1.0 + Arquitectura funcional | `FSD-UC-001..005, PRD-REQ-001..020, BR-001..BR-012, DA-01..DA-05` | PR-LFSD-001 | `docs-agent` | LFSD EduSync v1.0 (hex. architecture, 14 tablas DDL, 16 tasks) | `docs/lfsd/LFSD-EduSync.md` |
+| PRD v1.0 + BRD v2.0 + MRD v1.0 + Arquitectura funcional | `PRD-REQ-001..020, UC-01..UC-10, DA-01..DA-05` | PR-FSD-001 | `docs-agent` | FSD EduSync v1.0 (FSD Clásico, 5 FSD-UC) | `docs/fsd/FSD_EduSync.md` |
+| FSD v1.0 + PRD v1.0 + BRD v2.0 + MRD v1.0 + Arquitectura funcional | `FSD-UC-001..005, PRD-REQ-001..020, BR-001..BR-012, DA-01..DA-05` | PR-LFSD-001 | `docs-agent` | LFSD EduSync v1.0 (hex. architecture, 14 tablas DDL, 16 tasks) | `docs/LFSD-EduSync.md` |
 | docs/AGENTS.md v0.1 + repositorio EduSync real (brd/, mrd/, prd/, fsd/, LFSD, diagramas, .cursor/rules) | `BR-001..BR-012, DA-01..DA-05, NFR-001..016` | PR-ARCH-002 | `docs-agent` | AGENTS.md v0.2 (417 lineas, 6 agentes, 6 rutas corregidas, 15 artefactos nuevos) | `docs/AGENTS.md` |
 | docs/PROMPT_MAPPING.md v0.5 + plantillas/SKILL_TEMPLATE.md + .cursor/skills-cursor/create-skill/SKILL.md | `18 prompt-contratos PR-ARCH-001..PR-LFSD-001` | PR-SKILL-001 | `docs-agent` | Skill update-prompt-mapping (SKILL.md + reference.md) | `.cursor/skills/update-prompt-mapping/` + `.claude/skills/update-prompt-mapping/` |
 | docs/PROMPT_MAPPING.md v0.6 + plantillas/c4.md + .cursor/skills-cursor/create-skill/SKILL.md + FSD_EduSync.md + LFSD-EduSync.md | `20 prompt-contratos + stack EduSync real` | PR-SKILL-002 | `docs-agent` | Skill c4-edusync (SKILL.md + reference.md) | `.cursor/skills/c4-edusync/` + `.claude/skills/c4-edusync/` |
@@ -1932,6 +2005,7 @@ con columnas: Campo DTO | Tipo Java | Campo Entidad | BR | Capa de validacion.
 | docs/fsd/FSD_EduSync.md + docs/LFSD-EduSync.md + docs/AGENTS.md + docs/diagrams/c4_level1.mmd + c4_level2.mmd + docs/brd/BRD_EduSync_v2.md | `FSD-UC-001..009, DA-01..DA-05, BR-001..BR-012, NFR-001..016` | PR-DTI-001 | `docs-agent` | DTI EduSync v0.1 (23 secciones, 883 lineas) | `docs/DTI.md` |
 | docs/fsd/FSD_EduSync.md + docs/prd/PRD_EduSync.md + docs/LFSD-EduSync.md + docs/arquitectura_funcional_EduSync.md | `FSD-UC-001..010, BR-001..BR-012, DA-01..DA-05, NFR-001..016` | PR-HEX-001 | `arch-agent` | Arquitectura hexagonal del core EduSync v0.1 (20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots) | `docs/arquitectura_hexagonal_EduSync.md` |
 | docs/fsd/FSD_EduSync.md + docs/arquitectura_hexagonal_EduSync.md + docs/AGENTS.md | `FSD-UC-001, FSD-UC-003, FSD-UC-005, BR-001..BR-011, DA-01..DA-03` | PR-DTO-001 | `dev-agent` | DTOs por capa hexagonal EduSync v0.1 (4 Request DTOs, 4 Commands, 3 Response DTOs, 5 Domain Events, 5 enums, 3 tablas DTO ↔ Entidad) | `docs/dtos_EduSync.md` |
+| DTI §4.1/§5/§6 + BRD v2 + FSD EduSync | `FSD-UC-001, FSD-UC-003, FSD-UC-004, FSD-UC-005, FSD-UC-009, BR-002, BR-004, BR-005, BR-008, BR-011, DA-04, DA-05, NFR-001` | PR-DTI-SEAMS-001 | `docs-agent` | Seams de descomposicion EduSync §6.2 + registro de cambios DTI v0.2 | `docs/DTI.md` |
 
 ---
 
@@ -1949,3 +2023,5 @@ con columnas: Campo DTO | Tipo Java | Campo Entidad | BR | Capa de validacion.
 | v0.8 | 24/05/2026 | Rodrigo Aspeti | Incorporacion de PR-HEX-001 (arquitectura hexagonal del core EduSync v0.1 -- 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots con invariantes BR-001..BR-012); area HEX anadida al header; nodo HEX en flowchart con aristas desde FSD, LFSD, ARCH y PRD; matriz arch-agent actualizada con PR-HEX-001; trazabilidad ampliada a 26 prompts |
 | v0.9 | 24/05/2026 | Rodrigo Aspeti | Incorporacion de PR-DTO-001 (DTOs por capa hexagonal para FSD-UC-001/003/005 -- 4 Request DTOs con Bean Validation, 4 Commands puros, 3 Response DTOs, 5 Domain Events, 5 enums de dominio, 3 tablas de mapeo DTO ↔ Entidad con BR y capa de validacion); area DTO anadida al header; nodo DTO en flowchart con aristas desde FSD, HEX y AGENTS; matriz dev-agent actualizada (responsabilidad ampliada a generacion de DTOs hexagonales); trazabilidad ampliada a 27 prompts |
 | v1.0 | 28/05/2026 | Rodrigo Aspeti | Materializacion de 31 archivos individuales en `prompts/PR-*.md` (9 secciones cada uno); columnas "Archivo" y "Metricas" anadidas al indice de prompts; trazabilidad simbolo → archivo → metricas antes/despues completa |
+| v1.1 | 28/05/2026 | Rodrigo Aspeti | Incorporacion de PR-DTI-SEAMS-001 (seams de descomposicion EduSync §6.2); version activa actualizada; indice, flowchart, matriz docs-agent, contrato inline, trazabilidad y archivo individual `prompts/PR-DTI-SEAMS-001.md` agregados |
+| v1.2 | 28/05/2026 | Rodrigo Aspeti | Normalizacion de rutas canonicas en todo el catalogo: `docs/fsd/FSD-EduSync.md` -> `docs/fsd/FSD_EduSync.md` (5 ocurrencias en indice, contratos PR-FSD-001 y trazabilidad); `docs/lfsd/LFSD-EduSync.md` -> `docs/LFSD-EduSync.md` (6 ocurrencias en indice, contratos PR-LFSD-001 y trazabilidad); `docs/FSD_EduSync.md` -> `docs/fsd/FSD_EduSync.md` (PR-LFSD-001 insumo). Matriz docs-agent actualizada. Sin cambios en numero de prompts ni en contratos |

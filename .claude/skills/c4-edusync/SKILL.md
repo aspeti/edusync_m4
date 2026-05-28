@@ -5,7 +5,7 @@ description: >-
   para el proyecto EduSync. Activar cuando el usuario pide "diagrama C4 nivel N
   de EduSync", edita un archivo docs/diagrams/c4_*.mmd, o quiere visualizar la
   arquitectura hexagonal (Java 21, Spring Boot 3.3, PostgreSQL 15 RLS, Angular 17,
-  AWS ECS). Consume FSD-EduSync.md y LFSD-EduSync.md; produce el bloque Mermaid
+  AWS ECS). Consume FSD_EduSync.md y LFSD-EduSync.md; produce el bloque Mermaid
   con tabla de trazabilidad FSD-UC ↔ contenedor/componente.
 allowed-tools:
   - read

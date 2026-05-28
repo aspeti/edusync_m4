@@ -1,43 +1,44 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO`. Versión activa: `v0.9`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO`. Versión activa: `v1.0`.
 > Cada prompt sigue la estructura de `plantillas/PROMPT_TEMPLATE.md`.
+> Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
 
 ---
 
 ## Índice de prompts
 
-| ID | Artefacto producido | Tipo | Agente | Modelo | Fecha | Estado |
-|----|---------------------|------|--------|--------|-------|--------|
-| PR-ARCH-001 | `docs/arquitectura_funcional_EduSync.md` | generación | `docs-agent` | Sonnet | 14/05/2026 | Aprobado |
-| PR-BRD-001 | `docs/BRD_EduSync.md` | generación | `docs-agent` | Sonnet | 14/05/2026 | Aprobado |
-| PR-UC-001 | Contrato UC-01 · Registro de calificaciones | transformación | `dev-agent` | Sonnet | 14/05/2026 | Aprobado |
-| PR-UC-002 | Contrato UC-02 · Cierre operativo de materia | transformación | `dev-agent` | Sonnet | 14/05/2026 | Aprobado |
-| PR-UC-003 | Contrato UC-03 · Consolidación de centralizadores | transformación | `dev-agent` | Opus | 14/05/2026 | Aprobado |
-| PR-UC-004 | Contrato UC-04 · Exportación SIE | transformación | `dev-agent` | Sonnet | 14/05/2026 | Aprobado |
-| PR-UC-005 | Contrato UC-05 · Modificación retroactiva | transformación | `dev-agent` | Opus | 14/05/2026 | Aprobado |
-| PR-UC-009 | Contrato UC-09 · Administración de periodos | transformación | `dev-agent` | Sonnet | 14/05/2026 | Aprobado |
-| PR-ADR-001..005 | `docs/arquitectura_funcional_EduSync.md §DA-01..DA-05` | generación | `arch-agent` | Opus | 14/05/2026 | Aprobado |
-| PR-AUD-001 | Auditoría de trazabilidad y logs (`audit_log`) | auditoría | `qa-agent` | Sonnet | 14/05/2026 | Borrador |
-| PR-INF-001 | Informe estadístico de indicadores institucionales (UC-10) | extracción | `docs-agent` | Haiku | 14/05/2026 | Borrador |
-| PR-DIAG-001 | `docs/diagramas/estados.cargarnotas.mmd` + `estados_cargar_notas.md` (flujo del Docente) | generación | `process-agent` | Sonnet | 14/05/2026 | Aprobado |
-| PR-DIAG-002 | `docs/diagramas/estados_administracion.mmd` + `estados_administracion.md` (flujo del Director) | generación | `process-agent` | Sonnet | 14/05/2026 | Aprobado |
-| PR-BRD-002 | `docs/BRD_EduSync_V2.md` (BRD consolidado v2.0 — BR-001..BR-012, RB-01..RB-11) | consolidación | `docs-agent` | Sonnet | 14/05/2026 | Aprobado |
-| PR-MRD-001 | `docs/MRD-EduSync.md` (MRD v1.0 — 10 MRD-N-*, 3 personas, JTBD, go-to-market) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado |
-| PR-PRD-001 | `docs/PRD_EduSync.md` (PRD v1.0 — 17 US, 6 épicas, RICE, NFRs, journeys) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado |
-| PR-FSD-001 | `docs/fsd/FSD-EduSync.md` (FSD Clásico v1.0 — 5 FSD-UC, ER, 3 contratos, 14 tasks) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado |
-| PR-LFSD-001 | `docs/lfsd/LFSD-EduSync.md` (LFSD v1.0 — 20 §§, 15 APIs, 14 tablas DDL, 4 diagramas secuencia, 16 tasks) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado |
-| PR-ARCH-002 | `docs/AGENTS.md` v0.2 — corrección de 6 rutas rotas, 15 nuevos artefactos, 6 agentes, 4 golden tests | consolidación | `docs-agent` | Sonnet | 17/05/2026 | Aprobado |
-| PR-SKILL-001 | `.cursor/skills/update-prompt-mapping/SKILL.md` + `.claude/skills/update-prompt-mapping/SKILL.md` — skill para actualizar PROMPT_MAPPING | generación | `docs-agent` | Sonnet | 17/05/2026 | Aprobado |
-| PR-SKILL-002 | `.cursor/skills/c4-edusync/SKILL.md` + `.claude/skills/c4-edusync/SKILL.md` - skill para generar diagramas C4 de EduSync | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado |
-| PR-C4-001 | `docs/diagrams/c4_level1.mmd` - C4 Level 1 (Contexto del Sistema) | generacion | `arch-agent` | Sonnet | 17/05/2026 | Aprobado |
-| PR-C4-002 | `docs/diagrams/c4_level2.mmd` - C4 Level 2 (Contenedores) | generacion | `arch-agent` | Sonnet | 17/05/2026 | Aprobado |
-| PR-SKILL-003 | `.cursor/skills/dti-edusync/SKILL.md` + `.claude/skills/dti-edusync/SKILL.md` - skill para poblar y mantener el DTI de EduSync | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado |
-| PR-DTI-001 | `docs/DTI.md` v0.1 - DTI completo (§0-§23, 883 lineas, C4 L1/L2/L3, 2 POCs, 5 ADRs, 16 NFRs, 4 golden tests) | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado |
-| PR-HEX-001 | `docs/arquitectura_hexagonal_EduSync.md` v0.1 — Arquitectura hexagonal del core: 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots | generacion | `arch-agent` | Sonnet | 24/05/2026 | Aprobado |
-| PR-DTO-001 | `docs/dtos_EduSync.md` v0.1 — DTOs por capa hexagonal para FSD-UC-001/003/005: 4 Request DTOs, 4 Commands, 3 Response DTOs, 5 Domain Events, 5 enums, 3 tablas DTO ↔ Entidad | generacion | `dev-agent` | Sonnet | 24/05/2026 | Aprobado |
+| ID | Artefacto producido | Tipo | Agente | Modelo | Fecha | Estado | Archivo | Métricas |
+|----|---------------------|------|--------|--------|-------|--------|---------|----------|
+| PR-ARCH-001 | `docs/arquitectura_funcional_EduSync.md` | generación | `docs-agent` | Sonnet | 14/05/2026 | Aprobado | `prompts/PR-ARCH-001.md` | ~2 500 tk in / ~12 000 tk out \| antes: sin arquitectura funcional formal \| después: `docs/arquitectura_funcional_EduSync.md` (10 UCs, 5 DAs) |
+| PR-BRD-001 | `docs/BRD_EduSync.md` | generación | `docs-agent` | Sonnet | 14/05/2026 | Aprobado | `prompts/PR-BRD-001.md` | ~2 000 tk in / ~10 000 tk out \| antes: BRD inexistente \| después: `docs/BRD_EduSync.md` v1.0 |
+| PR-UC-001 | Contrato UC-01 · Registro de calificaciones | transformación | `dev-agent` | Sonnet | 14/05/2026 | Aprobado | `prompts/PR-UC-001.md` | ~1 200 tk in / ~3 500 tk out \| antes: UC-01 sin contrato formal \| después: contrato técnico POST /api/v1/calificaciones |
+| PR-UC-002 | Contrato UC-02 · Cierre operativo de materia | transformación | `dev-agent` | Sonnet | 14/05/2026 | Aprobado | `prompts/PR-UC-002.md` | ~1 000 tk in / ~3 000 tk out \| antes: UC-02 sin contrato formal \| después: contrato técnico cierre de materia + evento `MateriaCerradaEvent` |
+| PR-UC-003 | Contrato UC-03 · Consolidación de centralizadores | transformación | `dev-agent` | Opus | 14/05/2026 | Aprobado | `prompts/PR-UC-003.md` | ~1 500 tk in / ~4 500 tk out \| antes: UC-03 sin contrato formal \| después: contrato motor de consolidación con regla `floor()` |
+| PR-UC-004 | Contrato UC-04 · Exportación SIE | transformación | `dev-agent` | Sonnet | 14/05/2026 | Aprobado | `prompts/PR-UC-004.md` | ~1 200 tk in / ~3 800 tk out \| antes: UC-04 sin contrato formal \| después: contrato exportación SIE con idempotencia `rude+periodo_id` |
+| PR-UC-005 | Contrato UC-05 · Modificación retroactiva | transformación | `dev-agent` | Opus | 14/05/2026 | Aprobado | `prompts/PR-UC-005.md` | ~1 400 tk in / ~4 200 tk out \| antes: UC-05 sin contrato formal \| después: contrato ventana temporal + modelo append-only |
+| PR-UC-009 | Contrato UC-09 · Administración de periodos | transformación | `dev-agent` | Sonnet | 14/05/2026 | Aprobado | `prompts/PR-UC-009.md` | ~1 000 tk in / ~3 200 tk out \| antes: UC-09 sin contrato formal \| después: contrato apertura/cierre de periodo + congelamiento de parámetros |
+| PR-ADR-001..005 | `docs/arquitectura_funcional_EduSync.md §DA-01..DA-05` | generación | `arch-agent` | Opus | 14/05/2026 | Aprobado | `prompts/PR-ADR-001.md` … `PR-ADR-005.md` | ~2 000 tk in / ~4 000 tk out c/u \| antes: DAs solo en arquitectura funcional \| después: 5 ADRs formales en `docs/adr/` |
+| PR-AUD-001 | Auditoría de trazabilidad y logs (`audit_log`) | auditoría | `qa-agent` | Sonnet | 14/05/2026 | Borrador | `prompts/PR-AUD-001.md` | ~800 tk in / ~2 500 tk out \| antes: auditoría sin prompt formal \| después: contrato de auditoría `audit_log` (borrador) |
+| PR-INF-001 | Informe estadístico de indicadores institucionales (UC-10) | extracción | `docs-agent` | Haiku | 14/05/2026 | Borrador | `prompts/PR-INF-001.md` | ~600 tk in / ~2 000 tk out \| antes: UC-10 sin prompt de reportería \| después: contrato de extracción de indicadores (borrador) |
+| PR-DIAG-001 | `docs/diagramas/estados.cargarnotas.mmd` + `estados_cargar_notas.md` (flujo del Docente) | generación | `process-agent` | Sonnet | 14/05/2026 | Aprobado | `prompts/PR-DIAG-001.md` | ~900 tk in / ~3 000 tk out \| antes: flujo Docente sin diagrama de estados \| después: `.mmd` + especificación `.md` sincronizados |
+| PR-DIAG-002 | `docs/diagramas/estados_administracion.mmd` + `estados_administracion.md` (flujo del Director) | generación | `process-agent` | Sonnet | 14/05/2026 | Aprobado | `prompts/PR-DIAG-002.md` | ~900 tk in / ~3 000 tk out \| antes: flujo Director sin diagrama de estados \| después: `.mmd` + especificación `.md` sincronizados |
+| PR-BRD-002 | `docs/BRD_EduSync_V2.md` (BRD consolidado v2.0 — BR-001..BR-012, RB-01..RB-11) | consolidación | `docs-agent` | Sonnet | 14/05/2026 | Aprobado | `prompts/PR-BRD-002.md` | ~2 500 tk in / ~12 000 tk out \| antes: BRD v1 disperso \| después: `docs/BRD_EduSync_v2.md` (BR-001..BR-012) |
+| PR-MRD-001 | `docs/MRD-EduSync.md` (MRD v1.0 — 10 MRD-N-*, 3 personas, JTBD, go-to-market) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado | `prompts/PR-MRD-001.md` | ~2 000 tk in / ~10 000 tk out \| antes: MRD inexistente \| después: `docs/mrd/MRD_EduSync.md` (10 necesidades, 3 personas) |
+| PR-PRD-001 | `docs/PRD_EduSync.md` (PRD v1.0 — 17 US, 6 épicas, RICE, NFRs, journeys) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado | `prompts/PR-PRD-001.md` | ~2 500 tk in / ~12 000 tk out \| antes: PRD inexistente \| después: `docs/prd/PRD_EduSync.md` (17 US, 6 épicas) |
+| PR-FSD-001 | `docs/fsd/FSD-EduSync.md` (FSD Clásico v1.0 — 5 FSD-UC, ER, 3 contratos, 14 tasks) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado | `prompts/PR-FSD-001.md` | ~4 000 tk in / ~18 000 tk out \| antes: FSD inexistente \| después: `docs/fsd/FSD_EduSync.md` (5 FSD-UC, ER, 14 tasks) |
+| PR-LFSD-001 | `docs/lfsd/LFSD-EduSync.md` (LFSD v1.0 — 20 §§, 15 APIs, 14 tablas DDL, 4 diagramas secuencia, 16 tasks) | generación | `docs-agent` | Sonnet | 15/05/2026 | Aprobado | `prompts/PR-LFSD-001.md` | ~5 000 tk in / ~22 000 tk out \| antes: LFSD inexistente \| después: `docs/lfsd/LFSD-EduSync.md` (20 §§, 14 tablas DDL) |
+| PR-ARCH-002 | `docs/AGENTS.md` v0.2 — corrección de 6 rutas rotas, 15 nuevos artefactos, 6 agentes, 4 golden tests | consolidación | `docs-agent` | Sonnet | 17/05/2026 | Aprobado | `prompts/PR-ARCH-002.md` | ~2 000 tk in / ~8 000 tk out \| antes: AGENTS.md v0.1 con rutas rotas \| después: `docs/AGENTS.md` v0.2 (6 agentes, 4 golden tests) |
+| PR-SKILL-001 | `.cursor/skills/update-prompt-mapping/SKILL.md` + `.claude/skills/update-prompt-mapping/SKILL.md` — skill para actualizar PROMPT_MAPPING | generación | `docs-agent` | Sonnet | 17/05/2026 | Aprobado | `prompts/PR-SKILL-001.md` | ~800 tk in / ~3 000 tk out \| antes: actualización manual de PROMPT_MAPPING \| después: skill `update-prompt-mapping` (Cursor + Claude) |
+| PR-SKILL-002 | `.cursor/skills/c4-edusync/SKILL.md` + `.claude/skills/c4-edusync/SKILL.md` - skill para generar diagramas C4 de EduSync | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado | `prompts/PR-SKILL-002.md` | ~700 tk in / ~2 500 tk out \| antes: diagramas C4 sin skill reutilizable \| después: skill `c4-edusync` (Cursor + Claude) |
+| PR-C4-001 | `docs/diagrams/c4_level1.mmd` - C4 Level 1 (Contexto del Sistema) | generacion | `arch-agent` | Sonnet | 17/05/2026 | Aprobado | `prompts/PR-C4-001.md` | ~2 000 tk in / ~4 000 tk out \| antes: sin diagrama C4 L1 \| después: `docs/diagrams/c4_level1.mmd` |
+| PR-C4-002 | `docs/diagrams/c4_level2.mmd` - C4 Level 2 (Contenedores) | generacion | `arch-agent` | Sonnet | 17/05/2026 | Aprobado | `prompts/PR-C4-002.md` | ~2 500 tk in / ~5 000 tk out \| antes: sin diagrama C4 L2 \| después: `docs/diagrams/c4_level2.mmd` |
+| PR-SKILL-003 | `.cursor/skills/dti-edusync/SKILL.md` + `.claude/skills/dti-edusync/SKILL.md` - skill para poblar y mantener el DTI de EduSync | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado | `prompts/PR-SKILL-003.md` | ~800 tk in / ~3 000 tk out \| antes: DTI sin skill de mantenimiento \| después: skill `dti-edusync` (Cursor + Claude) |
+| PR-DTI-001 | `docs/DTI.md` v0.1 - DTI completo (§0-§23, 883 lineas, C4 L1/L2/L3, 2 POCs, 5 ADRs, 16 NFRs, 4 golden tests) | generacion | `docs-agent` | Sonnet | 17/05/2026 | Aprobado | `prompts/PR-DTI-001.md` | ~5 000 tk in / ~20 000 tk out \| antes: DTI inexistente \| después: `docs/DTI.md` v0.1 (883 líneas, §0–§23) |
+| PR-HEX-001 | `docs/arquitectura_hexagonal_EduSync.md` v0.1 — Arquitectura hexagonal del core: 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots | generacion | `arch-agent` | Sonnet | 24/05/2026 | Aprobado | `prompts/PR-HEX-001.md` | ~3 500 tk in / ~12 000 tk out \| antes: arquitectura hexagonal sin documentar \| después: `docs/arquitectura_hexagonal_EduSync.md` v0.1 |
+| PR-DTO-001 | `docs/dtos_EduSync.md` v0.1 — DTOs por capa hexagonal para FSD-UC-001/003/005: 4 Request DTOs, 4 Commands, 3 Response DTOs, 5 Domain Events, 5 enums, 3 tablas DTO ↔ Entidad | generacion | `dev-agent` | Sonnet | 24/05/2026 | Aprobado | `prompts/PR-DTO-001.md` | ~2 500 tk in / ~8 000 tk out \| antes: DTOs sin diseño formal \| después: `docs/dtos_EduSync.md` v0.1 (445 líneas) |
 
 ---
 
@@ -1947,3 +1948,4 @@ con columnas: Campo DTO | Tipo Java | Campo Entidad | BR | Capa de validacion.
 || v0.7 | 17/05/2026 | Rodrigo Aspeti | Incorporacion de PR-SKILL-002 (skill c4-edusync), PR-C4-001 (C4 Level 1), PR-C4-002 (C4 Level 2), PR-SKILL-003 (skill dti-edusync) y PR-DTI-001 (DTI EduSync v0.1 -- 23 secciones, 883 lineas, 5 ADRs, 16 NFRs, 4 golden tests); areas C4 y DTI anadidas al header; subgraph ARQUITECTURA en flowchart; matriz arch-agent y docs-agent actualizadas; trazabilidad ampliada a 25 prompts |
 | v0.8 | 24/05/2026 | Rodrigo Aspeti | Incorporacion de PR-HEX-001 (arquitectura hexagonal del core EduSync v0.1 -- 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots con invariantes BR-001..BR-012); area HEX anadida al header; nodo HEX en flowchart con aristas desde FSD, LFSD, ARCH y PRD; matriz arch-agent actualizada con PR-HEX-001; trazabilidad ampliada a 26 prompts |
 | v0.9 | 24/05/2026 | Rodrigo Aspeti | Incorporacion de PR-DTO-001 (DTOs por capa hexagonal para FSD-UC-001/003/005 -- 4 Request DTOs con Bean Validation, 4 Commands puros, 3 Response DTOs, 5 Domain Events, 5 enums de dominio, 3 tablas de mapeo DTO ↔ Entidad con BR y capa de validacion); area DTO anadida al header; nodo DTO en flowchart con aristas desde FSD, HEX y AGENTS; matriz dev-agent actualizada (responsabilidad ampliada a generacion de DTOs hexagonales); trazabilidad ampliada a 27 prompts |
+| v1.0 | 28/05/2026 | Rodrigo Aspeti | Materializacion de 31 archivos individuales en `prompts/PR-*.md` (9 secciones cada uno); columnas "Archivo" y "Metricas" anadidas al indice de prompts; trazabilidad simbolo → archivo → metricas antes/despues completa |

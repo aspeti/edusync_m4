@@ -430,6 +430,78 @@ EduSync v1.0 es un **monolito modular** desplegado en ECS Fargate. No aplica arq
 
 ---
 
+### 6.2 Seams de descomposición `[humano]`
+
+> **Contexto**: EduSync v1.0 es un monolito modular. Este análisis identifica los 2 seams
+> de descomposición con mayor potencial para una futura migración a servicios independientes,
+> usando los bounded contexts del §4.1 y el árbol de decisión T1.8.
+> **Entrega académica**: Tarea 1 — Módulo 4 UMSS / M.Sc. Edson Terceros.
+
+---
+
+#### Seam 1: `calificaciones` ↔ `consolidacion`
+
+**Evidencia de desacoplamiento**
+
+| Dimensión | Calificaciones | Consolidación |
+|-----------|---------------|---------------|
+| FSD-UC principales | FSD-UC-001 (registrar), FSD-UC-005 (corregir) | FSD-UC-003 (consolidar centralizador) |
+| BR dominantes | BR-002 (rango), BR-004 (RUDE), BR-005 (append-only) | BR-008 (`floor()`), BR-011 (3 trimestres) |
+| Actor principal | Docente — carga continua durante el periodo | Sistema — batch post-cierre de materia |
+| Patrón de tráfico | Continuo, frecuente, latencia < 500 ms (NFR-001) | Diferido, batch, puede tolerar segundos |
+| Desacoplamiento existente | — | `MateriaCerradaEvent` AFTER_COMMIT (DA-04); preparado para AWS SQS v1.1 |
+
+**Árbol de decisión T1.8**
+
+| Criterio | Resultado | Justificación |
+|----------|-----------|---------------|
+| 1. ¿Equipos distintos necesitan desplegarlo independientemente? | SÍ | Docentes generan carga constante; la consolidación solo corre al cierre — cadencias de release distintas |
+| 2. ¿Volúmenes de tráfico tan distintos que requieren escala independiente? | SÍ | Registro de notas: picos en deadline (todos los docentes a la vez); consolidación: 1 ejecución por materia cerrada |
+| 3. ¿Puede fallar sin afectar disponibilidad del núcleo? | SÍ | Si la consolidación falla, el Docente sigue registrando; el Centralizador queda en PROVISIONAL hasta reintentar |
+| 4. ¿El costo de separación se justifica HOY (año 1, < 50 unidades)? | NO | Con volumen < 50 unidades el overhead de consistencia eventual y TX distribuidas supera el beneficio |
+
+**Recomendación: Romper en v2.0**
+> 3 de 4 criterios T1.8 son SÍ. El desacoplamiento técnico ya existe (DA-04 / Spring Events).
+> La separación formal se justifica cuando el volumen supere 50 unidades educativas o cuando
+> el equipo de consolidación necesite ciclos de release independientes del equipo de calificaciones.
+> Candidato a primer servicio extraído con patrón Strangler Fig desde el Event Bus.
+
+---
+
+#### Seam 2: `exportacion` ↔ núcleo (`calificaciones` + `consolidacion` + `periodos`)
+
+**Evidencia de desacoplamiento**
+
+| Dimensión | Exportación SIE | Núcleo (calificaciones + consolidación + periodos) |
+|-----------|----------------|---------------------------------------------------|
+| FSD-UC principal | FSD-UC-004 (exportar al SIE) | FSD-UC-001, 003, 005, 009 |
+| BR/DA dominantes | DA-05 (circuit breaker), NFR-005 (idempotencia SIE) | BR-001..BR-009, DA-01..DA-04 |
+| Actor principal | Secretaria — puntual, fin de trimestre | Docente + Director — continuo durante el periodo |
+| Patrón de tráfico | Masivo y puntual (exportación trimestral); puede diferirse | Constante durante el periodo académico |
+| Dominio regulatorio | Ley 070 Avelino Sinani — contrato externo no negociable | Reglas internas del negocio |
+| Aislamiento existente | `SIEHttpClient` en adaptador propio con Resilience4j (DA-05); fallo del SIE no bloquea escritura de notas | — |
+
+**Árbol de decisión T1.8**
+
+| Criterio | Resultado | Justificación |
+|----------|-----------|---------------|
+| 1. ¿Equipos distintos necesitan desplegarlo independientemente? | SÍ | El protocolo SIE cambia por regulación ministerial independientemente del negocio interno; updates del adaptador SIE no deben afectar el registro de notas |
+| 2. ¿Volúmenes de tráfico tan distintos que requieren escala independiente? | SÍ | Exportación: pico masivo puntual al fin de trimestre; núcleo: carga distribuida continua — perfiles de escala opuestos |
+| 3. ¿Puede fallar sin afectar disponibilidad del núcleo? | SÍ | Circuit breaker activo (DA-05): SIE caído → exportaciones en PENDIENTE; Docentes siguen registrando notas sin interrupción |
+| 4. ¿El costo de separación se justifica HOY (año 1, < 50 unidades)? | NO | El volumen actual no genera suficiente presión operacional; el adaptador ya está suficientemente aislado como módulo interno |
+
+**Recomendación: Romper en v2.0 — primer candidato a microservicio**
+> 3 de 4 criterios T1.8 son SÍ. Es el seam más maduro: el `SIEHttpClient` ya es un adaptador
+> de salida independiente (DA-05), el dominio regulatorio es externo y cambia por ley, y el
+> aislamiento de fallos ya está validado en producción. Cuando el volumen supere 30 unidades
+> simultáneas exportando al cierre trimestral, separarlo elimina el riesgo de que un pico de
+> exportación degrade la latencia de registro de notas (NFR-001 < 500 ms p95).
+> Patrón de migración recomendado: Strangler Fig extrayendo `ExportarSIEUseCase` +
+> `SIEHttpClient` + `SIERetryScheduler` como servicio `edusync-sie-exporter`.
+
+---
+
+
 ## 7. Arquitectura Asíncrona / Event-Driven `[humano+máquina]`
 
 ### 7.1 Catálogo de eventos de dominio
@@ -881,3 +953,12 @@ EduSync v1.0 no tiene agentes IA en runtime. Los agentes del AI-SDLC (§0.1) no 
 ---
 
 *DTI generado con skill `dti-edusync` v0.1.0 | Prompt: `PR-DTI-001` | Agente: `docs-agent` | Modelo: claude-sonnet-4.6 | Fecha: 17/05/2026*
+
+---
+
+## Registro de cambios del DTI
+
+| Versión | Fecha      | Autor          | Cambio                                                              |
+|---------|------------|----------------|---------------------------------------------------------------------|
+| v0.1    | 17/05/2026 | Rodrigo Aspeti | Versión inicial — §0–§23, C4 L1/L2/L3, 2 POCs, 5 ADRs provisionales |
+| v0.2    | 28/05/2026 | Rodrigo Aspeti | §6.2 Seams de descomposición — Tarea 1 Módulo 4 (PR-DTI-SEAMS-001) |

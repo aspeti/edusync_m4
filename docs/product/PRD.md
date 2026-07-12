@@ -23,16 +23,20 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión** | v1.0 |
-| **Fecha** | 15/05/2026 |
+| **Versión** | v2.0 |
+| **Fecha** | 12/07/2026 |
 | **Product Manager / Autor** | Rodrigo Aspeti — Dev Lead / PM EduSync |
 | **Revisores** | Docente + Tech Lead + QA |
 | **Estado** | En revisión |
-| **BRD de referencia** | `docs/BRD_EduSync_V2.md` (v2.0) |
+| **BRD de referencia** | `docs/product/BRD.md` (v3.0) |
 | **MRD de referencia** | `docs/MRD-EduSync.md` (v1.0) |
 | **Insumos M2 (UI/UX)** | Sistema de diseño Atomic Design + Design Tokens · WCAG 2.2 AA · Semáforos visuales de reprobación · Wireframes de carga de notas y dashboard director |
 | **Fase Spec Kit cubierta** | Specify ✅ / Plan ⬜ / Tasks ⬜ / Implement ⬜ |
 | **Prompts utilizados** | `PR-ARCH-001`, `PR-BRD-002`, `PR-DIAG-001`, `PR-DIAG-002` (ver `docs/PROMPT_MAPPING.md`) |
+
+### 0.1 Nomenclatura de roles (vigente desde v2.0 — `ADR-0009`)
+
+> Ver detalle completo en `docs/product/BRD.md` §0.1. Resumen: **SysAdmin** (plataforma, nuevo) · **Admin** = Director · **Secretaria** = Secretaría · **Asesor** (tenant, nuevo, solo lectura de su curso/paralelo) · **Profesor** = Docente. Las épicas E1..E6 (§5.1–§5.6) fueron redactadas antes de `ADR-0009` y usan la nomenclatura histórica (`Director`, `Docente`) por fidelidad a su trazabilidad original; ambos pares de términos son equivalentes desde esta versión. Las épicas E7..E11 (§5.7–§5.11, nuevas) usan la nomenclatura vigente.
 
 ---
 
@@ -55,6 +59,8 @@ EduSync es una plataforma SaaS B2B multitenant que elimina la "triple digitació
 El producto descentraliza el ingreso de calificaciones por rol (RBAC): cada docente registra solo su materia con validación en tiempo real, la secretaría monitoriza el avance y exporta masivamente al SIE con un clic, y el Director administra la gestión académica anual con parámetros configurables y dashboards en tiempo real. Todo el ciclo queda sellado en un log de auditoría inalterable, convirtiendo a EduSync en la fuente única de verdad académica ante inspecciones ministeriales.
 
 Los tres actores primarios son: **Docente** (carga de notas, asistencia, solicitud de correcciones), **Secretaría** (nóminas, exportación SIE, boletines) y **Director** (administración de gestión académica, parámetros, autorizaciones retroactivas, indicadores institucionales).
+
+> **Generalización desde v2.0 (`ADR-0009`):** lo anterior describe el **Perfil Bolivia SIE**, vigente sin cambios. Desde esta versión, EduSync es además una plataforma SaaS multi-tenant genérica: un **SysAdmin** de plataforma administra Unidades Educativas (tenants) y su suscripción; cada tenant configura su propia Gestión Escolar con un número variable de periodos de evaluación, secciones de evaluación con peso configurable y tipos de evaluación propios — sin asumir tres trimestres ni dimensiones fijas. Ver épicas E7..E11 (§5.7–§5.11) y `docs/product/BRD.md` §11.1 (BR-013..BR-024).
 
 ---
 
@@ -87,6 +93,18 @@ Los tres actores primarios son: **Docente** (carga de notas, asistencia, solicit
 - **Módulo de Control de Asistencia:** Registro por materia con rectificación en mismo día hábil.
 - **Módulo de Reportería e Indicadores:** Dashboard Director con vistas trimestral y anual diferenciadas, indicador de cumplimiento de carga docente.
 - **Log de Auditoría:** Registro inalterable append-only de toda operación de escritura.
+
+**Ampliación de alcance desde v2.0 (`ADR-0009` — módulos generalizados, BR-013..BR-024 del BRD):**
+
+- **Módulo de Plataforma SaaS (SysAdmin):** alta de Unidades Educativas (tenants), gestión de suscripción (fechas, estado), administración de usuarios `Admin` por tenant.
+- **Módulo de Gestión Escolar:** creación por tenant con nombre, fechas y estado (Planificación / Activa / Cerrada).
+- **Módulo de Periodos de Evaluación:** número configurable de periodos por Gestión Escolar (nombre, fechas, estado).
+- **Módulo de Configuración del Sistema de Evaluación:** secciones de evaluación configurables (nombre, orden, nota máxima, peso porcentual, cantidad máxima de evaluaciones, estado).
+- **Módulo de Evaluaciones:** registro de evaluaciones por sección con catálogo de tipos configurable por institución.
+- **Módulo de Cálculo de Notas:** promedio por sección y nota final del periodo con pesos configurables.
+- **Módulo de Cursos y Paralelos, Materias, Profesores, Estudiantes, Inscripciones, Usuarios y Roles:** CRUD y asignaciones descritos en BR-021..BR-024 del BRD.
+
+> **Pendiente de definición (`ADR-0009` §3):** gobernanza (auditoría/inmutabilidad) de estos módulos nuevos, reconciliación con el modelo Bolivia SIE, secuencialidad genérica de periodos y validación de suma de pesos de secciones. No implementar en código hasta resolver.
 
 ### 3.2 Fuera del alcance — Backlog / Versiones futuras
 
@@ -127,7 +145,8 @@ Los tres actores primarios son: **Docente** (carga de notas, asistencia, solicit
 
 - **Wendy** (Secretaría): necesita exportar al SIE sin trabajo nocturno, monitorizar avance docente en tiempo real y generar boletines sin re-digitación.
 - **Marcela** (Docente): necesita registrar sus notas en < 3 clics, recibir feedback inmediato de errores y poder solicitar correcciones con trazabilidad.
-- **Jeanneth** (Director): necesita visibilidad institucional en tiempo real, control jerárquico de correcciones retroactivas e indicadores listos para auditorías.
+- **Jeanneth** (Director / Admin): necesita visibilidad institucional en tiempo real, control jerárquico de correcciones retroactivas e indicadores listos para auditorías.
+- **SysAdmin** *(nueva, `ADR-0009`)*: necesita dar de alta nuevas Unidades Educativas y controlar su ciclo de suscripción sin acceder a los datos académicos de ningún tenant. Ver detalle en `docs/product/BRD.md` §4.4.
 
 ### 4.2 User journeys principales
 
@@ -566,6 +585,217 @@ Escenario: Alerta enviada 30 minutos antes del vencimiento
 
 ---
 
+### 5.7 Épica E7 — Plataforma SaaS y Gestión de Tenants (SysAdmin) *(nueva desde v2.0 — `ADR-0009`)*
+
+| ID | Historia | Prioridad | Valor | Esfuerzo | Criterios |
+|----|----------|-----------|-------|----------|-----------|
+| PRD-US-018 | Como SysAdmin, quiero registrar una nueva Unidad Educativa definiendo su fecha de inicio y vencimiento de suscripción, para dar de alta un nuevo cliente en la plataforma | Must | 9 | 5 | §5.7.1 |
+| PRD-US-019 | Como SysAdmin, quiero activar, suspender o desactivar una Unidad Educativa, para controlar el acceso según el estado de su suscripción sin eliminar sus datos históricos | Must | 8 | 4 | §5.7.2 |
+
+#### 5.7.1 Criterios PRD-US-018
+
+```gherkin
+Escenario: Alta exitosa de una nueva Unidad Educativa
+  Dado un SysAdmin autenticado en el panel de plataforma
+  Cuando registra la Unidad Educativa "Colegio Nueva Esperanza" con fecha de inicio de suscripción hoy
+    y fecha de vencimiento en 12 meses
+  Entonces el sistema crea el tenant en estado "activo"
+    Y queda disponible para que el SysAdmin administre su primer usuario Admin
+
+Escenario: Intento de registrar Unidad Educativa sin fecha de vencimiento
+  Cuando el SysAdmin intenta registrar una Unidad Educativa sin fecha de vencimiento de suscripción
+  Entonces el sistema bloquea el registro con error de validación
+```
+
+#### 5.7.2 Criterios PRD-US-019
+
+```gherkin
+Escenario: Suspensión de una Unidad Educativa por vencimiento
+  Dado una Unidad Educativa con suscripción vencida
+  Cuando el SysAdmin cambia su estado a "suspendido"
+  Entonces ningún usuario de esa institución puede iniciar sesión
+    Y los datos académicos de la institución permanecen intactos y no se eliminan
+
+Escenario: Reactivación tras renovación de suscripción
+  Dado una Unidad Educativa en estado "suspendido"
+  Cuando el SysAdmin registra el pago de renovación y cambia el estado a "activo"
+  Entonces los usuarios de esa institución recuperan acceso inmediatamente
+```
+
+---
+
+### 5.8 Épica E8 — Gestión Escolar y Periodos de Evaluación configurables (Admin) *(nueva desde v2.0 — `ADR-0009`)*
+
+| ID | Historia | Prioridad | Valor | Esfuerzo | Criterios |
+|----|----------|-----------|-------|----------|-----------|
+| PRD-US-020 | Como Admin, quiero crear una Gestión Escolar con nombre, fechas de inicio/fin y estado, para definir el marco temporal del ciclo escolar de mi institución | Must | 9 | 5 | §5.8.1 |
+| PRD-US-021 | Como Admin, quiero definir el número de periodos de evaluación de mi Gestión Escolar (por ejemplo 2, 3 o 4), cada uno con nombre, fechas y estado, para adaptar el sistema a la estructura académica real de mi institución sin depender de un número fijo de trimestres | Must | 9 | 6 | §5.8.2 |
+
+#### 5.8.1 Criterios PRD-US-020
+
+```gherkin
+Escenario: Admin crea una Gestión Escolar
+  Dado un Admin autenticado en su Unidad Educativa
+  Cuando crea la Gestión Escolar "2027" con fecha de inicio y fin del año lectivo
+  Entonces el sistema guarda la Gestión Escolar en estado "Planificación"
+```
+
+#### 5.8.2 Criterios PRD-US-021
+
+```gherkin
+Escenario: Admin configura una estructura de bimestres en lugar de trimestres
+  Dado una Gestión Escolar en estado "Planificación"
+  Cuando el Admin define 2 periodos "Bimestre 1" y "Bimestre 2" con sus fechas
+  Entonces el sistema acepta la configuración sin requerir un tercer periodo
+    Y el resto del sistema (evaluaciones, cálculo de notas) opera sobre esos 2 periodos sin cambio de código
+
+Escenario: Admin configura una estructura de tres trimestres
+  Dado una Gestión Escolar en estado "Planificación"
+  Cuando el Admin define 3 periodos "Trimestre 1", "Trimestre 2" y "Trimestre 3"
+  Entonces el sistema acepta igualmente esta configuración
+
+Nota: la regla de secuencialidad de apertura entre periodos (equivalente genérico de RB-05) y
+la disponibilidad de un promedio final solo con todos los periodos cerrados (equivalente
+genérico de RB-11) quedan pendientes de definición (ver ADR-0009 §3); no implementar
+hasta su resolución.
+```
+
+---
+
+### 5.9 Épica E9 — Configuración del Sistema de Evaluación (Admin / Profesor) *(nueva desde v2.0 — `ADR-0009`)*
+
+| ID | Historia | Prioridad | Valor | Esfuerzo | Criterios |
+|----|----------|-----------|-------|----------|-----------|
+| PRD-US-022 | Como Admin, quiero configurar las secciones de evaluación de un periodo (nombre, orden, nota máxima, peso porcentual, cantidad máxima de evaluaciones), para adaptar el sistema al modelo pedagógico de mi institución | Must | 9 | 6 | §5.9.1 |
+| PRD-US-023 | Como Profesor, quiero registrar evaluaciones dentro de una sección eligiendo un tipo de evaluación del catálogo configurable de mi institución (Examen, Práctica, Proyecto, etc.), para no depender de tipos codificados de forma fija | Must | 8 | 5 | §5.9.2 |
+| PRD-US-024 | Como Admin, quiero que el sistema calcule automáticamente el promedio de cada sección y la nota final del periodo aplicando los pesos configurados, para no depender de una fórmula fija en el código | Must | 9 | 6 | §5.9.3 |
+
+#### 5.9.1 Criterios PRD-US-022
+
+```gherkin
+Escenario: Admin configura secciones "Ser / Saber / Hacer / Autoevaluación"
+  Dado un periodo en configuración
+  Cuando el Admin define las secciones "Ser" (peso 10%), "Saber" (peso 50%), "Hacer" (peso 30%)
+    y "Autoevaluación" (peso 10%), cada una con su nota máxima y cantidad máxima de evaluaciones
+  Entonces el sistema guarda las 4 secciones asociadas al periodo
+
+Nota: la validación de que la suma de los pesos porcentuales sea exactamente 100% queda
+pendiente de definición (ver ADR-0009 §3, BRD §11.1 nota de BR-018); no implementar
+esta validación hasta su resolución explícita.
+```
+
+#### 5.9.2 Criterios PRD-US-023
+
+```gherkin
+Escenario: Profesor registra una evaluación de tipo "Quiz" en la sección "Saber"
+  Dado que la institución configuró el catálogo de tipos de evaluación con "Examen", "Práctica" y "Quiz"
+  Cuando el Profesor crea la evaluación "Quiz 1" en la sección "Saber" con puntaje máximo 20
+  Entonces el sistema persiste la evaluación referenciando el tipo "Quiz" del catálogo de la institución
+
+Escenario: Intento de usar un tipo de evaluación no configurado
+  Cuando el Profesor intenta crear una evaluación con un tipo que no existe en el catálogo de la institución
+  Entonces el sistema rechaza la operación y sugiere crear el tipo primero
+```
+
+#### 5.9.3 Criterios PRD-US-024
+
+```gherkin
+Escenario: Cálculo de nota final con pesos configurados
+  Dado un estudiante con promedio de sección "Ser"=8, "Saber"=40, "Hacer"=25, "Autoevaluación"=9
+    y pesos de sección Ser=10%, Saber=50%, Hacer=30%, Autoevaluación=10% sobre sus notas máximas respectivas
+  Cuando el sistema calcula la nota final del periodo
+  Entonces el resultado se compone de la suma ponderada de los promedios de cada sección
+    según los pesos configurados por la institución
+
+Nota: el criterio de redondeo/truncado del modelo genérico (si floor() se mantiene como
+default configurable o se abre a otras estrategias) queda pendiente de definición
+(ver ADR-0009 §3); no asumir floor() como comportamiento por defecto de este módulo
+sin confirmación explícita.
+```
+
+---
+
+### 5.10 Épica E10 — Estructura Académica: Cursos, Materias, Profesores, Estudiantes e Inscripciones *(nueva desde v2.0 — `ADR-0009`)*
+
+| ID | Historia | Prioridad | Valor | Esfuerzo | Criterios |
+|----|----------|-----------|-------|----------|-----------|
+| PRD-US-025 | Como Admin, quiero administrar Cursos y sus Paralelos (ej. "Primero de Primaria" con paralelos A, B, C), para organizar la estructura académica de mi institución | Must | 8 | 4 | §5.10.1 |
+| PRD-US-026 | Como Admin, quiero administrar Materias y asignarlas a Cursos y a Profesores, para habilitar el registro de evaluaciones por Materia | Must | 8 | 5 | §5.10.2 |
+| PRD-US-027 | Como Secretaria, quiero administrar el CRUD de Estudiantes de forma independiente de su matrícula, para registrar su información personal y estado sin atarla a un curso específico | Must | 8 | 4 | §5.10.3 |
+| PRD-US-028 | Como Secretaria, quiero inscribir a un estudiante en una Gestión Escolar, Curso y Paralelo con fecha de inscripción y estado, para mantener su historial académico a través de los años | Must | 9 | 6 | §5.10.4 |
+
+#### 5.10.1 Criterios PRD-US-025
+
+```gherkin
+Escenario: Admin crea un curso con tres paralelos
+  Dado un Admin autenticado
+  Cuando crea el curso "Primero de Primaria" con paralelos "A", "B" y "C"
+  Entonces el sistema guarda el curso con sus 3 paralelos asociados
+```
+
+#### 5.10.2 Criterios PRD-US-026
+
+```gherkin
+Escenario: Admin asigna una materia a un curso y a un profesor
+  Dado el curso "Primero de Primaria" paralelo "A" y el profesor "Marcela López"
+  Cuando el Admin asigna la materia "Matemáticas" a ese curso/paralelo y a Marcela
+  Entonces Marcela puede registrar evaluaciones de "Matemáticas" para "Primero de Primaria A"
+```
+
+#### 5.10.3 Criterios PRD-US-027
+
+```gherkin
+Escenario: Secretaria registra un nuevo estudiante sin inscribirlo todavía
+  Dado una Secretaria autenticada
+  Cuando registra al estudiante "Ana Pérez" con su información personal y estado "activo"
+  Entonces el sistema crea el registro de Estudiante sin requerir una Inscripción en el mismo paso
+```
+
+#### 5.10.4 Criterios PRD-US-028
+
+```gherkin
+Escenario: Secretaria inscribe a un estudiante en la Gestión Escolar vigente
+  Dado el estudiante "Ana Pérez" ya registrado
+  Cuando la Secretaria la inscribe en la Gestión Escolar "2027", curso "Primero de Primaria", paralelo "A"
+  Entonces el sistema crea la Inscripción con fecha de inscripción y estado "activa"
+    Y el historial académico de Ana Pérez queda disponible para consulta en gestiones futuras
+```
+
+---
+
+### 5.11 Épica E11 — Usuarios y Roles *(nueva desde v2.0 — `ADR-0009`)*
+
+| ID | Historia | Prioridad | Valor | Esfuerzo | Criterios |
+|----|----------|-----------|-------|----------|-----------|
+| PRD-US-029 | Como Admin, quiero administrar usuarios de mi institución (alta, asignación de rol, activación/desactivación), para controlar quién accede al sistema y con qué permisos | Must | 9 | 5 | §5.11.1 |
+| PRD-US-030 | Como usuario, quiero poder restablecer mi contraseña, para recuperar el acceso sin depender de intervención manual del Admin | Should | 6 | 3 | §5.11.2 |
+
+#### 5.11.1 Criterios PRD-US-029
+
+```gherkin
+Escenario: Admin crea un usuario con rol Asesor
+  Dado un Admin autenticado en su Unidad Educativa
+  Cuando crea el usuario "Carla Vidal" con rol "Asesor" asignado al curso "Segundo A"
+  Entonces Carla puede acceder en modo solo lectura al avance académico de "Segundo A"
+    Y no puede modificar calificaciones ni nóminas
+
+Escenario: Admin desactiva un usuario
+  Cuando el Admin desactiva al usuario "Carla Vidal"
+  Entonces Carla no puede iniciar sesión hasta que sea reactivada
+```
+
+#### 5.11.2 Criterios PRD-US-030
+
+```gherkin
+Escenario: Usuario restablece su contraseña
+  Dado un usuario activo que olvidó su contraseña
+  Cuando solicita el restablecimiento y confirma el enlace enviado
+  Entonces el sistema le permite definir una nueva contraseña
+    Y invalida cualquier enlace de restablecimiento previo no utilizado
+```
+
+---
+
 ## 6. Priorización
 
 ### MoSCoW
@@ -623,6 +853,24 @@ Escenario: Alerta enviada 30 minutos antes del vencimiento
 | PRD-REQ-018 | El sistema debe registrar en `audit_log` toda operación de escritura con campos: actor, entidad_afectada, accion, valor_anterior, valor_nuevo, timestamp_utc | Todas las US | Must |
 | PRD-REQ-019 | El sistema debe gestionar nóminas estudiantiles con alta, baja y transferencia identificando estudiantes exclusivamente por RUDE, sin reasignar posiciones de lista | MRD-N-02 | Must |
 | PRD-REQ-020 | El sistema debe proveer al Director un dashboard con dos vistas diferenciadas: indicadores trimestrales (disponibles por trimestre) e indicadores anuales (solo con 3 trimestres cerrados) | OP-05 | Must |
+
+### 7.1 Requerimientos funcionales del modelo generalizado *(nuevos desde v2.0 — `ADR-0009`)*
+
+| ID | Requisito funcional | Historia(s) vinculada(s) | Prioridad |
+|----|---------------------|--------------------------|-----------|
+| PRD-REQ-021 | El sistema debe permitir al SysAdmin registrar Unidades Educativas (tenants), gestionar su suscripción (fecha inicio/vencimiento) y su estado (activo/suspendido/vencido), y administrar sus usuarios Admin | PRD-US-018, PRD-US-019 | Must |
+| PRD-REQ-022 | El sistema debe permitir al Admin crear una Gestión Escolar con nombre, fechas de inicio/fin y estado (Planificación/Activa/Cerrada) | PRD-US-020 | Must |
+| PRD-REQ-023 | El sistema debe permitir al Admin definir un número configurable de periodos de evaluación por Gestión Escolar, cada uno con nombre, fechas y estado | PRD-US-021 | Must |
+| PRD-REQ-024 | El sistema debe permitir al Admin configurar secciones de evaluación por periodo con nombre, orden, nota máxima, peso porcentual y cantidad máxima de evaluaciones | PRD-US-022 | Must |
+| PRD-REQ-025 | El sistema debe permitir registrar evaluaciones asociadas a una sección, usando un catálogo de tipos de evaluación configurable por institución | PRD-US-023 | Must |
+| PRD-REQ-026 | El sistema debe calcular automáticamente el promedio de cada sección y la nota final del periodo aplicando los pesos porcentuales configurados | PRD-US-024 | Must |
+| PRD-REQ-027 | El sistema debe permitir administrar Cursos y sus Paralelos | PRD-US-025 | Must |
+| PRD-REQ-028 | El sistema debe permitir el CRUD de Materias y su asignación a Cursos y a Profesores | PRD-US-026 | Must |
+| PRD-REQ-029 | El sistema debe permitir el CRUD de Profesores y su asignación a Materias, Cursos y Paralelos | PRD-US-026 | Must |
+| PRD-REQ-030 | El sistema debe permitir el CRUD independiente de Estudiantes y la gestión de sus Inscripciones (Gestión Escolar, Curso, Paralelo, fecha, estado), manteniendo su historial académico | PRD-US-027, PRD-US-028 | Must |
+| PRD-REQ-031 | El sistema debe permitir el CRUD de Usuarios, la asignación de roles (SysAdmin/Admin/Secretaria/Asesor/Profesor), su activación/desactivación y el restablecimiento de contraseña | PRD-US-029, PRD-US-030 | Must |
+
+> **Pendiente de definición (`ADR-0009` §3):** ninguno de los PRD-REQ-021..031 incluye todavía requisitos de auditoría/inmutabilidad equivalentes a PRD-REQ-018 (audit_log) ni de secuencialidad equivalente a PRD-REQ-005; se añadirán cuando se resuelva la gobernanza de los módulos nuevos.
 
 ---
 
@@ -775,6 +1023,17 @@ Escenario: Alerta enviada 30 minutos antes del vencimiento
 | PRD-REQ-018 | BR-011 | MRD-N-05 | DA-03 | FSD-AUD-001 |
 | PRD-REQ-019 | BR-004 | MRD-N-02 | UC-06 | FSD-UC-006 |
 | PRD-REQ-020 | BR-010 | MRD-N-04 | UC-10 | FSD-UC-010 |
+| PRD-REQ-021 | BR-013..BR-015 | — | `ADR-0009` | FSD-UC-011 |
+| PRD-REQ-022 | BR-016 | — | `ADR-0009` | FSD-UC-012 |
+| PRD-REQ-023 | BR-017 | — | `ADR-0009` | FSD-UC-013 |
+| PRD-REQ-024 | BR-018 | — | `ADR-0009` | FSD-UC-014 |
+| PRD-REQ-025 | BR-019 | — | `ADR-0009` | FSD-UC-015 |
+| PRD-REQ-026 | BR-020 | — | `ADR-0009` | FSD-UC-016 |
+| PRD-REQ-027 | BR-021 | — | `ADR-0009` | FSD-UC-017 |
+| PRD-REQ-028 | BR-022 | — | `ADR-0009` | FSD-UC-018 |
+| PRD-REQ-029 | BR-022 | — | `ADR-0009` | FSD-UC-019 |
+| PRD-REQ-030 | BR-023 | — | `ADR-0009` | FSD-UC-020 |
+| PRD-REQ-031 | BR-024 | — | `ADR-0009` | FSD-UC-021 |
 
 ---
 
@@ -814,6 +1073,7 @@ Escenario: Alerta enviada 30 minutos antes del vencimiento
 | Versión | Fecha | Autor | Cambio |
 |---------|-------|-------|--------|
 | v1.0 | 15/05/2026 | Equipo G-EduSync — Rodrigo Aspeti | Creación inicial del PRD. Basado en BRD v2.0, MRD v1.0, arquitectura_funcional_EduSync.md (10 UCs, 5 DAs) y diagramas de estado del Docente (18 estados) y Director (23 estados). 17 user stories en 6 épicas, criterios Gherkin completos, 20 PRD-REQ-*, 15 NFRs, RICE top-10, 3 user journeys Mermaid, trazabilidad completa BRD→MRD→PRD→FSD. |
+| v2.0 | 12/07/2026 | Rodrigo Aspeti | Generalización a plataforma SaaS multi-tenant configurable (`ADR-0009`), alineada con BRD v3.0. Épicas E1..E6 (17 historias) se mantienen como **Perfil Bolivia SIE** sin cambios. Se añaden épicas E7..E11 (13 historias, PRD-US-018..030) y PRD-REQ-021..031: plataforma SaaS/tenants (SysAdmin), Gestión Escolar, periodos y secciones de evaluación configurables, evaluaciones con tipo configurable, cálculo de notas con pesos configurables, Cursos/Paralelos, Materias, Profesores, Estudiantes, Inscripciones, Usuarios y Roles. Nueva nota de nomenclatura de roles (§0.1). Alcance ampliado (§3.1). Puntos pendientes de definición explícitamente marcados en los criterios Gherkin de E8/E9 (secuencialidad, redondeo, suma de pesos) — ver `ADR-0009` §3. |
 
 ---
 

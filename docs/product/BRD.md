@@ -22,17 +22,29 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión** | v2.0 |
-| **Fecha** | 14/05/2026 |
+| **Versión** | v3.0 |
+| **Fecha** | 12/07/2026 |
 | **Sponsor de negocio** | Dirección Institucional / Propietarios de Unidades Educativas Bolivianas |
-| **Stakeholders** | Director Académico · Secretaría / Administrativo · Docentes · Ministerio de Educación (SIE) |
+| **Stakeholders** | Director Académico (Admin) · Secretaría / Administrativo · Docentes (Profesores) · Ministerio de Educación (SIE, Perfil Bolivia) |
 | **Autores** | Equipo G-EduSync — Rodrigo Aspeti (Dev Lead) |
 | **Revisores** | Docente + 1 grupo par |
 | **Estado** | En revisión |
 | **Insumo del Módulo Anterior (M2 UI/UX)** | `01_vision_negocio.md` · `02_parte_dificil.md` · `BRD_EduSync_V1.md` |
 | **Prompts utilizados** | `PR-BRD-001`, `PR-ARCH-001`, `PR-DIAG-001`, `PR-DIAG-002` (ver `docs/PROMPT_MAPPING.md`) |
 
-> **Nota sobre versión:** Este documento consolida y amplía `BRD_EduSync_V1.md`. Incorpora requerimientos derivados de la arquitectura funcional (`arquitectura_funcional_EduSync.md`, 10 UCs y 5 DAs), los diagramas de estado del Docente (`estados_cargar_notas.md`, 18 estados) y del Director (`estados_administracion.md`, 23 estados). Los requerimientos BR-001..BR-005 del v1 se conservan y enriquecen; se añaden BR-006..BR-012.
+> **Nota sobre versión:** Este documento consolida y amplía `BRD_EduSync_V1.md`. Incorpora requerimientos derivados de la arquitectura funcional (`arquitectura_funcional_EduSync.md`, 10 UCs y 5 DAs), los diagramas de estado del Docente (`estados_cargar_notas.md`, 18 estados) y del Director (`estados_administracion.md`, 23 estados). Los requerimientos BR-001..BR-005 del v1 se conservan y enriquecen; se añaden BR-006..BR-012. **A partir de v3.0** (`ADR-0009`), el modelo de negocio se generaliza a plataforma SaaS multi-tenant configurable: se añaden BR-013..BR-024 (ver §11.1) sin modificar ni eliminar BR-001..BR-012, que pasan a describir el **Perfil Bolivia SIE** (una configuración soportada del producto, ya no su único modelo).
+
+### 0.1 Nomenclatura de roles (vigente desde v3.0 — `ADR-0009`)
+
+| Rol vigente | Nivel | Equivalencia histórica (BR-001..BR-012, v1.0–v2.0) | Resumen |
+|-------------|-------|------------------------------------------------------|---------|
+| **SysAdmin** | Plataforma (SaaS) | *(rol nuevo, sin equivalente en v2.0)* | Administra tenants (Unidades Educativas), suscripciones, activación/suspensión y configuración global. |
+| **Admin** | Tenant | = **Director** | Director o administrador general de la Unidad Educativa. |
+| **Secretaria** | Tenant | = **Secretaría** | Sin cambio de responsabilidades respecto a v2.0. |
+| **Asesor** | Tenant | *(rol nuevo, sin equivalente en v2.0)* | Tutor/orientador de un curso y paralelo asignado: solo lectura del avance académico de sus estudiantes; sin escritura sobre calificaciones ni nóminas. |
+| **Profesor** | Tenant | = **Docente** | Sin cambio de responsabilidades respecto a v2.0. |
+
+> Los BR-001..BR-012 y las secciones §1–§10 y §12–§21 de este documento fueron redactados antes de `ADR-0009` y usan la nomenclatura histórica (`Director`, `Docente`) por fidelidad a su trazabilidad original hacia `arquitectura_funcional_EduSync.md` y los diagramas de estado de M4. Ambos pares de términos son equivalentes 1:1 desde esta versión en adelante; no representan roles distintos.
 
 ---
 
@@ -40,7 +52,9 @@
 
 **Problema:** Las unidades educativas bolivianas sufren una ineficiencia estructural causada por la "triple digitación manual": los docentes ingresan notas en hojas Excel individuales, la secretaría las consolida copiando y pegando en un centralizador general, y finalmente las carga nota por nota en el sistema estatal SIE. Este proceso genera corrupción de datos por desfase de listas cuando hay alumnos nuevos o retirados, inconsistencias matemáticas por decimales invisibles, alteraciones retroactivas clandestinas, y obliga al personal a trabajar entre las 2:00 AM y las 4:00 AM para evitar la saturación de los servidores del Ministerio de Educación, bajo riesgo de sanciones económicas de hasta cinco días de sueldo.
 
-**Propuesta:** EduSync es una plataforma SaaS B2B multitenant que descentraliza el ingreso de calificaciones por rol (RBAC), consolida automáticamente los centralizadores trimestrales usando un motor algorítmico con truncado `floor`, y sincroniza masivamente con el SIE vinculando cada estudiante exclusivamente por su código RUDE. El Director administra la gestión académica anual y los tres periodos trimestrales con parámetros inmutables post-apertura, y puede autorizar correcciones retroactivas con ventanas temporales de hasta 72 horas. Todo el ciclo queda sellado en un log de auditoría inalterable.
+**Propuesta:** EduSync es una plataforma SaaS B2B multitenant que descentraliza el ingreso de calificaciones por rol (RBAC), consolida automáticamente los centralizadores trimestrales usando un motor algorítmico con truncado `floor`, y sincroniza masivamente con el SIE vinculando cada estudiante exclusivamente por su código RUDE. El Director (Admin) administra la gestión académica anual y los tres periodos trimestrales con parámetros inmutables post-apertura, y puede autorizar correcciones retroactivas con ventanas temporales de hasta 72 horas. Todo el ciclo queda sellado en un log de auditoría inalterable.
+
+> **Generalización desde v3.0 (`ADR-0009`):** lo anterior describe el **Perfil Bolivia SIE**, que sigue vigente sin cambios como una configuración soportada del producto. A partir de esta versión, EduSync se posiciona además como una **plataforma SaaS multi-tenant genérica de gestión académica**, administrada a nivel plataforma por un rol **SysAdmin** que da de alta Unidades Educativas y gestiona su ciclo de suscripción. Cada Unidad Educativa configura su propia Gestión Escolar con un número **variable** de periodos de evaluación, sus propias secciones de evaluación (con peso porcentual y nota máxima configurables) y sus propios tipos de evaluación — sin asumir tres trimestres fijos ni dimensiones pedagógicas fijas. Ver BR-013..BR-024 (§11.1) y el modelo funcional ampliado en `docs/product/FSD.md`.
 
 **Valor esperado:**
 - Reducción del ciclo de cierre administrativo de madrugadas enteras a menos de 10 minutos (KPI-01).
@@ -115,15 +129,25 @@ La consecuencia de no actuar es la continuidad del riesgo legal, el agotamiento 
 | **Dolores principales** | Trabajo de madrugada, estrés de "salvar" el colegio ante errores de docentes, riesgo de reincio total ante fallo parcial del SIE, 10 ciclos de revisión manual por trimestre. |
 | **Ganancia esperada** | Obtener una fuente única de verdad automatizada, sincronizar al SIE sin digitar y recuperar las noches y fines de semana. |
 
-### 4.3 Persona terciaria — Director Académico (Jeanneth)
+### 4.3 Persona terciaria — Director Académico / Admin (Jeanneth)
 
 | Atributo | Valor |
 |----------|-------|
-| **Nombre / rol** | Director de la institución educativa |
+| **Nombre / rol** | Director de la institución educativa (rol vigente: **Admin**, §0.1) |
 | **Contexto** | Toma decisiones sin visibilidad de datos en tiempo real. Solo conoce el estado del colegio cuando la secretaría le reporta manualmente. |
-| **Jobs-to-be-done** | 1. Crear y administrar la gestión académica anual (calendario, parámetros de dimensiones, asignaciones docentes). 2. Abrir y cerrar los 3 periodos trimestrales de forma secuencial. 3. Revisar indicadores de rendimiento institucional (reprobación, asistencia, avance de carga). 4. Autorizar correcciones retroactivas con control de alcance y ventana temporal. |
+| **Jobs-to-be-done** | 1. Crear y administrar la gestión académica anual (calendario, parámetros de dimensiones, asignaciones docentes). 2. Abrir y cerrar los 3 periodos trimestrales de forma secuencial (Perfil Bolivia SIE) o el número de periodos que configure para su Gestión Escolar (modelo genérico). 3. Revisar indicadores de rendimiento institucional (reprobación, asistencia, avance de carga). 4. Autorizar correcciones retroactivas con control de alcance y ventana temporal. |
 | **Dolores principales** | Ceguera de datos, dependencia total de la secretaría para conocer el avance, incapacidad de auditar correcciones retroactivas clandestinas. |
 | **Ganancia esperada** | Visibilidad en tiempo real, control jerárquico de modificaciones con trazabilidad legal, indicadores listos para auditorías ministeriales. |
+
+### 4.4 Persona cuaternaria — SysAdmin de plataforma *(nueva desde v3.0, `ADR-0009`)*
+
+| Atributo | Valor |
+|----------|-------|
+| **Nombre / rol** | Administrador de la plataforma EduSync (nivel SaaS, no pertenece a ningún tenant) |
+| **Contexto** | Opera el ciclo de vida comercial de las Unidades Educativas que usan EduSync: alta de nuevos clientes, gestión de su suscripción y soporte de primer nivel ante bloqueos de acceso. |
+| **Jobs-to-be-done** | 1. Registrar una nueva Unidad Educativa (tenant) en la plataforma. 2. Activar, suspender o desactivar una institución. 3. Definir fecha de inicio y vencimiento de la suscripción. 4. Administrar el estado del tenant (activo / suspendido / vencido). 5. Administrar los usuarios `Admin` de cada institución. |
+| **Dolores principales** | Sin un rol de plataforma explícito, el alta y baja de instituciones y la gestión de su suscripción no tienen dueño ni trazabilidad propia, separada de la operación diaria de cada colegio. |
+| **Ganancia esperada** | Un panel único para dar de alta instituciones, controlar su ciclo de suscripción y desbloquear administradores sin necesidad de acceso directo a los datos académicos de ningún tenant. |
 
 ---
 
@@ -224,6 +248,29 @@ La consecuencia de no actuar es la continuidad del riesgo legal, el agotamiento 
 | BR-011 | El sistema debe registrar un log de auditoría inalterable para toda operación de escritura: cada nota registrada, cada cierre de materia, cada exportación SIE y cada modificación retroactiva. El log debe incluir: actor, materia, acción, valor anterior, valor nuevo y timestamp UTC. | Must | Requisito legal boliviano para trazabilidad de registros académicos oficiales. Es la evidencia ante auditorías ministeriales y el mecanismo de detección de irregularidades. | 100 % de las operaciones de escritura tienen entrada en `audit_log`. 0 entradas con `UPDATE` o `DELETE` sobre el log (inmutabilidad del log). |
 | BR-012 | El sistema debe generar boletines académicos oficiales en formato PDF a partir del centralizador cerrado, usando una plantilla ministerial parametrizable sin necesidad de redespliegue, disponible únicamente cuando el centralizador del periodo está en estado `CERRADO`. | Should | Elimina la generación manual de boletines y garantiza que el documento entregado a los padres refleja los datos oficiales del centralizador inmutable. | Boletín generado en < 5 segundos por curso. 0 boletines generados a partir de centralizadores en estado `PROVISIONAL`. |
 
+> **Nota de alcance (`ADR-0009`):** BR-001..BR-012 describen el **Perfil Bolivia SIE**. Siguen vigentes sin cambios como una configuración soportada del producto; ya no representan el único modelo de negocio de EduSync.
+
+### 11.1 Requerimientos de negocio del modelo generalizado *(nuevos desde v3.0 — `ADR-0009`)*
+
+> BR-013..BR-024 son aditivos: no modifican ni contradicen BR-001..BR-012. Cubren la capa de plataforma SaaS y los módulos configurables descritos en el nuevo diseño funcional. Los puntos marcados **Pendiente** no deben implementarse en código hasta que un Design Doc o ADR de seguimiento los resuelva (ver `ADR-0009` §3).
+
+| ID | Requerimiento de negocio | Prioridad (MoSCoW) | Justificación | Métrica de aceptación |
+|----|---------------------------|--------------------|---------------|-----------------------|
+| BR-013 | El sistema debe permitir al SysAdmin registrar una nueva Unidad Educativa (tenant), definiendo fecha de inicio y vencimiento de su suscripción, y administrar su estado (activo / suspendido / vencido). | Must | Sin un rol y una entidad de plataforma explícitos, el ciclo de vida comercial de cada tenant no tiene dueño ni trazabilidad propia. | 100 % de las Unidades Educativas activas tienen fecha de vencimiento de suscripción registrada. 0 tenants operando sin registro de estado. |
+| BR-014 | El sistema debe bloquear el acceso de todos los usuarios de una Unidad Educativa cuya suscripción esté vencida o cuyo estado sea `suspendido`, sin eliminar sus datos. | Must | Protege el modelo de negocio SaaS sin comprometer la integridad de los datos académicos históricos del tenant. | 0 accesos exitosos de usuarios de un tenant `suspendido` o `vencido`, verificable en `audit_log` (RBAC_VIOLATION o equivalente). |
+| BR-015 | El sistema debe permitir al SysAdmin administrar los usuarios `Admin` de cada institución (alta, reseteo de acceso), sin acceso a los datos académicos del tenant. | Must | El soporte de plataforma no debe requerir visibilidad de datos académicos protegidos por RLS. | 0 consultas del SysAdmin a tablas académicas de un tenant fuera del flujo de administración de usuarios `Admin`. |
+| BR-016 | Cada Unidad Educativa debe poder crear una Gestión Escolar con nombre, fecha de inicio, fecha de finalización y estado (Planificación / Activa / Cerrada). | Must | Es la unidad organizativa raíz de la que dependen periodos, secciones, cursos e inscripciones de un ciclo escolar. | 100 % de las Gestiones Escolares creadas tienen los 4 campos obligatorios completos antes de pasar a estado `Activa`. |
+| BR-017 | Cada Gestión Escolar debe permitir definir un número **configurable** de periodos de evaluación (no fijo en 3), cada uno con nombre, fecha de inicio, fecha de cierre y estado. | Must | El diseño funcional exige explícitamente no asumir que siempre existirán tres trimestres. | El sistema acepta y opera correctamente con 1, 2, 3, 4 o más periodos definidos por la institución, sin cambio de código. |
+| BR-018 | Cada Gestión Escolar debe permitir configurar sus propias secciones de evaluación, cada una con nombre, orden, nota máxima, peso porcentual para el cálculo de la nota final, cantidad máxima de evaluaciones permitidas y estado. | Must | El diseño funcional exige que las secciones (ej. Ser/Saber/Hacer/Autoevaluación) sean configurables por institución, no fijas en el motor de dominio. | El sistema acepta y opera correctamente con cualquier conjunto de secciones definido por la institución, sin cambio de código. |
+| BR-019 | Las evaluaciones deben pertenecer a una sección de evaluación y contener como mínimo nombre, tipo, sección, fecha, puntaje máximo, descripción (opcional) y estado. Los tipos de evaluación deben ser configurables por institución, no codificados de forma fija. | Must | Evita hardcodear catálogos de tipos de evaluación (Examen, Práctica, Proyecto, etc.), que varían entre instituciones. | 100 % de las evaluaciones registradas referencian un tipo definido en el catálogo configurable de la institución, no un valor fijo del código. |
+| BR-020 | El sistema debe calcular automáticamente el promedio de cada sección de evaluación y la nota final del periodo aplicando los pesos porcentuales configurados para cada sección. | Must | Es el núcleo del valor del producto: consolidación automática sin hoja de cálculo manual, ahora con fórmula configurable en vez de fija. | La nota final calculada coincide, para el 100 % de los casos de prueba, con el resultado esperado de aplicar los pesos configurados. |
+| BR-021 | El sistema debe permitir administrar Cursos y Paralelos, donde un Curso puede tener múltiples Paralelos. | Must | Es la unidad organizativa sobre la que se agrupan Materias, Profesores y Estudiantes dentro de una Gestión Escolar. | 100 % de las Materias e Inscripciones referencian un Curso y, cuando aplica, un Paralelo válidos. |
+| BR-022 | El sistema debe permitir el CRUD de Materias, su asignación a Cursos y su asignación a Profesores. | Must | Es prerequisito funcional para que un Profesor pueda registrar evaluaciones de una Materia concreta. | 0 evaluaciones registradas sobre una Materia sin Profesor asignado. |
+| BR-023 | El sistema debe permitir el CRUD de Estudiantes (información personal y estado) de forma independiente del módulo de Inscripciones, y gestionar las Inscripciones (Gestión Escolar, Curso, Paralelo, fecha, estado) manteniendo el historial académico de cada estudiante. | Must | Separa la identidad del estudiante de su matrícula en un ciclo escolar concreto, permitiendo reconstruir su historial a través de múltiples Gestiones Escolares. | El historial académico de cualquier estudiante es reconstructible a través de todas sus Inscripciones históricas, sin pérdida de datos entre Gestiones Escolares. |
+| BR-024 | El sistema debe permitir el CRUD de Usuarios, la asignación de roles (`SysAdmin` / `Admin` / `Secretaria` / `Asesor` / `Profesor`), su activación/desactivación y el restablecimiento de contraseña. | Must | Es prerequisito de todo el RBAC del sistema generalizado. | 100 % de los usuarios activos tienen exactamente un rol vigente asignado. |
+
+> **Pendiente de definición (`ADR-0009` §3):** la gobernanza (auditoría inalterable, inmutabilidad post-cierre, ventana de corrección retroactiva) de BR-013..BR-024 no está definida todavía; no debe asumirse equivalente a BR-005/BR-009/BR-011 (Perfil Bolivia SIE) sin una decisión explícita de negocio.
+
 ---
 
 ## 12. Reglas de negocio y políticas
@@ -241,6 +288,8 @@ La consecuencia de no actuar es la continuidad del riesgo legal, el agotamiento 
 | RB-09 | **Cierre atómico de materia:** El cierre operativo de una materia es atómico. No existe cierre parcial. El sistema solo acepta el cierre si el 100 % de los estudiantes de la nómina tiene todas las evaluaciones declaradas completadas. | Política de integridad | `estados_cargar_notas.md §Invariantes · UC-02` |
 | RB-10 | **Modelo append-only en modificaciones retroactivas:** Toda corrección aprobada mediante UC-05 genera un nuevo registro versionado con referencia al anterior. El registro original es inmutable y nunca se sobreescribe. | Política de auditoría legal | `arquitectura_funcional_EduSync.md §DA-03 · UC-05` |
 | RB-11 | **Indicadores anuales con 3 trimestres cerrados:** El índice de reprobación anual y el promedio anual se calculan y muestran únicamente cuando los 3 trimestres del año académico están en estado `CERRADO`. Con datos parciales, el campo muestra `EN CURSO — promedio anual no disponible`. | Política de integridad estadística | `arquitectura_funcional_EduSync.md §UC-03 · UC-10` |
+
+> **RB-01..RB-11 son del Perfil Bolivia SIE** y siguen vigentes sin cambios. **Pendiente de definición (`ADR-0009` §3):** la generalización de RB-05 (secuencialidad) y RB-11 (indicadores solo con todos los periodos cerrados) a **N** periodos configurables, y el criterio de redondeo del modelo genérico (si `floor()` se mantiene como default o se abre a otras estrategias) — no debe asumirse ninguna de las dos hasta que se resuelva en una iteración de diseño posterior. Tampoco está definida la validación de que los pesos porcentuales de las secciones de evaluación (BR-018) sumen exactamente 100 %.
 
 ---
 
@@ -283,6 +332,17 @@ La consecuencia de no actuar es la continuidad del riesgo legal, el agotamiento 
 - Reportería estadística e indicadores institucionales con separación trimestral/anual (UC-10).
 - Log de auditoría inalterable para todas las operaciones de escritura.
 - Aislamiento multitenant con Row-Level Security en PostgreSQL.
+
+**Ampliación de alcance desde v3.0 (`ADR-0009`, modelo generalizado — BR-013..BR-024):**
+
+- Administración de Unidades Educativas (tenants) y su ciclo de suscripción por el SysAdmin (BR-013..BR-015).
+- Gestión Escolar con periodos de evaluación en cantidad configurable (BR-016, BR-017).
+- Configuración de secciones de evaluación con peso porcentual y nota máxima configurables (BR-018).
+- Evaluaciones con catálogo de tipos configurable por institución (BR-019).
+- Cálculo automático de notas con fórmula basada en pesos configurados (BR-020).
+- Administración de Cursos y Paralelos, Materias, Profesores (BR-021, BR-022).
+- Administración de Estudiantes e Inscripciones con historial académico (BR-023).
+- Administración de Usuarios y Roles a nivel tenant y plataforma (BR-024).
 
 ### 14.2 Fuera de alcance
 
@@ -350,6 +410,14 @@ La consecuencia de no actuar es la continuidad del riesgo legal, el agotamiento 
 | BR-010 | `arquitectura_funcional_EduSync.md §UC-10, UC-03` | UC-10, UC-03 | TBD | TBD |
 | BR-011 | `arquitectura_funcional_EduSync.md §DA-03` | UC-01, UC-02, UC-04, UC-05 | TBD | TBD |
 | BR-012 | `arquitectura_funcional_EduSync.md §UC-07` | UC-07, UC-03 | TBD | TBD |
+| BR-013..BR-015 | `ADR-0009` | FSD-UC-011 | PRD-REQ-021 | FSD-UC-011 |
+| BR-016..BR-017 | `ADR-0009` | FSD-UC-012, FSD-UC-013 | PRD-REQ-022, PRD-REQ-023 | FSD-UC-012, FSD-UC-013 |
+| BR-018..BR-019 | `ADR-0009` | FSD-UC-014, FSD-UC-015 | PRD-REQ-024, PRD-REQ-025 | FSD-UC-014, FSD-UC-015 |
+| BR-020 | `ADR-0009` | FSD-UC-016 | PRD-REQ-026 | FSD-UC-016 |
+| BR-021 | `ADR-0009` | FSD-UC-017 | PRD-REQ-027 | FSD-UC-017 |
+| BR-022 | `ADR-0009` | FSD-UC-018, FSD-UC-019 | PRD-REQ-028, PRD-REQ-029 | FSD-UC-018, FSD-UC-019 |
+| BR-023 | `ADR-0009` | FSD-UC-020 | PRD-REQ-030 | FSD-UC-020 |
+| BR-024 | `ADR-0009` | FSD-UC-021 | PRD-REQ-031 | FSD-UC-021 |
 
 ---
 
@@ -370,6 +438,7 @@ La consecuencia de no actuar es la continuidad del riesgo legal, el agotamiento 
 |---------|-------|-------|--------|
 | v1.0 | 09/05/2026 | Consultor Estratégico | Creación inicial con BR-001..BR-005, BMC y KPIs base. |
 | v2.0 | 14/05/2026 | Equipo G-EduSync | Consolidación con arquitectura funcional (10 UCs, 5 DAs) y diagramas de estado del Docente (18 estados) y Director (23 estados). Incorporación de BR-006..BR-012. Ampliación de reglas de negocio RB-01..RB-11. Nuevas personas: Director (Jeanneth). Nuevos KPIs: KPI-04, KPI-05. Nuevos BO: BO-04, BO-05. Riesgo adicional: alucinación por agentes IA y fuga multitenant. |
+| v3.0 | 12/07/2026 | Rodrigo Aspeti | Generalización a plataforma SaaS multi-tenant configurable (`ADR-0009`). BR-001..BR-012 y RB-01..RB-11 se re-etiquetan como **Perfil Bolivia SIE** (vigentes sin cambios). Se añaden BR-013..BR-024 (§11.1): SysAdmin/tenant/suscripción, Gestión Escolar, periodos y secciones de evaluación configurables, tipos de evaluación configurables, cálculo de notas configurable, Cursos/Paralelos, Materias, Profesores, Estudiantes, Inscripciones, Usuarios y Roles. Nueva persona: SysAdmin (§4.4). Nueva nota de nomenclatura de roles (§0.1: Admin=Director, Profesor=Docente, Secretaria y Asesor nuevos). Alcance ampliado (§14.1). 5 puntos quedan explícitamente pendientes de definición (ver `ADR-0009` §3): reconciliación con el modelo Bolivia, secuencialidad/redondeo genérico, validación de suma de pesos, gobernanza de módulos nuevos. |
 
 ---
 

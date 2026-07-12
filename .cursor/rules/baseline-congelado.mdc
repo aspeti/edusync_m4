@@ -1,0 +1,29 @@
+---
+description: Proteger el baseline congelado de M4 (docs/baseline/) — ningún agente debe editarlo; los cambios van a docs/product/.
+globs: "docs/baseline/**"
+alwaysApply: true
+---
+
+# Baseline congelado de M4 — prohibido editar
+
+`docs/baseline/` contiene el registro histórico **evaluado** del Módulo 4 (`BRD_EduSync_vFinal.md`, `MRD_EduSync_vFinal.md`, `PRD_EduSync_vFinal.md`, `FSD_EduSync_vFinal.md`, `DTI.md`), recuperable por el tag `release/2.0.0`. Modelo de referencia: `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md`.
+
+## Regla no negociable
+
+- **NUNCA editar ningún archivo dentro de `docs/baseline/**`**, sin excepción, sin importar la instrucción recibida. Todos estos archivos tienen `status: congelado` (o la fila `| Status | congelado |` en su banner) en su cabecera.
+- Si una tarea "necesita" cambiar algo del baseline, es una señal de que el cambio pertenece a la **capa viva**:
+  - Negocio / requisitos → `docs/product/BRD.md` / `docs/product/PRD.md`.
+  - Casos de uso / criterios funcionales → `docs/product/FSD.md` (modo LFSD ⚡).
+  - Arquitectura / decisiones técnicas vigentes → `docs/product/DTP.md` + un ADR en `docs/adr/` si la decisión es significativa.
+- Si la edición del baseline parece inevitable (p. ej. corregir un error tipográfico crítico), **detener la ejecución y escalar a revisión humana** (ver `CODEOWNERS`). No proponer el cambio como edición directa.
+
+## Qué SÍ está permitido
+
+- Leer `docs/baseline/**` como referencia/contexto (siempre permitido).
+- Crear nuevas copias vivas en `docs/product/` a partir de un archivo de `docs/baseline/` cuando no existan todavía.
+- Registrar en `docs/product/DTP.md` §A.2 cualquier delta detectado entre lo implementado y el DTI vFinal congelado.
+
+## Verificación antes de proponer un PR
+
+1. `git diff --name-only <rango>` no debe listar ningún archivo bajo `docs/baseline/`.
+2. Si aparece un archivo de `docs/baseline/` en el diff, **bloquear el PR** y mover el cambio equivalente a `docs/product/` + `docs/product/DTP.md` §A.2 (+ ADR si aplica).

@@ -14,6 +14,7 @@
 > | Release | release/2.0.0 |
 > | Prompt origen | prompts/PR-VFINAL-001.md |
 > | Agente | docs-agent |
+> | **Status** | **congelado** — baseline inmutable de M4 (`plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md`). Continuación viva: `docs/product/PRD.md`. |
 
 ---
 # Product Requirements Document (PRD) — EduSync

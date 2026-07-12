@@ -1,18 +1,16 @@
-> COPIA CONGELADA - release/2.0.0
+> COPIA VIVA - release/3.0.0 (capa de implementacion, FSD vivo en modo LFSD ⚡)
 >
-> Este archivo es un snapshot inmutable de docs/fsd/FSD_EduSync.md (version v1.0) congelado el 28/05/2026 por el contrato prompts/PR-VFINAL-001.md para la entrega del Modulo 4.
+> Este archivo nace como copia editable de docs/baseline/FSD_EduSync_vFinal.md (congelado en release/2.0.0, tag de M4) para evolucionar junto al codigo desde release/3.0.0 en adelante, en modo LFSD ⚡ (mantenimiento sprint-a-sprint), siguiendo el modelo documental de implementacion (plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md).
 >
-> **No editar este archivo.** Para cambios normativos:
-> 1. Modifica el documento canonico (docs/fsd/FSD_EduSync.md).
-> 2. Regenera este alias mediante PR-VFINAL-001 o sync-doc-chain en su pasada de release.
+> **Este archivo SI se edita** a medida que la implementacion lo requiera. El registro historico inmutable de M4 vive en docs/baseline/FSD_EduSync_vFinal.md (tag release/2.0.0) y NUNCA se modifica; cada cambio de criterio/flujo se traza a un FSD-UC, opcionalmente a un `DD-UC-NNN` en docs/design/, y se registra en docs/product/DTP.md §A.2/§A.3.
 >
 > | Campo | Valor |
 > |-------|-------|
-> | Fuente canonica | docs/fsd/FSD_EduSync.md |
-> | Version congelada | v1.0 |
-> | Fecha de freeze | 28/05/2026 |
-> | Release | release/2.0.0 |
-> | Prompt origen | prompts/PR-VFINAL-001.md |
+> | Fuente historica (congelada) | docs/baseline/FSD_EduSync_vFinal.md |
+> | Version de partida | v1.0 |
+> | Fecha de apertura de capa viva | 28/05/2026 |
+> | Release vivo | release/3.0.0 |
+> | Documento rector | plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md |
 > | Agente | docs-agent |
 
 ---

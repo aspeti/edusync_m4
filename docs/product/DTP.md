@@ -1,0 +1,141 @@
+---
+producto: "EduSync"
+grupo: "G-EduSync"
+documento: DTP                 # Documento Técnico del Producto (continuación VIVA del DTI)
+version: v1.0                  # versiona la implementación, no el diseño de M4
+fecha: "28/05/2026"
+status: vivo                   # vivo | en_revision | publicado-release   (NUNCA "congelado")
+audiencia: dual                # humanos + agentes IA
+baseline_ref:                  # el baseline CONGELADO del que parte este DTP (M4)
+  dti: "docs/baseline/DTI.md"
+  tag: "release/2.0.0"
+  commit: "<sha pendiente — se completa al taggear release/2.0.0>"
+release: "release/3.0.0"       # release vivo que este DTP describe
+stack:
+  - "Java 25 (LTS)"
+  - "Spring Boot 4.1.0 (Spring Framework 7.0.8)"
+  - "Angular 21 (LTS)"
+  - "PostgreSQL 15 RLS"
+  - "AWS ECS Fargate"
+repo: "https://github.com/rodrigo-aspeti/edusync"
+agents_md: "/AGENTS.md"
+artefactos_vivos:
+  prd: "docs/product/PRD.md"          # copia VIVA (no el PRD congelado de M4)
+  fsd: "docs/product/FSD.md"          # copia VIVA en modo LFSD ⚡
+  prompt_mapping: "docs/PROMPT_MAPPING.md"
+  design_docs_dir: "docs/design/"     # DD-UC-NNN
+  adr_dir: "docs/adr/"
+---
+
+# Documento Técnico del Producto (DTP) — EduSync
+
+> **Qué es**: el DTP es la **continuación viva del DTI**. Donde el DTI fue *"el plano"* (foto técnica congelada al cierre de M4, `release/2.0.0`, ver `docs/baseline/DTI.md`), el DTP es *"el DTI que compila"*: el **contrato técnico vigente** del producto mientras se implementa. Consolida la entrega final (documentación + software).
+>
+> **Regla de oro** (heredada del modelo documental de M4, ver [`plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md`](../../plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md)): **cero divergencia silenciosa**. Si el código necesita contradecir una decisión del DTI vFinal, primero se actualiza el ADR + este DTP + la spec viva; **nunca al revés**.
+>
+> **Qué NO es**: este DTP **no reescribe** el baseline congelado (`BRD/MRD/PRD/FSD clásico + DTI` en `docs/baseline/`, recuperable por el tag `release/2.0.0`). El baseline es el registro histórico evaluado de M4 y permanece intacto (ver `.cursor/rules/baseline-congelado.mdc` y `CODEOWNERS`).
+>
+> ⚠️ **Punto de partida (`v1.0`)**: esta primera versión del DTP es un **placeholder inicial**. `release/3.0.0` todavía no ha arrancado (`src/` está vacío en `AGENTS.md` §3): no existe ningún `DD-UC-NNN` ni `PR-IMPL-NNN` todavía. §A.1–A.4 no tienen filas reales más allá del delta de stack de `ADR-0008`, y §B marca `no` (sin cambios) en casi todas las secciones porque nada se ha implementado aún. Este documento se puebla incrementalmente con cada design doc y cada PR de implementación, vía el skill `@dtp-sync`.
+
+## Cómo se origina
+
+1. Se copia el **DTI vFinal / congelado** (`docs/baseline/DTI.md`, tag `release/2.0.0`) como punto de partida conceptual del DTP (`status: vivo`).
+2. A partir de aquí, **todo cambio técnico** entra por el flujo de control de cambios (ver §A).
+3. El baseline de M4 queda inmutable en `docs/baseline/` + tag `release/2.0.0`.
+
+```mermaid
+flowchart LR
+  DTI["DTI congelado (docs/baseline/DTI.md, release/2.0.0)"] -->|copia inicial| DTP["DTP v1.0 (vivo, este documento)"]
+  FSDv["FSD vivo (docs/product/FSD.md, LFSD, FSD-UC-NNN)"] --> DD["Design Doc (DD-UC-NNN, docs/design/)"]
+  DD --> Code["PR / codigo (src/)"]
+  Code --> DTP
+  ADR["ADR (docs/adr/, si hay decision)"] --> DTP
+  ADR8["ADR-0008 ya cerrado (stack Java 25 / Boot 4.1.0 / Angular 21)"] --> DTP
+```
+
+---
+
+## A. Control de cambios (núcleo del DTP) `[humano+máquina]`
+
+> Esta sección es lo que distingue al DTP del DTI. Todo cambio técnico durante la implementación se registra aquí.
+
+### A.1 Changelog de implementación
+
+| Fecha | Cambio | Disparador (FSD-UC / DD / hallazgo) | ADR | PR / commit | Autor |
+|-------|--------|-------------------------------------|-----|-------------|-------|
+| 28/05/2026 | Apertura de la capa viva (`docs/product/`) y creación de este DTP v1.0 como punto de partida | Cierre de M4 → transición a `release/3.0.0` (`plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md`) | — | `pendiente de commit formal` | Rodrigo Aspeti |
+| 28/05/2026 | Fijación del stack vivo: Java 21/Boot 3.3/Angular 17 (baseline) → Java 25 LTS/Spring Boot 4.1.0/Angular 21 LTS (vivo) | Apertura de `release/3.0.0` sobre `src/` vacío (greenfield, sin costo de migración) | `ADR-0008` | `pendiente de commit formal` | Rodrigo Aspeti |
+
+### A.2 Deltas respecto al DTI vFinal
+
+> Diferencias **deliberadas** entre lo diseñado en M4 y lo construido. Cada delta significativo exige un ADR.
+
+| # | Sección del DTI afectada | Qué decía el DTI vFinal | Qué dice ahora el DTP | Motivo | ADR |
+|---|--------------------------|-------------------------|-----------------------|--------|-----|
+| 1 | `§4 Stack tecnológico` (`docs/baseline/DTI.md`, también reflejado en `AGENTS.md` §4) | Java 21 (LTS) / Spring Boot 3.3 / Angular 17 | Java 25 (LTS) / Spring Boot 4.1.0 (Spring Framework 7.0.8) / Angular 21 (LTS) | `src/` está vacío al cerrar M4 (greenfield): se adopta el stack más reciente estable disponible sin costo de migración, priorizando AOT Cache de Boot 4 sobre Java 25 y la ventana LTS de Angular 21 | `ADR-0008` |
+
+### A.3 Estado de implementación por FSD-UC
+
+| FSD-UC | Design Doc | Estado | Release | Tests/Evals | Notas |
+|--------|------------|--------|---------|-------------|-------|
+| `FSD-UC-001` (Registro de calificaciones) | — | pendiente | `release/3.0.0` | — | Sin `DD-UC-NNN` creado todavía; usar `@feature-design-doc` para iniciar |
+| `FSD-UC-003` (Consolidación de centralizadores) | — | pendiente | `release/3.0.0` | — | Ídem |
+| `FSD-UC-004` (Exportación SIE) | — | pendiente | `release/3.0.0` | — | Ídem |
+| `FSD-UC-005` (Modificación retroactiva) | — | pendiente | `release/3.0.0` | — | Ídem |
+| `FSD-UC-009` (Administración de periodos) | — | pendiente | `release/3.0.0` | — | Ídem |
+
+### A.4 Trazabilidad código ↔ DTP
+
+> Cadena completa por feature. Debe poder reconstruirse para cualquier línea del producto.
+
+`BRD/MRD (baseline)` → `PRD/FSD vivo (FSD-UC-NNN)` → `Design Doc (DD-UC-NNN)` → `Prompt (PR-IMPL-NNN)` → `PR/commit` → `Tests/Evals` → `ADR (si aplica)` → **DTP**.
+
+Estado actual: la cadena existe completa hasta `PRD/FSD vivo` (`docs/product/PRD.md`, `docs/product/FSD.md`). No hay todavía ningún `DD-UC-NNN`, `PR-IMPL-NNN` ni código en `src/`. El único eslabón poblado fuera de specs es el delta de stack (`ADR-0008`).
+
+---
+
+## B. Contenido técnico vigente `[humano+máquina]`
+
+> El DTP mantiene **al día** las mismas secciones que el DTI (no se duplica la plantilla: se reusa la estructura de [`DOCUMENTO_TECNICO_INICIAL_TEMPLATE.md`](../../plantillas/DOCUMENTO_TECNICO_INICIAL_TEMPLATE.md)). Para cada sección, si **no cambió** respecto al DTI vFinal, basta referenciarla; si **cambió**, se reescribe aquí y se registra el delta en §A.2.
+
+| Sección (espejo del DTI) | ¿Cambió vs DTI vFinal? | Dónde está la versión vigente |
+|--------------------------|------------------------|-------------------------------|
+| §1 Visión del producto | no | `docs/baseline/DTI.md` §1 |
+| §2 Contexto del sistema (C4 N1) | no | `docs/baseline/DTI.md` §2 / `docs/diagrams/c4_level1.mmd` |
+| §3 Arquitectura de alto nivel (C4 N2/N3) | no | `docs/baseline/DTI.md` §3 / `docs/diagrams/c4_level2.mmd`, `c4_level3_*.mmd` |
+| §3.5 Contenedores agénticos | no | `docs/baseline/DTI.md` §3.5 |
+| §4 Modelo de dominio | no | `docs/baseline/DTI.md` §4 |
+| §4 Stack tecnológico | **sí** | Este DTP §A.2 (fila 1) + `ADR-0008` — Java 25 LTS / Spring Boot 4.1.0 / Angular 21 LTS |
+| §5 Arquitectura hexagonal del core | no | `docs/arquitectura_hexagonal_EduSync.md` |
+| §6 Distribuida (si aplica) | no | `docs/baseline/DTI.md` §6 (Seams, sin activar — `ADR-0007` Strangler Fig sigue *gated*) |
+| §7 Asíncrona / event-driven | no | `docs/baseline/DTI.md` §7 (Spring Events; migración a SQS FIFO prevista en `ADR-0004`, no ejecutada aún) |
+| §8 Despliegue cloud | no | `docs/baseline/DTI.md` §8 / `docs/diagrams/deployment_aws.mmd` (imagen Docker deberá basarse en OpenJDK 25 al implementarse, ver `ADR-0008` §5) |
+| §9 Capa de IA / agentes | no | `docs/baseline/DTI.md` §9 |
+| §10 Prompt mapping | sí (crece con `PR-IMPL-*`) | `docs/PROMPT_MAPPING.md` (área `IMPL`, aún sin filas) |
+| §11 NFRs | no | `docs/baseline/DTI.md` §11 |
+| §12 POCs | no | `docs/baseline/DTI.md` §12 / `docs/pocs/POC-01-rls-multitenancy/`, `docs/pocs/POC-02-circuit-breaker-sie/` (ejecución con evidencia real sigue pendiente) |
+| §13–§16 Seguridad / Observabilidad / DevOps / Antipatrones | no | `docs/baseline/DTI.md` §13–§16 |
+| §21 ADRs | sí (crece) | `docs/adr/` — 8 ADRs vigentes (`0001`–`0008`) |
+| §22–§23 Auditoría IA / Evals | no todavía | `docs/baseline/DTI.md` §22–§23 |
+
+> **Solo escribir aquí las secciones que cambiaron.** Las que no cambiaron se mantienen por referencia al DTI vFinal, preservando un único punto de verdad por release.
+
+---
+
+## Checklist del DTP (entrega de implementación)
+
+- [x] Frontmatter con `baseline_ref` (`docs/baseline/DTI.md` + tag `release/2.0.0`) y `status: vivo`.
+- [x] §A.1 Changelog de implementación poblado y al día (2 filas: apertura de capa viva + delta de stack).
+- [x] §A.2 Deltas vs DTI vFinal, **cada uno con ADR** (1 delta → `ADR-0008`).
+- [x] §A.3 Estado por FSD-UC con su Design Doc (todos `pendiente`, sin `DD-UC-NNN` aún — esperado en un DTP punto de partida).
+- [ ] §A.4 Trazabilidad código ↔ DTP reconstruible para cada feature — **pendiente**: no hay código todavía.
+- [x] §B: solo secciones cambiadas reescritas (stack + prompt mapping + ADRs); el resto referencia al DTI vFinal.
+- [ ] `docs/PROMPT_MAPPING.md` ampliado con prompts de implementación (`PR-IMPL-*`) — **pendiente**: área `IMPL` reservada, sin filas todavía.
+- [x] `AGENTS.md` sincronizado (pendiente de ejecutar en este mismo plan).
+- [x] Baseline congelado (`docs/baseline/`) **intacto** (sin commits que lo modifiquen; protegido por `CODEOWNERS` y `.cursor/rules/baseline-congelado.mdc`).
+
+## Registro de cambios
+
+| Versión | Fecha | Autor | Cambio |
+|---------|-------|-------|--------|
+| v1.0 | 28/05/2026 | Rodrigo Aspeti | Creación del DTP como punto de partida de la capa viva (`release/3.0.0`), a partir de `plantillas/plantillas3/DTP_TEMPLATE.md`; registra el delta de stack `ADR-0008` (Java 25 LTS + Spring Boot 4.1.0 + Angular 21 LTS); §A.3 lista los 5 FSD-UC del baseline como `pendiente`; sin `DD-UC-NNN` ni `PR-IMPL-NNN` todavía. |

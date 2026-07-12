@@ -3,7 +3,7 @@ producto: "EduSync"
 grupo: "G-EduSync"
 version: v0.8
 fecha: "28/05/2026"
-status: borrador
+status: congelado                # baseline inmutable de M4, tag release/2.0.0. Continuacion viva: docs/product/DTP.md
 audiencia: dual
 stack:
   - "Java 21"

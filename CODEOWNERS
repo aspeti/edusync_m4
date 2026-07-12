@@ -1,0 +1,9 @@
+# CODEOWNERS — EduSync
+#
+# Exige revision humana obligatoria sobre el baseline congelado de M4
+# (docs/baseline/**, tag release/2.0.0). Ningun agente de IA debe
+# editar estos archivos; ver AGENTS.md §8 y .cursor/rules/baseline-congelado.mdc.
+#
+# Modelo de referencia: plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md
+
+docs/baseline/ @rodrigo-aspeti

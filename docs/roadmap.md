@@ -1,22 +1,23 @@
 # Hoja de ruta tecnica de EduSync
 
 > Fuente canonica del roadmap del producto.
-> El bloque resumen de `docs/DTI.md §19` es un espejo de este archivo (no al reves).
+> El bloque resumen de `docs/baseline/DTI.md §19` (congelado, tag `release/2.0.0`) es un espejo historico de este archivo (no al reves). Desde la apertura de la capa viva (`plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md`), el espejo vigente hacia adelante es `docs/product/DTP.md` §B, que `dtp-sync` mantiene sincronizado con este roadmap.
 > Generado por el contrato de prompt `prompts/PR-ROADMAP-001.md`.
+> **Nota de numeracion (28/05/2026)**: el modelo documental de implementacion fija `release/3.0.0` como el tag de apertura de la capa viva (ver `docs/product/DTP.md`, `ADR-0008`). Este roadmap habia adelantado ese mismo hito bajo la etiqueta `release/1.1.0` (§3). Ambas etiquetas describen el **mismo milestone** ("core hexagonal + primer codigo productivo"); `release/3.0.0` es la que efectivamente se tagueara en Git al abrir la implementacion, y `release/1.1.0`/`release/1.2.0` quedan como referencia historica de la secuencia interna de hitos dentro de ese mismo release vivo.
 
 ## 0. Metadatos
 
 | Campo | Valor |
 |-------|-------|
-| Version | v0.1 |
+| Version | v0.3 |
 | Fecha | 28/05/2026 |
 | Autor | Rodrigo Aspeti (G-EduSync) |
 | Producto | EduSync — SaaS B2B multitenant para gestion academica boliviana |
-| Stack autoritativo | Java 21 / Spring Boot 3.3 / PostgreSQL 15 RLS / Angular 17 / AWS ECS Fargate |
+| Stack autoritativo | Baseline M4 (congelado): Java 21 / Spring Boot 3.3 / PostgreSQL 15 RLS / Angular 17 / AWS ECS Fargate. Vivo desde `release/3.0.0` (`ADR-0008`): Java 25 LTS / Spring Boot 4.1.0 / PostgreSQL 15 RLS / Angular 21 LTS / AWS ECS Fargate |
 | Fuente canonica | este archivo (`docs/roadmap.md`) |
-| Espejo resumen | `docs/DTI.md §19 Roadmap tecnico` |
-| Releases en juego | `release/1.0.1` -> `release/1.1.0` -> `release/1.2.0` -> `release/2.0.0` |
-| Trazabilidad | DTI v0.5; ADR-0001..0006; POC-01, POC-02; FSD-UC-001..010; BR-001..012; NFR-001..016; KPI-01..05 |
+| Espejo resumen | `docs/baseline/DTI.md §19 Roadmap tecnico` (historico, congelado) -> `docs/product/DTP.md` §B (vivo, desde `release/3.0.0`) |
+| Releases en juego | `release/1.0.1` -> `release/1.1.0` -> `release/1.2.0` -> `release/2.0.0` -> `release/3.0.0` (apertura de capa viva, ver nota de numeracion arriba) |
+| Trazabilidad | DTI v0.8 congelado (`docs/baseline/DTI.md`); DTP v1.0 vivo (`docs/product/DTP.md`); ADR-0001..0008; POC-01, POC-02; FSD-UC-001..010; BR-001..012; NFR-001..016; KPI-01..05 |
 | Cumplimiento | Ley 070 Avelino Sinani · Ley 164 datos personales · formato SIE Ministerio de Educacion de Bolivia |
 
 > **Nota de sincronizacion**: la entrega evaluable del Modulo 4 es la rama `release/2.0.0` (regla de la rubrica del Modulo 4). Mientras que en `docs/DTI.md` el `release_objetivo` del frontmatter todavia apunta a `release/1.0.1`, este roadmap declara explicitamente la promocion del ramal a `release/2.0.0` para la defensa, y deja el siguiente modulo encadenado a `release/1.1.0` para no perder la numeracion semver de los hitos de implementacion. La actualizacion del DTI corre por el skill `sync-doc-chain` en una tarea posterior.
@@ -92,13 +93,15 @@ A 28/05/2026, lo que vive en el repositorio y es auditable por la rubrica del Mo
 
 ---
 
-## 3. Horizonte Siguiente — `release/1.1.0` (implementacion core hexagonal)
+## 3. Horizonte Siguiente — `release/1.1.0` / `release/3.0.0` (implementacion core hexagonal, apertura de capa viva)
 
 > **Ventana**: siguiente modulo de la maestria.
 > **Objetivo**: producir el primer entregable de codigo funcional que materialice las decisiones arquitectonicas del DTI y valide los KPI del BRD en ambiente `stg`.
+> **Apertura de capa viva**: este horizonte es el que el modelo documental de implementacion (`plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md`) taguea como `release/3.0.0`. Antes de escribir la primera linea de `src/`, ya estan cerrados: `ADR-0008` (stack vivo Java 25 LTS + Spring Boot 4.1.0 + Angular 21 LTS), `docs/product/DTP.md` v1.0 (punto de partida), `docs/product/{BRD,PRD,FSD}.md` (copias vivas editables) y los skills `feature-design-doc` / `dtp-sync`.
 
 | Hito | Alcance (FSD-UC / ADR / POC) | Criterio de exito medible (NFR/BR/KPI) | Riesgo | Owner | Release tag |
 |------|------------------------------|----------------------------------------|--------|-------|-------------|
+| Primer Design Doc (`DD-UC-001`) + primer prompt de implementacion (`PR-IMPL-001`) | `FSD-UC-001` + skill `feature-design-doc` | `docs/design/DD-UC-001.md` creado, trazado a `FSD-UC-001`; `PR-IMPL-001` registrado en `docs/PROMPT_MAPPING.md` area `IMPL` | Sin este primer par DD/PR-IMPL, la cadena de trazabilidad del DTP queda vacia | Rodrigo Aspeti | `release/3.0.0` |
 | `FSD-UC-001` Registro de calificacion por dimension | `FSD-UC-001` + `ADR-0002` + `BR-002`, `BR-003` | p95 < 500 ms (`NFR-001`); validacion paramétrica en tiempo real; rango `[rango_min, rango_max]` del periodo | Saturacion del thread pool en pico trimestral | dev-agent | `release/1.1.0` |
 | `FSD-UC-002` Cierre operativo de materia | `FSD-UC-002` + `ADR-0004` + `BR-008` | Respuesta inmediata al Docente (< 500 ms) sin esperar consolidacion; evento `MateriaCerradaEvent` publicado en `AFTER_COMMIT` | Centralizadores huerfanos > 1 % de cierres | dev-agent | `release/1.1.0` |
 | `FSD-UC-003` Consolidacion algoritmica | `FSD-UC-003` + `ADR-0004` + `BR-003`, `BR-008`, `BR-011` | `FloorTest.floor_64_666_equals_64()` pasa en CI; centralizador disponible < 5 s post-cierre (`ConsolidacionAsincronaIT`) | Inconsistencia eventual visible al Director | dev-agent | `release/1.1.0` |
@@ -230,16 +233,18 @@ Entregables minimos para promover de `release/2.0.0` a `release/1.1.0`:
 
 | Fuente | Seccion del roadmap que la consume |
 |--------|-----------------------------------|
-| `docs/DTI.md §19` | Resumen embebido (espejo de este archivo) |
-| `docs/DTI.md §12.1` POC-01 | §2 Hito "Cierre POC-01"; §6 L-01 |
-| `docs/DTI.md §12.2` POC-02 | §2 Hito "Cierre POC-02"; §6 L-02 |
-| `docs/DTI.md §6.2` Seams | §4 ADR-0007 Strangler Fig |
-| `docs/DTI.md §11` NFRs | §3, §4, §5, §7 metricas de salud |
-| `docs/DTI.md §16` Antipatrones | §6 L-07; §8 riesgos |
-| `docs/DTI.md §17` Trade-offs | §6 L-04, L-05, L-06 |
-| `docs/DTI.md §18` Riesgos | §8 (replica resumida) |
+| `docs/baseline/DTI.md §19` (congelado) | Resumen embebido historico (espejo de este archivo hasta el cierre de M4) |
+| `docs/baseline/DTI.md §12.1` POC-01 | §2 Hito "Cierre POC-01"; §6 L-01 |
+| `docs/baseline/DTI.md §12.2` POC-02 | §2 Hito "Cierre POC-02"; §6 L-02 |
+| `docs/baseline/DTI.md §6.2` Seams | §4 ADR-0007 Strangler Fig |
+| `docs/baseline/DTI.md §11` NFRs | §3, §4, §5, §7 metricas de salud |
+| `docs/baseline/DTI.md §16` Antipatrones | §6 L-07; §8 riesgos |
+| `docs/baseline/DTI.md §17` Trade-offs | §6 L-04, L-05, L-06 |
+| `docs/baseline/DTI.md §18` Riesgos | §8 (replica resumida) |
+| `docs/product/DTP.md §A/§B` (vivo, desde `release/3.0.0`) | §3 apertura de capa viva; espejo vigente hacia adelante |
+| `docs/adr/0008-*.md` | §3 stack vivo (Java 25 LTS + Spring Boot 4.1.0 + Angular 21 LTS) |
 | `docs/brd/BRD_EduSync_v2.md §8` KPIs | §7 metricas de salud |
-| `docs/adr/0001..0006-*.md` | §2 a §5 hitos por horizonte |
+| `docs/adr/0001..0008-*.md` | §2 a §5 hitos por horizonte |
 | `docs/fsd/FSD_EduSync.md §4` FSD-UC | §3 implementacion core |
 | Rubrica del Modulo 4 | §2 (regla de entrega `release/2.0.0`, criterios 1–7) |
 
@@ -251,6 +256,7 @@ Entregables minimos para promover de `release/2.0.0` a `release/1.1.0`:
 |---------|-------|-------|--------|
 | v0.1 | 28/05/2026 | Rodrigo Aspeti | Creacion desde `PR-ROADMAP-001`. Roadmap canonico con 4 horizontes, 7 lecciones (5 aceptadas + 2 pendientes por POC), metricas BRD/NFR/RPO/RTO, 7 riesgos y 5 compromisos hacia `release/1.1.0`. POC-01 y POC-02 marcadas explicitamente como "Pendiente de ejecucion" segun caso borde §6.2 del contrato. |
 | v0.2 | 28/05/2026 | Rodrigo Aspeti | Sincronizacion de cierre documental tras `PR-APORTES-001` y `PR-VFINAL-001`: estado actual actualizado a DTI v0.8, AGENTS.md v0.11 y PROMPT_MAPPING.md v1.9; brechas cerradas para `AGENTS.md` raiz, aportes `release/2.0.0` y aliases `vFinal` BRD/MRD/PRD/FSD; §2 refleja que estos hitos ya estan completados y mantiene como pendientes POC-01/POC-02 con evidencia, guardrails, consolidacion de duplicado y push final de `release/2.0.0`. |
+| v0.3 | 28/05/2026 | Rodrigo Aspeti | Apertura de la capa viva de implementacion (`plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md`): nota de numeracion que reconcilia `release/1.1.0`/`release/1.2.0` (ya documentados) con el tag `release/3.0.0` del modelo documental. Metadatos §0 actualizados: stack dual (baseline Java 21/Boot 3.3/Angular 17 vs. vivo Java 25 LTS/Boot 4.1.0/Angular 21 LTS via `ADR-0008`), espejo `docs/DTI.md` -> `docs/baseline/DTI.md` (congelado) + `docs/product/DTP.md` (vivo). §3 gana el hito "Primer Design Doc + PR-IMPL-001". §10 trazabilidad cruzada actualizada con las rutas `docs/baseline/` y referencia a `ADR-0008`. Sin cambios en horizontes §2, §4, §5 ni en lecciones §6. |
 
 ---
 

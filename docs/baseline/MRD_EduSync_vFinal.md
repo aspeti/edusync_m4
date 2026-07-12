@@ -14,6 +14,7 @@
 > | Release | release/2.0.0 |
 > | Prompt origen | prompts/PR-VFINAL-001.md |
 > | Agente | docs-agent |
+> | **Status** | **congelado** — baseline inmutable de M4 (`plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md`). El MRD no tiene continuación viva propia (no evoluciona con la implementación). |
 
 ---
 # Market Requirements Document (MRD) — EduSync

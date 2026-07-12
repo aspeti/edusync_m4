@@ -1,18 +1,16 @@
-> COPIA CONGELADA - release/2.0.0
+> COPIA VIVA - release/3.0.0 (capa de implementacion)
 >
-> Este archivo es un snapshot inmutable de docs/brd/BRD_EduSync_v2.md (version v2.0) congelado el 28/05/2026 por el contrato prompts/PR-VFINAL-001.md para la entrega del Modulo 4.
+> Este archivo nace como copia editable de docs/baseline/BRD_EduSync_vFinal.md (congelado en release/2.0.0, tag de M4) para evolucionar junto al codigo desde release/3.0.0 en adelante, siguiendo el modelo documental de implementacion (plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md).
 >
-> **No editar este archivo.** Para cambios normativos:
-> 1. Modifica el documento canonico (docs/brd/BRD_EduSync_v2.md).
-> 2. Regenera este alias mediante PR-VFINAL-001 o sync-doc-chain en su pasada de release.
+> **Este archivo SI se edita** a medida que la implementacion lo requiera. El registro historico inmutable de M4 vive en docs/baseline/BRD_EduSync_vFinal.md (tag release/2.0.0) y NUNCA se modifica; cualquier cambio de negocio real durante la implementacion se registra ademas en docs/product/DTP.md §A.2 (delta vs. DTI vFinal) con su ADR si aplica.
 >
 > | Campo | Valor |
 > |-------|-------|
-> | Fuente canonica | docs/brd/BRD_EduSync_v2.md |
-> | Version congelada | v2.0 |
-> | Fecha de freeze | 28/05/2026 |
-> | Release | release/2.0.0 |
-> | Prompt origen | prompts/PR-VFINAL-001.md |
+> | Fuente historica (congelada) | docs/baseline/BRD_EduSync_vFinal.md |
+> | Version de partida | v2.0 |
+> | Fecha de apertura de capa viva | 28/05/2026 |
+> | Release vivo | release/3.0.0 |
+> | Documento rector | plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md |
 > | Agente | docs-agent |
 
 ---

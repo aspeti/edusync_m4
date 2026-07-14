@@ -1,11 +1,11 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.1`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.3`.
 > Cada prompt sigue la estructura de `plantillas/plantillas1/PROMPT_TEMPLATE.md`.
 > Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
-> **Área `IMPL`** (desde `v2.0`): prompts de implementación de la capa viva (`release/3.0.0` en adelante), archivo `prompts/PR-IMPL-NNN.md`, trazados a un `FSD-UC` y opcionalmente a un `DD-UC-NNN` en `docs/design/`. Ver `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md` y los skills `feature-design-doc` / `dtp-sync`. Primera entrada desde `v2.1`: `PR-IMPL-001` (bootstrap del esqueleto de código, `DD-UC-001`, `ADR-0011`).
+> **Área `IMPL`** (desde `v2.0`): prompts de implementación de la capa viva (`release/3.0.0` en adelante), archivo `docs/prompts/impl/PR-IMPL-NNN.md` (única área que se desvía del directorio raíz `prompts/`, siguiendo `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md`/`MODELO_DOCUMENTAL_IMPLEMENTACION.md`), trazados a un `FSD-UC` y opcionalmente a un `DD-UC-NNN` en `docs/design/`. Ver `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md` y los skills `feature-design-doc` / `dtp-sync`. Primera entrada desde `v2.1`: `PR-IMPL-001` (bootstrap del esqueleto de código, `DD-UC-001`, `ADR-0011`). Segunda entrada desde `v2.3`: `PR-IMPL-002` (módulo `identidad` — login/JWT, `DD-UC-002`, `ADR-0001`/`ADR-0010`).
 
 ---
 
@@ -50,7 +50,8 @@
 | PR-ROADMAP-001 | `docs/roadmap.md` v0.1 — hoja de ruta técnica y de negocio hacia `release/2.0.0` y siguiente módulo: 4 horizontes, Gantt, lecciones, métricas BRD/NFR, riesgos y compromisos | generacion | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-ROADMAP-001.md` | ~3 500 tk in / ~7 500 tk out \| antes: roadmap sólo embebido en DTI §19 \| después: `docs/roadmap.md` (200 líneas) como fuente canónica detallada |
 | PR-APORTES-001 | `docs/aportes/release-2.0.0.md` v1.0 — informe de aportes individuales del release de defensa para grupo unipersonal (n = 1): 95 tareas auditables, 11 categorías cubiertas, fórmula `clamp(0.5, 1.1)` con caso degenerado documentado | generacion | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-APORTES-001.md` | ~2 800 tk in / ~9 500 tk out \| antes: sin informe de aportes para `release/2.0.0` (bloqueante de rúbrica) \| después: `docs/aportes/release-2.0.0.md` con 95 filas auditables y checklist 5/6 |
 | PR-VFINAL-001 | `docs/brd/BRD_EduSync_vFinal.md`, `docs/mrd/MRD_EduSync_vFinal.md`, `docs/prd/PRD_EduSync_vFinal.md`, `docs/fsd/FSD_EduSync_vFinal.md` — aliases congelados para `release/2.0.0` | transformación | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-VFINAL-001.md` | ~1 500 tk in / ~5 000 tk out \| antes: BRD/MRD/PRD/FSD sólo como canónicos editables \| después: 4 snapshots `_vFinal.md` con banner de freeze |
-| PR-IMPL-001 | `backend/`, `frontend/`, `infra/docker-compose.yml` — esqueleto de código de `release/3.0.0` (monolito modular Spring Modulith, paquete `com.edusync`, Angular 21) | generación | `dev-agent` | Sonnet | 14/07/2026 | Aprobado (prompt) | `prompts/PR-IMPL-001.md` | ~2 200 tk in / ~6 000 tk out (estimado) \| antes: `src/` vacío, sin esqueleto de código \| después: primera fila del área `IMPL`; ejecución del prompt (generación real de código) pendiente |
+| PR-IMPL-001 | `backend/`, `frontend/`, `infra/docker-compose.yml` — esqueleto de código de `release/3.0.0` (monolito modular Spring Modulith, paquete `com.edusync`, Angular 21) | generación | `dev-agent` | Sonnet | 14/07/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-001.md` | ~2 200 tk in / ~6 000 tk out (estimado) \| antes: `src/` vacío, sin esqueleto de código \| después: primera fila del área `IMPL`; ejecución del prompt (generación real de código) pendiente |
+| PR-IMPL-002 | `backend/src/main/java/com/edusync/identidad/**` — módulo `identidad` (login JWT, seed `SYSADMIN`, `TenantContextProvider` real) | generación | `dev-agent` | Sonnet | 14/07/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-002.md` | ~2 400 tk in / ~6 500 tk out (estimado) \| antes: módulo `identidad` vacío (solo `package-info.java`) \| después: segunda fila del área `IMPL`; ejecución del prompt (generación real de código) pendiente |
 
 ---
 
@@ -199,10 +200,14 @@ flowchart TD
     AGENTS --> VFINAL
     subgraph IMPLEMENTACION["Capa viva de Implementacion -- dev-agent (release/3.0.0)"]
         IMPL001["PR-IMPL-001\nBootstrap del esqueleto\n(backend+frontend+infra)"]
+        IMPL002["PR-IMPL-002\nModulo identidad\n(login JWT + seed SysAdmin)"]
     end
     FSD --> IMPL001
     HEX --> IMPL001
     ADR --> IMPL001
+    IMPL001 --> IMPL002
+    ADR --> IMPL002
+    FSD --> IMPL002
 ```
 
 ---
@@ -212,7 +217,7 @@ flowchart TD
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
 | `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-POC-001, PR-POC-002, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills → POCs → roadmap → aportes → aliases vFinal); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel, configuración de agentes, evidencia de pruebas de concepto, hoja de ruta de release, informe de aportes individuales y snapshots congelados de entrega | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md`; POCs en `docs/pocs/`; roadmap canónico en `docs/roadmap.md`; aportes por release en `docs/aportes/release-<x.y.z>.md`; aliases `_vFinal.md` en `docs/brd/`, `docs/mrd/`, `docs/prd/`, `docs/fsd/` |
-| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features) vía prompts `PR-IMPL-NNN` | Código en `src/` (`backend/`, `frontend/`, `infra/`), contratos en `docs/prompts/`, DTOs en `docs/dtos_EduSync.md` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
 | `arch-agent` | PR-ADR-001..005, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
@@ -2511,6 +2516,79 @@ frontend/src/app/app.config.ts, infra/docker-compose.yml.
 
 ---
 
+### PR-IMPL-002 — Modulo identidad: Usuario/UsuarioRol y autenticacion (login, JWT, seed SysAdmin)
+
+```markdown
+# Role
+Eres un Senior Software Engineer con experiencia en arquitectura hexagonal,
+monolitos modulares con Spring Modulith, Spring Security 7 sobre Spring Boot 4.1.0 /
+Java 25 LTS, autenticacion JWT stateless y PostgreSQL 15 con Row-Level Security.
+
+# Task
+Implementa el modulo com.edusync.identidad sobre el esqueleto de DD-UC-001: el
+dominio Usuario/UsuarioRol con su invariante de exclusion mutua SYSADMIN/tenant,
+el flujo de login con JWT, el seed del primer SYSADMIN, la implementacion real
+de TenantContextProvider (shared/tenant) y el puerto publico UsuarioCreacionPort,
+exactamente como se describe en docs/design/DD-UC-002.md §2.
+
+# Context
+- Documento fuente: docs/design/DD-UC-002.md (§1 objetivo, §2 diseno, §3 alternativas
+  elegidas: JWT HS256, politica RLS "OR tenant_id IS NULL" con filtro explicito
+  adicional en UsuarioRepositoryPort).
+- ADRs aplicables: ADR-0001 (RLS multitenancy), ADR-0008 (stack), ADR-0010
+  (invariante tenant_id IS NULL <=> roles = {SYSADMIN}), ADR-0011 (modulo
+  identidad, puerto publico UsuarioCreacionPort como Open Host Service).
+- Prerequisito: DD-UC-001 / PR-IMPL-001 ya ejecutado.
+- Restricciones de dominio: NO implementar el CRUD administrativo completo de
+  usuarios (DD-UC-004) ni la gestion de Tenant (DD-UC-003) en este prompt.
+- Restricciones tecnicas: JWT HS256 (secreto en variable de entorno JWT_SECRET),
+  expiracion 8h (PRD-NFR-007), BCrypt, Flyway V2__identidad_usuario.sql con
+  politica RLS "OR tenant_id IS NULL".
+
+# Reasoning
+1. Crear com.edusync.identidad.domain: Usuario (invariante en factory), UsuarioRol, Rol.
+2. Crear com.edusync.identidad.application: puertos in/out y servicios.
+3. Crear AuthController (POST /api/v1/auth/login) y UsuarioCreacionPortImpl.
+4. Crear adaptador JPA con el filtro explicito de tenant_id sobre la politica RLS.
+5. Crear JwtTokenProvider, JwtAuthenticationFilter, SecurityConfig (BCrypt).
+6. Implementar com.edusync.shared.tenant.TenantContextProvider real (SET app.current_tenant).
+7. Crear V2__identidad_usuario.sql (tablas + politica RLS "OR tenant_id IS NULL").
+8. Crear el seed del primer SYSADMIN (password desde variable de entorno).
+9. Verificar ModularityTests en verde y ausencia de acoplamiento entre modulos.
+
+# Stop condition
+Detente cuando: (a) el login devuelve JWT valido para el SYSADMIN seed y 401 para
+credenciales invalidas, (b) la invariante tenant_id/roles esta validada en dominio,
+(c) TenantContextProvider fija app.current_tenant en un test de integracion,
+(d) ModularityTests pasa en verde, (e) UsuarioCreacionPort esta listo para DD-UC-003.
+No implementes el CRUD administrativo completo ni la gestion de Tenant.
+
+# Output
+Codigo fuente real en backend/ (no markdown). Extracto esperado:
+backend/src/main/java/com/edusync/identidad/domain/Usuario.java,
+backend/src/main/java/com/edusync/identidad/infrastructure/adapter/in/rest/AuthController.java,
+backend/src/main/java/com/edusync/identidad/infrastructure/security/JwtAuthenticationFilter.java,
+backend/src/main/java/com/edusync/shared/tenant/TenantContextProvider.java,
+backend/src/main/resources/db/migration/V2__identidad_usuario.sql.
+
+# Invariants
+- tenant_id IS NULL debe ser equivalente exactamente a roles = {SYSADMIN} (ADR-0010),
+  validado en el dominio, no solo en REST.
+- Ningun otro modulo debe importar clases de identidad.domain/application (ADR-0011).
+- El secreto JWT no debe estar hardcodeado.
+- UsuarioRepositoryPort debe filtrar explicitamente por tenant_id (mitigacion de la
+  politica RLS "OR tenant_id IS NULL").
+- ModularityTests debe seguir en verde.
+
+# Failure modes
+- E_INVARIANTE_ROL_VIOLADA: se permite persistir SYSADMIN combinado con rol de tenant -- corregir la factory de Usuario.
+- E_ACOPLAMIENTO_ENTRE_MODULOS: import directo de identidad.domain/application desde otro modulo -- ModularityTests debe fallar.
+- E_ALCANCE_EXCEDIDO: se implemento el CRUD completo de usuarios o la gestion de Tenant -- revertir, corresponde a DD-UC-003/004.
+- E_FILTRO_TENANT_AUSENTE: UsuarioRepositoryPort no aplica el filtro explicito de tenant_id -- corregir el adaptador de persistencia.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
@@ -2595,7 +2673,8 @@ frontend/src/app/app.config.ts, infra/docker-compose.yml.
 | DTI §19 + ADRs + POCs + BRD v2 + FSD + rúbrica del Módulo 4 | `DTI §19, ADR-0001..0006, POC-01, POC-02, FSD-UC-001..010, BR-001..BR-012, NFR-001..016, KPI-01..05` | PR-ROADMAP-001 | `docs-agent` | Roadmap tecnico y de negocio v0.1 con 4 horizontes, Gantt, lecciones, metricas, riesgos y compromisos hacia `release/2.0.0` y siguiente modulo | `docs/roadmap.md` |
 | `plantillas/APORTES_TEMPLATE.md` + auditoría exhaustiva del repo (39 prompts + 6 ADRs + 10 diagramas + 2 POCs + 9 skills propios + 1 rule + documentos canónicos) + AGENTS.md §16 L489 + roadmap §5 L-09 | `APORTES, INPUT.n_integrantes=1, integrantes=[Rodrigo Aspeti], release/2.0.0` | PR-APORTES-001 | `docs-agent` | Informe de aportes individuales `release/2.0.0` con 95 tareas auditables, 11 categorías cubiertas, factor 1.00 (caso degenerado n = 1) y checklist 5/6 (commit final pendiente) | `docs/aportes/release-2.0.0.md` |
 | BRD v2 + MRD v1.0 + PRD v1.0 + FSD v1.0 + AGENTS.md §16 alias `_vFinal` | `BRD v2, MRD v1.0, PRD v1.0, FSD v1.0, release/2.0.0` | PR-VFINAL-001 | `docs-agent` | Freeze documental de BRD/MRD/PRD/FSD como snapshots inmutables `_vFinal.md` con banner uniforme para auditoría de release | `docs/brd/BRD_EduSync_vFinal.md` + `docs/mrd/MRD_EduSync_vFinal.md` + `docs/prd/PRD_EduSync_vFinal.md` + `docs/fsd/FSD_EduSync_vFinal.md` |
-| Design Doc `DD-UC-001` + `ADR-0011` + `ADR-0008` + `docs/product/FSD.md` (`FSD-UC-011`, `FSD-UC-021`) | `DD-UC-001, ADR-0011, FSD-UC-011, FSD-UC-021` | PR-IMPL-001 | `dev-agent` | Esqueleto de código de `release/3.0.0` (monolito modular Spring Modulith, paquete `com.edusync`, Angular 21) — ejecución pendiente | `backend/`, `frontend/`, `infra/docker-compose.yml` |
+| Design Doc `DD-UC-001` + `ADR-0011` + `ADR-0008` + `docs/product/FSD.md` (`FSD-UC-011`, `FSD-UC-021`) | `DD-UC-001, ADR-0011, FSD-UC-011, FSD-UC-021` | PR-IMPL-001 | `dev-agent` | Esqueleto de código de `release/3.0.0` (monolito modular Spring Modulith, paquete `com.edusync`, Angular 21) — ejecución pendiente | `backend/`, `frontend/`, `infra/docker-compose.yml`; prompt en `docs/prompts/impl/PR-IMPL-001.md` |
+| Design Doc `DD-UC-002` + `ADR-0001` + `ADR-0010` + `ADR-0011` + `docs/product/FSD.md` (`FSD-UC-021`) | `DD-UC-002, ADR-0001, ADR-0010, ADR-0011, FSD-UC-021` | PR-IMPL-002 | `dev-agent` | Módulo `identidad` (login JWT, seed `SYSADMIN`, `TenantContextProvider` real, política RLS `OR tenant_id IS NULL`) — ejecución pendiente | `backend/src/main/java/com/edusync/identidad/**`, `shared/tenant/TenantContextProvider.java`; prompt en `docs/prompts/impl/PR-IMPL-002.md` |
 
 ---
 
@@ -2625,3 +2704,5 @@ frontend/src/app/app.config.ts, infra/docker-compose.yml.
 | v1.9 | 28/05/2026 | Rodrigo Aspeti | Incorporación de `PR-VFINAL-001` (freeze documental de BRD/MRD/PRD/FSD hacia aliases `_vFinal.md`). Cabecera `v1.8 → v1.9` y nueva área `VFINAL` agregada al header de IDs. Índice ampliado con fila `PR-VFINAL-001`. Flowchart Mermaid extendido con nodo `VFINAL` y aristas desde `BRD2`, `MRD`, `PRD`, `FSD` y `AGENTS`. Matriz `docs-agent` incluye `PR-VFINAL-001` y aliases `_vFinal.md`. Contrato inline agregado con failure modes de freeze (`E_TARGET_EXISTS`, `E_NORMATIVE_DRIFT`, `E_CANONICO_MUTADO`). Trazabilidad ampliada con la fila de los 4 aliases. Archivo individual `prompts/PR-VFINAL-001.md` materializado. Artefactos generados: `docs/brd/BRD_EduSync_vFinal.md`, `docs/mrd/MRD_EduSync_vFinal.md`, `docs/prd/PRD_EduSync_vFinal.md`, `docs/fsd/FSD_EduSync_vFinal.md`. Total prompt-contratos: 36 → 37 |
 | v2.0 | 28/05/2026 | Rodrigo Aspeti | Apertura de la capa viva de implementación (`plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md`, `release/3.0.0`). Cabecera `v1.9 → v2.0` y nueva área `IMPL` reservada al header de IDs (prompts de implementación `prompts/PR-IMPL-NNN.md`, sin filas todavía — 0 prompts hasta el primer `DD-UC-NNN`). Nuevo `ADR-0008` (Java 25 LTS + Spring Boot 4.1.0 + Angular 21 LTS para la capa viva) creado directamente en `docs/adr/`, sin prompt-contrato dedicado, siguiendo el mismo precedente que `ADR-0006`. Nuevos artefactos fuera del ciclo de prompts: `docs/product/DTP.md` v1.0 (punto de partida), `docs/baseline/` marcado `status: congelado` en sus 5 archivos, banners de `docs/product/{BRD,PRD,FSD}.md` corregidos de "COPIA CONGELADA" a "COPIA VIVA", skills `feature-design-doc` y `dtp-sync` materializados en `.cursor/skills/` + `.claude/skills/`, `CODEOWNERS` y `.cursor/rules/baseline-congelado.mdc` creados para proteger `docs/baseline/**`. Total prompt-contratos activos: 37 (sin cambio; `IMPL` queda reservado para la próxima materialización) |
 | v2.1 | 14/07/2026 | Rodrigo Aspeti | Primera materialización del área `IMPL`: `PR-IMPL-001` (bootstrap del esqueleto de código de `release/3.0.0` — `backend/`, `frontend/`, `infra/docker-compose.yml`), derivado de `docs/design/DD-UC-001.md` y `ADR-0011` (monolito modular Spring Modulith module-first + paquete base `com.edusync`, que reemplaza a `bo.edusync`). Cabecera `v2.0 → v2.1`; corrección de la referencia de plantilla a `plantillas/plantillas1/PROMPT_TEMPLATE.md` (ruta real tras la reorganización de `plantillas/`). Índice ampliado con fila `PR-IMPL-001` (estado "Aprobado (prompt)"; ejecución de generación de código real pendiente). Flowchart Mermaid extendido con subgraph `IMPLEMENTACION` y nodo `IMPL001`, con aristas desde `FSD`, `HEX` y `ADR`. Matriz `dev-agent` ampliada con `PR-IMPL-001` y la responsabilidad de materializar `DD-UC-NNN` en código. Contrato inline agregado (Role/Task/Context/Reasoning/Stop/Output/Invariants/Failure modes) con 3 failure modes específicos de bootstrap (`E_PAQUETE_INCORRECTO`, `E_ACOPLAMIENTO_ENTRE_MODULOS`, `E_LOGICA_PREMATURA`). Trazabilidad ampliada con la fila de `DD-UC-001`/`ADR-0011`. Archivo individual `prompts/PR-IMPL-001.md` materializado (9 secciones, con nota de desviación de ruta respecto a `FEATURE_DESIGN_DOC_TEMPLATE.md`). Total prompt-contratos activos: 37 → 38 |
+| v2.2 | 14/07/2026 | Rodrigo Aspeti | **Corrección de ubicación del área `IMPL`**: `PR-IMPL-001` se mueve de `prompts/PR-IMPL-001.md` a `docs/prompts/impl/PR-IMPL-001.md` (v0.1 → v0.2, sin cambios de contenido), siguiendo exactamente `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md` §5 / `MODELO_DOCUMENTAL_IMPLEMENTACION.md`, en lugar de la convención plana de M4 usada por las demás áreas. Se elimina la "nota de desviación" del prompt (ya no aplica). Cabecera (§ línea 8) actualizada para declarar `docs/prompts/impl/PR-IMPL-NNN.md` como la única excepción de ruta del catálogo. Índice y trazabilidad completa actualizan la columna "Archivo"/"Artefacto generado" a la nueva ruta. Sin cambios en el número de prompts (38) ni en el contrato inline (Role/Task/Context/Reasoning/Stop/Output/Invariants/Failure modes idénticos). Propagado también a `docs/design/DD-UC-001.md`, `docs/product/DTP.md`, `AGENTS.md` y los skills `feature-design-doc` (`.cursor/`+`.claude/`). |
+| v2.3 | 14/07/2026 | Rodrigo Aspeti | Segunda materialización del área `IMPL`: `PR-IMPL-002` (módulo `identidad` — dominio `Usuario`/`UsuarioRol`, login JWT, seed del primer `SYSADMIN`, implementación real de `TenantContextProvider`, puerto público `UsuarioCreacionPort`), derivado de `docs/design/DD-UC-002.md` y de `ADR-0001`/`ADR-0010`/`ADR-0011`. Decisión explícita del usuario (14/07/2026): orden `identidad`/login antes de `plataforma`/tenants (invierte el comentario original de `DD-UC-001` §2), y estrategia RLS para tablas plataforma-scoped resuelta con la política `OR tenant_id IS NULL` (sin `ADR-0012` dedicado). Índice ampliado con fila `PR-IMPL-002`. Flowchart Mermaid extendido con nodo `IMPL002` (aristas desde `IMPL001`, `ADR`, `FSD`). Matriz `dev-agent` ampliada. Contrato inline agregado con 4 failure modes específicos (`E_INVARIANTE_ROL_VIOLADA`, `E_ACOPLAMIENTO_ENTRE_MODULOS`, `E_ALCANCE_EXCEDIDO`, `E_FILTRO_TENANT_AUSENTE`). Trazabilidad ampliada. Archivo individual `docs/prompts/impl/PR-IMPL-002.md` materializado desde el inicio en la ruta correcta (sin desviación, a diferencia de `PR-IMPL-001` v0.1). Total prompt-contratos activos: 38 → 39. |

@@ -2,7 +2,7 @@
 producto: "EduSync"
 grupo: "G-EduSync"
 documento: DTP                 # Documento Técnico del Producto (continuación VIVA del DTI)
-version: v1.3                  # versiona la implementación, no el diseño de M4
+version: v1.5                  # versiona la implementación, no el diseño de M4
 fecha: "28/05/2026"
 status: vivo                   # vivo | en_revision | publicado-release   (NUNCA "congelado")
 audiencia: dual                # humanos + agentes IA
@@ -71,6 +71,7 @@ flowchart LR
 | 12/07/2026 | Generalización del modelo de dominio a plataforma SaaS multi-tenant configurable: nuevo rol `SysAdmin` + entidad `Tenant` con suscripción; módulos configurables `GestionEscolar`/`PeriodoEvaluacion`/`SeccionEvaluacion`/`TipoEvaluacion`/`Evaluacion`/`Curso`/`Paralelo`/`Materia`/`Estudiante`/`Inscripcion`/`Usuario` añadidos como extensión aditiva sobre el Perfil Bolivia SIE (sin modificarlo) | Nuevo diseño funcional recibido para `release/3.0.0` (roles SaaS, periodos y secciones de evaluación configurables, estructura académica genérica) | `ADR-0009` | `pendiente de commit formal` | Rodrigo Aspeti |
 | 14/07/2026 | Refinamiento del modelo de roles: `Usuario.rol` (valor único, `ADR-0009`) reemplazado por relación N:M `UsuarioRol` (multi-rol); invariante permanente `tenant_id IS NULL ⟺ roles = {SYSADMIN}` (no transitoria de *bootstrap*) | Clarificación de negocio recibida durante el diseño del login y del alta de tenants (multi-rol operativo + alcance del rol SysAdmin) | `ADR-0010` | `pendiente de commit formal` | Rodrigo Aspeti |
 | 14/07/2026 | Primer Design Doc (`DD-UC-001`, bootstrap del proyecto) y primer prompt de implementación (`PR-IMPL-001`): monolito modular con Spring Modulith (module-first, 5 módulos: `plataforma`/`identidad`/`academico`/`notassie`/`shared`) y renombrado del paquete base `bo.edusync` → `com.edusync` | Inicio de la implementación de código para los features "alta de tenants" y "login" (`FSD-UC-011`/`FSD-UC-021`), sobre `src/` vacío | `ADR-0011` | `pendiente de commit formal` (ejecución de `PR-IMPL-001` aún no realizada) | Rodrigo Aspeti |
+| 14/07/2026 | Segundo Design Doc (`DD-UC-002`, módulo `identidad`) y segundo prompt de implementación (`PR-IMPL-002`): dominio `Usuario`/`UsuarioRol`, login JWT, seed del primer `SYSADMIN`, implementación real de `TenantContextProvider` (cierra el placeholder de `ADR-0001`) y puerto público `UsuarioCreacionPort`. Decisión explícita del usuario: `identidad`/login se implementa antes que `plataforma`/tenants (invierte el orden insinuado en `DD-UC-001` §2), y el aislamiento RLS de tablas plataforma-scoped se resuelve con la política `OR tenant_id IS NULL` (sin `ADR-0012` dedicado) | Continuación de la implementación de código para "login" (`FSD-UC-021`, parcial); prerequisito de `FSD-UC-011` (alta de tenants, `DD-UC-003`) | — (decisiones documentadas en `DD-UC-002` §2/§3, no ameritan ADR propio) | `pendiente de commit formal` (ejecución de `PR-IMPL-002` aún no realizada) | Rodrigo Aspeti |
 
 ### A.2 Deltas respecto al DTI vFinal
 
@@ -96,9 +97,9 @@ flowchart LR
 | `FSD-UC-004` (Exportación SIE) | — | pendiente | `release/3.0.0` | — | Ídem |
 | `FSD-UC-005` (Modificación retroactiva) | — | pendiente | `release/3.0.0` | — | Ídem |
 | `FSD-UC-009` (Administración de periodos) | — | pendiente | `release/3.0.0` | — | Ídem |
-| `FSD-UC-011` (Gestión de Tenants y Suscripciones) | `DD-UC-001` | en progreso | `release/3.0.0` | — | Bootstrap del proyecto (`DD-UC-001`, `ADR-0011`) creado y aprobado; `PR-IMPL-001` generado, ejecución de código pendiente. La lógica real de alta de tenant es un `DD-UC-NNN` posterior (`DD-UC-002` en adelante) |
+| `FSD-UC-011` (Gestión de Tenants y Suscripciones) | `DD-UC-001` | en progreso | `release/3.0.0` | — | Bootstrap del proyecto (`DD-UC-001`, `ADR-0011`) creado y aprobado; `PR-IMPL-001` generado, ejecución de código pendiente. La lógica real de alta de tenant (`DD-UC-003`, prerequisito: `DD-UC-002` ya diseñado) consumirá el puerto público `UsuarioCreacionPort` del módulo `identidad` para crear el primer `ADMIN` del tenant |
 | `FSD-UC-012`..`FSD-UC-020` (Gestión Escolar, Periodos/Secciones/Evaluaciones configurables, Cálculo de Notas, Cursos/Paralelos, Materias, Profesores, Estudiantes/Inscripciones) | — | pendiente | `release/3.0.0` | — | Sin `DD-UC-NNN` todavía. 5 puntos pendientes de definición antes de iniciar diseño (ver `ADR-0009` §3) |
-| `FSD-UC-021` (Usuarios y Roles / login) | `DD-UC-001` | en progreso | `release/3.0.0` | — | Bootstrap (`DD-UC-001`) habilita el módulo `identidad` donde se implementará el login; refinado por `ADR-0010` (multi-rol + `tenant_id` nulo permanente). Endpoint real de login/`POST /api/v1/usuarios` es un `DD-UC-NNN` posterior |
+| `FSD-UC-021` (Usuarios y Roles / login) | `DD-UC-002` | en progreso | `release/3.0.0` | — | `DD-UC-002` (módulo `identidad`: `Usuario`/`UsuarioRol`, login JWT, seed `SYSADMIN`, `TenantContextProvider` real) creado y aprobado; `PR-IMPL-002` generado, ejecución de código pendiente. Cubre solo la autenticación (parcial de `FSD-UC-021`); el CRUD administrativo completo (alta desde Admin, `PATCH roles`, activar/desactivar, restablecer contraseña) es `DD-UC-004`, todavía sin crear |
 
 ### A.4 Trazabilidad código ↔ DTP
 
@@ -106,7 +107,7 @@ flowchart LR
 
 `BRD/MRD (baseline)` → `PRD/FSD vivo (FSD-UC-NNN)` → `Design Doc (DD-UC-NNN)` → `Prompt (PR-IMPL-NNN)` → `PR/commit` → `Tests/Evals` → `ADR (si aplica)` → **DTP**.
 
-Estado actual: la cadena existe completa hasta `Design Doc` para `FSD-UC-011`/`FSD-UC-021` → `docs/product/FSD.md` → `docs/design/DD-UC-001.md` → `prompts/PR-IMPL-001.md` (registrado en `docs/PROMPT_MAPPING.md` v2.1) → `ADR-0011`. El eslabón `PR/commit` y `Tests/Evals` sigue **pendiente**: `PR-IMPL-001` está aprobado como prompt pero aún no se ha ejecutado, por lo que `src/` sigue vacío. El resto de `FSD-UC-NNN` permanece sin `DD-UC-NNN` propio.
+Estado actual: la cadena existe completa hasta `Design Doc` para `FSD-UC-011`/`FSD-UC-021` → `docs/product/FSD.md` → `docs/design/{DD-UC-001,DD-UC-002}.md` → `docs/prompts/impl/{PR-IMPL-001,PR-IMPL-002}.md` (registrados en `docs/PROMPT_MAPPING.md` v2.3) → `ADR-0011`/`ADR-0010`/`ADR-0001`. El eslabón `PR/commit` y `Tests/Evals` sigue **pendiente** para ambos: ni `PR-IMPL-001` ni `PR-IMPL-002` se han ejecutado todavía, por lo que `src/` sigue vacío. El resto de `FSD-UC-NNN` permanece sin `DD-UC-NNN` propio.
 
 ---
 
@@ -127,7 +128,7 @@ Estado actual: la cadena existe completa hasta `Design Doc` para `FSD-UC-011`/`F
 | §7 Asíncrona / event-driven | no | `docs/baseline/DTI.md` §7 (Spring Events; migración a SQS FIFO prevista en `ADR-0004`, no ejecutada aún) |
 | §8 Despliegue cloud | no | `docs/baseline/DTI.md` §8 / `docs/diagrams/deployment_aws.mmd` (imagen Docker deberá basarse en OpenJDK 25 al implementarse, ver `ADR-0008` §5) |
 | §9 Capa de IA / agentes | no | `docs/baseline/DTI.md` §9 |
-| §10 Prompt mapping | sí (crece con `PR-IMPL-*`) | `docs/PROMPT_MAPPING.md` v2.1 (área `IMPL`, primera fila `PR-IMPL-001`) |
+| §10 Prompt mapping | sí (crece con `PR-IMPL-*`) | `docs/PROMPT_MAPPING.md` v2.3 (área `IMPL`, filas `PR-IMPL-001`/`PR-IMPL-002`, ambas en `docs/prompts/impl/`) |
 | §11 NFRs | no | `docs/baseline/DTI.md` §11 |
 | §12 POCs | no | `docs/baseline/DTI.md` §12 / `docs/pocs/POC-01-rls-multitenancy/`, `docs/pocs/POC-02-circuit-breaker-sie/` (ejecución con evidencia real sigue pendiente) |
 | §13–§16 Seguridad / Observabilidad / DevOps / Antipatrones | no | `docs/baseline/DTI.md` §13–§16 |
@@ -141,12 +142,12 @@ Estado actual: la cadena existe completa hasta `Design Doc` para `FSD-UC-011`/`F
 ## Checklist del DTP (entrega de implementación)
 
 - [x] Frontmatter con `baseline_ref` (`docs/baseline/DTI.md` + tag `release/2.0.0`) y `status: vivo`.
-- [x] §A.1 Changelog de implementación poblado y al día (5 filas: apertura de capa viva + delta de stack + generalización del dominio + multi-rol + bootstrap `DD-UC-001`/`PR-IMPL-001`).
-- [x] §A.2 Deltas vs DTI vFinal, **cada uno con ADR** (4 deltas → `ADR-0008` stack, `ADR-0009` generalización del modelo de dominio, `ADR-0010` multi-rol + `SysAdmin` sin tenant permanente, `ADR-0011` monolito modular + paquete `com.edusync`).
-- [x] §A.3 Estado por FSD-UC con su Design Doc (`FSD-UC-011`/`FSD-UC-021` en `en progreso` con `DD-UC-001`; el resto sigue `pendiente`, sin `DD-UC-NNN` aún).
-- [ ] §A.4 Trazabilidad código ↔ DTP reconstruible para cada feature — **pendiente**: cadena completa hasta `Design Doc`/`Prompt`/`ADR`; falta el eslabón `PR/commit` (ejecución de `PR-IMPL-001`).
+- [x] §A.1 Changelog de implementación poblado y al día (6 filas: apertura de capa viva + delta de stack + generalización del dominio + multi-rol + bootstrap `DD-UC-001`/`PR-IMPL-001` + módulo `identidad` `DD-UC-002`/`PR-IMPL-002`).
+- [x] §A.2 Deltas vs DTI vFinal, **cada uno con ADR** (4 deltas → `ADR-0008` stack, `ADR-0009` generalización del modelo de dominio, `ADR-0010` multi-rol + `SysAdmin` sin tenant permanente, `ADR-0011` monolito modular + paquete `com.edusync`). `DD-UC-002` no añade delta nuevo (sus decisiones de §2/§3 son de bajo riesgo, documentadas en el propio Design Doc, sin ADR dedicado).
+- [x] §A.3 Estado por FSD-UC con su Design Doc (`FSD-UC-011` en `en progreso` con `DD-UC-001`; `FSD-UC-021` en `en progreso` con `DD-UC-002`; el resto sigue `pendiente`, sin `DD-UC-NNN` aún).
+- [ ] §A.4 Trazabilidad código ↔ DTP reconstruible para cada feature — **pendiente**: cadena completa hasta `Design Doc`/`Prompt`/`ADR`; falta el eslabón `PR/commit` (ejecución de `PR-IMPL-001` y `PR-IMPL-002`).
 - [x] §B: solo secciones cambiadas reescritas (stack + modelo de dominio + arquitectura hexagonal + prompt mapping + ADRs); el resto referencia al DTI vFinal.
-- [x] `docs/PROMPT_MAPPING.md` ampliado con prompts de implementación (`PR-IMPL-*`) — primera fila `PR-IMPL-001` (v2.1).
+- [x] `docs/PROMPT_MAPPING.md` ampliado con prompts de implementación (`PR-IMPL-*`) — filas `PR-IMPL-001`/`PR-IMPL-002` (v2.3), ambos materializados en `docs/prompts/impl/`.
 - [x] `AGENTS.md` sincronizado (pendiente de ejecutar en este mismo plan).
 - [x] Baseline congelado (`docs/baseline/`) **intacto** (sin commits que lo modifiquen; protegido por `CODEOWNERS` y `.cursor/rules/baseline-congelado.mdc`).
 
@@ -158,3 +159,5 @@ Estado actual: la cadena existe completa hasta `Design Doc` para `FSD-UC-011`/`F
 | v1.1 | 12/07/2026 | Rodrigo Aspeti | Registra el delta de generalización del modelo de dominio `ADR-0009` (§A.2 fila 2): plataforma SaaS multi-tenant configurable añadida como extensión aditiva sobre el Perfil Bolivia SIE, alineada con `docs/product/BRD.md` v3.0, `PRD.md` v2.0 y `FSD.md` v2.0. §A.3 añade `FSD-UC-011`..`FSD-UC-021` como `pendiente`. §B actualiza §4 Modelo de dominio (extensión aditiva) y el conteo de ADRs vigentes (9). Deja registrados 5 puntos pendientes de definición (ver `ADR-0009` §3) que deben resolverse antes de implementar código sobre los módulos nuevos. |
 | v1.2 | 14/07/2026 | Rodrigo Aspeti | Registra el delta de refinamiento del modelo de roles `ADR-0010` (§A.2 fila 3): `BR-024`/`FSD-UC-021` pasan de "un rol por usuario" a multi-rol (`UsuarioRol` N:M), con la invariante permanente `tenant_id IS NULL ⟺ roles = {SYSADMIN}`, alineado con `docs/product/BRD.md` v3.1, `PRD.md` v2.2 y `FSD.md` v2.2. §A.3 anota `FSD-UC-011`/`FSD-UC-021` como refinados por `ADR-0010`. §B actualiza el conteo de ADRs vigentes (8 → 9, incluye `0010`). Deja registrado como pendiente no bloqueante el diseño del tenant demo (ver `ADR-0010` §3), sin afectar el modelo de `Usuario`/`Rol` decidido. |
 | v1.3 | 14/07/2026 | Rodrigo Aspeti | Registra el primer Design Doc de código (`DD-UC-001`, bootstrap del proyecto) y el delta de organización interna del backend `ADR-0011` (§A.2 fila 4): monolito modular con Spring Modulith (module-first, módulos `plataforma`/`identidad`/`academico`/`notassie`/`shared`) y renombrado del paquete base `bo.edusync` → `com.edusync`. §A.3 pasa `FSD-UC-011`/`FSD-UC-021` de `pendiente` a `en progreso` con `DD-UC-001` como Design Doc asociado; el resto de `FSD-UC-012`..`FSD-UC-020` se consolida en una sola fila (siguen `pendiente`). §A.4 registra el primer eslabón real de trazabilidad (FSD → Design Doc → Prompt → ADR), con el eslabón `PR/commit` aún pendiente (`PR-IMPL-001` no ejecutado todavía). §B actualiza el conteo de ADRs vigentes (9 → 10, incluye `0011`) y marca §5 Arquitectura hexagonal del core como cambiado. Primera fila del área `IMPL` en `docs/PROMPT_MAPPING.md` (v2.0 → v2.1): `PR-IMPL-001`. |
+| v1.4 | 14/07/2026 | Rodrigo Aspeti | Corrección de ruta: `PR-IMPL-001` se mueve de `prompts/PR-IMPL-001.md` a `docs/prompts/impl/PR-IMPL-001.md`, siguiendo `FEATURE_DESIGN_DOC_TEMPLATE.md`/`MODELO_DOCUMENTAL_IMPLEMENTACION.md` (única área de prompts que se desvía de la convención plana de M4). §A.4 y §B actualizan la referencia de ruta; `docs/PROMPT_MAPPING.md` v2.1 → v2.2. Sin cambios en el contenido del prompt ni en el estado de `FSD-UC-011`/`FSD-UC-021`. |
+| v1.5 | 14/07/2026 | Rodrigo Aspeti | Registra el segundo Design Doc de código (`DD-UC-002`, módulo `identidad`) y el segundo prompt de implementación (`PR-IMPL-002`): dominio `Usuario`/`UsuarioRol`, login JWT, seed del primer `SYSADMIN`, `TenantContextProvider` real (cierra el placeholder de `ADR-0001`) y puerto público `UsuarioCreacionPort`. §A.1 nueva fila. §A.3 pasa `FSD-UC-021` de Design Doc `DD-UC-001` a `DD-UC-002` (más preciso: el login vive en `identidad`, no en el bootstrap); anota que `FSD-UC-011` consumirá `UsuarioCreacionPort` en `DD-UC-003`. §A.4 amplía la cadena con `DD-UC-002`/`PR-IMPL-002`. §B actualiza §10 Prompt mapping a `docs/PROMPT_MAPPING.md` v2.3. Decisiones explícitas del usuario documentadas: orden `identidad` antes de `plataforma` (invierte el comentario original de `DD-UC-001` §2) y estrategia RLS `OR tenant_id IS NULL` para tablas plataforma-scoped, ambas sin ADR dedicado (no ameritan el nivel de riesgo/impacto estructural de `ADR-0011`). Sin cambios en el conteo de ADRs vigentes (10). |

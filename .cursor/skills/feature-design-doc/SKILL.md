@@ -61,7 +61,7 @@ Crea un **design doc por feature** (`DD-UC-NNN`) trazable al FSD vivo, siguiendo
 
 ### Paso 4 — Prompt(s)
 
-- Por cada generación asistida por IA del feature, crear `prompts/PR-IMPL-NNN.md` con [`PROMPT_TEMPLATE.md`](../../plantillas/PROMPT_TEMPLATE.md) (6 elementos + invariantes + trazabilidad al `FSD-UC`). Sigue la convención de archivo plano ya usada por los `PR-<AREA>-NNN.md` existentes en `prompts/` (no se usa `docs/prompts/impl/`).
+- Por cada generación asistida por IA del feature, crear `docs/prompts/impl/PR-IMPL-NNN.md` con [`PROMPT_TEMPLATE.md`](../../plantillas/plantillas1/PROMPT_TEMPLATE.md) (6 elementos + invariantes + trazabilidad al `FSD-UC`). **A diferencia** de los `PR-<AREA>-NNN.md` existentes en `prompts/` (convención plana de M4), el área `IMPL` es la única que vive en `docs/prompts/impl/`, siguiendo [`FEATURE_DESIGN_DOC_TEMPLATE.md`](../../plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md) §5.
 
 ### Paso 5 — Enlazar y validar
 

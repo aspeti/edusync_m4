@@ -11,12 +11,12 @@
 | Tipo de prompt | generación |
 | Modelo recomendado | Sonnet |
 | Temperatura | 0.0 |
-| Versión | v0.1 |
+| Versión | v0.2 |
 | Fecha | 14/07/2026 |
 | Autor(es) | Rodrigo Aspeti |
 | Estado | Aprobado |
 
-> **Nota de convención de ruta**: `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md` sugiere `docs/prompts/impl/PR-IMPL-NNN.md` para los prompts del área `IMPL`. Este repositorio mantiene **todos** los prompts materializados (`PR-<AREA>-NNN.md`, cualquier área) en el directorio raíz `prompts/`, siguiendo la convención ya establecida desde M4 (`docs/PROMPT_MAPPING.md` → "Archivos individuales en `prompts/PR-*.md`"). Esta es la única desviación deliberada respecto a la plantilla, decidida para no fragmentar el catálogo de prompts en dos ubicaciones.
+> **Convención de ruta**: los prompts del área `IMPL` (`PR-IMPL-NNN.md`) viven en `docs/prompts/impl/`, siguiendo exactamente `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md` §5 y `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md`. Esto es una excepción deliberada a la convención histórica de M4 (`prompts/PR-<AREA>-NNN.md` en el directorio raíz, que sigue vigente para las áreas `ARCH`/`BRD`/`MRD`/`PRD`/`FSD`/`LFSD`/`UC`/`ADR`/`AUD`/`INF`/`DIAG`/`SKILL`/`C4`/`DTI`/`HEX`/`DTO`/`POC`/`ROADMAP`/`APORTES`/`VFINAL`): el área `IMPL` es la única que usa `docs/prompts/impl/`, porque nace después de M4 junto con la capa viva (`docs/design/`, `docs/product/`) y sigue su propia plantilla.
 
 ## 1. Anatomía del prompt
 
@@ -152,7 +152,8 @@ infra/docker-compose.yml
 
 | Versión | Fecha | Autor | Cambio | Modelo validado |
 |---------|-------|-------|--------|------------------|
-| v0.1 | 14/07/2026 | Rodrigo Aspeti | Creación a partir de `docs/design/DD-UC-001.md` v1.0 y `ADR-0011` | Sonnet |
+| v0.1 | 14/07/2026 | Rodrigo Aspeti | Creación a partir de `docs/design/DD-UC-001.md` v1.0 y `ADR-0011` (materializado inicialmente en `prompts/PR-IMPL-001.md`) | Sonnet |
+| v0.2 | 14/07/2026 | Rodrigo Aspeti | **Corrección de ruta**: movido de `prompts/PR-IMPL-001.md` a `docs/prompts/impl/PR-IMPL-001.md`, siguiendo `FEATURE_DESIGN_DOC_TEMPLATE.md`/`MODELO_DOCUMENTAL_IMPLEMENTACION.md`. Sin cambios de contenido (Role/Task/Context/Reasoning/Stop/Output/Invariants/Failure modes idénticos) | Sonnet |
 
 ## 9. Revisión humana
 

@@ -120,7 +120,7 @@ flowchart TB
 |--------|-------|--------------------|
 | `PR-IMPL-001` | Generación del esqueleto Maven (backend) + Angular 21 (frontend) + `infra/docker-compose.yml` según el árbol de la sección 2, incluido `ModularityTests` | `backend/pom.xml`, `backend/src/main/java/com/edusync/**` (paquetes vacíos + `EduSyncApplication`), `backend/src/test/java/com/edusync/ModularityTests.java`, `frontend/package.json`, `frontend/src/app/**` (core/shared/features vacíos), `infra/docker-compose.yml` |
 
-> Cada prompt sigue [`PROMPT_TEMPLATE.md`](../../plantillas/plantillas1/PROMPT_TEMPLATE.md), vive en `prompts/PR-IMPL-NNN.md` (convención de este repositorio; ver nota de desviación en `PR-IMPL-001.md` §0) y se referencia desde `docs/PROMPT_MAPPING.md`.
+> Cada prompt sigue [`PROMPT_TEMPLATE.md`](../../plantillas/plantillas1/PROMPT_TEMPLATE.md), vive en `docs/prompts/impl/PR-IMPL-NNN.md` (única área que se desvía del directorio raíz `prompts/`, siguiendo [`FEATURE_DESIGN_DOC_TEMPLATE.md`](../../plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md) §5) y se referencia desde `docs/PROMPT_MAPPING.md`.
 
 ## 6. Plan de pruebas y evals
 
@@ -135,7 +135,7 @@ flowchart TB
 - [x] Diseño (§2) y alternativas (§3) documentados.
 - [x] ADR creado/enlazado — `ADR-0011` (monolito modular + paquete base), además de `ADR-0008`/`ADR-0009`/`ADR-0010` como contexto heredado.
 - [x] §4 Impacto en specs vivas registrado (sin tocar el baseline).
-- [ ] Prompt(s) versionado(s) en `prompts/` y en `PROMPT_MAPPING.md` — `PR-IMPL-001` creado en este mismo lote; **pendiente de ejecutar** (generar el código real en `backend/`/`frontend/`/`infra/`).
+- [x] Prompt(s) versionado(s) en `docs/prompts/impl/` y en `PROMPT_MAPPING.md` — `PR-IMPL-001` creado y registrado; **pendiente de ejecutar** (generar el código real en `backend/`/`frontend/`/`infra/`).
 - [ ] Tests/evals definidos y pasando — `ModularityTests` se define aquí pero requiere que `PR-IMPL-001` se ejecute primero.
 - [ ] DTP actualizado (changelog + estado del FSD-UC) vía `dtp-sync` — pendiente, siguiente paso tras aprobar este documento.
 - [ ] PR declara: prompts usados, archivos generados vs editados a mano — se declarará en el PR de código cuando se ejecute `PR-IMPL-001`.
@@ -145,3 +145,4 @@ flowchart TB
 | Versión | Fecha | Autor | Cambio |
 |---------|-------|-------|--------|
 | v1.0 | 14/07/2026 | Rodrigo Aspeti | Creación del Design Doc de bootstrap del proyecto (primer `DD-UC-NNN` de `release/3.0.0`); crea `ADR-0011` (monolito modular Spring Modulith + paquete base `com.edusync`); define el árbol de carpetas `backend/`/`frontend/`/`infra/` y el prompt `PR-IMPL-001` para materializarlo. Estado `aprobado` por decisión explícita del usuario (Alternativa B de `ADR-0011`, paquete `com.edusync`, frontend SPA única sin Nx). |
+| v1.1 | 14/07/2026 | Rodrigo Aspeti | Corrección de ruta del prompt: `PR-IMPL-001` se referencia ahora en `docs/prompts/impl/` (no `prompts/`), siguiendo `FEATURE_DESIGN_DOC_TEMPLATE.md` §5 — única área que se desvía de la convención plana de M4. Sin cambios en el diseño (§1–§4) ni en el contenido del prompt. |

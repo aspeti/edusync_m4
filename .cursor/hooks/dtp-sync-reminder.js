@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // stop hook — al terminar cada turno del agente, revisa si hay cambios sin
-// commitear en src/, docs/design/ o prompts/PR-IMPL-*.md sin una actualizacion
-// correspondiente en docs/product/DTP.md, y si es asi recuerda ejecutar el
-// skill @dtp-sync (ver .cursor/skills/dtp-sync/SKILL.md). loop_limit: 1 en
-// hooks.json evita que el recordatorio se repita en cada turno de la misma
-// conversacion.
+// commitear en backend/, frontend/, docs/design/ o docs/prompts/impl/PR-IMPL-*.md
+// sin una actualizacion correspondiente en docs/product/DTP.md, y si es asi
+// recuerda ejecutar el skill @dtp-sync (ver .cursor/skills/dtp-sync/SKILL.md).
+// loop_limit: 1 en hooks.json evita que el recordatorio se repita en cada
+// turno de la misma conversacion.
 
 const { execSync } = require('child_process');
 
@@ -52,9 +52,11 @@ process.stdin.on('end', () => {
   const normalized = changed.map((p) => p.replace(/\\/g, '/'));
   const touchesImpl = normalized.some(
     (p) =>
+      p.startsWith('backend/') ||
+      p.startsWith('frontend/') ||
       p.startsWith('src/') ||
       p.startsWith('docs/design/') ||
-      /^prompts\/PR-IMPL-/.test(p)
+      /^docs\/prompts\/impl\/PR-IMPL-/.test(p)
   );
   const touchesDtp = normalized.some((p) => p === 'docs/product/DTP.md');
 
@@ -62,7 +64,7 @@ process.stdin.on('end', () => {
     process.stdout.write(
       JSON.stringify({
         followup_message:
-          'Detecte cambios sin commitear en src/, docs/design/ o prompts/PR-IMPL-*.md sin una actualizacion correspondiente en docs/product/DTP.md. Ejecuta el skill @dtp-sync para sincronizar docs/product/DTP.md (y PRD.md/FSD.md en docs/product/ si aplica) antes de continuar, o confirma explicitamente que este cambio no requiere sincronizacion documental.',
+          'Detecte cambios sin commitear en backend/, frontend/, docs/design/ o docs/prompts/impl/PR-IMPL-*.md sin una actualizacion correspondiente en docs/product/DTP.md. Ejecuta el skill @dtp-sync para sincronizar docs/product/DTP.md (y PRD.md/FSD.md en docs/product/ si aplica) antes de continuar, o confirma explicitamente que este cambio no requiere sincronizacion documental.',
       })
     );
     return;

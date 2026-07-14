@@ -24,13 +24,13 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.0 |
-| **Fecha** | 12/07/2026 |
+| **Versión del documento** | v2.2 |
+| **Fecha** | 14/07/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
 | **Estado** | En revisión |
 | **Modo elegido** | **FSD Clásico 🔧** |
-| **Trazabilidad a PRD** | `docs/product/PRD.md` (v2.0) |
+| **Trazabilidad a PRD** | `docs/product/PRD.md` (v2.2) |
 | **Insumos M2 (UI/UX)** | Sistema Atomic Design · Design Tokens · Semáforos visuales de reprobación · WCAG 2.2 AA |
 | **Fase Spec Kit cubierta** | Specify ✅ / Plan ✅ / Tasks ✅ / Implement ⬜ |
 | **Prompts utilizados** | `PR-ARCH-001`, `PR-BRD-002`, `PR-DIAG-001`, `PR-DIAG-002` (ver `docs/PROMPT_MAPPING.md`) |
@@ -43,7 +43,7 @@
 
 ## 1. Resumen ejecutivo ⚡🔧
 
-EduSync es una plataforma SaaS B2B multitenant de gestión académica construida sobre Java 21, Spring Boot 3.3, PostgreSQL 15 y Angular 17, desplegada en AWS. Su misión técnica es eliminar la "triple digitación manual" que obliga al personal de colegios bolivianos a trabajar de madrugada para cumplir con los plazos del Sistema de Información Educativa (SIE) del Ministerio de Educación.
+EduSync es una plataforma SaaS B2B multitenant de gestión académica construida sobre Java 25 (LTS), Spring Boot 4.1.0 (Spring Framework 7.0.8), PostgreSQL 15 y Angular 21 (LTS), desplegada en AWS (stack vivo vigente desde `release/3.0.0`, `ADR-0008`; el baseline congelado de M4 documentó Java 21 / Spring Boot 3.3 / Angular 17, ver `docs/baseline/DTI.md` §4). Su misión técnica es eliminar la "triple digitación manual" que obliga al personal de colegios bolivianos a trabajar de madrugada para cumplir con los plazos del Sistema de Información Educativa (SIE) del Ministerio de Educación.
 
 El sistema descentraliza el registro de calificaciones por rol (RBAC estricto): cada Docente ingresa notas únicamente en sus materias asignadas, con validación paramétrica en tiempo real. Un motor de consolidación algorítmico calcula promedios trimestrales aplicando el criterio `floor` como única regla de truncado, garantizando consistencia con la escala del SIE. La Secretaría exporta masivamente al SIE con un clic, con resiliencia ante fallos parciales mediante reintentos idempotentes por `rude + periodo_id`. El Director administra la gestión académica anual, define parámetros configurables por periodo y autoriza correcciones retroactivas con ventanas temporales de 1–72 horas.
 
@@ -97,7 +97,7 @@ Todo el ciclo queda sellado en un `audit_log` append-only inalterable, con aisla
 
 | Bloque | Contenido |
 |--------|-----------|
-| **Stack tecnológico** | Java 21 LTS · Spring Boot 3.3 · Spring Security 6 (JWT + RBAC) · Spring Data JPA · PostgreSQL 15 (RLS) · Angular 17 · AWS (RDS db.t3.medium, EC2 t3.small) · Apache PDFBox |
+| **Stack tecnológico** | Java 25 (LTS) · Spring Boot 4.1.0 (Spring Framework 7.0.8) · Spring Security 7 (JWT + RBAC) · Spring Data JPA · PostgreSQL 15 (RLS) · Angular 21 (LTS) · AWS (RDS db.t3.medium, EC2 t3.small / ECS Fargate) · Apache PDFBox — stack vivo vigente desde `release/3.0.0` (`ADR-0008`) |
 | **Arquitectura prevista** | Hexagonal (Ports & Adapters) con separación en capas: `domain/` (entidades, servicios de dominio, reglas) · `application/` (casos de uso, ports) · `infrastructure/` (JPA adapters, REST controllers, SIE client) · `frontend/` (Angular SPA con Design System Atomic Design) |
 | **Project structure** | `backend/src/main/java/bo/edusync/{domain,application,infrastructure}/` · `frontend/src/app/{modules,shared,core}/` · `docs/fsd/`, `docs/adr/`, `docs/diagramas/` · `infra/` (Docker Compose, Flyway migrations) |
 | **Decisiones técnicas anticipadas** | DA-01: RLS PostgreSQL con `tenant_id` · DA-02: parámetros académicos en BD sin redespliegue · DA-03: `audit_log` append-only con Hibernate Envers en entidades críticas · DA-04: consolidación asíncrona con Spring Events (migrable a SQS) · DA-05: idempotencia SIE por `rude+periodo_id` |
@@ -142,7 +142,7 @@ Todo el ciclo queda sellado en un `audit_log` append-only inalterable, con aisla
 
 | Actor | Tipo | Nivel | Responsabilidad principal | Permisos clave |
 |-------|------|-------|---------------------------|----------------|
-| **SYSADMIN** | Humano | Plataforma (SaaS) | Registrar Unidades Educativas (`Tenant`), gestionar su suscripción y estado, administrar usuarios `ADMIN` de cada tenant | Escritura en `Tenant` y su ciclo de suscripción; escritura en usuarios `ADMIN`; **sin** acceso a datos académicos de ningún tenant |
+| **SYSADMIN** | Humano | Plataforma (SaaS) | Registrar Unidades Educativas (`Tenant`), gestionar su suscripción y estado, administrar usuarios `ADMIN` de cada tenant | Escritura en `Tenant` y su ciclo de suscripción; escritura en usuarios `ADMIN`; **sin** acceso a datos académicos de ningún tenant. `tenant_id` nulo de forma **permanente**; no se combina con ningún rol de tenant en el mismo usuario (`ADR-0010`, ver §6.3.2) |
 | **ADMIN** | Humano | Tenant | Equivalente vigente de `DIRECTOR` (§0.1); además administra `GestionEscolar`, `PeriodoEvaluacion`, `SeccionEvaluacion`, `Curso`/`Paralelo`, `Materia`, `Profesor`, `Usuario` de su tenant | Escritura en todos los módulos configurables de su tenant; lectura de todos los datos de su tenant |
 | **SECRETARIA** | Humano | Tenant | Equivalente vigente de `SECRETARÍA` (§0.1); además administra `Estudiante` e `Inscripcion` | Escritura en `Estudiante`, `Inscripcion`; lectura de indicadores de su tenant |
 | **ASESOR** | Humano | Tenant | Tutor/orientador de un `Curso`/`Paralelo` asignado; sin equivalente en el Perfil Bolivia SIE | Solo lectura del avance académico de su `Curso`/`Paralelo` asignado; **sin** escritura sobre calificaciones ni nóminas |
@@ -514,6 +514,7 @@ Escenario: Apertura secuencial válida
   - **A2 — Usuario de tenant `SUSPENDIDO`/`VENCIDO` intenta iniciar sesión:** HTTP 403 `E_TENANT_NO_ACTIVO`.
 - **Postcondiciones:** `Tenant` persistido con estado y suscripción; ningún dato académico del tenant se elimina ante suspensión/vencimiento.
 - **Reglas de negocio aplicables:** BR-013, BR-014, BR-015.
+- **Nota (`ADR-0010`, pendiente no bloqueante):** el primer `Usuario` con rol `SYSADMIN` se crea vía *seed*/migración con `tenant_id = NULL` antes de que exista cualquier `Tenant` (arranque del sistema); ese `tenant_id` permanece nulo para siempre, incluso después de crear el primer tenant. Se confirmó que el primer `Tenant` registrado será un **tenant "demo"** con fines de venta (sandbox para prospectos), pero su diseño detallado (alta única vs. bajo demanda, reglas especiales de datos) queda pendiente de definir en el Design Doc (`DD-UC-011`) de este caso de uso; no bloquea el modelo de `Usuario`/`Rol` decidido en `ADR-0010`.
 - **Criterios de aceptación:**
 
 ```gherkin
@@ -704,14 +705,33 @@ Escenario: Historial académico a través de dos gestiones escolares
 - **Precondiciones:** `Tenant` activo.
 - **Disparador:** CRUD de `Usuario`, asignación de rol, activación/desactivación, restablecimiento de contraseña.
 - **Flujo principal:**
-  1. `POST /api/v1/usuarios` con `{nombre, email, rol (ADMIN|SECRETARIA|ASESOR|PROFESOR), cursoAsignado? (solo ASESOR)}`.
-  2. `PATCH /api/v1/usuarios/{id}/estado` con `{activo: boolean}`.
-  3. `POST /api/v1/usuarios/{id}/restablecer-password` inicia el flujo de restablecimiento (enlace de un solo uso).
+  1. `POST /api/v1/usuarios` con `{nombre, email, roles: [ADMIN|SECRETARIA|ASESOR|PROFESOR, ...], cursoAsignado? (requerido si roles incluye ASESOR)}` — `roles` acepta uno o más valores simultáneos (`ADR-0010`). El rol `SYSADMIN` **no** se crea por este endpoint (ver `FSD-UC-011`, alcance de plataforma).
+  2. El sistema valida la invariante de exclusión mutua: si `roles` incluyera `SYSADMIN`, se rechaza (este endpoint solo crea usuarios de tenant, con `tenant_id` no nulo).
+  3. `PATCH /api/v1/usuarios/{id}/roles` con `{roles: [...]}` permite modificar el conjunto de roles vigentes de un usuario de tenant, repitiendo la misma validación.
+  4. `PATCH /api/v1/usuarios/{id}/estado` con `{activo: boolean}`.
+  5. `POST /api/v1/usuarios/{id}/restablecer-password` inicia el flujo de restablecimiento (enlace de un solo uso).
 - **Flujos alternativos / excepciones:**
   - **A1 — Rol `ASESOR` sin curso/paralelo asignado:** HTTP 422 `E_ASESOR_SIN_CURSO`.
   - **A2 — Enlace de restablecimiento ya usado o expirado:** HTTP 410 `E_ENLACE_INVALIDO`.
-- **Postcondiciones:** `Usuario` con exactamente un rol vigente; historial de restablecimientos no reutilizables.
-- **Reglas de negocio aplicables:** BR-024.
+  - **A3 — Intento de asignar `SYSADMIN` combinado con un rol de tenant, o a un usuario con `tenant_id` no nulo:** HTTP 422 `E_ROL_INCOMPATIBLE` (`ADR-0010`).
+  - **A4 — `roles` vacío:** HTTP 422 `E_ROLES_VACIO` (todo usuario activo requiere al menos un rol vigente).
+- **Postcondiciones:** `Usuario` con uno o más roles vigentes (`UsuarioRol`); ningún usuario combina `SYSADMIN` con un rol de tenant; historial de restablecimientos no reutilizables.
+- **Reglas de negocio aplicables:** BR-024, `ADR-0010`.
+- **Criterios de aceptación:**
+
+```gherkin
+Escenario: Admin asigna dos roles al mismo usuario
+  Dado un Admin autenticado en su Unidad Educativa
+  Cuando crea el usuario "Marco Ríos" con roles ["ADMIN", "SECRETARIA"]
+  Entonces el sistema responde HTTP 201 y persiste ambos roles en UsuarioRol
+    Y Marco puede operar con los permisos combinados de ambos roles
+
+Escenario: Rechazo de SYSADMIN combinado con rol de tenant
+  Dado un usuario de tenant existente con tenant_id no nulo
+  Cuando se intenta agregarle el rol "SYSADMIN" vía PATCH /api/v1/usuarios/{id}/roles
+  Entonces el sistema responde HTTP 422 con error E_ROL_INCOMPATIBLE
+    Y no persiste el cambio
+```
 
 ---
 
@@ -749,9 +769,11 @@ Escenario: Historial académico a través de dos gestiones escolares
 | BR-021 | Un `Curso` puede tener uno o más `Paralelo`; `Materia` e `Inscripcion` referencian siempre un `Curso` y, cuando aplica, un `Paralelo` válidos. | validación | BRD BR-021 | FSD-UC-017 |
 | BR-022 | Ninguna `Evaluacion` puede registrarse sobre una `Materia` sin `Profesor` asignado. | validación | BRD BR-022 | FSD-UC-018, FSD-UC-019 |
 | BR-023 | `Estudiante` e `Inscripcion` son entidades independientes; el historial académico de un estudiante se reconstruye a través de todas sus `Inscripcion` en distintas `GestionEscolar`. | arquitectura | BRD BR-023 | FSD-UC-020 |
-| BR-024 | Todo `Usuario` activo tiene exactamente un rol vigente (`SYSADMIN`/`ADMIN`/`SECRETARIA`/`ASESOR`/`PROFESOR`); el rol `ASESOR` requiere `Curso`/`Paralelo` asignado. | validación | BRD BR-024 | FSD-UC-021 |
+| BR-024 | Todo `Usuario` activo tiene **uno o más** roles vigentes (`SYSADMIN`/`ADMIN`/`SECRETARIA`/`ASESOR`/`PROFESOR`), modelados como relación N:M (`UsuarioRol`, §6.3.2). El rol `ASESOR` requiere `Curso`/`Paralelo` asignado. **Invariante:** `tenant_id IS NULL` ⟺ el conjunto de roles es exactamente `{SYSADMIN}`; `SYSADMIN` nunca se combina con un rol de tenant en el mismo usuario, de forma permanente (`ADR-0010`). | validación | BRD BR-024, `ADR-0010` | FSD-UC-021 |
 
 > **Pendiente de definición (`ADR-0009` §3):** BR-013..BR-024 no incluyen todavía reglas de gobernanza (auditoría inalterable, inmutabilidad post-cierre, ventana de corrección retroactiva) equivalentes a BR-005/BR-009/BR-010/BR-011, ni la generalización de BR-006/BR-007 (secuencialidad y parámetros inmutables) a N periodos, ni la validación de suma de pesos de BR-018. No implementar ninguno de estos comportamientos en código sin una decisión explícita de seguimiento.
+>
+> **Nota (`ADR-0010`):** BR-024 refina la redacción original de `ADR-0009` ("exactamente un rol") a un modelo multi-rol. Ver §6.3.1 (diagrama ER con `USUARIO_ROL`), §6.3.2 (diccionario de datos) y §4.6.11 (`FSD-UC-021`).
 
 ---
 
@@ -881,6 +903,8 @@ erDiagram
     TENANT ||--o{ ESTUDIANTE : matricula
     TENANT ||--o{ TIPO_EVALUACION : define
 
+    USUARIO ||--o{ USUARIO_ROL : tiene
+
     GESTION_ESCOLAR ||--o{ PERIODO_EVALUACION : contiene
     GESTION_ESCOLAR ||--o{ INSCRIPCION : agrupa
 
@@ -900,6 +924,8 @@ erDiagram
     USUARIO }o--o| CURSO : "ASESOR asignado a"
 ```
 
+> **`USUARIO_ROL` (nuevo, `ADR-0010`):** relación N:M que reemplaza al atributo `Usuario.rol` de valor único (`ADR-0009`). Un `Usuario` puede tener uno o más roles; ver invariante de exclusión mutua `SYSADMIN`/tenant en §6.3.2 y `BR-024` (§5.1).
+
 #### 6.3.2 Diccionario de datos
 
 | Entidad | Atributo | Tipo | Obligatorio | Validaciones | Origen |
@@ -910,11 +936,14 @@ erDiagram
 | **Tenant** | `fecha_vencimiento_suscripcion` | DATE | sí | > fecha_inicio_suscripcion | SysAdmin |
 | **Tenant** | `estado` | ENUM | sí | ACTIVO / SUSPENDIDO / VENCIDO | sistema / SysAdmin |
 | **Usuario** | `id` | UUID | sí | UUIDv4 | sistema |
-| **Usuario** | `tenant_id` | UUID (FK, nullable) | no | nulo solo para `SYSADMIN` (plataforma) | sistema |
-| **Usuario** | `rol` | ENUM | sí | SYSADMIN / ADMIN / SECRETARIA / ASESOR / PROFESOR | Admin / SysAdmin |
+| **Usuario** | `tenant_id` | UUID (FK, nullable) | no | nulo **de forma permanente** ⟺ el conjunto de roles del usuario es exactamente `{SYSADMIN}` (`ADR-0010`); no es una condición transitoria de *bootstrap* | sistema |
 | **Usuario** | `email` | VARCHAR(120) | sí | regex RFC 5322; único por tenant | usuario |
 | **Usuario** | `activo` | BOOLEAN | sí | default true | Admin |
-| **Usuario** | `curso_asignado_id` | UUID (FK, nullable) | no | requerido si `rol = ASESOR` | Admin |
+| **Usuario** | `curso_asignado_id` | UUID (FK, nullable) | no | requerido si el usuario tiene el rol `ASESOR` | Admin |
+| **UsuarioRol** *(nuevo, `ADR-0010`)* | `usuario_id` | UUID (FK) | sí | FK a Usuario | sistema |
+| **UsuarioRol** *(nuevo, `ADR-0010`)* | `rol` | ENUM | sí | SYSADMIN / ADMIN / SECRETARIA / ASESOR / PROFESOR; par (`usuario_id`, `rol`) único | Admin / SysAdmin |
+
+> **Invariante de exclusión mutua (`ADR-0010`):** `Usuario.tenant_id IS NULL` ⟺ el conjunto de `UsuarioRol.rol` de ese usuario es exactamente `{SYSADMIN}`. Ningún usuario puede tener `SYSADMIN` junto con un rol de tenant, ni un rol de tenant con `tenant_id` nulo. Reemplaza al atributo `Usuario.rol` (ENUM de valor único) definido originalmente en `ADR-0009`.
 | **GestionEscolar** | `id` | UUID | sí | — | sistema |
 | **GestionEscolar** | `tenant_id` | UUID (FK) | sí | RLS | sistema |
 | **GestionEscolar** | `nombre` | VARCHAR(100) | sí | — | Admin |
@@ -978,7 +1007,7 @@ erDiagram
 
 ```markdown
 # Role
-Eres el servicio de dominio CalificacionService de EduSync (Java 21, Spring Boot 3.3).
+Eres el servicio de dominio CalificacionService de EduSync (Java 25, Spring Boot 4.1.0).
 Tu responsabilidad es persistir calificaciones válidas y rechazar las inválidas
 con el error preciso, respetando todas las invariantes de negocio.
 
@@ -1309,7 +1338,8 @@ Paso 13 → audit_log entry + notificación
 | **RBAC** | Role-Based Access Control. Sistema de control de acceso que restringe las operaciones según el rol del usuario autenticado (DIRECTOR / SECRETARÍA / DOCENTE) y su `tenant_id`. |
 | **Motor de Consolidación** | Componente de dominio de EduSync responsable exclusivo del cálculo de promedios, aplicación de `floor` y generación del centralizador. Ningún otro componente puede realizar estos cálculos. |
 | **Gestión Académica** | Unidad organizativa de un año escolar completo en EduSync, compuesta por 3 periodos trimestrales y sus respectivos parámetros, asignaciones y nóminas. **(Perfil Bolivia SIE.)** |
-| **SysAdmin** *(nuevo, `ADR-0009`)* | Rol de plataforma (SaaS) que administra `Tenant`s (Unidades Educativas), su ciclo de suscripción y sus usuarios `ADMIN`. No pertenece a ningún tenant y no accede a sus datos académicos. |
+| **SysAdmin** *(nuevo, `ADR-0009`, refinado por `ADR-0010`)* | Rol de plataforma (SaaS) que administra `Tenant`s (Unidades Educativas), su ciclo de suscripción y sus usuarios `ADMIN`. No pertenece a ningún tenant y no accede a sus datos académicos; su `tenant_id` es nulo de forma **permanente** y nunca se combina con un rol de tenant en el mismo usuario (`ADR-0010`). |
+| **UsuarioRol** *(nuevo, `ADR-0010`)* | Relación N:M entre `Usuario` y `Rol` que permite que un mismo usuario tenga uno o más roles simultáneos. Reemplaza al atributo `Usuario.rol` de valor único definido originalmente en `ADR-0009`. |
 | **Tenant** *(genérico, `ADR-0009`)* | Unidad Educativa con ciclo de vida propio a nivel plataforma: fecha de inicio/vencimiento de suscripción y estado (`ACTIVO`/`SUSPENDIDO`/`VENCIDO`). Extiende, sin reemplazar, el `tenant_id` de RLS (`ADR-0001`). |
 | **Gestión Escolar** *(genérico, `ADR-0009`)* | Unidad organizativa de un ciclo escolar en el modelo generalizado, con un número **configurable** de `PeriodoEvaluacion` (no fijo en 3). |
 | **Sección de Evaluación** *(genérico, `ADR-0009`)* | Componente configurable de la calificación de un periodo (ej. Ser/Saber/Hacer/Autoevaluación u otro esquema), con nombre, orden, nota máxima, peso porcentual y cantidad máxima de evaluaciones definidos por la institución. |
@@ -1326,6 +1356,8 @@ Paso 13 → audit_log entry + notificación
 |---------|-------|-------|--------|
 | v1.0 | 15/05/2026 | Equipo G-EduSync — Rodrigo Aspeti | Creación inicial del FSD en modo FSD Clásico. Basado en BRD v2.0, MRD v1.0, PRD v1.0, arquitectura_funcional_EduSync.md (10 UCs, 5 DAs) y diagramas de estado del Docente (18 estados) y Director (23 estados). 5 FSD-UC con flujos completos (UC-001, UC-003, UC-004, UC-005, UC-009), 12 reglas de negocio, modelo ER con 16 entidades, diccionario de datos completo, 3 prompt-contratos con invariantes y failure modes, 16 NFRs con umbrales y verificación, trazabilidad MRD→PRD→FSD, plan de pruebas y glosario. |
 | v2.0 | 12/07/2026 | Rodrigo Aspeti | Generalización a plataforma SaaS multi-tenant configurable (`ADR-0009`), alineada con BRD v3.0 y PRD v2.0. §3 se amplía con actores `SYSADMIN`/`ADMIN`/`SECRETARIA`/`ASESOR`/`PROFESOR` (§3.1), manteniendo la tabla original del Perfil Bolivia SIE sin cambios. Se añade §4.6 con 11 nuevos casos de uso (`FSD-UC-011`..`FSD-UC-021`): Tenants/Suscripciones, Gestión Escolar, Periodos y Secciones de Evaluación configurables, Evaluaciones/Tipos configurables, Cálculo de Notas configurable, Cursos/Paralelos, Materias, Profesores, Estudiantes/Inscripciones, Usuarios y Roles. Se añaden BR-013..BR-024 (§5.1) y el modelo de datos genérico (§6.3, 13 entidades nuevas) con nota explícita de convivencia con el modelo Bolivia SIE (§6.1/§6.2). Nueva nota de nomenclatura de roles (§0.1). Nuevos términos de glosario. 5 puntos quedan explícitamente pendientes de definición en todo el documento (ver `ADR-0009` §3): no implementar en código sin resolverlos primero. |
+| v2.1 | 12/07/2026 | Rodrigo Aspeti | Corrección de consistencia de stack: §1 (resumen ejecutivo), §2.4 (tabla "Stack tecnológico") y §7.1 (prompt-contrato de `CalificacionService`) citaban todavía el stack del baseline de M4 (Java 21 / Spring Boot 3.3 / Angular 17) en vez del stack vivo fijado por `ADR-0008` (Java 25 LTS / Spring Boot 4.1.0 / Angular 21 LTS) desde la apertura de `release/3.0.0`. Actualizados los 3 puntos con referencia explícita a `ADR-0008`, sin afectar `docs/baseline/DTI.md` (que documenta correctamente el stack histórico de M4 sin cambios). |
+| v2.2 | 14/07/2026 | Rodrigo Aspeti | Refinamiento del modelo de roles (`ADR-0010`): `BR-024` (§5.1) pasa de "exactamente un rol" a **multi-rol** vía nueva entidad `UsuarioRol` (N:M), con la invariante permanente `tenant_id IS NULL ⟺ roles = {SYSADMIN}`. Actualizados §3.1 (nota en actor `SYSADMIN`), §6.3.1 (diagrama ER con `USUARIO_ROL`), §6.3.2 (diccionario de datos: `Usuario.rol` reemplazado por `UsuarioRol`), §4.6.1 (`FSD-UC-011`, nota no bloqueante sobre el *bootstrap* del primer SysAdmin y el tenant demo pendiente de diseño) y §4.6.11 (`FSD-UC-021`, endpoint `roles: [...]` y nuevos escenarios Gherkin). Nuevos términos de glosario (§14). Sin cambios en `ADR-0009` ni en el resto de BR-013..BR-023. |
 
 ---
 

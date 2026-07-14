@@ -22,8 +22,8 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión** | v3.0 |
-| **Fecha** | 12/07/2026 |
+| **Versión** | v3.1 |
+| **Fecha** | 14/07/2026 |
 | **Sponsor de negocio** | Dirección Institucional / Propietarios de Unidades Educativas Bolivianas |
 | **Stakeholders** | Director Académico (Admin) · Secretaría / Administrativo · Docentes (Profesores) · Ministerio de Educación (SIE, Perfil Bolivia) |
 | **Autores** | Equipo G-EduSync — Rodrigo Aspeti (Dev Lead) |
@@ -267,9 +267,11 @@ La consecuencia de no actuar es la continuidad del riesgo legal, el agotamiento 
 | BR-021 | El sistema debe permitir administrar Cursos y Paralelos, donde un Curso puede tener múltiples Paralelos. | Must | Es la unidad organizativa sobre la que se agrupan Materias, Profesores y Estudiantes dentro de una Gestión Escolar. | 100 % de las Materias e Inscripciones referencian un Curso y, cuando aplica, un Paralelo válidos. |
 | BR-022 | El sistema debe permitir el CRUD de Materias, su asignación a Cursos y su asignación a Profesores. | Must | Es prerequisito funcional para que un Profesor pueda registrar evaluaciones de una Materia concreta. | 0 evaluaciones registradas sobre una Materia sin Profesor asignado. |
 | BR-023 | El sistema debe permitir el CRUD de Estudiantes (información personal y estado) de forma independiente del módulo de Inscripciones, y gestionar las Inscripciones (Gestión Escolar, Curso, Paralelo, fecha, estado) manteniendo el historial académico de cada estudiante. | Must | Separa la identidad del estudiante de su matrícula en un ciclo escolar concreto, permitiendo reconstruir su historial a través de múltiples Gestiones Escolares. | El historial académico de cualquier estudiante es reconstructible a través de todas sus Inscripciones históricas, sin pérdida de datos entre Gestiones Escolares. |
-| BR-024 | El sistema debe permitir el CRUD de Usuarios, la asignación de roles (`SysAdmin` / `Admin` / `Secretaria` / `Asesor` / `Profesor`), su activación/desactivación y el restablecimiento de contraseña. | Must | Es prerequisito de todo el RBAC del sistema generalizado. | 100 % de los usuarios activos tienen exactamente un rol vigente asignado. |
+| BR-024 | El sistema debe permitir el CRUD de Usuarios y la asignación de **uno o más roles simultáneos** (`SysAdmin` / `Admin` / `Secretaria` / `Asesor` / `Profesor`), su activación/desactivación y el restablecimiento de contraseña. El rol `SysAdmin` es de plataforma (sin tenant) y **no puede combinarse** con ningún rol de tenant en el mismo usuario: todo usuario con `SysAdmin` no pertenece a ningún tenant, de forma permanente (`ADR-0010`). | Must | Es prerequisito de todo el RBAC del sistema generalizado; el multi-rol evita duplicar cuentas para una misma persona que cubre más de una función en su institución. | 100 % de los usuarios activos tienen uno o más roles vigentes asignados. 0 usuarios con el rol `SysAdmin` combinado con un rol de tenant o con `tenant_id` no nulo. |
 
 > **Pendiente de definición (`ADR-0009` §3):** la gobernanza (auditoría inalterable, inmutabilidad post-cierre, ventana de corrección retroactiva) de BR-013..BR-024 no está definida todavía; no debe asumirse equivalente a BR-005/BR-009/BR-011 (Perfil Bolivia SIE) sin una decisión explícita de negocio.
+
+> **Nota (`ADR-0010`):** BR-024 refina la redacción original de `ADR-0009` ("exactamente un rol") a un modelo multi-rol (`usuario_rol` N:M), con la invariante permanente de que `SysAdmin` nunca tiene `tenant_id` asignado ni se combina con un rol de tenant. Ver `docs/product/FSD.md` §5.1, §6.3.2 y `docs/adr/0010-modelo-multirol-usuario-y-sysadmin-sin-tenant.md`.
 
 ---
 
@@ -439,6 +441,7 @@ La consecuencia de no actuar es la continuidad del riesgo legal, el agotamiento 
 | v1.0 | 09/05/2026 | Consultor Estratégico | Creación inicial con BR-001..BR-005, BMC y KPIs base. |
 | v2.0 | 14/05/2026 | Equipo G-EduSync | Consolidación con arquitectura funcional (10 UCs, 5 DAs) y diagramas de estado del Docente (18 estados) y Director (23 estados). Incorporación de BR-006..BR-012. Ampliación de reglas de negocio RB-01..RB-11. Nuevas personas: Director (Jeanneth). Nuevos KPIs: KPI-04, KPI-05. Nuevos BO: BO-04, BO-05. Riesgo adicional: alucinación por agentes IA y fuga multitenant. |
 | v3.0 | 12/07/2026 | Rodrigo Aspeti | Generalización a plataforma SaaS multi-tenant configurable (`ADR-0009`). BR-001..BR-012 y RB-01..RB-11 se re-etiquetan como **Perfil Bolivia SIE** (vigentes sin cambios). Se añaden BR-013..BR-024 (§11.1): SysAdmin/tenant/suscripción, Gestión Escolar, periodos y secciones de evaluación configurables, tipos de evaluación configurables, cálculo de notas configurable, Cursos/Paralelos, Materias, Profesores, Estudiantes, Inscripciones, Usuarios y Roles. Nueva persona: SysAdmin (§4.4). Nueva nota de nomenclatura de roles (§0.1: Admin=Director, Profesor=Docente, Secretaria y Asesor nuevos). Alcance ampliado (§14.1). 5 puntos quedan explícitamente pendientes de definición (ver `ADR-0009` §3): reconciliación con el modelo Bolivia, secuencialidad/redondeo genérico, validación de suma de pesos, gobernanza de módulos nuevos. |
+| v3.1 | 14/07/2026 | Rodrigo Aspeti | Refinamiento del modelo de roles (`ADR-0010`), recibido durante el diseño del login y del alta de tenants: BR-024 pasa de "exactamente un rol" a **multi-rol** (uno o más roles simultáneos por usuario) con la invariante permanente de que `SysAdmin` nunca tiene `tenant_id` asignado ni se combina con un rol de tenant. No se modifica ningún otro BR de §11.1 ni de §11 (Perfil Bolivia SIE). |
 
 ---
 

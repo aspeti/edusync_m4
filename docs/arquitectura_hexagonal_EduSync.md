@@ -4,14 +4,14 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v0.1 |
-| **Fecha** | 24/05/2026 |
+| **Versión del documento** | v0.2 |
+| **Fecha** | 14/07/2026 |
 | **Autor** | Rodrigo Aspeti — Dev Lead / PM |
-| **Estado** | Borrador |
-| **Stack** | Java 21 · Spring Boot 3.3 · Spring Security 6 · Spring Data JPA · Angular 17 · PostgreSQL 15 |
-| **Insumos** | `docs/fsd/FSD_EduSync.md` v1.0 · `docs/prd/PRD_EduSync.md` v1.0 · `docs/LFSD-EduSync.md` v1.0 · `docs/arquitectura_funcional_EduSync.md` (DA-01..DA-05) |
-| **Prompt aplicado** | `PR-HEX-001` (pendiente de registro en `docs/PROMPT_MAPPING.md`) |
-| **Trazabilidad** | FSD-UC-001..010 · BR-001..BR-012 · DA-01..DA-05 |
+| **Estado** | Vigente (spec viva, `docs/product/`-adyacente; no forma parte de `docs/baseline/`) |
+| **Stack (Perfil Bolivia SIE, este documento)** | Java 21 · Spring Boot 3.3 · Spring Security 6 · Spring Data JPA · Angular 17 · PostgreSQL 15 (histórico M4) → **vivo desde `release/3.0.0`**: Java 25 LTS · Spring Boot 4.1.0 · Spring Security 7 · Spring Data JPA · Angular 21 LTS · PostgreSQL 15 (`ADR-0008`) |
+| **Insumos** | `docs/fsd/FSD_EduSync.md` v1.0 · `docs/prd/PRD_EduSync.md` v1.0 · `docs/LFSD-EduSync.md` v1.0 · `docs/arquitectura_funcional_EduSync.md` (DA-01..DA-05) · `docs/design/DD-UC-001.md` · `ADR-0011` |
+| **Prompt aplicado** | `PR-HEX-001` (`prompts/PR-HEX-001.md`) |
+| **Trazabilidad** | FSD-UC-001..010 · BR-001..BR-012 · DA-01..DA-05 · `ADR-0011` (§1.1) |
 
 ---
 
@@ -20,6 +20,8 @@
 Documento de **diseño técnico** que materializa la arquitectura hexagonal (Ports & Adapters) del core de EduSync. Identifica los puertos de entrada (casos de uso), puertos de salida (persistencia, mensajería, terceros), adaptadores asociados y *Aggregate Roots* con sus invariantes verificables.
 
 Este documento es **contrato técnico de bajo nivel** y debe ser leído por `dev-agent`, `arch-agent` y `qa-agent` antes de implementar cualquier `FSD-UC-NNN`.
+
+> **Nota de alcance (desde v0.2, `ADR-0011`)**: todo el contenido de este documento (puertos, adaptadores, Aggregate Roots §2–§5) describe exclusivamente el **Perfil Bolivia SIE** (`FSD-UC-001..010`), que en la organización *module-first* de `ADR-0011` corresponde al módulo `com.edusync.notassie` — uno de los 5 módulos de Spring Modulith del backend (junto a `plataforma`, `identidad`, `academico` y `shared`). Ninguna regla de negocio ni invariante del Perfil Bolivia SIE cambia; solo cambia el paquete Java raíz (`bo.edusync` → `com.edusync.notassie`) y su ubicación dentro del árbol module-first. Los otros 4 módulos (capacidades generalizadas de `ADR-0009`/`ADR-0010`) se diseñan en `docs/design/DD-UC-NNN.md` posteriores, no en este documento.
 
 ---
 
@@ -63,54 +65,59 @@ flowchart LR
 
 ### 1.1 Estructura de paquetes Java
 
+> **Desde `ADR-0011`**: el paquete raíz de todo el backend es `com.edusync` (monolito modular, module-first). Lo que sigue es el detalle del módulo `notassie` (Perfil Bolivia SIE, este documento); los módulos hermanos (`plataforma`, `identidad`, `academico`, `shared`) se documentan en `docs/design/DD-UC-NNN.md` posteriores a medida que se implementan. El árbol completo de los 5 módulos vive en `docs/design/DD-UC-001.md` §2.
+
 ```
-bo.edusync/
-├── domain/
-│   ├── model/                ← Aggregate Roots, Entities, Value Objects
-│   │   ├── gestion/          ← GestionAcademica, Anio (VO)
-│   │   ├── periodo/          ← PeriodoAcademico, ParametroAcademico, RangoCalificacion (VO)
-│   │   ├── nomina/           ← Estudiante, Rude (VO), PiiCifrado (VO)
-│   │   ├── calificacion/     ← Calificacion (append-only), Dimension (VO), ValorCalificacion (VO)
-│   │   ├── consolidacion/    ← Centralizador, PuntajeTotal (VO), EstadoCentralizador (VO)
-│   │   ├── exportacion/      ← ExportacionSIE, ClaveIdempotencia (VO)
-│   │   ├── correccion/       ← CorreccionRetroactiva, Ventana (VO), Justificacion (VO)
-│   │   └── auditoria/        ← AuditLogEntry, Accion (VO), Snapshot (VO)
-│   ├── port/
-│   │   ├── in/               ← 20 puertos IN (UseCase interfaces)
-│   │   └── out/              ← 16 puertos OUT (Repository, EventPublisher, etc.)
-│   └── service/              ← Domain Services (CalificacionDomainService, ConsolidacionDomainService...)
-├── application/              ← Implementaciones de port.in (UseCaseService)
-│   ├── auth/
-│   ├── periodo/
-│   ├── calificacion/
-│   ├── consolidacion/
-│   ├── exportacion/
-│   └── correccion/
-└── infrastructure/
-    └── adapter/
-        ├── in/
-        │   ├── web/          ← REST Controllers (Spring MVC)
-        │   ├── scheduler/    ← VentanaExpiracionScheduler, SIERetryScheduler
-        │   ├── messaging/    ← MateriaCerradaListener
-        │   └── security/     ← JwtAuthFilter, RLSTenantInjector
-        └── out/
-            ├── persistence/  ← JpaXxxRepository (Spring Data JPA)
-            ├── messaging/    ← SpringEventPublisherAdapter
-            ├── integration/
-            │   ├── sie/      ← SIEHttpClientAdapter (Resilience4j)
-            │   ├── pdf/      ← PdfBoxBoletinAdapter
-            │   ├── kms/      ← AwsKmsCipherAdapter
-            │   └── notif/    ← InAppNotificacionAdapter
-            ├── security/     ← SpringSecurityTenantContextAdapter
-            ├── time/         ← SystemClockAdapter
-            └── audit/        ← AuditLogAspect (AOP)
+com.edusync/
+└── notassie/                 ← módulo Spring Modulith del Perfil Bolivia SIE (antes bo.edusync, ADR-0011)
+    ├── domain/
+    │   ├── model/                ← Aggregate Roots, Entities, Value Objects
+    │   │   ├── gestion/          ← GestionAcademica, Anio (VO)
+    │   │   ├── periodo/          ← PeriodoAcademico, ParametroAcademico, RangoCalificacion (VO)
+    │   │   ├── nomina/           ← Estudiante, Rude (VO), PiiCifrado (VO)
+    │   │   ├── calificacion/     ← Calificacion (append-only), Dimension (VO), ValorCalificacion (VO)
+    │   │   ├── consolidacion/    ← Centralizador, PuntajeTotal (VO), EstadoCentralizador (VO)
+    │   │   ├── exportacion/      ← ExportacionSIE, ClaveIdempotencia (VO)
+    │   │   ├── correccion/       ← CorreccionRetroactiva, Ventana (VO), Justificacion (VO)
+    │   │   └── auditoria/        ← AuditLogEntry, Accion (VO), Snapshot (VO)
+    │   ├── port/
+    │   │   ├── in/               ← 20 puertos IN (UseCase interfaces)
+    │   │   └── out/              ← 16 puertos OUT (Repository, EventPublisher, etc.)
+    │   └── service/              ← Domain Services (CalificacionDomainService, ConsolidacionDomainService...)
+    ├── application/              ← Implementaciones de port.in (UseCaseService)
+    │   ├── auth/
+    │   ├── periodo/
+    │   ├── calificacion/
+    │   ├── consolidacion/
+    │   ├── exportacion/
+    │   └── correccion/
+    └── infrastructure/
+        └── adapter/
+            ├── in/
+            │   ├── web/          ← REST Controllers (Spring MVC)
+            │   ├── scheduler/    ← VentanaExpiracionScheduler, SIERetryScheduler
+            │   ├── messaging/    ← MateriaCerradaListener
+            │   └── security/     ← JwtAuthFilter, RLSTenantInjector
+            └── out/
+                ├── persistence/  ← JpaXxxRepository (Spring Data JPA)
+                ├── messaging/    ← SpringEventPublisherAdapter
+                ├── integration/
+                │   ├── sie/      ← SIEHttpClientAdapter (Resilience4j)
+                │   ├── pdf/      ← PdfBoxBoletinAdapter
+                │   ├── kms/      ← AwsKmsCipherAdapter
+                │   └── notif/    ← InAppNotificacionAdapter
+                ├── security/     ← SpringSecurityTenantContextAdapter
+                ├── time/         ← SystemClockAdapter
+                └── audit/        ← AuditLogAspect (AOP)
 ```
+
+> **Nota sobre `AuthController`/`AutenticarUsuarioUseCase` (§2, §4.1)**: con la introducción del módulo `identidad` (`ADR-0010`, login multi-tenant + multi-rol), la autenticación transversal migra a `com.edusync.identidad` cuando ese módulo se implemente; hasta entonces, la referencia a `auth/` en este árbol documenta el diseño original del Perfil Bolivia SIE (single-rol `DIRECTOR`/`SECRETARIA`/`DOCENTE`) y debe revisarse en el Design Doc que implemente el login (posterior a `DD-UC-001`).
 
 ---
 
 ## 2. Puertos de entrada (use cases / driving ports)
 
-> Paquete: `bo.edusync.domain.port.in`. Interfaces sin dependencias de Spring/JPA. Implementadas por `application/<UseCase>Service`.
+> Paquete: `com.edusync.notassie.domain.port.in` (antes `bo.edusync.domain.port.in`, `ADR-0011`). Interfaces sin dependencias de Spring/JPA. Implementadas por `application/<UseCase>Service`.
 
 | # | Puerto IN | FSD-UC | Actor invocador | Comando / Respuesta | BR aplicables |
 |---|-----------|--------|-----------------|---------------------|---------------|
@@ -139,7 +146,7 @@ bo.edusync/
 
 ## 3. Puertos de salida (driven ports)
 
-> Paquete: `bo.edusync.domain.port.out`. Interfaces puras del dominio. Implementadas por adaptadores en `infrastructure/`.
+> Paquete: `com.edusync.notassie.domain.port.out` (antes `bo.edusync.domain.port.out`, `ADR-0011`). Interfaces puras del dominio. Implementadas por adaptadores en `infrastructure/`.
 
 | # | Puerto OUT | Categoría | Responsabilidad | Usado por |
 |---|------------|-----------|----------------|-----------|
@@ -164,7 +171,7 @@ bo.edusync/
 
 ## 4. Adaptadores (in y out) ↔ puerto que implementan
 
-> Paquete: `bo.edusync.infrastructure.adapter.{in|out}.<categoria>`. Aquí viven las dependencias de Spring/JPA/AWS/PDFBox.
+> Paquete: `com.edusync.notassie.infrastructure.adapter.{in|out}.<categoria>` (antes `bo.edusync.infrastructure.adapter.{in|out}.<categoria>`, `ADR-0011`). Aquí viven las dependencias de Spring/JPA/AWS/PDFBox.
 
 ### 4.1 Adaptadores IN (driving)
 
@@ -212,7 +219,7 @@ bo.edusync/
 
 ## 5. Aggregate Roots e invariantes de dominio
 
-> Paquete: `bo.edusync.domain.model.<contexto>`. Sin anotaciones JPA en el AR (DA-02); el mapeo vive en el adaptador JPA.
+> Paquete: `com.edusync.notassie.domain.model.<contexto>` (antes `bo.edusync.domain.model.<contexto>`, `ADR-0011`). Sin anotaciones JPA en el AR (DA-02); el mapeo vive en el adaptador JPA.
 
 | # | Aggregate Root | Bounded Context | Entidades / VOs internos | Invariantes de dominio (verificables en CI) | Estado / ciclo de vida |
 |---|----------------|-----------------|--------------------------|-----------------------------------------------|------------------------|
@@ -273,6 +280,7 @@ bo.edusync/
 | `arquitectura_funcional_EduSync.md` | DA-01..DA-05 | Materialización en §6 |
 | `LFSD-EduSync.md` §2–§3 | Estructura de paquetes hexagonal | Refinada en §1.1 |
 | `PRD_EduSync.md` §Constitution | 5 principios no negociables | Reflejados en invariantes §5 (RUDE, floor, tenant, audit, ventana) |
+| `docs/design/DD-UC-001.md` + `ADR-0011` | Monolito modular Spring Modulith (module-first) + paquete base `com.edusync` | §1.1 reescrita: paquete raíz `bo.edusync` → `com.edusync.notassie`; este documento queda acotado al módulo `notassie` |
 
 ---
 
@@ -281,3 +289,4 @@ bo.edusync/
 | Versión | Fecha | Autor | Cambios |
 |---------|-------|-------|---------|
 | v0.1 | 24/05/2026 | Rodrigo Aspeti | Versión inicial — 4 tablas: 20 puertos IN, 16 puertos OUT, 32 adaptadores in/out, 8 Aggregate Roots con invariantes BR-001..BR-012 y DA-01..DA-05. Diagrama de paquetes Java y mapa hexagonal Mermaid. Trazabilidad FSD-UC ↔ puerto IN ↔ aggregate. |
+| v0.2 | 14/07/2026 | Rodrigo Aspeti | **Renombrado de paquete y reorganización module-first** (`ADR-0011`, derivado de `docs/design/DD-UC-001.md`): paquete raíz `bo.edusync` → `com.edusync.notassie` en §1.1 (estructura de paquetes) y en las notas de paquete de §2/§3/§4/§5; este documento queda explícitamente acotado al módulo `notassie` (Perfil Bolivia SIE) dentro del monolito modular Spring Modulith de 5 módulos (`plataforma`/`identidad`/`academico`/`notassie`/`shared`), sin cambios en ninguna regla de negocio, invariante, puerto ni Aggregate Root (§2–§5 sin cambios de contenido, solo de paquete). Se añade nota de alcance (§0) y nota sobre la futura migración de `AuthController`/`AutenticarUsuarioUseCase` al módulo `identidad` (`ADR-0010`). Metadatos actualizados: estado `Borrador` → `Vigente`; stack dual (baseline M4 vs. vivo `release/3.0.0`, `ADR-0008`); `PR-HEX-001` referenciado como materializado en `prompts/`. Trazabilidad (§9) ampliada con la fila de `DD-UC-001`/`ADR-0011`. |

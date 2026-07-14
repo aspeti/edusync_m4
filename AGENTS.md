@@ -23,7 +23,7 @@
 | **FSD** | `docs/fsd/FSD_EduSync.md` | Functional Specification Document — 5 FSD-UC, ER, 3 prompt-contratos |
 | **FSD vFinal** | `docs/fsd/FSD_EduSync_vFinal.md` | Snapshot congelado de FSD v1.0 para `release/2.0.0` (generado por `PR-VFINAL-001`) |
 | **LFSD** | `docs/LFSD-EduSync.md` | Low-Level Functional Specification v1.0.1 — arquitectura hexagonal, DDL, APIs, diagramas de secuencia |
-| **PROMPT_MAPPING** | `docs/PROMPT_MAPPING.md` | Catálogo de prompt-contratos `PR-<AREA>-NNN` — v2.0 (37 contratos activos: PR-ARCH..PR-POC-002, PR-C4-003..006, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001; v2.0 = apertura del área `IMPL` para prompts de implementación de `release/3.0.0`, todavía sin filas) |
+| **PROMPT_MAPPING** | `docs/PROMPT_MAPPING.md` | Catálogo de prompt-contratos `PR-<AREA>-NNN` — v2.1 (38 contratos activos: PR-ARCH..PR-POC-002, PR-C4-003..006, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-IMPL-001; v2.0 abrió el área `IMPL` para `release/3.0.0`, v2.1 materializa su primera fila `PR-IMPL-001`, bootstrap del proyecto) |
 | **APORTES** | `docs/APORTES_EduSync.md` | Informe de aportes individuales — release 1.0.0 |
 | **APORTES release/2.0.0** | `docs/aportes/release-2.0.0.md` | Informe de aportes individuales del release de defensa — grupo unipersonal (n = 1), 95 tareas auditables, factor 1.00, generado por `PR-APORTES-001` |
 | **Roadmap** | `docs/roadmap.md` | Hoja de ruta técnica y de negocio v0.3 — 4 horizontes (`release/1.0.1` → `release/1.1.0`/`release/3.0.0` → `release/1.2.0` → `release/2.0.0`), Gantt, 9 lecciones, métricas BRD/NFR, riesgos y compromisos; fuente canónica detallada (espejo historico en `docs/baseline/DTI.md` §19, espejo vivo hacia adelante en `docs/product/DTP.md` §B) |
@@ -31,11 +31,12 @@
 | **Regla de baseline congelado** | `.cursor/rules/baseline-congelado.mdc` | Prohíbe a cualquier agente editar `docs/baseline/**`; espejo de la regla de este documento (§8.2) |
 | **Hooks de Cursor** | `.cursor/hooks.json` + `.cursor/hooks/*.js` | Automatización, no solo convención: `protect-baseline.js` (`preToolUse`) bloquea con `permission: deny` cualquier `Write`/`StrReplace`/`EditNotebook`/`Delete` sobre `docs/baseline/**`; `warn-shell-baseline.js` (`beforeShellExecution`) pide confirmación ante comandos de shell que escriban/muevan/borren rutas de `docs/baseline/`; `dtp-sync-reminder.js` (`stop`) revisa `git diff`/`git ls-files --others` al final de cada turno y recuerda ejecutar `@dtp-sync` si hay cambios sin commitear en `src/`, `docs/design/` o `prompts/PR-IMPL-*.md` sin reflejo en `docs/product/DTP.md` |
 | **Baseline congelado M4** | `docs/baseline/{BRD_EduSync_vFinal,MRD_EduSync_vFinal,PRD_EduSync_vFinal,FSD_EduSync_vFinal,DTI}.md` | Registro histórico **inmutable** evaluado en M4, tag `release/2.0.0`, `status: congelado`. Protegido por `CODEOWNERS` y `.cursor/rules/baseline-congelado.mdc`. El antiguo `docs/DTI.md` (v0.8, §0–§23) es hoy `docs/baseline/DTI.md` — su continuación viva es `docs/product/DTP.md` |
-| **DTP (capa viva)** | `docs/product/DTP.md` | Documento Técnico del Producto v1.2 (14/07/2026) — continuación viva del DTI congelado, punto de partida para `release/3.0.0`; registra el delta de stack `ADR-0008`, el delta de generalización del modelo de dominio `ADR-0009` y el delta de refinamiento del modelo de roles (multi-rol + `SysAdmin` sin tenant permanente) `ADR-0010` en §A.2; §A.3 lista los 5 FSD-UC del baseline + `FSD-UC-011`..`FSD-UC-021` (módulos generalizados, `FSD-UC-011`/`FSD-UC-021` refinados por `ADR-0010`) como `pendiente` (sin `DD-UC-NNN` ni `PR-IMPL-NNN` todavía) |
+| **DTP (capa viva)** | `docs/product/DTP.md` | Documento Técnico del Producto v1.3 (14/07/2026) — continuación viva del DTI congelado, punto de partida para `release/3.0.0`; registra el delta de stack `ADR-0008`, el delta de generalización del modelo de dominio `ADR-0009`, el delta de refinamiento del modelo de roles (multi-rol + `SysAdmin` sin tenant permanente) `ADR-0010` y el delta de organización interna del backend (monolito modular Spring Modulith + paquete `com.edusync`) `ADR-0011` en §A.2; §A.3 marca `FSD-UC-011`/`FSD-UC-021` como `en progreso` con `DD-UC-001` (primer Design Doc); el resto de FSD-UC sigue `pendiente` |
 | **PRD/FSD/BRD vivos** | `docs/product/{BRD,PRD,FSD}.md` | Copias editables de la capa viva (banner "COPIA VIVA"), abiertas para `release/3.0.0`; el FSD vivo opera en modo LFSD ⚡. Desde `ADR-0009` (v3.1/v2.2/v2.2 resp.): plataforma SaaS multi-tenant configurable (SysAdmin, Tenant con suscripción, Gestión Escolar, periodos/secciones/tipos de evaluación configurables, Cursos/Paralelos, Materias, Profesores, Estudiantes, Inscripciones, Usuarios y Roles) añadida como extensión aditiva sobre el Perfil Bolivia SIE (BR-001..BR-012/RB-01..RB-11, vigentes sin cambios). Desde `ADR-0010`: `BR-024`/`FSD-UC-021` usan un modelo multi-rol (`UsuarioRol` N:M) con la invariante permanente `tenant_id IS NULL ⟺ roles = {SYSADMIN}` |
 | **Diagramas C4** | `docs/diagrams/c4_level1.mmd`, `c4_level2.mmd`, `c4_level3_api_gateway.mmd`, `c4_level3_domain_layer.mmd`, `c4_level3_sie_adapter.mmd`, `deployment_aws.mmd` (+ `.md` espejos para Level 3/Deployment) | C4 Level 1, 2, 3 y Deployment AWS; cumple la base para la rúbrica de diagramas versionados |
-| **ADRs** | `docs/adr/0001..0006-*.md`, `0008-*.md`, `0009-*.md`, `0010-*.md` | 9 ADRs aprobados: 0001 multitenancy RLS, 0002 parametrización reglas normativas, 0003 audit_log append-only, 0004 async consolidación (Spring Events), 0005 resiliencia SIE (Resilience4j), 0006 cloud provider AWS, 0008 stack vivo Java 25 LTS/Spring Boot 4.1.0/Angular 21 LTS, 0009 generalización del modelo de dominio a plataforma SaaS multi-tenant configurable, 0010 modelo multi-rol de usuario + aislamiento permanente del rol `SysAdmin` sin tenant (ninguno supersede a los anteriores). `ADR-0007` (Strangler Fig) queda *gated*, sin crear todavía (ver `docs/roadmap.md` §4) |
-| **Arq. hexagonal** | `docs/arquitectura_hexagonal_EduSync.md` | Arquitectura hexagonal v0.1 — 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots |
+| **ADRs** | `docs/adr/0001..0006-*.md`, `0008-*.md`, `0009-*.md`, `0010-*.md`, `0011-*.md` | 10 ADRs aprobados: 0001 multitenancy RLS, 0002 parametrización reglas normativas, 0003 audit_log append-only, 0004 async consolidación (Spring Events), 0005 resiliencia SIE (Resilience4j), 0006 cloud provider AWS, 0008 stack vivo Java 25 LTS/Spring Boot 4.1.0/Angular 21 LTS, 0009 generalización del modelo de dominio a plataforma SaaS multi-tenant configurable, 0010 modelo multi-rol de usuario + aislamiento permanente del rol `SysAdmin` sin tenant, 0011 monolito modular Spring Modulith (module-first) + paquete base `com.edusync` (ninguno supersede a los anteriores). `ADR-0007` (Strangler Fig) queda *gated*, sin crear todavía (ver `docs/roadmap.md` §4) |
+| **Arq. hexagonal** | `docs/arquitectura_hexagonal_EduSync.md` | Arquitectura hexagonal v0.1 — 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots (Perfil Bolivia SIE, paquete `bo.edusync`, baseline M4). **En actualización** (`ADR-0011`): paquete `com.edusync` + organización monolito modular *module-first* (Spring Modulith) para `release/3.0.0` |
+| **Design Docs (capa viva)** | `docs/design/DD-UC-NNN.md` | Documentos de diseño por feature/*vertical slice*, trazados a `FSD-UC` + `ADR` + `PR-IMPL-NNN`; alimentan el DTP vía `@dtp-sync`. Primer documento: `DD-UC-001` (bootstrap del proyecto — `FSD-UC-011`/`FSD-UC-021`, crea `ADR-0011`) |
 | **DTOs por capa** | `docs/dtos_EduSync.md` | DTOs hexagonales v0.1 — 4 Request, 4 Commands, 3 Response, 5 Domain Events, 5 enums |
 | **Skills de Cursor** | `.cursor/skills/<slug>/SKILL.md` | 27 skills (8 EduSync nativos incl. `feature-design-doc` y `dtp-sync` + 19 canónicos Módulo 4 importados desde `plantillas2/`) |
 | **Skills de Claude Code** | `.claude/skills/<slug>/SKILL.md` | 11 skills (paridad parcial con `.cursor/skills/`, incluye `feature-design-doc` y `dtp-sync`) |
@@ -52,7 +53,7 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 3. `docs/LFSD-EduSync.md` — diseño técnico de bajo nivel: contratos API, entidades JPA, DDL, esquema de seguridad y pseudoalgoritmos del componente afectado.
 4. `docs/brd/BRD_EduSync_v2.md` — reglas de negocio BR-001..BR-012 y políticas RB-01..RB-11 que apliquen a la tarea.
 5. `docs/PROMPT_MAPPING.md` — prompt-contrato del componente o caso de uso involucrado.
-6. `docs/adr/0001..0006-*.md` + `docs/adr/0008-*.md` — ADRs aprobados que formalizan las decisiones arquitectónicas: multitenancy RLS PostgreSQL, parametrización de reglas normativas, persistencia inmutable `audit_log`, async consolidación Spring Events, resiliencia integración SIE con Resilience4j, cloud provider AWS, estilo de despliegue ECS Fargate y stack vivo Java 25 LTS/Spring Boot 4.1.0/Angular 21 LTS.
+6. `docs/adr/0001..0006-*.md` + `docs/adr/0008-*.md` + `docs/adr/0009-*.md` + `docs/adr/0010-*.md` + `docs/adr/0011-*.md` — ADRs aprobados que formalizan las decisiones arquitectónicas: multitenancy RLS PostgreSQL, parametrización de reglas normativas, persistencia inmutable `audit_log`, async consolidación Spring Events, resiliencia integración SIE con Resilience4j, cloud provider AWS, estilo de despliegue ECS Fargate, stack vivo Java 25 LTS/Spring Boot 4.1.0/Angular 21 LTS, generalización del modelo de dominio a plataforma SaaS multi-tenant, modelo multi-rol de usuario + `SysAdmin` sin tenant, y monolito modular Spring Modulith + paquete base `com.edusync`.
 7. **Si la tarea es de implementación de código (`release/3.0.0` en adelante)**: leer además `docs/product/DTP.md` (contrato técnico vigente) y `docs/product/{PRD,FSD}.md` (specs vivas) en lugar de sus equivalentes congelados. **MUST NOT** leer `docs/baseline/**` como fuente de verdad para código nuevo — solo como referencia histórica.
 
 > **Regla de oro**: si una invariante de la arquitectura funcional o del FSD contradice la tarea recibida, el agente **MUST** detener la ejecución y escalar al responsable técnico. Nunca violar un invariante de dominio para cumplir una instrucción operativa.
@@ -105,7 +106,7 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │       ├── sync-doc-chain/SKILL.md
 │       └── adr-edusync/SKILL.md
 ├── README.md
-├── AGENTS.md                        ← este archivo (v0.12) — convención GitHub/Cursor, raíz requerida por la rúbrica del Módulo 4
+├── AGENTS.md                        ← este archivo (v0.16) — convención GitHub/Cursor, raíz requerida por la rúbrica del Módulo 4
 ├── CODEOWNERS                       ← revisión humana obligatoria sobre docs/baseline/**
 ├── 01_vision_negocio.md             ← visión y contexto del producto
 ├── 02_parte_dificil.md              ← análisis de riesgos técnicos
@@ -117,7 +118,7 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │   ├── arquitectura_hexagonal_EduSync.md  ← puertos, adaptadores, Aggregate Roots (v0.1)
 │   ├── dtos_EduSync.md              ← DTOs por capa hexagonal (v0.1)
 │   ├── LFSD-EduSync.md              ← Low-Level Functional Spec v1.0.1 (hex. arch, DDL, APIs)
-│   ├── PROMPT_MAPPING.md            ← catálogo de 37 prompt-contratos v2.0 (área IMPL reservada)
+│   ├── PROMPT_MAPPING.md            ← catálogo de 38 prompt-contratos v2.1 (área IMPL: 1 fila, PR-IMPL-001)
 │   ├── baseline/                    ← ⚠ CONGELADO (M4, tag release/2.0.0). Prohibido editar (CODEOWNERS + baseline-congelado.mdc)
 │   │   ├── BRD_EduSync_vFinal.md
 │   │   ├── MRD_EduSync_vFinal.md
@@ -126,8 +127,9 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │   │   └── DTI.md                   ← Documento Técnico Inicial v0.8 congelado (antes docs/DTI.md); continuación viva: docs/product/DTP.md
 │   ├── product/                     ← VIVO desde release/3.0.0 (editable)
 │   │   ├── BRD.md, PRD.md, FSD.md   ← copias vivas (banner "COPIA VIVA"); FSD en modo LFSD ⚡
-│   │   └── DTP.md                   ← Documento Técnico del Producto v1.0 (punto de partida; ADR-0008 registrado en §A.2)
-│   ├── design/                      ← ⚠ pendiente de creación — DD-UC-NNN (design docs por feature, skill feature-design-doc)
+│   │   └── DTP.md                   ← Documento Técnico del Producto v1.3 (ADR-0008/0009/0010/0011 registrados en §A.2)
+│   ├── design/                      ← DD-UC-NNN (design docs por feature, skill feature-design-doc)
+│   │   └── DD-UC-001.md             ← Bootstrap del proyecto (monolito modular Spring Modulith, paquete com.edusync; crea ADR-0011)
 │   ├── brd/
 │   │   ├── BRD_EduSync_v1.md        ← BRD inicial
 │   │   └── BRD_EduSync_v2.md        ← BRD consolidado (BR-001..BR-012)
@@ -137,14 +139,17 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │   │   └── PRD_EduSync.md           ← Product Requirements v1.0 (17 US, 6 épicas)
 │   ├── fsd/
 │   │   └── FSD_EduSync.md           ← FSD Clásico v1.0 (5 FSD-UC, ER 16 entidades)
-│   ├── adr/                         ← 7 ADRs aprobados (0007 Strangler Fig queda gated, sin crear)
+│   ├── adr/                         ← 10 ADRs aprobados (0007 Strangler Fig queda gated, sin crear)
 │   │   ├── 0001-multitenancy-rls-postgresql.md
 │   │   ├── 0002-parametrizacion-reglas-normativas.md
 │   │   ├── 0003-persistencia-inmutable-audit-log.md
 │   │   ├── 0004-async-consolidacion-spring-events.md
 │   │   ├── 0005-resiliencia-integracion-sie-resilience4j.md
 │   │   ├── 0006-cloud-provider-y-estilo-de-despliegue.md
-│   │   └── 0008-actualizacion-stack-java25-springboot4-angular21.md
+│   │   ├── 0008-actualizacion-stack-java25-springboot4-angular21.md
+│   │   ├── 0009-generalizacion-modelo-dominio-multitenant-configurable.md
+│   │   ├── 0010-modelo-multirol-usuario-y-sysadmin-sin-tenant.md
+│   │   └── 0011-monolito-modular-spring-modulith-package-base.md
 │   └── diagrams/                    ← diagramas Mermaid (fuente de verdad visual)
 │       ├── ai-sdlc.mmd              ← comparativa AI-SDLC vs. SDLC tradicional
 │       ├── c4_level1.mmd            ← C4 Level 1 — Contexto del sistema
@@ -155,40 +160,35 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │       ├── estados_administracion.mmd ← 23 estados del Director
 │       └── estados_administracion.md  ← spec formal estados Director
 ├── prompts/                         ← archivos individuales por prompt-contrato
-│   └── PR-<AREA>-NNN.md             ← 37 contratos materializados (PR-ADR-001..005, PR-ARCH-001/002,
+│   └── PR-<AREA>-NNN.md             ← 38 contratos materializados (PR-ADR-001..005, PR-ARCH-001/002,
 │                                      PR-APORTES-001, PR-AUD-001, PR-BRD-001/002, PR-C4-001..006, PR-DIAG-001/002,
 │                                      PR-DTI-001, PR-DTI-SEAMS-001, PR-DTO-001, PR-FSD-001,
 │                                      PR-HEX-001, PR-INF-001, PR-LFSD-001, PR-MRD-001, PR-POC-001/002, PR-PRD-001,
-│                                      PR-ROADMAP-001, PR-SKILL-001/002/003, PR-UC-001..005, PR-UC-009, PR-VFINAL-001)
-│                                      — área IMPL (PR-IMPL-NNN) reservada, sin contratos todavía
-├── src/                             ← ⚠ pendiente de implementación
-│   ├── domain/                      ← entidades, VO, aggregates, puertos (sin deps Spring)
-│   │   ├── calificacion/
-│   │   ├── periodo/
-│   │   ├── estudiante/
-│   │   ├── exportacion/
-│   │   └── auditoria/
-│   ├── application/                 ← casos de uso (ports-in impl)
-│   │   ├── RegistrarCalificacionUseCase.java
-│   │   ├── CerrarMateriaUseCase.java
-│   │   ├── ConsolidarCentralizadorUseCase.java
-│   │   ├── ExportarSIEUseCase.java
-│   │   └── GestionarCorreccionUseCase.java
-│   └── infrastructure/
-│       ├── web/                     ← REST controllers + DTOs
-│       ├── persistence/             ← JPA adapters + Flyway
-│       ├── security/                ← JwtAuthFilter, SecurityConfig, RLS injection
-│       ├── integration/sie/         ← SIEHttpClient
-│       ├── scheduler/               ← VentanaExpiracionScheduler, SIERetryScheduler
-│       └── aop/                     ← AuditLogAspect
+│                                      PR-ROADMAP-001, PR-SKILL-001/002/003, PR-UC-001..005, PR-UC-009, PR-VFINAL-001,
+│                                      PR-IMPL-001 — bootstrap del proyecto, aprobado, ejecución de código pendiente)
+├── backend/                         ← ⚠ pendiente de implementación — monolito modular Spring Boot 4.1.0 (Java 25 LTS),
+│                                      paquete base com.edusync; bootstrap definido por DD-UC-001/ADR-0011, ejecución
+│                                      de PR-IMPL-001 pendiente (reemplaza al antiguo src/domain|application|infrastructure)
+│   ├── pom.xml
+│   └── src/main/java/com/edusync/
+│       ├── EduSyncApplication.java
+│       ├── plataforma/              ← SysAdmin, Tenant, Suscripcion (FSD-UC-011)
+│       ├── identidad/               ← Usuario, UsuarioRol, login/JWT/RBAC (FSD-UC-021)
+│       ├── academico/               ← GestionEscolar..Inscripcion (FSD-UC-012..020)
+│       ├── notassie/                ← Perfil Bolivia SIE: Calificacion/Consolidacion/ExportacionSIE (FSD-UC-001/003/004/005/009)
+│       └── shared/                  ← TenantContext, audit_log, excepciones comunes (shared kernel Spring Modulith)
+├── frontend/                        ← ⚠ pendiente de implementación — SPA Angular 21 LTS (standalone, sin Nx)
+│   └── src/app/{core,shared,features}/
+├── infra/                           ← ⚠ pendiente de creación — docker-compose.yml (PostgreSQL 15 local, DD-UC-001);
+│                                      IaC Terraform/AWS más adelante
+│   ├── docker-compose.yml
+│   ├── rds/
+│   ├── sqs/
+│   └── ecs/
 ├── tests/
 │   ├── unit/
 │   ├── integration/
 │   └── e2e/
-├── infra/                           ← ⚠ pendiente de creación (IaC Terraform/AWS)
-│   ├── rds/
-│   ├── sqs/
-│   └── ecs/
 ├── plantillas/                      ← templates de documentación del módulo
 │   ├── ADR_TEMPLATE.md
 │   ├── AGENTS_TEMPLATE.md
@@ -509,6 +509,7 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 | v0.13 | 28/05/2026 | Rodrigo Aspeti | **Automatización de la protección del baseline y del recordatorio de `dtp-sync`** vía `.cursor/hooks.json` (3 scripts Node.js en `.cursor/hooks/`): `protect-baseline.js` (`preToolUse`, matcher `Write\|StrReplace\|EditNotebook\|Delete`) bloquea con `permission: deny` cualquier intento de editar/eliminar `docs/baseline/**`, sin depender de que el modelo respete la regla en `AGENTS.md`/`.cursor/rules/baseline-congelado.mdc`; `warn-shell-baseline.js` (`beforeShellExecution`) pide confirmación ante comandos de terminal que combinan una ruta de `docs/baseline/` con un verbo de escritura/borrado/movimiento; `dtp-sync-reminder.js` (`stop`, `loop_limit: 1`) revisa `git diff --name-only HEAD` + `git ls-files --others --exclude-standard` al final de cada turno y dispara un `followup_message` recordando ejecutar `@dtp-sync` si hay cambios sin commitear en `src/`, `docs/design/` o `prompts/PR-IMPL-*.md` sin reflejo en `docs/product/DTP.md`. Los 3 scripts se probaron manualmente con casos positivos y negativos (incluye el caso de archivo nuevo sin trackear en `src/`, relevante porque `src/` está vacío hoy). Fila "Hooks de Cursor" añadida al §1; árbol §3 actualizado; guardrail §8.2 referencia el hook como capa de enforcement adicional a la regla documental. Sin cambios en stack, ADRs ni en la cadena documental BRD→FSD→DTP. |
 | v0.14 | 12/07/2026 | Rodrigo Aspeti | **Generalización del modelo de dominio a plataforma SaaS multi-tenant configurable** (`docs/adr/0009-*.md`, extensión aditiva — no supersede a `0001..0006`/`0008`, todos permanecen `Aceptada` sin cambios): nuevo rol de plataforma `SysAdmin` + entidad `Tenant` con ciclo de suscripción; módulos configurables `GestionEscolar` (N periodos), `SeccionEvaluacion`/`TipoEvaluacion`/`Evaluacion` configurables, `Curso`/`Paralelo`, `Materia`, `Profesor`, `Estudiante`, `Inscripcion`, `Usuario`/`Rol` (roles tenant ampliados: `Admin`=Director, `Profesor`=Docente, + `Secretaria`, `Asesor` nuevo). `docs/product/BRD.md` v3.0 (+BR-013..BR-024, persona SysAdmin, nota de nomenclatura §0.1), `PRD.md` v2.0 (+épicas E7..E11, PRD-US-018..030, PRD-REQ-021..031), `FSD.md` v2.0 (+actores §3.1, `FSD-UC-011`..`FSD-UC-021` en §4.6, BR-013..BR-024 en §5.1, modelo ER genérico en §6.3) actualizados como extensión aditiva sobre el Perfil Bolivia SIE (BR-001..BR-012/RB-01..RB-11 del BRD, FSD-UC-001..009/BR-001..012 del FSD, vigentes sin cambios). `docs/product/DTP.md` v1.0→v1.1 registra el delta en §A.2 (fila 2) y añade `FSD-UC-011`..`FSD-UC-021` en §A.3. Fila "ADRs" (8 ADRs), fila "DTP" y fila "PRD/FSD/BRD vivos" del §1 actualizadas. **5 puntos quedan explícitamente pendientes de definición** (`ADR-0009` §3, marcados en cada documento afectado): reconciliación con el modelo Bolivia, secuencialidad/redondeo genérico de N periodos, validación de suma de pesos de secciones, gobernanza (auditoría/inmutabilidad) de los módulos nuevos — ninguno debe implementarse en código sin resolverlos primero. Sin cambios en stack ni en `docs/baseline/`. |
 | v0.15 | 14/07/2026 | Rodrigo Aspeti | **Refinamiento del modelo de roles** (`docs/adr/0010-*.md`, no supersede a `0009` ni a ningún otro ADR): `BR-024` pasa de "exactamente un rol por usuario" a **multi-rol** (`UsuarioRol`, relación N:M), con la invariante permanente `Usuario.tenant_id IS NULL ⟺ roles = {SYSADMIN}` (no transitoria de *bootstrap*; `SysAdmin` nunca se combina con un rol de tenant). `docs/product/BRD.md` v3.0→v3.1 (BR-024 reescrito), `PRD.md` v2.1→v2.2 (`PRD-REQ-031`, `PRD-US-029` + nuevo escenario Gherkin), `FSD.md` v2.1→v2.2 (§3.1 nota `SYSADMIN`, §5.1 `BR-024`, §6.3.1 diagrama ER con `USUARIO_ROL`, §6.3.2 diccionario de datos, §4.6.1 `FSD-UC-011` nota de *bootstrap*/tenant demo, §4.6.11 `FSD-UC-021` endpoint `roles: [...]`, glosario). `docs/product/DTP.md` v1.1→v1.2 registra el delta en §A.2 (fila 3) y actualiza el conteo de ADRs (8→9). Filas "ADRs", "DTP" y "PRD/FSD/BRD vivos" del §1 actualizadas. Queda pendiente, **no bloqueante**, el diseño detallado del tenant "demo" (confirmado como funcionalidad de producto real, no solo artefacto de *seed*) — se resuelve en el Design Doc de `FSD-UC-011`, sin afectar el modelo de `Usuario`/`Rol` decidido aquí. Sin cambios en stack, en `ADR-0009` ni en `docs/baseline/`. |
+| v0.16 | 14/07/2026 | Rodrigo Aspeti | **Primer Design Doc de código y primera decisión de organización interna del backend**: `docs/design/DD-UC-001.md` (bootstrap del proyecto, trazado a `FSD-UC-011`/`FSD-UC-021`) crea `docs/adr/0011-*.md` — monolito modular con Spring Modulith (module-first: módulos `plataforma`/`identidad`/`academico`/`notassie`/`shared`) y renombrado del paquete base `bo.edusync` → `com.edusync` (generalización acorde a `ADR-0009`). Primer prompt del área `IMPL` materializado: `prompts/PR-IMPL-001.md` (bootstrap del esqueleto backend/frontend/infra), registrado en `docs/PROMPT_MAPPING.md` v2.0→v2.1 (37→38 contratos; nodo `IMPL001` en el flowchart; matriz `dev-agent` ampliada). `docs/product/DTP.md` v1.2→v1.3 registra el delta en §A.2 (fila 4) y marca `FSD-UC-011`/`FSD-UC-021` como `en progreso` en §A.3 (primer eslabón real de §A.4). Árbol §3 reestructurado: `src/domain|application|infrastructure` (paquete-por-capa, obsoleto) reemplazado por `backend/src/main/java/com/edusync/{plataforma,identidad,academico,notassie,shared}` + `frontend/` (Angular 21 SPA) + `infra/` (con `docker-compose.yml`) como carpetas de primer nivel; `docs/adr/` y conteo de ADRs actualizados a 10. `docs/arquitectura_hexagonal_EduSync.md` marcada **en actualización** (paquete `com.edusync` + module-first), pendiente de reescritura de detalle. Checklist §16 marca como completados la creación de `DD-UC-001`/`PR-IMPL-001`; deja explícitamente pendiente la **ejecución** de `PR-IMPL-001` (código real todavía no generado, `src/` vacío). Sin cambios en `ADR-0008`/`0009`/`0010` ni en `docs/baseline/`. |
 
 ---
 
@@ -517,7 +518,7 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 - [x] Sincronizado con `docs/arquitectura_funcional_EduSync.md` (10 UCs + 5 DAs).
 - [x] Sincronizado con `docs/fsd/FSD_EduSync.md` v1.0 (FSD-UC-001, UC-003, UC-004, UC-005, UC-009).
 - [x] Sincronizado con `docs/LFSD-EduSync.md` v1.0.1 (arquitectura hexagonal, DDL, APIs; ruta FSD normalizada).
-- [x] Sincronizado con `docs/PROMPT_MAPPING.md` v2.0 (37 prompt-contratos + carpeta `prompts/`; área `IMPL` reservada).
+- [x] Sincronizado con `docs/PROMPT_MAPPING.md` v2.1 (38 prompt-contratos + carpeta `prompts/`; área `IMPL` con su primera fila `PR-IMPL-001`).
 - [x] Sincronizado con `docs/baseline/DTI.md` v0.8 (congelado, tag `release/2.0.0`) — referencia atómica AGENTS ↔ DTI; C4 L1/L2/L3 + Deployment AWS canónicos en `docs/diagrams/`; `docs/roadmap.md` v0.3 declarado fuente canónica del horizonte (espejo histórico en DTI §19, espejo vivo en `docs/product/DTP.md` §B).
 - [x] Todos los paths de archivos verificados contra la estructura real del repositorio.
 - [x] Sin secretos en texto plano.
@@ -525,7 +526,7 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 - [x] 6 agentes documentados con sus límites estrictos.
 - [x] 4 golden tests obligatorios de zero-tolerance definidos.
 - [x] Guardrails probados con lista de prompts prohibidos.
-- [x] `docs/adr/0001..0006-*.md` + `0008-*.md` creados — 7 ADRs aprobados (multitenancy RLS, parametrización, audit_log, async, resiliencia SIE, cloud provider, stack vivo Java 25/Boot 4.1.0/Angular 21). `ADR-0007` (Strangler Fig) queda *gated*, sin crear.
+- [x] `docs/adr/0001..0006-*.md` + `0008-*.md` + `0009-*.md` + `0010-*.md` + `0011-*.md` creados — 10 ADRs aprobados (multitenancy RLS, parametrización, audit_log, async, resiliencia SIE, cloud provider, stack vivo Java 25/Boot 4.1.0/Angular 21, generalización del modelo de dominio, multi-rol + `SysAdmin` sin tenant, monolito modular + paquete `com.edusync`). `ADR-0007` (Strangler Fig) queda *gated*, sin crear.
 - [x] `docs/diagrams/c4_level1.mmd` y `c4_level2.mmd` creados (Contexto + Contenedores).
 - [x] `.cursor/skills/` extendida a 27 skills (8 EduSync incl. `feature-design-doc`/`dtp-sync` + 19 canónicos Módulo 4); `.claude/skills/` a 11.
 - [x] `docs/diagrams/c4_level3_*.mmd` + `deployment_aws.mmd` creados — `api-gateway` (PR-C4-003), `domain-layer` (PR-C4-004), `sie-adapter` (PR-C4-005) y Deployment AWS (PR-C4-006).
@@ -535,10 +536,11 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 - [x] `docs/product/DTP.md` v1.0 creado como punto de partida de la capa viva (`release/3.0.0`), con el delta de stack `ADR-0008` registrado en §A.2.
 - [x] `docs/adr/0009-*.md` creado y `docs/product/{BRD,PRD,FSD}.md` + `DTP.md` v1.1 actualizados con la generalización del modelo de dominio a plataforma SaaS multi-tenant configurable, como extensión aditiva sobre el Perfil Bolivia SIE (BR-001..BR-012/RB-01..RB-11 y FSD-UC-001..009 vigentes sin cambios).
 - [x] `docs/adr/0010-*.md` creado y `docs/product/{BRD,PRD,FSD}.md` + `DTP.md` v1.2 actualizados con el modelo multi-rol de usuario (`UsuarioRol` N:M) y la invariante permanente `tenant_id IS NULL ⟺ roles = {SYSADMIN}`, refinando `BR-024`/`FSD-UC-021` sin contradecir `ADR-0009`.
-- [ ] Resolución de los 5 puntos pendientes de definición de `ADR-0009` §3 (reconciliación con el modelo Bolivia, secuencialidad/redondeo genérico, validación de suma de pesos, gobernanza de módulos nuevos) — bloqueante antes de implementar código sobre `FSD-UC-011`..`FSD-UC-021`.
-- [ ] Diseño detallado del tenant "demo" como funcionalidad de producto (`ADR-0010` §3, no bloqueante) — pendiente para el Design Doc de `FSD-UC-011`.
+- [ ] Resolución de los 5 puntos pendientes de definición de `ADR-0009` §3 (reconciliación con el modelo Bolivia, secuencialidad/redondeo genérico, validación de suma de pesos, gobernanza de módulos nuevos) — bloqueante antes de implementar código sobre `FSD-UC-012`..`FSD-UC-020`.
+- [ ] Diseño detallado del tenant "demo" como funcionalidad de producto (`ADR-0010` §3, no bloqueante) — pendiente para un Design Doc posterior de `FSD-UC-011`.
 - [ ] `pocs/POC-NN/` pendiente — evidencia ejecutiva de POC-01 (RLS) y POC-02 (Circuit Breaker SIE) bloqueando promoción a `release/1.1.0`.
-- [ ] Primer `docs/design/DD-UC-NNN.md` + primer `prompts/PR-IMPL-001.md` — pendiente, `src/` sigue vacío.
+- [x] Primer `docs/design/DD-UC-001.md` (bootstrap del proyecto, `FSD-UC-011`/`FSD-UC-021`, crea `ADR-0011`) y primer `prompts/PR-IMPL-001.md` creados y aprobados.
+- [ ] Ejecución de `PR-IMPL-001` (generación real del código en `backend/`, `frontend/`, `infra/`) — `src/` sigue vacío; siguiente paso concreto de implementación.
 - [ ] Limpieza de ~50 referencias históricas a `docs/DTI.md` (ya movido a `docs/baseline/DTI.md`) dispersas en `prompts/PR-*.md`, `plantillas2/`, y skills operativos (`sync-doc-chain`, `c4-edusync`, `adr-edusync`, `poc-runner-edusync`) — fuera de alcance de esta pasada, recomendado como tarea de seguimiento.
 - [x] `docs/aportes/release-2.0.0.md` creado (PR-APORTES-001 v0.1 — 95 tareas auditables, factor 1.00 por caso degenerado n = 1; commit final pendiente del push de `release/2.0.0`).
 - [x] `AGENTS.md` en la **raíz** del repo (rúbrica del Módulo 4 pide ubicación raíz) — completado en v0.9.

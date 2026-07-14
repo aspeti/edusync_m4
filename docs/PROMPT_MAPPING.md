@@ -1,11 +1,11 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.0`.
-> Cada prompt sigue la estructura de `plantillas/PROMPT_TEMPLATE.md`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.1`.
+> Cada prompt sigue la estructura de `plantillas/plantillas1/PROMPT_TEMPLATE.md`.
 > Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
-> **Área `IMPL`** (desde `v2.0`): prompts de implementación de la capa viva (`release/3.0.0` en adelante), archivo `prompts/PR-IMPL-NNN.md`, trazados a un `FSD-UC` y opcionalmente a un `DD-UC-NNN` en `docs/design/`. Ver `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md` y los skills `feature-design-doc` / `dtp-sync`. Sin entradas todavía — `docs/product/DTP.md` está en `v1.0` como punto de partida y `src/` sigue vacío.
+> **Área `IMPL`** (desde `v2.0`): prompts de implementación de la capa viva (`release/3.0.0` en adelante), archivo `prompts/PR-IMPL-NNN.md`, trazados a un `FSD-UC` y opcionalmente a un `DD-UC-NNN` en `docs/design/`. Ver `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md` y los skills `feature-design-doc` / `dtp-sync`. Primera entrada desde `v2.1`: `PR-IMPL-001` (bootstrap del esqueleto de código, `DD-UC-001`, `ADR-0011`).
 
 ---
 
@@ -50,6 +50,7 @@
 | PR-ROADMAP-001 | `docs/roadmap.md` v0.1 — hoja de ruta técnica y de negocio hacia `release/2.0.0` y siguiente módulo: 4 horizontes, Gantt, lecciones, métricas BRD/NFR, riesgos y compromisos | generacion | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-ROADMAP-001.md` | ~3 500 tk in / ~7 500 tk out \| antes: roadmap sólo embebido en DTI §19 \| después: `docs/roadmap.md` (200 líneas) como fuente canónica detallada |
 | PR-APORTES-001 | `docs/aportes/release-2.0.0.md` v1.0 — informe de aportes individuales del release de defensa para grupo unipersonal (n = 1): 95 tareas auditables, 11 categorías cubiertas, fórmula `clamp(0.5, 1.1)` con caso degenerado documentado | generacion | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-APORTES-001.md` | ~2 800 tk in / ~9 500 tk out \| antes: sin informe de aportes para `release/2.0.0` (bloqueante de rúbrica) \| después: `docs/aportes/release-2.0.0.md` con 95 filas auditables y checklist 5/6 |
 | PR-VFINAL-001 | `docs/brd/BRD_EduSync_vFinal.md`, `docs/mrd/MRD_EduSync_vFinal.md`, `docs/prd/PRD_EduSync_vFinal.md`, `docs/fsd/FSD_EduSync_vFinal.md` — aliases congelados para `release/2.0.0` | transformación | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-VFINAL-001.md` | ~1 500 tk in / ~5 000 tk out \| antes: BRD/MRD/PRD/FSD sólo como canónicos editables \| después: 4 snapshots `_vFinal.md` con banner de freeze |
+| PR-IMPL-001 | `backend/`, `frontend/`, `infra/docker-compose.yml` — esqueleto de código de `release/3.0.0` (monolito modular Spring Modulith, paquete `com.edusync`, Angular 21) | generación | `dev-agent` | Sonnet | 14/07/2026 | Aprobado (prompt) | `prompts/PR-IMPL-001.md` | ~2 200 tk in / ~6 000 tk out (estimado) \| antes: `src/` vacío, sin esqueleto de código \| después: primera fila del área `IMPL`; ejecución del prompt (generación real de código) pendiente |
 
 ---
 
@@ -196,6 +197,12 @@ flowchart TD
     PRD --> VFINAL
     FSD --> VFINAL
     AGENTS --> VFINAL
+    subgraph IMPLEMENTACION["Capa viva de Implementacion -- dev-agent (release/3.0.0)"]
+        IMPL001["PR-IMPL-001\nBootstrap del esqueleto\n(backend+frontend+infra)"]
+    end
+    FSD --> IMPL001
+    HEX --> IMPL001
+    ADR --> IMPL001
 ```
 
 ---
@@ -205,7 +212,7 @@ flowchart TD
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
 | `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-POC-001, PR-POC-002, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills → POCs → roadmap → aportes → aliases vFinal); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel, configuración de agentes, evidencia de pruebas de concepto, hoja de ruta de release, informe de aportes individuales y snapshots congelados de entrega | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md`; POCs en `docs/pocs/`; roadmap canónico en `docs/roadmap.md`; aportes por release en `docs/aportes/release-<x.y.z>.md`; aliases `_vFinal.md` en `docs/brd/`, `docs/mrd/`, `docs/prd/`, `docs/fsd/` |
-| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias | Código en `src/`, contratos en `docs/prompts/`, DTOs en `docs/dtos_EduSync.md` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features) vía prompts `PR-IMPL-NNN` | Código en `src/` (`backend/`, `frontend/`, `infra/`), contratos en `docs/prompts/`, DTOs en `docs/dtos_EduSync.md` |
 | `arch-agent` | PR-ADR-001..005, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
@@ -2433,6 +2440,77 @@ Detente cuando existan los 4 `_vFinal.md`, todos empiecen con banner de freeze, 
 
 ---
 
+### PR-IMPL-001 — Bootstrap del esqueleto de código (backend Java 25 + frontend Angular 21 + infra)
+
+```markdown
+# Role
+Eres un Senior Software Engineer con experiencia en arquitectura hexagonal,
+monolitos modulares con Spring Modulith, Spring Boot 4.x sobre Java 25 LTS,
+y bootstrapping de proyectos Angular 21 con standalone components.
+
+# Task
+Genera el esqueleto de código fuente de EduSync para release/3.0.0: estructura
+de carpetas backend/frontend/infra, pom.xml del backend con Spring Modulith,
+los 5 modulos vacios bajo el paquete com.edusync, el test ModularityTests,
+el esqueleto Angular 21 del frontend y el docker-compose.yml de desarrollo,
+exactamente como se describe en docs/design/DD-UC-001.md §2.
+
+# Context
+- Documento fuente: docs/design/DD-UC-001.md (§1 objetivo, §2 diseño con arbol de carpetas completo).
+- ADRs aplicables: ADR-0008 (Java 25 LTS / Spring Boot 4.1.0 / Angular 21 LTS),
+  ADR-0011 (monolito modular Spring Modulith, module-first, paquete base com.edusync).
+- Modulos backend a crear (vacios, solo estructura + package-info.java):
+  com.edusync.plataforma, com.edusync.identidad, com.edusync.academico,
+  com.edusync.notassie, com.edusync.shared.
+- Restricciones de dominio: ningun modulo debe contener logica de negocio en
+  este prompt (eso corresponde a DD-UC-002 en adelante); solo estructura,
+  configuracion y el test de arquitectura.
+- Restricciones tecnicas: Java 25 (LTS), Spring Boot 4.1.0 (Spring Framework 7.0.8),
+  Spring Modulith (starter-test), PostgreSQL 15 (driver + Flyway), Angular 21 (LTS,
+  standalone components), sin Nx.
+
+# Reasoning
+1. Crear la estructura de carpetas backend/, frontend/, infra/ en la raiz del repo.
+2. Generar backend/pom.xml (parent Spring Boot 4.1.0, Java 25, dependencias:
+   spring-boot-starter-web, spring-boot-starter-data-jpa, spring-boot-starter-security,
+   spring-modulith-starter-core + spring-modulith-starter-test, postgresql, flyway-core).
+3. Crear com.edusync.EduSyncApplication y los 5 paquetes de modulo (domain/application/
+   infrastructure vacios) segun el arbol de DD-UC-001 §2.
+4. Crear backend/src/test/java/com/edusync/ModularityTests.java con
+   ApplicationModules.of(EduSyncApplication.class).verify().
+5. Crear application.yml/application-dev.yml/application-test.yml y
+   db/migration/V1__init.sql (Flyway baseline vacio).
+6. Generar frontend/ con Angular 21 (standalone), carpetas core/shared/features vacias.
+7. Crear infra/docker-compose.yml con PostgreSQL 15 para desarrollo local.
+8. Verificar que mvn -q -DskipTests=false test y ng build no fallan (smoke test).
+
+# Stop condition
+Detente cuando: (a) el arbol de carpetas coincide exactamente con DD-UC-001 §2,
+(b) ModularityTests compila y pasa en verde, (c) ng build del frontend no falla,
+(d) ningun archivo generado contiene logica de dominio (solo estructura/config).
+No continues implementando entidades, endpoints ni pantallas -- eso es DD-UC-002+.
+
+# Output
+Codigo fuente real en backend/, frontend/, infra/ (no markdown). Extracto esperado:
+backend/src/main/java/com/edusync/EduSyncApplication.java,
+backend/src/main/java/com/edusync/plataforma/package-info.java,
+backend/src/test/java/com/edusync/ModularityTests.java,
+frontend/src/app/app.config.ts, infra/docker-compose.yml.
+
+# Invariants
+- El paquete base de todo el codigo Java debe ser com.edusync (ADR-0011), nunca bo.edusync.
+- Ningun modulo debe importar clases internas de otro modulo salvo shared.
+- ModularityTests debe existir y pasar antes de cerrar el prompt.
+- El frontend debe ser una unica aplicacion Angular 21 (sin Nx).
+
+# Failure modes
+- E_PAQUETE_INCORRECTO: codigo generado bajo bo.edusync u otro paquete -- rechazar y regenerar.
+- E_ACOPLAMIENTO_ENTRE_MODULOS: import directo entre modulos distintos fuera de shared -- ModularityTests debe fallar el build.
+- E_LOGICA_PREMATURA: se genero logica de negocio en este prompt -- revertir, corresponde a DD-UC-002+.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
@@ -2517,6 +2595,7 @@ Detente cuando existan los 4 `_vFinal.md`, todos empiecen con banner de freeze, 
 | DTI §19 + ADRs + POCs + BRD v2 + FSD + rúbrica del Módulo 4 | `DTI §19, ADR-0001..0006, POC-01, POC-02, FSD-UC-001..010, BR-001..BR-012, NFR-001..016, KPI-01..05` | PR-ROADMAP-001 | `docs-agent` | Roadmap tecnico y de negocio v0.1 con 4 horizontes, Gantt, lecciones, metricas, riesgos y compromisos hacia `release/2.0.0` y siguiente modulo | `docs/roadmap.md` |
 | `plantillas/APORTES_TEMPLATE.md` + auditoría exhaustiva del repo (39 prompts + 6 ADRs + 10 diagramas + 2 POCs + 9 skills propios + 1 rule + documentos canónicos) + AGENTS.md §16 L489 + roadmap §5 L-09 | `APORTES, INPUT.n_integrantes=1, integrantes=[Rodrigo Aspeti], release/2.0.0` | PR-APORTES-001 | `docs-agent` | Informe de aportes individuales `release/2.0.0` con 95 tareas auditables, 11 categorías cubiertas, factor 1.00 (caso degenerado n = 1) y checklist 5/6 (commit final pendiente) | `docs/aportes/release-2.0.0.md` |
 | BRD v2 + MRD v1.0 + PRD v1.0 + FSD v1.0 + AGENTS.md §16 alias `_vFinal` | `BRD v2, MRD v1.0, PRD v1.0, FSD v1.0, release/2.0.0` | PR-VFINAL-001 | `docs-agent` | Freeze documental de BRD/MRD/PRD/FSD como snapshots inmutables `_vFinal.md` con banner uniforme para auditoría de release | `docs/brd/BRD_EduSync_vFinal.md` + `docs/mrd/MRD_EduSync_vFinal.md` + `docs/prd/PRD_EduSync_vFinal.md` + `docs/fsd/FSD_EduSync_vFinal.md` |
+| Design Doc `DD-UC-001` + `ADR-0011` + `ADR-0008` + `docs/product/FSD.md` (`FSD-UC-011`, `FSD-UC-021`) | `DD-UC-001, ADR-0011, FSD-UC-011, FSD-UC-021` | PR-IMPL-001 | `dev-agent` | Esqueleto de código de `release/3.0.0` (monolito modular Spring Modulith, paquete `com.edusync`, Angular 21) — ejecución pendiente | `backend/`, `frontend/`, `infra/docker-compose.yml` |
 
 ---
 
@@ -2545,3 +2624,4 @@ Detente cuando existan los 4 `_vFinal.md`, todos empiecen con banner de freeze, 
 | v1.8 | 28/05/2026 | Rodrigo Aspeti | Incorporación de `PR-APORTES-001` (informe de aportes individuales para `release/2.0.0` con caso degenerado **n = 1**). Cabecera `v1.7 → v1.8` y nueva área `APORTES` agregada al header de IDs. Índice ampliado con fila `PR-APORTES-001`. Flowchart Mermaid extendido con nodo `APORTES` y aristas desde `ROADMAP`, `AGENTS` y `DTI`. Matriz `docs-agent` incluye `PR-APORTES-001` y `docs/aportes/release-<x.y.z>.md`. Contrato inline agregado con 10 failure modes (incluye `E_N_INTEGRANTES_NO_VALIDO`, `E_FACTOR_NO_UNITARIO_N1`, `E_INVENTARIO_INCOMPLETO`). Trazabilidad ampliada con la fila de `docs/aportes/release-2.0.0.md`. Archivo individual `prompts/PR-APORTES-001.md` materializado. Artefacto generado: `docs/aportes/release-2.0.0.md` v1.0 con 95 tareas auditables (39 Prompt + 12 Bitácora + 10 Diagrama + 9 Skill + 6 ADR + 5 FSD + 4 POC + 3 AGENTS + 2 BRD + 1 MRD + 1 PRD + 1 Rule + 2 categorías agregadas) y checklist 5/6 (commit final pendiente del push). Total prompt-contratos: 35 → 36 |
 | v1.9 | 28/05/2026 | Rodrigo Aspeti | Incorporación de `PR-VFINAL-001` (freeze documental de BRD/MRD/PRD/FSD hacia aliases `_vFinal.md`). Cabecera `v1.8 → v1.9` y nueva área `VFINAL` agregada al header de IDs. Índice ampliado con fila `PR-VFINAL-001`. Flowchart Mermaid extendido con nodo `VFINAL` y aristas desde `BRD2`, `MRD`, `PRD`, `FSD` y `AGENTS`. Matriz `docs-agent` incluye `PR-VFINAL-001` y aliases `_vFinal.md`. Contrato inline agregado con failure modes de freeze (`E_TARGET_EXISTS`, `E_NORMATIVE_DRIFT`, `E_CANONICO_MUTADO`). Trazabilidad ampliada con la fila de los 4 aliases. Archivo individual `prompts/PR-VFINAL-001.md` materializado. Artefactos generados: `docs/brd/BRD_EduSync_vFinal.md`, `docs/mrd/MRD_EduSync_vFinal.md`, `docs/prd/PRD_EduSync_vFinal.md`, `docs/fsd/FSD_EduSync_vFinal.md`. Total prompt-contratos: 36 → 37 |
 | v2.0 | 28/05/2026 | Rodrigo Aspeti | Apertura de la capa viva de implementación (`plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md`, `release/3.0.0`). Cabecera `v1.9 → v2.0` y nueva área `IMPL` reservada al header de IDs (prompts de implementación `prompts/PR-IMPL-NNN.md`, sin filas todavía — 0 prompts hasta el primer `DD-UC-NNN`). Nuevo `ADR-0008` (Java 25 LTS + Spring Boot 4.1.0 + Angular 21 LTS para la capa viva) creado directamente en `docs/adr/`, sin prompt-contrato dedicado, siguiendo el mismo precedente que `ADR-0006`. Nuevos artefactos fuera del ciclo de prompts: `docs/product/DTP.md` v1.0 (punto de partida), `docs/baseline/` marcado `status: congelado` en sus 5 archivos, banners de `docs/product/{BRD,PRD,FSD}.md` corregidos de "COPIA CONGELADA" a "COPIA VIVA", skills `feature-design-doc` y `dtp-sync` materializados en `.cursor/skills/` + `.claude/skills/`, `CODEOWNERS` y `.cursor/rules/baseline-congelado.mdc` creados para proteger `docs/baseline/**`. Total prompt-contratos activos: 37 (sin cambio; `IMPL` queda reservado para la próxima materialización) |
+| v2.1 | 14/07/2026 | Rodrigo Aspeti | Primera materialización del área `IMPL`: `PR-IMPL-001` (bootstrap del esqueleto de código de `release/3.0.0` — `backend/`, `frontend/`, `infra/docker-compose.yml`), derivado de `docs/design/DD-UC-001.md` y `ADR-0011` (monolito modular Spring Modulith module-first + paquete base `com.edusync`, que reemplaza a `bo.edusync`). Cabecera `v2.0 → v2.1`; corrección de la referencia de plantilla a `plantillas/plantillas1/PROMPT_TEMPLATE.md` (ruta real tras la reorganización de `plantillas/`). Índice ampliado con fila `PR-IMPL-001` (estado "Aprobado (prompt)"; ejecución de generación de código real pendiente). Flowchart Mermaid extendido con subgraph `IMPLEMENTACION` y nodo `IMPL001`, con aristas desde `FSD`, `HEX` y `ADR`. Matriz `dev-agent` ampliada con `PR-IMPL-001` y la responsabilidad de materializar `DD-UC-NNN` en código. Contrato inline agregado (Role/Task/Context/Reasoning/Stop/Output/Invariants/Failure modes) con 3 failure modes específicos de bootstrap (`E_PAQUETE_INCORRECTO`, `E_ACOPLAMIENTO_ENTRE_MODULOS`, `E_LOGICA_PREMATURA`). Trazabilidad ampliada con la fila de `DD-UC-001`/`ADR-0011`. Archivo individual `prompts/PR-IMPL-001.md` materializado (9 secciones, con nota de desviación de ruta respecto a `FEATURE_DESIGN_DOC_TEMPLATE.md`). Total prompt-contratos activos: 37 → 38 |

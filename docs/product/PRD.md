@@ -23,12 +23,12 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión** | v2.0 |
-| **Fecha** | 12/07/2026 |
+| **Versión** | v2.2 |
+| **Fecha** | 14/07/2026 |
 | **Product Manager / Autor** | Rodrigo Aspeti — Dev Lead / PM EduSync |
 | **Revisores** | Docente + Tech Lead + QA |
 | **Estado** | En revisión |
-| **BRD de referencia** | `docs/product/BRD.md` (v3.0) |
+| **BRD de referencia** | `docs/product/BRD.md` (v3.1) |
 | **MRD de referencia** | `docs/MRD-EduSync.md` (v1.0) |
 | **Insumos M2 (UI/UX)** | Sistema de diseño Atomic Design + Design Tokens · WCAG 2.2 AA · Semáforos visuales de reprobación · Wireframes de carga de notas y dashboard director |
 | **Fase Spec Kit cubierta** | Specify ✅ / Plan ⬜ / Tasks ⬜ / Implement ⬜ |
@@ -767,7 +767,7 @@ Escenario: Secretaria inscribe a un estudiante en la Gestión Escolar vigente
 
 | ID | Historia | Prioridad | Valor | Esfuerzo | Criterios |
 |----|----------|-----------|-------|----------|-----------|
-| PRD-US-029 | Como Admin, quiero administrar usuarios de mi institución (alta, asignación de rol, activación/desactivación), para controlar quién accede al sistema y con qué permisos | Must | 9 | 5 | §5.11.1 |
+| PRD-US-029 | Como Admin, quiero administrar usuarios de mi institución (alta, asignación de uno o más roles, activación/desactivación), para controlar quién accede al sistema y con qué permisos | Must | 9 | 5 | §5.11.1 |
 | PRD-US-030 | Como usuario, quiero poder restablecer mi contraseña, para recuperar el acceso sin depender de intervención manual del Admin | Should | 6 | 3 | §5.11.2 |
 
 #### 5.11.1 Criterios PRD-US-029
@@ -778,6 +778,12 @@ Escenario: Admin crea un usuario con rol Asesor
   Cuando crea el usuario "Carla Vidal" con rol "Asesor" asignado al curso "Segundo A"
   Entonces Carla puede acceder en modo solo lectura al avance académico de "Segundo A"
     Y no puede modificar calificaciones ni nóminas
+
+Escenario: Admin asigna más de un rol al mismo usuario (`ADR-0010`)
+  Dado un Admin autenticado en su Unidad Educativa
+  Cuando crea el usuario "Marco Ríos" con los roles "Admin" y "Secretaria" asignados simultáneamente
+  Entonces Marco puede operar con los permisos combinados de ambos roles
+    Y el sistema no permite combinar el rol "SysAdmin" con ningún rol de tenant en el mismo usuario
 
 Escenario: Admin desactiva un usuario
   Cuando el Admin desactiva al usuario "Carla Vidal"
@@ -868,9 +874,11 @@ Escenario: Usuario restablece su contraseña
 | PRD-REQ-028 | El sistema debe permitir el CRUD de Materias y su asignación a Cursos y a Profesores | PRD-US-026 | Must |
 | PRD-REQ-029 | El sistema debe permitir el CRUD de Profesores y su asignación a Materias, Cursos y Paralelos | PRD-US-026 | Must |
 | PRD-REQ-030 | El sistema debe permitir el CRUD independiente de Estudiantes y la gestión de sus Inscripciones (Gestión Escolar, Curso, Paralelo, fecha, estado), manteniendo su historial académico | PRD-US-027, PRD-US-028 | Must |
-| PRD-REQ-031 | El sistema debe permitir el CRUD de Usuarios, la asignación de roles (SysAdmin/Admin/Secretaria/Asesor/Profesor), su activación/desactivación y el restablecimiento de contraseña | PRD-US-029, PRD-US-030 | Must |
+| PRD-REQ-031 | El sistema debe permitir el CRUD de Usuarios y la asignación de **uno o más roles simultáneos** (SysAdmin/Admin/Secretaria/Asesor/Profesor), su activación/desactivación y el restablecimiento de contraseña. El rol SysAdmin no se combina con ningún rol de tenant y nunca tiene tenant asignado (`ADR-0010`) | PRD-US-029, PRD-US-030 | Must |
 
 > **Pendiente de definición (`ADR-0009` §3):** ninguno de los PRD-REQ-021..031 incluye todavía requisitos de auditoría/inmutabilidad equivalentes a PRD-REQ-018 (audit_log) ni de secuencialidad equivalente a PRD-REQ-005; se añadirán cuando se resuelva la gobernanza de los módulos nuevos.
+>
+> **Nota (`ADR-0010`):** PRD-REQ-031 refina la redacción original de `ADR-0009` a un modelo multi-rol. Ver `docs/product/BRD.md` BR-024 y `docs/product/FSD.md` §5.1/§6.3.2/§4.6.11.
 
 ---
 
@@ -905,7 +913,7 @@ Escenario: Usuario restablece su contraseña
 | **AWS SQS** (v1.1+) | Infraestructura propia (futura) | Cola de mensajes para consolidación asíncrona a escala. En v1.0 se usa Spring Events. | **Bajo** — No requerido en MVP; el diseño de dominio es agnóstico al mecanismo de mensajería (DA-04). |
 | **Motor de PDF** (Apache PDFBox / iText) | Librería interna | Generación de boletines PDF con plantilla ministerial | **Bajo** — Librería estable. La plantilla es parametrizable sin redespliegue. |
 | **Proveedor de email / notificaciones in-app** | Consumo externo | Alertas de vencimiento de ventana, notificaciones de autorización, alertas de cierre | **Medio** — Dependencia de SLA del proveedor. Se acepta degradación graceful (sin notificación no bloquea el flujo). |
-| **Spring Security + JWT** | Framework interno | RBAC, autenticación, propagación de `tenant_id` en contexto de seguridad | **Bajo** — Tecnología estándar del stack (Java 21 + Spring Boot 3.3). |
+| **Spring Security + JWT** | Framework interno | RBAC, autenticación, propagación de `tenant_id` en contexto de seguridad | **Bajo** — Tecnología estándar del stack vivo (Java 25 + Spring Boot 4.1.0, `ADR-0008`). |
 
 ---
 
@@ -919,7 +927,7 @@ Escenario: Usuario restablece su contraseña
 - Los parámetros ministeriales (dimensiones, pesos) son aplicables de forma uniforme dentro de cada tenant para un periodo dado.
 
 **Restricciones:**
-- **Stack obligatorio:** Java 21 (LTS) · Spring Boot 3.3 · Spring Security (RBAC) · Spring Data JPA · PostgreSQL 15 · Angular 17 · AWS.
+- **Stack obligatorio (vivo, `release/3.0.0`, `ADR-0008`):** Java 25 (LTS) · Spring Boot 4.1.0 (Spring Framework 7.0.8) · Spring Security 7 (RBAC) · Spring Data JPA · PostgreSQL 15 · Angular 21 (LTS) · AWS.
 - **Equipo:** 1 desarrollador principal (Rodrigo Aspeti) asistido por agentes de IA. La arquitectura debe minimizar la complejidad operativa.
 - **Normativa SIE:** el mapeo de datos es obligatorio por código RUDE; no existe alternativa aceptada por el Ministerio.
 - **Inmutabilidad:** el modelo append-only en `audit_log` y en modificaciones retroactivas (UC-05) no puede relajarse por decisión de producto.
@@ -1033,7 +1041,7 @@ Escenario: Usuario restablece su contraseña
 | PRD-REQ-028 | BR-022 | — | `ADR-0009` | FSD-UC-018 |
 | PRD-REQ-029 | BR-022 | — | `ADR-0009` | FSD-UC-019 |
 | PRD-REQ-030 | BR-023 | — | `ADR-0009` | FSD-UC-020 |
-| PRD-REQ-031 | BR-024 | — | `ADR-0009` | FSD-UC-021 |
+| PRD-REQ-031 | BR-024 | — | `ADR-0009`, `ADR-0010` | FSD-UC-021 |
 
 ---
 
@@ -1074,6 +1082,8 @@ Escenario: Usuario restablece su contraseña
 |---------|-------|-------|--------|
 | v1.0 | 15/05/2026 | Equipo G-EduSync — Rodrigo Aspeti | Creación inicial del PRD. Basado en BRD v2.0, MRD v1.0, arquitectura_funcional_EduSync.md (10 UCs, 5 DAs) y diagramas de estado del Docente (18 estados) y Director (23 estados). 17 user stories en 6 épicas, criterios Gherkin completos, 20 PRD-REQ-*, 15 NFRs, RICE top-10, 3 user journeys Mermaid, trazabilidad completa BRD→MRD→PRD→FSD. |
 | v2.0 | 12/07/2026 | Rodrigo Aspeti | Generalización a plataforma SaaS multi-tenant configurable (`ADR-0009`), alineada con BRD v3.0. Épicas E1..E6 (17 historias) se mantienen como **Perfil Bolivia SIE** sin cambios. Se añaden épicas E7..E11 (13 historias, PRD-US-018..030) y PRD-REQ-021..031: plataforma SaaS/tenants (SysAdmin), Gestión Escolar, periodos y secciones de evaluación configurables, evaluaciones con tipo configurable, cálculo de notas con pesos configurables, Cursos/Paralelos, Materias, Profesores, Estudiantes, Inscripciones, Usuarios y Roles. Nueva nota de nomenclatura de roles (§0.1). Alcance ampliado (§3.1). Puntos pendientes de definición explícitamente marcados en los criterios Gherkin de E8/E9 (secuencialidad, redondeo, suma de pesos) — ver `ADR-0009` §3. |
+| v2.1 | 12/07/2026 | Rodrigo Aspeti | Corrección de consistencia de stack: §9 (dependencia "Spring Security + JWT") y §10 ("Stack obligatorio") citaban todavía el stack del baseline de M4 (Java 21 / Spring Boot 3.3 / Angular 17) en vez del stack vivo fijado por `ADR-0008` (Java 25 LTS / Spring Boot 4.1.0 / Angular 21 LTS) desde la apertura de `release/3.0.0`. Actualizados ambos puntos con referencia explícita a `ADR-0008`. |
+| v2.2 | 14/07/2026 | Rodrigo Aspeti | Refinamiento del modelo de roles (`ADR-0010`): PRD-US-029 y PRD-REQ-031 pasan de "asignación de rol" (uno) a **multi-rol** (uno o más roles simultáneos), con la invariante de que SysAdmin nunca se combina con un rol de tenant. Nuevo escenario Gherkin en §5.11.1 (multi-rol). Sin cambios en el resto de épicas/requisitos. |
 
 ---
 

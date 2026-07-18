@@ -1,11 +1,11 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.3`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.4`.
 > Cada prompt sigue la estructura de `plantillas/plantillas1/PROMPT_TEMPLATE.md`.
 > Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
-> **Área `IMPL`** (desde `v2.0`): prompts de implementación de la capa viva (`release/3.0.0` en adelante), archivo `docs/prompts/impl/PR-IMPL-NNN.md` (única área que se desvía del directorio raíz `prompts/`, siguiendo `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md`/`MODELO_DOCUMENTAL_IMPLEMENTACION.md`), trazados a un `FSD-UC` y opcionalmente a un `DD-UC-NNN` en `docs/design/`. Ver `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md` y los skills `feature-design-doc` / `dtp-sync`. Primera entrada desde `v2.1`: `PR-IMPL-001` (bootstrap del esqueleto de código, `DD-UC-001`, `ADR-0011`). Segunda entrada desde `v2.3`: `PR-IMPL-002` (módulo `identidad` — login/JWT, `DD-UC-002`, `ADR-0001`/`ADR-0010`).
+> **Área `IMPL`** (desde `v2.0`): prompts de implementación de la capa viva (`release/3.0.0` en adelante), archivo `docs/prompts/impl/PR-IMPL-NNN.md` (única área que se desvía del directorio raíz `prompts/`, siguiendo `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md`/`MODELO_DOCUMENTAL_IMPLEMENTACION.md`), trazados a un `FSD-UC` y opcionalmente a un `DD-UC-NNN` en `docs/design/`. Ver `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md` y los skills `feature-design-doc` / `dtp-sync`. Primera entrada desde `v2.1`: `PR-IMPL-001` (bootstrap del esqueleto de código, `DD-UC-001`, `ADR-0011`). Segunda entrada desde `v2.3`: `PR-IMPL-002` (módulo `identidad` — login/JWT, `DD-UC-002`, `ADR-0001`/`ADR-0010`). Tercera entrada desde `v2.4`: `PR-IMPL-003` (módulo `plataforma` — alta y gestión de Tenants, `DD-UC-003`, `FSD-UC-011`).
 
 ---
 
@@ -52,6 +52,7 @@
 | PR-VFINAL-001 | `docs/brd/BRD_EduSync_vFinal.md`, `docs/mrd/MRD_EduSync_vFinal.md`, `docs/prd/PRD_EduSync_vFinal.md`, `docs/fsd/FSD_EduSync_vFinal.md` — aliases congelados para `release/2.0.0` | transformación | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-VFINAL-001.md` | ~1 500 tk in / ~5 000 tk out \| antes: BRD/MRD/PRD/FSD sólo como canónicos editables \| después: 4 snapshots `_vFinal.md` con banner de freeze |
 | PR-IMPL-001 | `backend/`, `frontend/`, `infra/docker-compose.yml` — esqueleto de código de `release/3.0.0` (monolito modular Spring Modulith, paquete `com.edusync`, Angular 21) | generación | `dev-agent` | Sonnet | 14/07/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-001.md` | ~2 200 tk in / ~6 000 tk out (estimado) \| antes: `src/` vacío, sin esqueleto de código \| después: primera fila del área `IMPL`; ejecución del prompt (generación real de código) pendiente |
 | PR-IMPL-002 | `backend/src/main/java/com/edusync/identidad/**` — módulo `identidad` (login JWT, seed `SYSADMIN`, `TenantContextProvider` real) | generación | `dev-agent` | Sonnet | 14/07/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-002.md` | ~2 400 tk in / ~6 500 tk out (estimado) \| antes: módulo `identidad` vacío (solo `package-info.java`) \| después: segunda fila del área `IMPL`; ejecución del prompt (generación real de código) pendiente |
+| PR-IMPL-003 | `backend/src/main/java/com/edusync/plataforma/**` — módulo `plataforma` (alta/gestión de Tenants, scheduler de vencimiento, `TenantConsultaPort`) | generación | `dev-agent` | Sonnet | 14/07/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-003.md` | ~2 300 tk in / ~6 200 tk out (estimado) \| antes: módulo `plataforma` vacío (solo `package-info.java`) \| después: tercera fila del área `IMPL`; ejecución del prompt (generación real de código) pendiente |
 
 ---
 
@@ -201,6 +202,7 @@ flowchart TD
     subgraph IMPLEMENTACION["Capa viva de Implementacion -- dev-agent (release/3.0.0)"]
         IMPL001["PR-IMPL-001\nBootstrap del esqueleto\n(backend+frontend+infra)"]
         IMPL002["PR-IMPL-002\nModulo identidad\n(login JWT + seed SysAdmin)"]
+        IMPL003["PR-IMPL-003\nModulo plataforma\n(alta y gestion de Tenants)"]
     end
     FSD --> IMPL001
     HEX --> IMPL001
@@ -208,6 +210,9 @@ flowchart TD
     IMPL001 --> IMPL002
     ADR --> IMPL002
     FSD --> IMPL002
+    IMPL002 --> IMPL003
+    ADR --> IMPL003
+    FSD --> IMPL003
 ```
 
 ---
@@ -217,7 +222,7 @@ flowchart TD
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
 | `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-POC-001, PR-POC-002, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills → POCs → roadmap → aportes → aliases vFinal); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel, configuración de agentes, evidencia de pruebas de concepto, hoja de ruta de release, informe de aportes individuales y snapshots congelados de entrega | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md`; POCs en `docs/pocs/`; roadmap canónico en `docs/roadmap.md`; aportes por release en `docs/aportes/release-<x.y.z>.md`; aliases `_vFinal.md` en `docs/brd/`, `docs/mrd/`, `docs/prd/`, `docs/fsd/` |
-| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
 | `arch-agent` | PR-ADR-001..005, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
@@ -2589,6 +2594,80 @@ backend/src/main/resources/db/migration/V2__identidad_usuario.sql.
 
 ---
 
+### PR-IMPL-003 — Modulo plataforma: alta y gestion de Tenants y Suscripciones
+
+```markdown
+# Role
+Eres un Senior Software Engineer con experiencia en arquitectura hexagonal,
+monolitos modulares con Spring Modulith, Spring Boot 4.1.0 / Java 25 LTS,
+schedulers de Spring y diseno de puertos publicos entre modulos (Open Host Service).
+
+# Task
+Implementa el modulo com.edusync.plataforma sobre el esqueleto de DD-UC-001 y el
+modulo identidad ya implementado en DD-UC-002: el dominio Tenant con su ciclo de
+suscripcion, el scheduler diario de vencimiento, el puerto publico
+TenantConsultaPort, y la modificacion de AutenticarUsuarioService (modulo
+identidad) para aplicar BR-014, exactamente como se describe en
+docs/design/DD-UC-003.md §2.
+
+# Context
+- Documento fuente: docs/design/DD-UC-003.md (§1 objetivo, §2 diseno, §3
+  alternativas elegidas: scheduler @Scheduled interno, alta de tenant+admin en
+  dos llamadas REST separadas).
+- ADRs aplicables: ADR-0009, ADR-0010 (SysAdmin sin tenant, autoriza los
+  endpoints de este modulo), ADR-0011 (modulo plataforma, comunicacion
+  bidireccional plataforma<->identidad solo via puertos publicos:
+  UsuarioCreacionPort ya existente de DD-UC-002, TenantConsultaPort nuevo).
+- Prerequisito: DD-UC-001/PR-IMPL-001 y DD-UC-002/PR-IMPL-002 ya ejecutados.
+- Restricciones de dominio: NO implementar el resto de FSD-UC-012..020 ni el
+  diseno del tenant demo (diferido a un Design Doc posterior).
+- Restricciones tecnicas: alta de tenant + admin en DOS endpoints REST
+  separados (nunca combinados); scheduler con @Scheduled de Spring (sin
+  ShedLock por ahora); tabla tenant SIN politica RLS propia.
+
+# Reasoning
+1. Crear com.edusync.plataforma.domain: Tenant, EstadoTenant.
+2. Crear puertos in/out y servicios de aplicacion.
+3. Crear TenantController: POST /tenants, POST /tenants/{id}/admins (delega a
+   UsuarioCreacionPort), PATCH /tenants/{id}/estado.
+4. Crear VencimientoSchedulerJob (@Scheduled diario, marca VENCIDO).
+5. Crear TenantConsultaPortImpl (Open Host Service).
+6. Modificar AutenticarUsuarioService para aplicar BR-014 (403
+   E_TENANT_NO_ACTIVO si el tenant esta SUSPENDIDO/VENCIDO, sin eliminar datos).
+7. Crear V3__plataforma_tenant.sql (sin politica RLS).
+8. Verificar ModularityTests: plataforma<->identidad solo via puertos publicos.
+
+# Stop condition
+Detente cuando: (a) POST /tenants crea un Tenant ACTIVO, (b) POST
+/tenants/{id}/admins crea el admin via UsuarioCreacionPort, (c) el scheduler
+marca VENCIDO correctamente, (d) el login de un tenant SUSPENDIDO/VENCIDO
+devuelve 403 sin eliminar datos, (e) ModularityTests pasa en verde. No
+implementes el resto de FSD-UC-012..020 ni el tenant demo.
+
+# Output
+Codigo fuente real en backend/ (no markdown). Extracto esperado:
+backend/src/main/java/com/edusync/plataforma/domain/Tenant.java,
+backend/src/main/java/com/edusync/plataforma/infrastructure/adapter/in/rest/TenantController.java,
+backend/src/main/java/com/edusync/plataforma/infrastructure/adapter/in/scheduler/VencimientoSchedulerJob.java,
+backend/src/main/resources/db/migration/V3__plataforma_tenant.sql.
+
+# Invariants
+- La alta de tenant y la creacion de su admin deben ser dos endpoints separados.
+- Ningun modulo distinto de plataforma debe importar sus clases internas
+  (solo TenantConsultaPort).
+- AutenticarUsuarioService debe rechazar login de tenants SUSPENDIDO/VENCIDO
+  sin eliminar datos academicos.
+- ModularityTests debe seguir en verde.
+
+# Failure modes
+- E_ALTA_COMBINADA: se genero un unico endpoint tenant+admin -- separar en dos llamadas.
+- E_ACOPLAMIENTO_ENTRE_MODULOS: import directo plataforma<->identidad fuera de los puertos publicos -- ModularityTests debe fallar.
+- E_DATOS_ELIMINADOS_TENANT_SUSPENDIDO: se elimino data academica al suspender/vencer -- revertir, BR-014 exige preservarla.
+- E_ALCANCE_EXCEDIDO: se implemento el tenant demo o FSD-UC-012..020 -- revertir, corresponde a Design Docs posteriores.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
@@ -2675,6 +2754,7 @@ backend/src/main/resources/db/migration/V2__identidad_usuario.sql.
 | BRD v2 + MRD v1.0 + PRD v1.0 + FSD v1.0 + AGENTS.md §16 alias `_vFinal` | `BRD v2, MRD v1.0, PRD v1.0, FSD v1.0, release/2.0.0` | PR-VFINAL-001 | `docs-agent` | Freeze documental de BRD/MRD/PRD/FSD como snapshots inmutables `_vFinal.md` con banner uniforme para auditoría de release | `docs/brd/BRD_EduSync_vFinal.md` + `docs/mrd/MRD_EduSync_vFinal.md` + `docs/prd/PRD_EduSync_vFinal.md` + `docs/fsd/FSD_EduSync_vFinal.md` |
 | Design Doc `DD-UC-001` + `ADR-0011` + `ADR-0008` + `docs/product/FSD.md` (`FSD-UC-011`, `FSD-UC-021`) | `DD-UC-001, ADR-0011, FSD-UC-011, FSD-UC-021` | PR-IMPL-001 | `dev-agent` | Esqueleto de código de `release/3.0.0` (monolito modular Spring Modulith, paquete `com.edusync`, Angular 21) — ejecución pendiente | `backend/`, `frontend/`, `infra/docker-compose.yml`; prompt en `docs/prompts/impl/PR-IMPL-001.md` |
 | Design Doc `DD-UC-002` + `ADR-0001` + `ADR-0010` + `ADR-0011` + `docs/product/FSD.md` (`FSD-UC-021`) | `DD-UC-002, ADR-0001, ADR-0010, ADR-0011, FSD-UC-021` | PR-IMPL-002 | `dev-agent` | Módulo `identidad` (login JWT, seed `SYSADMIN`, `TenantContextProvider` real, política RLS `OR tenant_id IS NULL`) — ejecución pendiente | `backend/src/main/java/com/edusync/identidad/**`, `shared/tenant/TenantContextProvider.java`; prompt en `docs/prompts/impl/PR-IMPL-002.md` |
+| Design Doc `DD-UC-003` + `ADR-0009` + `ADR-0010` + `ADR-0011` + `docs/product/FSD.md` (`FSD-UC-011`) | `DD-UC-003, ADR-0009, ADR-0010, ADR-0011, FSD-UC-011` | PR-IMPL-003 | `dev-agent` | Módulo `plataforma` (alta/gestión de Tenants, scheduler de vencimiento, `TenantConsultaPort`, enforcement de `BR-014`) — ejecución pendiente | `backend/src/main/java/com/edusync/plataforma/**`; prompt en `docs/prompts/impl/PR-IMPL-003.md` |
 
 ---
 
@@ -2706,3 +2786,4 @@ backend/src/main/resources/db/migration/V2__identidad_usuario.sql.
 | v2.1 | 14/07/2026 | Rodrigo Aspeti | Primera materialización del área `IMPL`: `PR-IMPL-001` (bootstrap del esqueleto de código de `release/3.0.0` — `backend/`, `frontend/`, `infra/docker-compose.yml`), derivado de `docs/design/DD-UC-001.md` y `ADR-0011` (monolito modular Spring Modulith module-first + paquete base `com.edusync`, que reemplaza a `bo.edusync`). Cabecera `v2.0 → v2.1`; corrección de la referencia de plantilla a `plantillas/plantillas1/PROMPT_TEMPLATE.md` (ruta real tras la reorganización de `plantillas/`). Índice ampliado con fila `PR-IMPL-001` (estado "Aprobado (prompt)"; ejecución de generación de código real pendiente). Flowchart Mermaid extendido con subgraph `IMPLEMENTACION` y nodo `IMPL001`, con aristas desde `FSD`, `HEX` y `ADR`. Matriz `dev-agent` ampliada con `PR-IMPL-001` y la responsabilidad de materializar `DD-UC-NNN` en código. Contrato inline agregado (Role/Task/Context/Reasoning/Stop/Output/Invariants/Failure modes) con 3 failure modes específicos de bootstrap (`E_PAQUETE_INCORRECTO`, `E_ACOPLAMIENTO_ENTRE_MODULOS`, `E_LOGICA_PREMATURA`). Trazabilidad ampliada con la fila de `DD-UC-001`/`ADR-0011`. Archivo individual `prompts/PR-IMPL-001.md` materializado (9 secciones, con nota de desviación de ruta respecto a `FEATURE_DESIGN_DOC_TEMPLATE.md`). Total prompt-contratos activos: 37 → 38 |
 | v2.2 | 14/07/2026 | Rodrigo Aspeti | **Corrección de ubicación del área `IMPL`**: `PR-IMPL-001` se mueve de `prompts/PR-IMPL-001.md` a `docs/prompts/impl/PR-IMPL-001.md` (v0.1 → v0.2, sin cambios de contenido), siguiendo exactamente `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md` §5 / `MODELO_DOCUMENTAL_IMPLEMENTACION.md`, en lugar de la convención plana de M4 usada por las demás áreas. Se elimina la "nota de desviación" del prompt (ya no aplica). Cabecera (§ línea 8) actualizada para declarar `docs/prompts/impl/PR-IMPL-NNN.md` como la única excepción de ruta del catálogo. Índice y trazabilidad completa actualizan la columna "Archivo"/"Artefacto generado" a la nueva ruta. Sin cambios en el número de prompts (38) ni en el contrato inline (Role/Task/Context/Reasoning/Stop/Output/Invariants/Failure modes idénticos). Propagado también a `docs/design/DD-UC-001.md`, `docs/product/DTP.md`, `AGENTS.md` y los skills `feature-design-doc` (`.cursor/`+`.claude/`). |
 | v2.3 | 14/07/2026 | Rodrigo Aspeti | Segunda materialización del área `IMPL`: `PR-IMPL-002` (módulo `identidad` — dominio `Usuario`/`UsuarioRol`, login JWT, seed del primer `SYSADMIN`, implementación real de `TenantContextProvider`, puerto público `UsuarioCreacionPort`), derivado de `docs/design/DD-UC-002.md` y de `ADR-0001`/`ADR-0010`/`ADR-0011`. Decisión explícita del usuario (14/07/2026): orden `identidad`/login antes de `plataforma`/tenants (invierte el comentario original de `DD-UC-001` §2), y estrategia RLS para tablas plataforma-scoped resuelta con la política `OR tenant_id IS NULL` (sin `ADR-0012` dedicado). Índice ampliado con fila `PR-IMPL-002`. Flowchart Mermaid extendido con nodo `IMPL002` (aristas desde `IMPL001`, `ADR`, `FSD`). Matriz `dev-agent` ampliada. Contrato inline agregado con 4 failure modes específicos (`E_INVARIANTE_ROL_VIOLADA`, `E_ACOPLAMIENTO_ENTRE_MODULOS`, `E_ALCANCE_EXCEDIDO`, `E_FILTRO_TENANT_AUSENTE`). Trazabilidad ampliada. Archivo individual `docs/prompts/impl/PR-IMPL-002.md` materializado desde el inicio en la ruta correcta (sin desviación, a diferencia de `PR-IMPL-001` v0.1). Total prompt-contratos activos: 38 → 39. |
+| v2.4 | 14/07/2026 | Rodrigo Aspeti | Tercera materialización del área `IMPL`: `PR-IMPL-003` (módulo `plataforma` — dominio `Tenant`, scheduler de vencimiento `@Scheduled`, puerto público `TenantConsultaPort`, enforcement de `BR-014` en `AutenticarUsuarioService` de `identidad`), derivado de `docs/design/DD-UC-003.md` y de `ADR-0009`/`ADR-0010`/`ADR-0011`. Decisiones explícitas del usuario (14/07/2026): tenant demo diferido a un Design Doc posterior (no bloqueante); scheduler `@Scheduled` interno (sin `ShedLock` por ahora); alta de tenant + admin en dos llamadas REST separadas (`POST /tenants` y `POST /tenants/{id}/admins`), consistente con el flujo ya documentado en `FSD-UC-011`. Índice ampliado con fila `PR-IMPL-003`. Flowchart Mermaid extendido con nodo `IMPL003` (aristas desde `IMPL002`, `ADR`, `FSD`). Matriz `dev-agent` ampliada. Contrato inline agregado con 4 failure modes específicos (`E_ALTA_COMBINADA`, `E_ACOPLAMIENTO_ENTRE_MODULOS`, `E_DATOS_ELIMINADOS_TENANT_SUSPENDIDO`, `E_ALCANCE_EXCEDIDO`). Trazabilidad ampliada. Archivo individual `docs/prompts/impl/PR-IMPL-003.md` materializado desde el inicio en la ruta correcta. Total prompt-contratos activos: 39 → 40. |

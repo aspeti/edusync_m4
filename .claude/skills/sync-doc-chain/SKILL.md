@@ -68,7 +68,7 @@ Si falta cualquiera responder: `"E_MISSING_INPUT — necesito <dato>. Lista mín
    - `docs/DTI.md` (semver interno en §0 metadatos).
    - `docs/adr/NNNN-*.md` (numeración secuencial 4 dígitos).
    - `docs/diagrams/*.mmd` y su `*.md` espejo (IG-09).
-3. **`docs/AGENTS.md`** — stack autoritativo, invariantes de dominio, golden tests.
+3. **`AGENTS.md`** — stack autoritativo, invariantes de dominio, golden tests.
 4. **`docs/PROMPT_MAPPING.md`** — catálogo `PR-<AREA>-NNN` + trazabilidad cruzada.
 5. **`plantillas/ADR_TEMPLATE.md`** y **`plantillas/DOCUMENTO_TECNICO_INICIAL_TEMPLATE.md`** si se crea un artefacto nuevo.
 

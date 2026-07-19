@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "node .cursor/hooks/protect-baseline.js",
+        "matcher": "Write|StrReplace|EditNotebook|Delete",
+        "failClosed": false
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "node .cursor/hooks/warn-shell-baseline.js",
+        "matcher": "baseline",
+        "failClosed": false
+      }
+    ],
+    "stop": [
+      {
+        "command": "node .cursor/hooks/dtp-sync-reminder.js",
+        "loop_limit": 1
+      }
+    ]
+  }
+}

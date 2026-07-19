@@ -1,10 +1,11 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO`. Versión activa: `v1.2`.
-> Cada prompt sigue la estructura de `plantillas/PROMPT_TEMPLATE.md`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.4`.
+> Cada prompt sigue la estructura de `plantillas/plantillas1/PROMPT_TEMPLATE.md`.
 > Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
+> **Área `IMPL`** (desde `v2.0`): prompts de implementación de la capa viva (`release/3.0.0` en adelante), archivo `docs/prompts/impl/PR-IMPL-NNN.md` (única área que se desvía del directorio raíz `prompts/`, siguiendo `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md`/`MODELO_DOCUMENTAL_IMPLEMENTACION.md`), trazados a un `FSD-UC` y opcionalmente a un `DD-UC-NNN` en `docs/design/`. Ver `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md` y los skills `feature-design-doc` / `dtp-sync`. Primera entrada desde `v2.1`: `PR-IMPL-001` (bootstrap del esqueleto de código, `DD-UC-001`, `ADR-0011`). Segunda entrada desde `v2.3`: `PR-IMPL-002` (módulo `identidad` — login/JWT, `DD-UC-002`, `ADR-0001`/`ADR-0010`). Tercera entrada desde `v2.4`: `PR-IMPL-003` (módulo `plataforma` — alta y gestión de Tenants, `DD-UC-003`, `FSD-UC-011`).
 
 ---
 
@@ -40,6 +41,18 @@
 | PR-HEX-001 | `docs/arquitectura_hexagonal_EduSync.md` v0.1 — Arquitectura hexagonal del core: 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots | generacion | `arch-agent` | Sonnet | 24/05/2026 | Aprobado | `prompts/PR-HEX-001.md` | ~3 500 tk in / ~12 000 tk out \| antes: arquitectura hexagonal sin documentar \| después: `docs/arquitectura_hexagonal_EduSync.md` v0.1 |
 | PR-DTO-001 | `docs/dtos_EduSync.md` v0.1 — DTOs por capa hexagonal para FSD-UC-001/003/005: 4 Request DTOs, 4 Commands, 3 Response DTOs, 5 Domain Events, 5 enums, 3 tablas DTO ↔ Entidad | generacion | `dev-agent` | Sonnet | 24/05/2026 | Aprobado | `prompts/PR-DTO-001.md` | ~2 500 tk in / ~8 000 tk out \| antes: DTOs sin diseño formal \| después: `docs/dtos_EduSync.md` v0.1 (445 líneas) |
 | PR-DTI-SEAMS-001 | `docs/DTI.md §6.2` — Seams de descomposición para EduSync (calificaciones ↔ consolidacion; exportacion ↔ nucleo) | generacion | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-DTI-SEAMS-001.md` | ~2 800 tk in / ~4 500 tk out \| antes: DTI sin analisis T1.8 de seams \| después: `docs/DTI.md` §6.2 + registro de cambios v0.2 |
+| PR-POC-001 | `docs/pocs/POC-01-rls-multitenancy/` — estructura documental inicial para POC-01 RLS multitenancy (README, runbook, evidencia) | generacion | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-POC-001.md` | ~2 000 tk in / ~5 500 tk out \| antes: POC-01 solo definida en DTI §12.1 \| después: carpeta `docs/pocs/POC-01-rls-multitenancy/` lista para ejecucion |
+| PR-POC-002 | `docs/pocs/POC-02-circuit-breaker-sie/` — estructura documental inicial para POC-02 Circuit Breaker SIE (README, runbook, evidencia) | generacion | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-POC-002.md` | ~2 000 tk in / ~5 500 tk out \| antes: POC-02 solo definida en DTI §12.2 \| después: carpeta `docs/pocs/POC-02-circuit-breaker-sie/` lista para ejecucion |
+| PR-C4-003 | `docs/diagrams/c4_level3_api_gateway.mmd` + `.md` espejo — C4 Level 3 (Componentes) del contenedor `api-gateway`: 10 componentes (filtros, controllers, AOP, DTOs) cubriendo FSD-UC-001/003/004/005/009 | generacion | `arch-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-C4-003.md` | ~3 200 tk in / ~6 500 tk out \| antes: api-gateway sin Level 3 (skill c4-edusync lo marcaba como Pendiente) \| después: `c4_level3_api_gateway.mmd` (81 lineas) + espejo `.md` con tabla de trazabilidad |
+| PR-C4-004 | `docs/diagrams/c4_level3_domain_layer.mmd` + `.md` espejo — C4 Level 3 (Componentes) del contenedor `domain-layer`: puertos IN/OUT, servicios de dominio, aggregates, VOs y eventos; dominio puro sin Spring/JPA | generacion | `arch-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-C4-004.md` | ~3 000 tk in / ~6 000 tk out \| antes: domain-layer sin Level 3 canónico \| después: `c4_level3_domain_layer.mmd` + espejo `.md` con trazabilidad FSD-UC-001/002/003/004/005/009 |
+| PR-C4-005 | `docs/diagrams/c4_level3_sie_adapter.mmd` + `.md` espejo — C4 Level 3 (Componentes) del contenedor `sie-adapter`: SIEHttpClientAdapter, payload RUDE-only, idempotencia, estado por registro, circuit breaker, métricas y WireMock | generacion | `arch-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-C4-005.md` | ~2 800 tk in / ~5 500 tk out \| antes: sie-adapter sin Level 3 canónico \| después: `c4_level3_sie_adapter.mmd` + espejo `.md` trazado a ADR-0005 y POC-02 |
+| PR-C4-006 | `docs/diagrams/deployment_aws.mmd` + `.md` espejo — C4 Deployment AWS: CloudFront/S3, ALB/WAF, ECS Fargate, RDS Multi-AZ, SQS FIFO/DLQ, KMS, Secrets Manager, CloudWatch, CloudTrail y Terraform | generacion | `arch-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-C4-006.md` | ~2 800 tk in / ~5 000 tk out \| antes: mapeo AWS sólo embebido en DTI §8 \| después: `deployment_aws.mmd` + espejo `.md` para criterio 2 de defensa |
+| PR-ROADMAP-001 | `docs/roadmap.md` v0.1 — hoja de ruta técnica y de negocio hacia `release/2.0.0` y siguiente módulo: 4 horizontes, Gantt, lecciones, métricas BRD/NFR, riesgos y compromisos | generacion | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-ROADMAP-001.md` | ~3 500 tk in / ~7 500 tk out \| antes: roadmap sólo embebido en DTI §19 \| después: `docs/roadmap.md` (200 líneas) como fuente canónica detallada |
+| PR-APORTES-001 | `docs/aportes/release-2.0.0.md` v1.0 — informe de aportes individuales del release de defensa para grupo unipersonal (n = 1): 95 tareas auditables, 11 categorías cubiertas, fórmula `clamp(0.5, 1.1)` con caso degenerado documentado | generacion | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-APORTES-001.md` | ~2 800 tk in / ~9 500 tk out \| antes: sin informe de aportes para `release/2.0.0` (bloqueante de rúbrica) \| después: `docs/aportes/release-2.0.0.md` con 95 filas auditables y checklist 5/6 |
+| PR-VFINAL-001 | `docs/brd/BRD_EduSync_vFinal.md`, `docs/mrd/MRD_EduSync_vFinal.md`, `docs/prd/PRD_EduSync_vFinal.md`, `docs/fsd/FSD_EduSync_vFinal.md` — aliases congelados para `release/2.0.0` | transformación | `docs-agent` | Sonnet | 28/05/2026 | Aprobado | `prompts/PR-VFINAL-001.md` | ~1 500 tk in / ~5 000 tk out \| antes: BRD/MRD/PRD/FSD sólo como canónicos editables \| después: 4 snapshots `_vFinal.md` con banner de freeze |
+| PR-IMPL-001 | `backend/`, `frontend/`, `infra/docker-compose.yml` — esqueleto de código de `release/3.0.0` (monolito modular Spring Modulith, paquete `com.edusync`, Angular 21) | generación | `dev-agent` | Sonnet | 14/07/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-001.md` | ~2 200 tk in / ~6 000 tk out (estimado) \| antes: `src/` vacío, sin esqueleto de código \| después: primera fila del área `IMPL`; ejecución del prompt (generación real de código) pendiente |
+| PR-IMPL-002 | `backend/src/main/java/com/edusync/identidad/**` — módulo `identidad` (login JWT, seed `SYSADMIN`, `TenantContextProvider` real) | generación | `dev-agent` | Sonnet | 14/07/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-002.md` | ~2 400 tk in / ~6 500 tk out (estimado) \| antes: módulo `identidad` vacío (solo `package-info.java`) \| después: segunda fila del área `IMPL`; ejecución del prompt (generación real de código) pendiente |
+| PR-IMPL-003 | `backend/src/main/java/com/edusync/plataforma/**` — módulo `plataforma` (alta/gestión de Tenants, scheduler de vencimiento, `TenantConsultaPort`) | generación | `dev-agent` | Sonnet | 14/07/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-003.md` | ~2 300 tk in / ~6 200 tk out (estimado) \| antes: módulo `plataforma` vacío (solo `package-info.java`) \| después: tercera fila del área `IMPL`; ejecución del prompt (generación real de código) pendiente |
 
 ---
 
@@ -116,10 +129,17 @@ flowchart TD
     subgraph ARQUITECTURA["Capa de Arquitectura C4 -- arch-agent"]
         C4L1["PR-C4-001\nC4 Level 1\nContexto (arch-agent)"]
         C4L2["PR-C4-002\nC4 Level 2\nContenedores (arch-agent)"]
+        C4L3API["PR-C4-003\nC4 Level 3\nAPI Gateway (arch-agent)"]
+        C4L3DOMAIN["PR-C4-004\nC4 Level 3\nDomain Layer (arch-agent)"]
+        C4L3SIE["PR-C4-005\nC4 Level 3\nSIE Adapter (arch-agent)"]
+        C4DEPLOY["PR-C4-006\nC4 Deployment\nAWS (arch-agent)"]
     end
     SKILL2["PR-SKILL-002\nSkill c4-edusync\n(docs-agent)"]
     SKILL3["PR-SKILL-003\nSkill dti-edusync\n(docs-agent)"]
     DTI["PR-DTI-001\nDTI EduSync\n(docs-agent)"]
+    ROADMAP["PR-ROADMAP-001\nRoadmap EduSync\n(docs-agent)"]
+    APORTES["PR-APORTES-001\nAportes release/2.0.0\n(docs-agent)"]
+    VFINAL["PR-VFINAL-001\nAliases vFinal\n(docs-agent)"]
 
     AGENTS --> SKILL2
     SKILL2 --> C4L1
@@ -145,6 +165,54 @@ flowchart TD
     DTI --> DTISEAMS
     BRD2 --> DTISEAMS
     FSD --> DTISEAMS
+    subgraph POCS["Capa de POCs -- docs-agent"]
+        POC1["PR-POC-001\nPOC-01 RLS\n(docs-agent)"]
+        POC2["PR-POC-002\nPOC-02 Circuit Breaker SIE\n(docs-agent)"]
+    end
+    DTI --> POC1
+    ADR --> POC1
+    DTI --> POC2
+    ADR --> POC2
+    C4L2 --> C4L3API
+    DTI --> C4L3API
+    HEX --> C4L3API
+    DTO --> C4L3API
+    C4L2 --> C4L3DOMAIN
+    HEX --> C4L3DOMAIN
+    DTI --> C4L3DOMAIN
+    C4L2 --> C4L3SIE
+    ADR --> C4L3SIE
+    POC2 --> C4L3SIE
+    DTI --> C4DEPLOY
+    ADR --> C4DEPLOY
+    DTI --> ROADMAP
+    BRD2 --> ROADMAP
+    FSD --> ROADMAP
+    POC1 --> ROADMAP
+    POC2 --> ROADMAP
+    ADR --> ROADMAP
+    ROADMAP --> APORTES
+    AGENTS --> APORTES
+    DTI --> APORTES
+    BRD2 --> VFINAL
+    MRD --> VFINAL
+    PRD --> VFINAL
+    FSD --> VFINAL
+    AGENTS --> VFINAL
+    subgraph IMPLEMENTACION["Capa viva de Implementacion -- dev-agent (release/3.0.0)"]
+        IMPL001["PR-IMPL-001\nBootstrap del esqueleto\n(backend+frontend+infra)"]
+        IMPL002["PR-IMPL-002\nModulo identidad\n(login JWT + seed SysAdmin)"]
+        IMPL003["PR-IMPL-003\nModulo plataforma\n(alta y gestion de Tenants)"]
+    end
+    FSD --> IMPL001
+    HEX --> IMPL001
+    ADR --> IMPL001
+    IMPL001 --> IMPL002
+    ADR --> IMPL002
+    FSD --> IMPL002
+    IMPL002 --> IMPL003
+    ADR --> IMPL003
+    FSD --> IMPL003
 ```
 
 ---
@@ -153,9 +221,9 @@ flowchart TD
 
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
-| `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel y de configuración de agentes | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md` |
-| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias | Código en `src/`, contratos en `docs/prompts/`, DTOs en `docs/dtos_EduSync.md` |
-| `arch-agent` | PR-ADR-001..005, PR-C4-001, PR-C4-002, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 en `docs/diagrams/`; arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
+| `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-POC-001, PR-POC-002, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills → POCs → roadmap → aportes → aliases vFinal); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel, configuración de agentes, evidencia de pruebas de concepto, hoja de ruta de release, informe de aportes individuales y snapshots congelados de entrega | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md`; POCs en `docs/pocs/`; roadmap canónico en `docs/roadmap.md`; aportes por release en `docs/aportes/release-<x.y.z>.md`; aliases `_vFinal.md` en `docs/brd/`, `docs/mrd/`, `docs/prd/`, `docs/fsd/` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
+| `arch-agent` | PR-ADR-001..005, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
 
@@ -1810,7 +1878,7 @@ y domain (eventos de dominio publicados). Por cada UC producir:
 - UCs objetivo: FSD-UC-001 (registro calificacion), FSD-UC-003 (consolidacion),
   FSD-UC-005 (autorizacion correccion retroactiva). Fuente: docs/fsd/FSD_EduSync.md.
 - Estructura de paquetes hexagonal: docs/arquitectura_hexagonal_EduSync.md §1.1.
-- Convenciones de codigo: docs/AGENTS.md §5 (Java 21, Records, ingles, Bean Validation).
+- Convenciones de codigo: AGENTS.md §5 (Java 21, Records, ingles, Bean Validation).
 - BRs activas: BR-001 (RBAC), BR-002 (rango), BR-003 (floor), BR-004 (RUDE),
   BR-005 (append-only), BR-007 (parametros inmutables), BR-008 (calculo en dominio),
   BR-009 (ventana 1-72h), BR-010 (audit en TX), BR-011 (anual con 3 cerrados).
@@ -1931,6 +1999,675 @@ tabla de evidencia, tabla T1.8, recomendacion, separador final.
 
 ---
 
+### PR-POC-001 — Estructura documental para POC-01 RLS multitenancy
+
+```markdown
+# Role
+Actua como docs-agent de EduSync, responsable de documentacion tecnica y
+trazabilidad de POCs criticas para la defensa final.
+
+# Task
+Crear la estructura documental inicial para ejecutar la POC-01 de multitenancy
+con PostgreSQL 15 Row-Level Security, sin inventar metricas ni marcar la POC
+como ejecutada.
+
+# Context
+- Documentos fuente: `plantillas/POC_TEMPLATE.md`, `docs/DTI.md §12.1`,
+  `docs/adr/0001-multitenancy-rls-postgresql.md`, `AGENTS.md`.
+- Artefactos a producir: `docs/pocs/POC-01-rls-multitenancy/README.md`,
+  `docs/pocs/POC-01-rls-multitenancy/runbook.md`,
+  `docs/pocs/POC-01-rls-multitenancy/evidencia/README.md`.
+- Restricciones de dominio: DA-01, ADR-0001, NFR-010, IG-05.
+- Stack: Java 21, Spring Boot 3.3, PostgreSQL 15, Testcontainers.
+
+# Reasoning
+1. Leer el template de POC y conservar sus secciones 0-14.
+2. Extraer de DTI §12.1 el riesgo, hipotesis, criterio de exito y alcance.
+3. Cruzar la decision con ADR-0001 y AGENTS para no violar RLS ni PII.
+4. Crear README, runbook y evidencia/README con resultados en estado
+   "Pendiente de ejecucion".
+
+# Stop condition
+Detente cuando existan los 3 archivos de POC-01, todos referencien
+`docs/DTI.md §12.1` y ADR-0001, y ninguna seccion contenga metricas ejecutadas.
+
+# Output
+Markdown en `docs/pocs/POC-01-rls-multitenancy/` listo para ejecutar la POC.
+
+# Invariants
+- No inventar resultados numericos ni veredictos.
+- Mantener `Resultado: Pendiente de ejecucion`.
+- No exponer PII ni RUDE real; solo datos sinteticos.
+- Criterio de exito: 0 leaks cross-tenant y p95 INSERT/SELECT < 505 ms.
+
+# Failure modes
+- E_MISSING_TEMPLATE: falta `plantillas/POC_TEMPLATE.md` -- STOP, solicitar.
+- E_MISSING_DTI_SECTION: falta `docs/DTI.md §12.1` -- STOP, no crear POC.
+- E_METRICS_INVENTED: aparece una metrica real sin evidencia -- remover y dejar pendiente.
+```
+
+---
+
+### PR-POC-002 — Estructura documental para POC-02 Circuit Breaker SIE
+
+```markdown
+# Role
+Actua como docs-agent de EduSync, responsable de documentacion tecnica y
+trazabilidad de POCs criticas para la defensa final.
+
+# Task
+Crear la estructura documental inicial para ejecutar la POC-02 de Circuit
+Breaker SIE con Resilience4j y WireMock, sin inventar metricas ni marcar la POC
+como ejecutada.
+
+# Context
+- Documentos fuente: `plantillas/POC_TEMPLATE.md`, `docs/DTI.md §12.2`,
+  `docs/adr/0005-resiliencia-integracion-sie-resilience4j.md`,
+  `AGENTS.md`.
+- Artefactos a producir: `docs/pocs/POC-02-circuit-breaker-sie/README.md`,
+  `docs/pocs/POC-02-circuit-breaker-sie/runbook.md`,
+  `docs/pocs/POC-02-circuit-breaker-sie/evidencia/README.md`.
+- Restricciones de dominio: DA-05, ADR-0005, NFR-011, NFR-012, IG-01.
+- Stack: Java 21, Spring Boot 3.3, Resilience4j, WireMock, PostgreSQL 15.
+
+# Reasoning
+1. Leer el template de POC y conservar sus secciones 0-14.
+2. Extraer de DTI §12.2 el riesgo, hipotesis, criterio de exito y alcance.
+3. Cruzar la decision con ADR-0005 para mantener idempotencia y retry seguro.
+4. Crear README, runbook y evidencia/README con resultados en estado
+   "Pendiente de ejecucion".
+
+# Stop condition
+Detente cuando existan los 3 archivos de POC-02, todos referencien
+`docs/DTI.md §12.2` y ADR-0005, y ninguna seccion contenga metricas ejecutadas.
+
+# Output
+Markdown en `docs/pocs/POC-02-circuit-breaker-sie/` listo para ejecutar la POC.
+
+# Invariants
+- No inventar resultados numericos ni veredictos.
+- Mantener `Resultado: Pendiente de ejecucion`.
+- No exponer RUDE real ni payloads SIE con PII.
+- Criterio de exito: CB abre con 60 % de timeout/falla, recovery < 15 min y 0 duplicados.
+
+# Failure modes
+- E_MISSING_TEMPLATE: falta `plantillas/POC_TEMPLATE.md` -- STOP, solicitar.
+- E_MISSING_DTI_SECTION: falta `docs/DTI.md §12.2` -- STOP, no crear POC.
+- E_METRICS_INVENTED: aparece una metrica real sin evidencia -- remover y dejar pendiente.
+```
+
+---
+
+### PR-C4-003 -- Generacion del diagrama C4 Level 3 (Componentes) del contenedor api-gateway
+
+```markdown
+# Role
+Eres un Senior Solution Architect especializado en el modelo C4, en la
+arquitectura hexagonal de EduSync (DA-01..DA-05) y en Spring Boot 3.3 /
+Spring Security 6 / Spring AOP / Jakarta Bean Validation 3.0.
+
+# Task
+Genera el diagrama C4 Level 3 (Components) del contenedor `api-gateway`
+de EduSync en Mermaid, con su `.md` espejo (IG-09), descomponiendolo en
+los componentes de seguridad, controllers REST por FSD-UC, AOP de
+auditoria, manejo global de errores y DTOs web; sin invadir el dominio.
+
+# Context
+- Skill de referencia: `.cursor/skills/c4-edusync/SKILL.md` v0.3.0
+- Fuentes (precedencia descendente): `docs/fsd/FSD_EduSync.md` v1.0 (FSD-UC-001/003/004/005/009),
+  `docs/arquitectura_hexagonal_EduSync.md` v0.1 (puertos IN/OUT del nucleo),
+  `docs/dtos_EduSync.md` v0.1 (DTOs por capa), `docs/DTI.md` v0.3 §3.3
+  (bloque Mermaid existente; verificar drift), ADRs 0001/0003/0004.
+- Contenedor objetivo: `api-gateway` (Spring Boot 3.3 / Java 21 / ECS Fargate).
+- Archivos destino: `docs/diagrams/c4_level3_api_gateway.mmd` + `docs/diagrams/c4_level3_api_gateway.md` (espejo IG-09).
+- Restricciones: cabecera Mermaid `C4Component`; sin Unicode decorativo (IG-10);
+  `Math.floor()` MUST NOT aparecer en componentes de api-gateway (vive en
+  `ConsolidacionDomainService` dentro de domain-layer -- BR-008);
+  `audit_log` solo desde `AuditLogAspect` (DA-03);
+  RLS modelado como cross-cutting via `RLSTenantInjector` (DA-01 / NFR-010).
+
+# Reasoning
+1. Mapear cada FSD-UC critico (001, 003, 004, 005, 009) a su Controller principal en api-gateway.
+2. Identificar componentes cross-cutting (filtros JWT, RLS injector, AuditLogAspect, GlobalExceptionHandler) y justificarlos contra NFR/DA.
+3. Construir bloque `C4Component` con `Container_Boundary(api, ...)` que envuelve los 10 componentes; modelar `domain-layer`, `postgres-rls`, `event-bus`, KMS y Secrets Manager como externos al boundary.
+4. Cada `Rel` declara protocolo explicito y cita FSD-UC, DA o NFR aplicable.
+5. Generar `.md` espejo con tabla de trazabilidad obligatoria (FSD-UC <-> Componente <-> DA/BR/NFR) + reporte del paso `validate`.
+6. Validar contra §6 del skill c4-edusync (8 checks duros) antes de cerrar.
+
+# Stop condition
+Detente cuando `docs/diagrams/c4_level3_api_gateway.mmd` exista con cabecera `C4Component`, su `.md` espejo cumpla IG-09, la tabla de trazabilidad cubra los 5 FSD-UC criticos y los 4 componentes cross-cutting, y el reporte de `validate` muestre 8/8 checks duros en verde.
+
+# Output
+- `docs/diagrams/c4_level3_api_gateway.mmd` (Mermaid `C4Component`, 10 componentes dentro del boundary `api`, 6 elementos externos, ~25 relaciones con protocolo).
+- `docs/diagrams/c4_level3_api_gateway.md` (espejo narrativo con frontmatter YAML, alcance/frontera, tabla de trazabilidad obligatoria, reporte de validate, gaps resueltos).
+
+# Invariants
+- Cabecera Mermaid coincide con el nivel (`C4Component`); cero mezcla de niveles (IG-08).
+- `Math.floor()` no aparece en api-gateway; queda documentado explicitamente en la frontera (BR-008).
+- `audit_log` se escribe solo desde `AuditLogAspect` en la misma `@Transactional` (DA-03 / BR-010).
+- `tenant_id` y RLS modelados como cross-cutting via `RLSTenantInjector` + `postgres-rls` (DA-01 / NFR-010).
+- Sin caracteres Unicode decorativos en labels (IG-10).
+- DTOs son Records sin entidades JPA expuestas (AGENTS.md sec.5).
+- `.mmd` y `.md` versionados en el mismo commit (IG-09).
+
+# Failure modes
+- E_MISSING_FSD: falta `docs/fsd/FSD_EduSync.md` -- STOP, abortar generacion.
+- E_FLOOR_LEAK: `floor()` aparece en un componente del api-gateway -- STOP, mover a domain-layer (BR-008).
+- E_AUDIT_DIRECT: un controller escribe en `audit_log` sin pasar por `AuditLogAspect` -- STOP, refactorizar al aspecto.
+- E_RLS_BYPASS: existe un Rel hacia `postgres-rls` que omite `RLSTenantInjector` -- STOP, agregar el filtro.
+- E_UNICODE_LABELS: caracteres Unicode decorativos en labels del `.mmd` -- STOP, reemplazar por ASCII (IG-10).
+- E_MIRROR_MISSING: falta el `.md` espejo o no se actualizo en el mismo commit -- STOP, generar antes de cerrar (IG-09).
+- E_POC_FAIL_CONFLICT: un componente cuya POC asociada (POC-01 RLS) cerro con veredicto `fail` no debe dibujarse como operativo -- STOP, reportar y escalar.
+```
+
+---
+
+### PR-C4-004 -- Generacion del diagrama C4 Level 3 (Componentes) del contenedor domain-layer
+
+```markdown
+# Role
+Eres un Senior Software Architect especializado en C4, DDD tactico y arquitectura hexagonal Java 21.
+
+# Task
+Genera `docs/diagrams/c4_level3_domain_layer.mmd` y su espejo `.md`, descomponiendo el nucleo hexagonal de EduSync en puertos IN/OUT, servicios de dominio, Aggregate Roots, Value Objects y Domain Events.
+
+# Context
+- Fuentes: `docs/arquitectura_hexagonal_EduSync.md` v0.1, `docs/fsd/FSD_EduSync.md` v1.0, `docs/DTI.md` v0.4 §5, ADR-0002 y ADR-0004.
+- Contenedor objetivo: `domain-layer` (Java 21, sin Spring/JPA/AWS).
+- Archivos destino: `docs/diagrams/c4_level3_domain_layer.mmd` + `.md`.
+
+# Reasoning
+1. Mapear FSD-UC-001/002/003/004/005/009 a puertos IN y servicios de dominio.
+2. Separar puertos OUT de adaptadores externos (DB, event-bus, SIE, KMS).
+3. Verificar que `Math.floor()` solo vive en `ConsolidacionDomainService`.
+4. Emitir tabla FSD-UC <-> componente <-> DA/BR/NFR.
+
+# Stop condition
+Detente cuando el `.mmd` use `C4Component`, el `.md` espejo exista, y el reporte de validate confirme dominio puro sin dependencias Spring/JPA.
+
+# Output
+`docs/diagrams/c4_level3_domain_layer.mmd` + `docs/diagrams/c4_level3_domain_layer.md`.
+
+# Invariants
+- Domain layer sin Spring/JPA/AWS SDK.
+- `Math.floor()` solo en `ConsolidacionDomainService`.
+- `audit_log` se expresa como puerto/intencion; escritura fisica fuera del dominio.
+- Sin Unicode decorativo en labels (IG-10).
+
+# Failure modes
+- E_DOMAIN_SPRING_DEP: dependencia Spring/JPA aparece dentro del domain-layer -- STOP.
+- E_FLOOR_LEAK: `floor()` aparece fuera de `ConsolidacionDomainService` -- STOP.
+- E_MIRROR_MISSING: falta `.md` espejo -- STOP.
+```
+
+---
+
+### PR-C4-005 -- Generacion del diagrama C4 Level 3 (Componentes) del contenedor sie-adapter
+
+```markdown
+# Role
+Eres un Senior Integration Architect especializado en resiliencia Resilience4j, sistemas externos sin SLA y diagramas C4.
+
+# Task
+Genera `docs/diagrams/c4_level3_sie_adapter.mmd` y su espejo `.md`, modelando el adaptador SIE con payload RUDE-only, idempotencia, estado por registro, circuit breaker, metricas y WireMock.
+
+# Context
+- Fuentes: ADR-0005, `docs/fsd/FSD_EduSync.md` §FSD-UC-004, `docs/DTI.md` §6.1, `docs/pocs/POC-02-circuit-breaker-sie/README.md`.
+- Contenedor objetivo: `sie-adapter` (Spring RestClient + Resilience4j).
+- Archivos destino: `docs/diagrams/c4_level3_sie_adapter.mmd` + `.md`.
+
+# Reasoning
+1. Mapear FSD-UC-004 a SIEHttpClientAdapter, payload mapper, idempotency guard y state writer.
+2. Modelar circuit breaker, timeout, retry y scheduler segun ADR-0005.
+3. Asegurar que el payload SIE usa RUDE como unica clave y no expone PII en logs.
+4. Documentar POC-02 como validacion pendiente, sin inventar metricas.
+
+# Stop condition
+Detente cuando el `.mmd` use `C4Component`, el `.md` espejo exista, y el reporte de validate confirme RUDE-only, idempotencia y Resilience4j.
+
+# Output
+`docs/diagrams/c4_level3_sie_adapter.mmd` + `docs/diagrams/c4_level3_sie_adapter.md`.
+
+# Invariants
+- Payload SIE sin nombre, apellido, fecha de nacimiento ni posicion de lista.
+- Idempotencia por `(rude, periodo_id)` antes del envio.
+- Circuit breaker y retry trazados a ADR-0005.
+- Sin Unicode decorativo en labels (IG-10).
+
+# Failure modes
+- E_PII_IN_PAYLOAD: payload incluye PII distinta de RUDE -- STOP.
+- E_IDEMPOTENCY_MISSING: no aparece guard de `(rude, periodo_id)` -- STOP.
+- E_METRICS_INVENTED: se declaran metricas POC-02 reales sin evidencia -- STOP.
+```
+
+---
+
+### PR-C4-006 -- Generacion del diagrama C4 Deployment AWS
+
+```markdown
+# Role
+Eres un Senior Cloud Architect especializado en AWS, C4 Deployment y sistemas SaaS multitenant Java/Spring.
+
+# Task
+Genera `docs/diagrams/deployment_aws.mmd` y su espejo `.md`, modelando el despliegue objetivo AWS de EduSync con ECS Fargate, RDS Multi-AZ, CloudFront/S3, ALB/WAF, KMS, Secrets Manager, SQS FIFO/DLQ, CloudWatch, CloudTrail y Terraform.
+
+# Context
+- Fuentes: ADR-0006, `docs/DTI.md` §8, ADR-0001, ADR-0004 y ADR-0005.
+- Archivo destino: `docs/diagrams/deployment_aws.mmd` + `.md`.
+- Objetivo de defensa: criterio 2 (mapeo AWS justificado por capa) y criterio 7 (diagrama versionado `.mmd`).
+
+# Reasoning
+1. Mapear cada componente EduSync a servicio AWS con justificacion.
+2. Mantener monolito modular v1.0 sobre ECS Fargate; SQS como evolucion v1.1+.
+3. Modelar seguridad: TLS, WAF, KMS, Secrets Manager y CloudTrail.
+4. Modelar observabilidad: CloudWatch Logs/Metrics/Synthetics.
+
+# Stop condition
+Detente cuando el `.mmd` use `C4Deployment`, el `.md` espejo exista, y la tabla AWS -> responsabilidad cubra todos los servicios de ADR-0006.
+
+# Output
+`docs/diagrams/deployment_aws.mmd` + `docs/diagrams/deployment_aws.md`.
+
+# Invariants
+- No afirmar que `infra/` ya existe; Terraform es objetivo pendiente.
+- No convertir EduSync v1.0 en microservicios productivos.
+- RDS PostgreSQL 15 mantiene RLS.
+- Sin Unicode decorativo en labels (IG-10).
+
+# Failure modes
+- E_INFRA_INVENTED: se afirma que Terraform/infra ya existe sin evidencia -- STOP.
+- E_MICROSERVICE_DRIFT: el deployment muestra microservicios productivos v1.0 -- STOP.
+- E_AWS_MAPPING_GAP: servicio AWS de ADR-0006 sin nodo/justificacion -- STOP.
+```
+
+---
+
+### PR-ROADMAP-001 -- Generacion de la hoja de ruta tecnica de EduSync
+
+```markdown
+# Role
+Eres un Senior Technical Program Manager + Solution Architect del equipo G-EduSync, con dominio de Java 21, Spring Boot 3.3, PostgreSQL 15 RLS, Angular 17, AWS ECS Fargate, arquitectura hexagonal, multitenancy, Resilience4j y AI-SDLC.
+
+# Task
+Genera `docs/roadmap.md` como hoja de ruta tecnica y de negocio de EduSync hacia `release/2.0.0` y el siguiente modulo, con hitos trazados a FSD-UC, BR, NFR, ADR, POC y KPI.
+
+# Context
+- Fuentes: `docs/DTI.md` §12/§16/§17/§18/§19, ADR-0001..0006, POC-01, POC-02, FSD v1.0, BRD v2, AGENTS.md v0.7, PROMPT_MAPPING.md v1.5 y rúbrica del Módulo 4.
+- Archivo destino: `docs/roadmap.md`.
+- Restriccion: `docs/roadmap.md` es fuente canonica detallada; `docs/DTI.md §19` queda como espejo resumen.
+
+# Reasoning
+1. Leer DTI §19 para extraer los 4 horizontes y tags de release.
+2. Cruzar ADRs, POCs, FSD-UC, BR, NFR y KPIs para definir hitos medibles.
+3. Marcar POCs no ejecutadas como pendientes y no inventar metricas.
+4. Ubicar ADR-0007 Strangler Fig como decision futura gated por POCs verdes.
+5. Generar tablas de horizontes, lecciones, metricas, riesgos y compromisos.
+
+# Stop condition
+Detente cuando `docs/roadmap.md` exista con >= 200 lineas, 4 horizontes, >= 9 FSD-UC, >= 6 ADRs, >= 2 POCs, >= 5 NFRs, >= 3 BR, ADR-0007 futuro gated, y sin metricas POC fabricadas.
+
+# Output
+`docs/roadmap.md` v0.1 con metadatos, Gantt Mermaid, estado actual, 4 horizontes, lecciones del ciclo, Definition of Done, metricas de salud, riesgos, compromisos, trazabilidad cruzada y changelog.
+
+# Invariants
+- No inventar metricas de POC-01 ni POC-02 si no hay evidencia en `docs/pocs/POC-NN/evidencia/`.
+- Los release tags son `release/1.0.1`, `release/1.1.0`, `release/1.2.0`, `release/2.0.0`.
+- El roadmap cita al menos 9 FSD-UC, 6 ADRs, 2 POCs, 5 NFRs y 3 BR.
+- ADR-0007 aparece como futuro con gate explicito.
+- Cero secretos, cero PII, cero RUDE reales.
+
+# Failure modes
+- E_MISSING_DTI_SECTION_19: falta DTI §19 -- STOP.
+- E_RELEASE_TAG_MISMATCH: tags no coinciden con DTI §19 -- corregir.
+- E_POC_METRIC_FABRICATED: metricas POC sin evidencia -- reemplazar por pendiente.
+- E_MISSING_TRACEABILITY: hito sin ID real -- completar con FSD-UC/BR/NFR/ADR/POC/KPI.
+- E_CRITERIA_NOT_MEASURABLE: criterio sin valor numerico -- reemplazar por KPI o NFR.
+```
+
+---
+
+### PR-APORTES-001 -- Generacion del informe de aportes individuales (grupo unipersonal n = 1)
+
+```markdown
+# Role
+Eres un Documentation Auditor + Project Manager academico del grupo unipersonal G-EduSync (n = 1, integrante: Rodrigo Aspeti). Tienes acceso de solo lectura al repositorio EduSync (Java 21, Spring Boot 3.3, PostgreSQL 15 RLS, Angular 17, AWS ECS Fargate) y conoces el catalogo de 39 prompts materializados, los 6 ADRs aprobados, los 10 diagramas Mermaid versionados, las 2 POCs documentadas, los 9 skills propios EduSync, la rule `seguridad.mdc` y los documentos canonicos BRD/MRD/PRD/FSD/LFSD/DTI/AGENTS/roadmap. Conoces la granularidad estandar de `plantillas/APORTES_TEMPLATE.md §4` y la formula del modulo `factor = clamp(tareas_i / aporte_promedio, 0.5, 1.1)`. Sabes que con n = 1 el factor es trivialmente 1.0 y el archivo es un inventario auditable, no un ajuste relativo.
+
+# Task
+Genera `docs/aportes/release-2.0.0.md` siguiendo exactamente la estructura de `plantillas/APORTES_TEMPLATE.md` (6 secciones): §0 Metadatos, §1 Tabla de tareas atribuidas al unico integrante (>= 50 filas, todas verificables), §2 Resumen, §3 Calculo del factor (caso degenerado n = 1), §4 Reglas de granularidad (copia literal), §5 Auditoria del docente (placeholder), §6 Checklist. No modificar ningun otro archivo del repo.
+
+# Context
+- Plantilla fuente: `plantillas/APORTES_TEMPLATE.md` (no modificar; copiar estructura 1:1).
+- Documentos auditables: `AGENTS.md` v0.9 (raiz), `docs/DTI.md` v0.7, `docs/PROMPT_MAPPING.md` v1.7, `docs/roadmap.md` v0.1, `docs/brd/BRD_EduSync_v1.md`, `docs/brd/BRD_EduSync_v2.md`, `docs/mrd/MRD_EduSync.md`, `docs/prd/PRD_EduSync.md`, `docs/fsd/FSD_EduSync.md`, `docs/LFSD-EduSync.md`, `docs/arquitectura_funcional_EduSync.md`, `docs/arquitectura_hexagonal_EduSync.md`, `docs/dtos_EduSync.md`, `docs/APORTES_EduSync.md`, `docs/adr/0001..0006-*.md`, `docs/pocs/POC-01-*`, `docs/pocs/POC-02-*`, `docs/diagrams/*.mmd`, `prompts/PR-*.md`, skills propios bajo `.cursor/skills/<slug>/SKILL.md` (c4-edusync, dti-edusync, adr-edusync, poc-runner-edusync, sync-doc-chain, edusync-skill-creator, materialize-prompt-files, update-prompt-mapping, distributed-architecture-reviewer), `.cursor/rules/seguridad.mdc`.
+- Categorias admitidas (lista cerrada): `BRD` · `MRD` · `PRD` · `FSD` · `UC` · `NFR` · `Gherkin` · `Diagrama` · `ADR` · `AGENTS` · `Skill` · `Rule` · `POC` · `Codigo` · `Test` · `Presentacion` · `Bitacora` · `Prompt` · `Otro`.
+- Granularidad: literal de `APORTES_TEMPLATE.md §4`.
+- Privacidad: solo nombre del unico integrante. Cero correos, telefonos, IDs academicos.
+- INPUTS (bloque YAML del invocador):
+  release: "release/2.0.0"
+  sesion: "S12"
+  fecha_cierre: "<dd/mm/aaaa>"
+  branch: "release/2.0.0"
+  commit_head: "<hash | null>"
+  integrantes: [{nombre: "Rodrigo Aspeti", seudonimo: null}]
+  n_integrantes: 1
+  nota_grupal: null
+
+# Reasoning
+1. Validar INPUTS: si n_integrantes != 1 o lista integrantes != 1 entrada, abortar con E_N_INTEGRANTES_NO_VALIDO; si release != release/2.0.0, abortar con E_RELEASE_TAG_MISMATCH.
+2. Construir inventario exhaustivo: cada prompt PR-* (Categoria Prompt), cada ADR (Categoria ADR), cada diagrama .mmd (Categoria Diagrama), cada POC README y runbook (Categoria POC), cada skill propio (Categoria Skill), cada rule (Categoria Rule), cada documento canonico (Categoria correspondiente), cada bump documental sustantivo (Categoria Bitacora). NO contar los 19 skills canonicos importados de plantillas2/.
+3. Imputar todas las filas a Rodrigo Aspeti (no mapping de atribuciones porque n = 1).
+4. Construir §1 ordenado cronologicamente con columnas exactas: # | Integrante | Tarea concreta | Categoria | Referencia | Fecha.
+5. Construir §2 con una fila para Rodrigo + total grupo identico.
+6. Construir §3: aporte_promedio = T/1 = T; factor_raw = T/T = 1.00; factor = clamp(1.00, 0.5, 1.1) = 1.00; agregar nota explicita del caso degenerado n = 1. Si nota_grupal != null, columna nota_individual = nota_grupal x 1.00; si es null, omitir la columna.
+7. Copiar §4 literalmente desde APORTES_TEMPLATE.md §4.
+8. Insertar §5 vacio con tabla cabecera + nota placeholder.
+9. §6 Checklist con [x] en §0..§4 y [ ] en el item del commit final.
+10. No tocar ningun otro archivo.
+
+# Stop condition
+Detente cuando docs/aportes/release-2.0.0.md exista con las 6 secciones de la plantilla, §1 tenga >= 50 filas, §2 cuadre con §1, §3 declare factor = 1.00 con nota del caso degenerado, §4 sea copia literal, §6 tenga 5 [x] y 1 [ ], no se modifico ningun otro archivo, y cero PII fuera del nombre del integrante.
+
+# Output
+docs/aportes/release-2.0.0.md v1.0 con: §0 metadatos (Rodrigo Aspeti n = 1), §1 tabla con >= 50 filas auditables, §2 resumen, §3 calculo (factor = 1.00 + nota n = 1), §4 literal de APORTES_TEMPLATE.md §4, §5 placeholder, §6 checklist 5/6.
+
+# Invariants
+- 6 secciones de APORTES_TEMPLATE.md en orden y con titulos identicos.
+- n_integrantes == 1 SIEMPRE; cualquier otra cardinalidad aborta.
+- Toda fila de §1 tiene Integrante = "Rodrigo Aspeti" y Categoria de la lista cerrada.
+- Sigma tareas §2 == count(§1).
+- factor == 1.00 SIEMPRE (consecuencia matematica de n = 1).
+- §3 incluye la nota explicita del caso degenerado n = 1.
+- §4 copia literal byte-a-byte de APORTES_TEMPLATE.md §4.
+- Si nota_grupal es null, la columna nota_individual de §3 esta ausente.
+- Cero PII fuera del nombre del integrante.
+- No modificar ningun otro archivo del repo.
+- No contar los 19 skills canonicos importados de plantillas2/.
+
+# Failure modes
+- E_N_INTEGRANTES_NO_VALIDO: n_integrantes != 1 o lista integrantes no tiene 1 entrada -- STOP.
+- E_RELEASE_TAG_MISMATCH: release != release/2.0.0 -- corregir tag o cambiar destino.
+- E_CATEGORIA_INVALIDA: una fila usa Categoria fuera de la lista cerrada -- reemplazar.
+- E_REFERENCIA_NO_VERIFICABLE: una fila apunta a archivo/seccion inexistente -- corregir.
+- E_GRANULARIDAD_INFLADA: una fila no cumple §4 (cambio cosmetico, typo, copy-paste) -- eliminar.
+- E_TOTAL_DESCUADRADO: Sigma §2 != count(§1) -- recontar.
+- E_FACTOR_NO_UNITARIO_N1: con n = 1, factor != 1.00 -- forzar 1.00 y registrar incidente.
+- E_INVENTARIO_INCOMPLETO: §1 tiene menos de 50 filas -- recorrer nuevamente el repo.
+- E_PII_FILTRADA: archivo contiene PII mas alla del nombre -- revertir y sanear.
+- E_OUT_OF_SCOPE_EDIT: se modifico otro archivo del repo -- revertir.
+```
+
+---
+
+### PR-VFINAL-001 -- Freeze documental de BRD/MRD/PRD/FSD para release/2.0.0
+
+```markdown
+# Role
+Eres un Documentation Curator + Release Manager del grupo G-EduSync. Tu unica funcion es congelar documentos canonicos a snapshots inmutables `_vFinal.md` para que la rubrica del Modulo 4 pueda auditar la entrega `release/2.0.0` sin depender de ediciones posteriores. Operas sobre `docs/brd/`, `docs/mrd/`, `docs/prd/` y `docs/fsd/`. No tomas decisiones de contenido; eres un transformador deterministico.
+
+# Task
+Genera 4 archivos `_vFinal.md` (uno por documento canonico) siguiendo la convencion `<doc>_vFinal.md`. Cada destino es la copia literal del documento canonico fuente, precedida por un banner uniforme de freeze. No se modifica ningun otro archivo del repo en esta tarea.
+
+# Context
+- Sources: `docs/brd/BRD_EduSync_v2.md`, `docs/mrd/MRD_EduSync.md`, `docs/prd/PRD_EduSync.md`, `docs/fsd/FSD_EduSync.md`.
+- Targets: `docs/brd/BRD_EduSync_vFinal.md`, `docs/mrd/MRD_EduSync_vFinal.md`, `docs/prd/PRD_EduSync_vFinal.md`, `docs/fsd/FSD_EduSync_vFinal.md`.
+- Release: `release/2.0.0`.
+- Fecha de freeze: 28/05/2026.
+- Autor: Rodrigo Aspeti.
+- Overwrite: false.
+- Banner uniforme: fuente canonica, version congelada, fecha, release, prompt origen y agente.
+
+# Reasoning
+1. Validar que existen exactamente 4 pares source-target.
+2. Validar que cada source existe y que el target no existe si overwrite=false.
+3. Leer cada source completo sin modificarlo.
+4. Escribir cada target con banner uniforme + separador `---` + contenido literal del source.
+5. Verificar conteos normativos por prefijo: BR/RB/KPI para BRD, MRD-N para MRD, PRD-REQ para PRD, FSD-UC para FSD.
+6. Confirmar que los sources no fueron modificados y reportar tabla de resultado.
+
+# Stop condition
+Detente cuando existan los 4 `_vFinal.md`, todos empiecen con banner de freeze, los conteos normativos target >= source y no se haya modificado ningun documento fuente.
+
+# Output
+4 aliases: `docs/brd/BRD_EduSync_vFinal.md`, `docs/mrd/MRD_EduSync_vFinal.md`, `docs/prd/PRD_EduSync_vFinal.md`, `docs/fsd/FSD_EduSync_vFinal.md` + reporte source -> target con lineas y conteos normativos.
+
+# Invariants
+- Cada target comienza con banner uniforme de freeze.
+- Cada target reside en la misma carpeta que su source.
+- Ningun source se modifica.
+- No se toca ningun archivo fuera de los 4 targets durante el freeze.
+- Los conteos normativos de cada target son iguales o mayores que los del source; la diferencia esperada solo puede venir del banner.
+- Cero PII introducida por el banner.
+
+# Failure modes
+- E_INVENTARIO_INCOMPLETO: no hay exactamente 4 pares source-target -- STOP.
+- E_MISSING_SOURCE: algun source no existe -- STOP.
+- E_TARGET_EXISTS: target existe con overwrite=false -- STOP.
+- E_PATH_MISMATCH: target no esta en la misma carpeta del source -- STOP.
+- E_NORMATIVE_DRIFT: target pierde IDs normativos del source -- revertir.
+- E_BANNER_MISSING: target no inicia con banner de freeze -- revertir.
+- E_CANONICO_MUTADO: source modificado durante el freeze -- revertir lote.
+- E_OUT_OF_SCOPE_EDIT: se toco archivo fuera de los 4 targets -- revertir.
+```
+
+---
+
+### PR-IMPL-001 — Bootstrap del esqueleto de código (backend Java 25 + frontend Angular 21 + infra)
+
+```markdown
+# Role
+Eres un Senior Software Engineer con experiencia en arquitectura hexagonal,
+monolitos modulares con Spring Modulith, Spring Boot 4.x sobre Java 25 LTS,
+y bootstrapping de proyectos Angular 21 con standalone components.
+
+# Task
+Genera el esqueleto de código fuente de EduSync para release/3.0.0: estructura
+de carpetas backend/frontend/infra, pom.xml del backend con Spring Modulith,
+los 5 modulos vacios bajo el paquete com.edusync, el test ModularityTests,
+el esqueleto Angular 21 del frontend y el docker-compose.yml de desarrollo,
+exactamente como se describe en docs/design/DD-UC-001.md §2.
+
+# Context
+- Documento fuente: docs/design/DD-UC-001.md (§1 objetivo, §2 diseño con arbol de carpetas completo).
+- ADRs aplicables: ADR-0008 (Java 25 LTS / Spring Boot 4.1.0 / Angular 21 LTS),
+  ADR-0011 (monolito modular Spring Modulith, module-first, paquete base com.edusync).
+- Modulos backend a crear (vacios, solo estructura + package-info.java):
+  com.edusync.plataforma, com.edusync.identidad, com.edusync.academico,
+  com.edusync.notassie, com.edusync.shared.
+- Restricciones de dominio: ningun modulo debe contener logica de negocio en
+  este prompt (eso corresponde a DD-UC-002 en adelante); solo estructura,
+  configuracion y el test de arquitectura.
+- Restricciones tecnicas: Java 25 (LTS), Spring Boot 4.1.0 (Spring Framework 7.0.8),
+  Spring Modulith (starter-test), PostgreSQL 15 (driver + Flyway), Angular 21 (LTS,
+  standalone components), sin Nx.
+
+# Reasoning
+1. Crear la estructura de carpetas backend/, frontend/, infra/ en la raiz del repo.
+2. Generar backend/pom.xml (parent Spring Boot 4.1.0, Java 25, dependencias:
+   spring-boot-starter-web, spring-boot-starter-data-jpa, spring-boot-starter-security,
+   spring-modulith-starter-core + spring-modulith-starter-test, postgresql, flyway-core).
+3. Crear com.edusync.EduSyncApplication y los 5 paquetes de modulo (domain/application/
+   infrastructure vacios) segun el arbol de DD-UC-001 §2.
+4. Crear backend/src/test/java/com/edusync/ModularityTests.java con
+   ApplicationModules.of(EduSyncApplication.class).verify().
+5. Crear application.yml/application-dev.yml/application-test.yml y
+   db/migration/V1__init.sql (Flyway baseline vacio).
+6. Generar frontend/ con Angular 21 (standalone), carpetas core/shared/features vacias.
+7. Crear infra/docker-compose.yml con PostgreSQL 15 para desarrollo local.
+8. Verificar que mvn -q -DskipTests=false test y ng build no fallan (smoke test).
+
+# Stop condition
+Detente cuando: (a) el arbol de carpetas coincide exactamente con DD-UC-001 §2,
+(b) ModularityTests compila y pasa en verde, (c) ng build del frontend no falla,
+(d) ningun archivo generado contiene logica de dominio (solo estructura/config).
+No continues implementando entidades, endpoints ni pantallas -- eso es DD-UC-002+.
+
+# Output
+Codigo fuente real en backend/, frontend/, infra/ (no markdown). Extracto esperado:
+backend/src/main/java/com/edusync/EduSyncApplication.java,
+backend/src/main/java/com/edusync/plataforma/package-info.java,
+backend/src/test/java/com/edusync/ModularityTests.java,
+frontend/src/app/app.config.ts, infra/docker-compose.yml.
+
+# Invariants
+- El paquete base de todo el codigo Java debe ser com.edusync (ADR-0011), nunca bo.edusync.
+- Ningun modulo debe importar clases internas de otro modulo salvo shared.
+- ModularityTests debe existir y pasar antes de cerrar el prompt.
+- El frontend debe ser una unica aplicacion Angular 21 (sin Nx).
+
+# Failure modes
+- E_PAQUETE_INCORRECTO: codigo generado bajo bo.edusync u otro paquete -- rechazar y regenerar.
+- E_ACOPLAMIENTO_ENTRE_MODULOS: import directo entre modulos distintos fuera de shared -- ModularityTests debe fallar el build.
+- E_LOGICA_PREMATURA: se genero logica de negocio en este prompt -- revertir, corresponde a DD-UC-002+.
+```
+
+---
+
+### PR-IMPL-002 — Modulo identidad: Usuario/UsuarioRol y autenticacion (login, JWT, seed SysAdmin)
+
+```markdown
+# Role
+Eres un Senior Software Engineer con experiencia en arquitectura hexagonal,
+monolitos modulares con Spring Modulith, Spring Security 7 sobre Spring Boot 4.1.0 /
+Java 25 LTS, autenticacion JWT stateless y PostgreSQL 15 con Row-Level Security.
+
+# Task
+Implementa el modulo com.edusync.identidad sobre el esqueleto de DD-UC-001: el
+dominio Usuario/UsuarioRol con su invariante de exclusion mutua SYSADMIN/tenant,
+el flujo de login con JWT, el seed del primer SYSADMIN, la implementacion real
+de TenantContextProvider (shared/tenant) y el puerto publico UsuarioCreacionPort,
+exactamente como se describe en docs/design/DD-UC-002.md §2.
+
+# Context
+- Documento fuente: docs/design/DD-UC-002.md (§1 objetivo, §2 diseno, §3 alternativas
+  elegidas: JWT HS256, politica RLS "OR tenant_id IS NULL" con filtro explicito
+  adicional en UsuarioRepositoryPort).
+- ADRs aplicables: ADR-0001 (RLS multitenancy), ADR-0008 (stack), ADR-0010
+  (invariante tenant_id IS NULL <=> roles = {SYSADMIN}), ADR-0011 (modulo
+  identidad, puerto publico UsuarioCreacionPort como Open Host Service).
+- Prerequisito: DD-UC-001 / PR-IMPL-001 ya ejecutado.
+- Restricciones de dominio: NO implementar el CRUD administrativo completo de
+  usuarios (DD-UC-004) ni la gestion de Tenant (DD-UC-003) en este prompt.
+- Restricciones tecnicas: JWT HS256 (secreto en variable de entorno JWT_SECRET),
+  expiracion 8h (PRD-NFR-007), BCrypt, Flyway V2__identidad_usuario.sql con
+  politica RLS "OR tenant_id IS NULL".
+
+# Reasoning
+1. Crear com.edusync.identidad.domain: Usuario (invariante en factory), UsuarioRol, Rol.
+2. Crear com.edusync.identidad.application: puertos in/out y servicios.
+3. Crear AuthController (POST /api/v1/auth/login) y UsuarioCreacionPortImpl.
+4. Crear adaptador JPA con el filtro explicito de tenant_id sobre la politica RLS.
+5. Crear JwtTokenProvider, JwtAuthenticationFilter, SecurityConfig (BCrypt).
+6. Implementar com.edusync.shared.tenant.TenantContextProvider real (SET app.current_tenant).
+7. Crear V2__identidad_usuario.sql (tablas + politica RLS "OR tenant_id IS NULL").
+8. Crear el seed del primer SYSADMIN (password desde variable de entorno).
+9. Verificar ModularityTests en verde y ausencia de acoplamiento entre modulos.
+
+# Stop condition
+Detente cuando: (a) el login devuelve JWT valido para el SYSADMIN seed y 401 para
+credenciales invalidas, (b) la invariante tenant_id/roles esta validada en dominio,
+(c) TenantContextProvider fija app.current_tenant en un test de integracion,
+(d) ModularityTests pasa en verde, (e) UsuarioCreacionPort esta listo para DD-UC-003.
+No implementes el CRUD administrativo completo ni la gestion de Tenant.
+
+# Output
+Codigo fuente real en backend/ (no markdown). Extracto esperado:
+backend/src/main/java/com/edusync/identidad/domain/Usuario.java,
+backend/src/main/java/com/edusync/identidad/infrastructure/adapter/in/rest/AuthController.java,
+backend/src/main/java/com/edusync/identidad/infrastructure/security/JwtAuthenticationFilter.java,
+backend/src/main/java/com/edusync/shared/tenant/TenantContextProvider.java,
+backend/src/main/resources/db/migration/V2__identidad_usuario.sql.
+
+# Invariants
+- tenant_id IS NULL debe ser equivalente exactamente a roles = {SYSADMIN} (ADR-0010),
+  validado en el dominio, no solo en REST.
+- Ningun otro modulo debe importar clases de identidad.domain/application (ADR-0011).
+- El secreto JWT no debe estar hardcodeado.
+- UsuarioRepositoryPort debe filtrar explicitamente por tenant_id (mitigacion de la
+  politica RLS "OR tenant_id IS NULL").
+- ModularityTests debe seguir en verde.
+
+# Failure modes
+- E_INVARIANTE_ROL_VIOLADA: se permite persistir SYSADMIN combinado con rol de tenant -- corregir la factory de Usuario.
+- E_ACOPLAMIENTO_ENTRE_MODULOS: import directo de identidad.domain/application desde otro modulo -- ModularityTests debe fallar.
+- E_ALCANCE_EXCEDIDO: se implemento el CRUD completo de usuarios o la gestion de Tenant -- revertir, corresponde a DD-UC-003/004.
+- E_FILTRO_TENANT_AUSENTE: UsuarioRepositoryPort no aplica el filtro explicito de tenant_id -- corregir el adaptador de persistencia.
+```
+
+---
+
+### PR-IMPL-003 — Modulo plataforma: alta y gestion de Tenants y Suscripciones
+
+```markdown
+# Role
+Eres un Senior Software Engineer con experiencia en arquitectura hexagonal,
+monolitos modulares con Spring Modulith, Spring Boot 4.1.0 / Java 25 LTS,
+schedulers de Spring y diseno de puertos publicos entre modulos (Open Host Service).
+
+# Task
+Implementa el modulo com.edusync.plataforma sobre el esqueleto de DD-UC-001 y el
+modulo identidad ya implementado en DD-UC-002: el dominio Tenant con su ciclo de
+suscripcion, el scheduler diario de vencimiento, el puerto publico
+TenantConsultaPort, y la modificacion de AutenticarUsuarioService (modulo
+identidad) para aplicar BR-014, exactamente como se describe en
+docs/design/DD-UC-003.md §2.
+
+# Context
+- Documento fuente: docs/design/DD-UC-003.md (§1 objetivo, §2 diseno, §3
+  alternativas elegidas: scheduler @Scheduled interno, alta de tenant+admin en
+  dos llamadas REST separadas).
+- ADRs aplicables: ADR-0009, ADR-0010 (SysAdmin sin tenant, autoriza los
+  endpoints de este modulo), ADR-0011 (modulo plataforma, comunicacion
+  bidireccional plataforma<->identidad solo via puertos publicos:
+  UsuarioCreacionPort ya existente de DD-UC-002, TenantConsultaPort nuevo).
+- Prerequisito: DD-UC-001/PR-IMPL-001 y DD-UC-002/PR-IMPL-002 ya ejecutados.
+- Restricciones de dominio: NO implementar el resto de FSD-UC-012..020 ni el
+  diseno del tenant demo (diferido a un Design Doc posterior).
+- Restricciones tecnicas: alta de tenant + admin en DOS endpoints REST
+  separados (nunca combinados); scheduler con @Scheduled de Spring (sin
+  ShedLock por ahora); tabla tenant SIN politica RLS propia.
+
+# Reasoning
+1. Crear com.edusync.plataforma.domain: Tenant, EstadoTenant.
+2. Crear puertos in/out y servicios de aplicacion.
+3. Crear TenantController: POST /tenants, POST /tenants/{id}/admins (delega a
+   UsuarioCreacionPort), PATCH /tenants/{id}/estado.
+4. Crear VencimientoSchedulerJob (@Scheduled diario, marca VENCIDO).
+5. Crear TenantConsultaPortImpl (Open Host Service).
+6. Modificar AutenticarUsuarioService para aplicar BR-014 (403
+   E_TENANT_NO_ACTIVO si el tenant esta SUSPENDIDO/VENCIDO, sin eliminar datos).
+7. Crear V3__plataforma_tenant.sql (sin politica RLS).
+8. Verificar ModularityTests: plataforma<->identidad solo via puertos publicos.
+
+# Stop condition
+Detente cuando: (a) POST /tenants crea un Tenant ACTIVO, (b) POST
+/tenants/{id}/admins crea el admin via UsuarioCreacionPort, (c) el scheduler
+marca VENCIDO correctamente, (d) el login de un tenant SUSPENDIDO/VENCIDO
+devuelve 403 sin eliminar datos, (e) ModularityTests pasa en verde. No
+implementes el resto de FSD-UC-012..020 ni el tenant demo.
+
+# Output
+Codigo fuente real en backend/ (no markdown). Extracto esperado:
+backend/src/main/java/com/edusync/plataforma/domain/Tenant.java,
+backend/src/main/java/com/edusync/plataforma/infrastructure/adapter/in/rest/TenantController.java,
+backend/src/main/java/com/edusync/plataforma/infrastructure/adapter/in/scheduler/VencimientoSchedulerJob.java,
+backend/src/main/resources/db/migration/V3__plataforma_tenant.sql.
+
+# Invariants
+- La alta de tenant y la creacion de su admin deben ser dos endpoints separados.
+- Ningun modulo distinto de plataforma debe importar sus clases internas
+  (solo TenantConsultaPort).
+- AutenticarUsuarioService debe rechazar login de tenants SUSPENDIDO/VENCIDO
+  sin eliminar datos academicos.
+- ModularityTests debe seguir en verde.
+
+# Failure modes
+- E_ALTA_COMBINADA: se genero un unico endpoint tenant+admin -- separar en dos llamadas.
+- E_ACOPLAMIENTO_ENTRE_MODULOS: import directo plataforma<->identidad fuera de los puertos publicos -- ModularityTests debe fallar.
+- E_DATOS_ELIMINADOS_TENANT_SUSPENDIDO: se elimino data academica al suspender/vencer -- revertir, BR-014 exige preservarla.
+- E_ALCANCE_EXCEDIDO: se implemento el tenant demo o FSD-UC-012..020 -- revertir, corresponde a Design Docs posteriores.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
@@ -2006,6 +2743,18 @@ tabla de evidencia, tabla T1.8, recomendacion, separador final.
 | docs/fsd/FSD_EduSync.md + docs/prd/PRD_EduSync.md + docs/LFSD-EduSync.md + docs/arquitectura_funcional_EduSync.md | `FSD-UC-001..010, BR-001..BR-012, DA-01..DA-05, NFR-001..016` | PR-HEX-001 | `arch-agent` | Arquitectura hexagonal del core EduSync v0.1 (20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots) | `docs/arquitectura_hexagonal_EduSync.md` |
 | docs/fsd/FSD_EduSync.md + docs/arquitectura_hexagonal_EduSync.md + docs/AGENTS.md | `FSD-UC-001, FSD-UC-003, FSD-UC-005, BR-001..BR-011, DA-01..DA-03` | PR-DTO-001 | `dev-agent` | DTOs por capa hexagonal EduSync v0.1 (4 Request DTOs, 4 Commands, 3 Response DTOs, 5 Domain Events, 5 enums, 3 tablas DTO ↔ Entidad) | `docs/dtos_EduSync.md` |
 | DTI §4.1/§5/§6 + BRD v2 + FSD EduSync | `FSD-UC-001, FSD-UC-003, FSD-UC-004, FSD-UC-005, FSD-UC-009, BR-002, BR-004, BR-005, BR-008, BR-011, DA-04, DA-05, NFR-001` | PR-DTI-SEAMS-001 | `docs-agent` | Seams de descomposicion EduSync §6.2 + registro de cambios DTI v0.2 | `docs/DTI.md` |
+| plantillas/POC_TEMPLATE.md + DTI §12.1 + ADR-0001 + AGENTS.md | `POC-01, DA-01, ADR-0001, NFR-010` | PR-POC-001 | `docs-agent` | Estructura documental POC-01 RLS multitenancy | `docs/pocs/POC-01-rls-multitenancy/` |
+| plantillas/POC_TEMPLATE.md + DTI §12.2 + ADR-0005 + AGENTS.md | `POC-02, DA-05, ADR-0005, NFR-011, NFR-012` | PR-POC-002 | `docs-agent` | Estructura documental POC-02 Circuit Breaker SIE | `docs/pocs/POC-02-circuit-breaker-sie/` |
+| docs/fsd/FSD_EduSync.md + docs/arquitectura_hexagonal_EduSync.md + docs/dtos_EduSync.md + docs/DTI.md §3.3 + ADRs 0001/0003/0004 | `FSD-UC-001/003/004/005/009, DA-01, DA-03, DA-04, BR-001, BR-002, BR-004, BR-005, BR-006, BR-007, BR-008, BR-009, BR-010, NFR-003, NFR-006, NFR-008, NFR-010` | PR-C4-003 | `arch-agent` | C4 Level 3 (Componentes) del contenedor api-gateway: 10 componentes (`JwtAuthFilter`, `RLSTenantInjector`, 5 Controllers, `AuditLogAspect`, `GlobalExceptionHandler`, Web DTOs) | `docs/diagrams/c4_level3_api_gateway.mmd` + `docs/diagrams/c4_level3_api_gateway.md` |
+| docs/arquitectura_hexagonal_EduSync.md + docs/fsd/FSD_EduSync.md + docs/DTI.md §5 + ADR-0002 + ADR-0004 | `FSD-UC-001/002/003/004/005/009, BR-001..BR-011, DA-02, DA-04` | PR-C4-004 | `arch-agent` | C4 Level 3 (Componentes) del contenedor domain-layer: puertos IN/OUT, servicios de dominio, aggregates, VOs y eventos | `docs/diagrams/c4_level3_domain_layer.mmd` + `docs/diagrams/c4_level3_domain_layer.md` |
+| ADR-0005 + docs/fsd/FSD_EduSync.md §FSD-UC-004 + docs/DTI.md §6.1 + docs/pocs/POC-02-circuit-breaker-sie/README.md | `FSD-UC-004, DA-05, BR-004, NFR-003, NFR-004, NFR-011, NFR-012, POC-02` | PR-C4-005 | `arch-agent` | C4 Level 3 (Componentes) del contenedor sie-adapter: SIEHttpClientAdapter, payload RUDE-only, idempotencia, estado por registro, circuit breaker, metricas y WireMock | `docs/diagrams/c4_level3_sie_adapter.mmd` + `docs/diagrams/c4_level3_sie_adapter.md` |
+| ADR-0006 + docs/DTI.md §8 + ADR-0001 + ADR-0004 + ADR-0005 | `ADR-0006, NFR-001, NFR-002, NFR-003, NFR-007, NFR-009, DA-01, DA-04, DA-05` | PR-C4-006 | `arch-agent` | C4 Deployment AWS: CloudFront/S3, ALB/WAF, ECS Fargate, RDS Multi-AZ, SQS FIFO/DLQ, KMS, Secrets Manager, CloudWatch, CloudTrail y Terraform | `docs/diagrams/deployment_aws.mmd` + `docs/diagrams/deployment_aws.md` |
+| DTI §19 + ADRs + POCs + BRD v2 + FSD + rúbrica del Módulo 4 | `DTI §19, ADR-0001..0006, POC-01, POC-02, FSD-UC-001..010, BR-001..BR-012, NFR-001..016, KPI-01..05` | PR-ROADMAP-001 | `docs-agent` | Roadmap tecnico y de negocio v0.1 con 4 horizontes, Gantt, lecciones, metricas, riesgos y compromisos hacia `release/2.0.0` y siguiente modulo | `docs/roadmap.md` |
+| `plantillas/APORTES_TEMPLATE.md` + auditoría exhaustiva del repo (39 prompts + 6 ADRs + 10 diagramas + 2 POCs + 9 skills propios + 1 rule + documentos canónicos) + AGENTS.md §16 L489 + roadmap §5 L-09 | `APORTES, INPUT.n_integrantes=1, integrantes=[Rodrigo Aspeti], release/2.0.0` | PR-APORTES-001 | `docs-agent` | Informe de aportes individuales `release/2.0.0` con 95 tareas auditables, 11 categorías cubiertas, factor 1.00 (caso degenerado n = 1) y checklist 5/6 (commit final pendiente) | `docs/aportes/release-2.0.0.md` |
+| BRD v2 + MRD v1.0 + PRD v1.0 + FSD v1.0 + AGENTS.md §16 alias `_vFinal` | `BRD v2, MRD v1.0, PRD v1.0, FSD v1.0, release/2.0.0` | PR-VFINAL-001 | `docs-agent` | Freeze documental de BRD/MRD/PRD/FSD como snapshots inmutables `_vFinal.md` con banner uniforme para auditoría de release | `docs/brd/BRD_EduSync_vFinal.md` + `docs/mrd/MRD_EduSync_vFinal.md` + `docs/prd/PRD_EduSync_vFinal.md` + `docs/fsd/FSD_EduSync_vFinal.md` |
+| Design Doc `DD-UC-001` + `ADR-0011` + `ADR-0008` + `docs/product/FSD.md` (`FSD-UC-011`, `FSD-UC-021`) | `DD-UC-001, ADR-0011, FSD-UC-011, FSD-UC-021` | PR-IMPL-001 | `dev-agent` | Esqueleto de código de `release/3.0.0` (monolito modular Spring Modulith, paquete `com.edusync`, Angular 21) — ejecución pendiente | `backend/`, `frontend/`, `infra/docker-compose.yml`; prompt en `docs/prompts/impl/PR-IMPL-001.md` |
+| Design Doc `DD-UC-002` + `ADR-0001` + `ADR-0010` + `ADR-0011` + `docs/product/FSD.md` (`FSD-UC-021`) | `DD-UC-002, ADR-0001, ADR-0010, ADR-0011, FSD-UC-021` | PR-IMPL-002 | `dev-agent` | Módulo `identidad` (login JWT, seed `SYSADMIN`, `TenantContextProvider` real, política RLS `OR tenant_id IS NULL`) — ejecución pendiente | `backend/src/main/java/com/edusync/identidad/**`, `shared/tenant/TenantContextProvider.java`; prompt en `docs/prompts/impl/PR-IMPL-002.md` |
+| Design Doc `DD-UC-003` + `ADR-0009` + `ADR-0010` + `ADR-0011` + `docs/product/FSD.md` (`FSD-UC-011`) | `DD-UC-003, ADR-0009, ADR-0010, ADR-0011, FSD-UC-011` | PR-IMPL-003 | `dev-agent` | Módulo `plataforma` (alta/gestión de Tenants, scheduler de vencimiento, `TenantConsultaPort`, enforcement de `BR-014`) — ejecución pendiente | `backend/src/main/java/com/edusync/plataforma/**`; prompt en `docs/prompts/impl/PR-IMPL-003.md` |
 
 ---
 
@@ -2025,3 +2774,16 @@ tabla de evidencia, tabla T1.8, recomendacion, separador final.
 | v1.0 | 28/05/2026 | Rodrigo Aspeti | Materializacion de 31 archivos individuales en `prompts/PR-*.md` (9 secciones cada uno); columnas "Archivo" y "Metricas" anadidas al indice de prompts; trazabilidad simbolo → archivo → metricas antes/despues completa |
 | v1.1 | 28/05/2026 | Rodrigo Aspeti | Incorporacion de PR-DTI-SEAMS-001 (seams de descomposicion EduSync §6.2); version activa actualizada; indice, flowchart, matriz docs-agent, contrato inline, trazabilidad y archivo individual `prompts/PR-DTI-SEAMS-001.md` agregados |
 | v1.2 | 28/05/2026 | Rodrigo Aspeti | Normalizacion de rutas canonicas en todo el catalogo: `docs/fsd/FSD-EduSync.md` -> `docs/fsd/FSD_EduSync.md` (5 ocurrencias en indice, contratos PR-FSD-001 y trazabilidad); `docs/lfsd/LFSD-EduSync.md` -> `docs/LFSD-EduSync.md` (6 ocurrencias en indice, contratos PR-LFSD-001 y trazabilidad); `docs/FSD_EduSync.md` -> `docs/fsd/FSD_EduSync.md` (PR-LFSD-001 insumo). Matriz docs-agent actualizada. Sin cambios en numero de prompts ni en contratos |
+| v1.3 | 28/05/2026 | Rodrigo Aspeti | Incorporacion de PR-POC-001 y PR-POC-002 (estructura documental inicial de POC-01 RLS y POC-02 Circuit Breaker SIE); area POC añadida al header; indice, flowchart, matriz docs-agent, contratos inline, trazabilidad y archivos individuales `prompts/PR-POC-001.md` y `prompts/PR-POC-002.md` agregados |
+| v1.3.1 | 28/05/2026 | Rodrigo Aspeti | Sincronizacion cruzada (aplicada via `sync-doc-chain`) tras bump `docs/DTI.md` v0.2 → v0.3: §10 del DTI actualizado a v1.3 (30 prompt-contratos), tabla de areas del DTI ampliada para reflejar UC/ADR/AUD/INF/HEX/DTO/DTI/POC. Sin cambios en numero de prompts ni en contratos; solo trazabilidad reciproca |
+| v1.4 | 28/05/2026 | Rodrigo Aspeti | Incorporacion de PR-C4-003 (C4 Level 3 Componentes del contenedor `api-gateway`); cabecera `Versión activa: v1.3 → v1.4`; indice ampliado (fila PR-C4-003 con metricas antes/despues); flowchart Mermaid extendido con nodo `C4L3API` en el subgraph ARQUITECTURA y aristas C4L2/DTI/HEX/DTO -> C4L3API; matriz `arch-agent` incluye PR-C4-003 + nota sobre `.md` espejo (IG-09); bloque del contrato inline (Role/Task/Context/Reasoning/Stop/Output/Invariants/Failure modes) con 7 codigos `E_` especificos para C4 Level 3; trazabilidad nueva fila para `docs/diagrams/c4_level3_api_gateway.mmd` + `.md` espejo. Artefactos generados: `docs/diagrams/c4_level3_api_gateway.mmd` (81 lineas) y `docs/diagrams/c4_level3_api_gateway.md` (espejo narrativo). Total prompt-contratos: 30 → 31 |
+| v1.5 | 28/05/2026 | Rodrigo Aspeti | Incorporacion en tanda de PR-C4-004, PR-C4-005 y PR-C4-006: C4 Level 3 `domain-layer`, C4 Level 3 `sie-adapter` y C4 Deployment AWS. Cabecera `v1.4 → v1.5`; indice ampliado con 3 filas nuevas; flowchart Mermaid extendido con nodos `C4L3DOMAIN`, `C4L3SIE`, `C4DEPLOY` y aristas desde C4L2/HEX/DTI/ADR/POC2; matriz `arch-agent` incluye PR-C4-004..006; contratos inline agregados; trazabilidad ampliada con 3 filas; archivos individuales `prompts/PR-C4-004.md`, `PR-C4-005.md`, `PR-C4-006.md` materializados. Artefactos generados: `docs/diagrams/c4_level3_domain_layer.*`, `c4_level3_sie_adapter.*`, `deployment_aws.*`. Total prompt-contratos: 31 → 34 |
+| v1.6 | 28/05/2026 | Rodrigo Aspeti | Incorporacion de PR-ROADMAP-001 (roadmap tecnico y de negocio de EduSync). Cabecera `v1.5 → v1.6` y area `ROADMAP` agregada; indice ampliado con fila PR-ROADMAP-001; flowchart Mermaid extendido con nodo `ROADMAP` y aristas desde DTI/BRD2/FSD/POC1/POC2/ADR; matriz `docs-agent` incluye PR-ROADMAP-001 y `docs/roadmap.md`; contrato inline agregado; trazabilidad ampliada con la fila de `docs/roadmap.md`. Archivo individual `prompts/PR-ROADMAP-001.md` materializado. Artefacto generado: `docs/roadmap.md` (200 lineas). Total prompt-contratos: 34 → 35 |
+| v1.7 | 28/05/2026 | Rodrigo Aspeti | **Move físico de `AGENTS.md` a la raíz** (rúbrica del Módulo 4 + convención GitHub/Cursor). Cabecera `v1.6 → v1.7`. Sin cambios en número de prompts (35) ni en contratos. Actualizaciones quirúrgicas: contratos inline de `PR-DTO-001`, `PR-POC-001` y `PR-POC-002` ajustan `docs/AGENTS.md → AGENTS.md` en sus `# Context` (referencia activa reutilizable), coincidiendo con los archivos espejo en `prompts/`. Se conservan **intencionalmente** las menciones históricas de `docs/AGENTS.md` en: índice de prompts (fila PR-ARCH-002), contrato inline de PR-ARCH-002, `# Output` de PR-DTI-001 y tabla `Trazabilidad completa` (filas PR-ARCH-002, PR-C4-001, PR-SKILL-003, PR-DTI-001, PR-DTO-001), porque reflejan el estado del repo al ejecutarse cada prompt. Total prompt-contratos: 35 (sin cambio) |
+| v1.8 | 28/05/2026 | Rodrigo Aspeti | Incorporación de `PR-APORTES-001` (informe de aportes individuales para `release/2.0.0` con caso degenerado **n = 1**). Cabecera `v1.7 → v1.8` y nueva área `APORTES` agregada al header de IDs. Índice ampliado con fila `PR-APORTES-001`. Flowchart Mermaid extendido con nodo `APORTES` y aristas desde `ROADMAP`, `AGENTS` y `DTI`. Matriz `docs-agent` incluye `PR-APORTES-001` y `docs/aportes/release-<x.y.z>.md`. Contrato inline agregado con 10 failure modes (incluye `E_N_INTEGRANTES_NO_VALIDO`, `E_FACTOR_NO_UNITARIO_N1`, `E_INVENTARIO_INCOMPLETO`). Trazabilidad ampliada con la fila de `docs/aportes/release-2.0.0.md`. Archivo individual `prompts/PR-APORTES-001.md` materializado. Artefacto generado: `docs/aportes/release-2.0.0.md` v1.0 con 95 tareas auditables (39 Prompt + 12 Bitácora + 10 Diagrama + 9 Skill + 6 ADR + 5 FSD + 4 POC + 3 AGENTS + 2 BRD + 1 MRD + 1 PRD + 1 Rule + 2 categorías agregadas) y checklist 5/6 (commit final pendiente del push). Total prompt-contratos: 35 → 36 |
+| v1.9 | 28/05/2026 | Rodrigo Aspeti | Incorporación de `PR-VFINAL-001` (freeze documental de BRD/MRD/PRD/FSD hacia aliases `_vFinal.md`). Cabecera `v1.8 → v1.9` y nueva área `VFINAL` agregada al header de IDs. Índice ampliado con fila `PR-VFINAL-001`. Flowchart Mermaid extendido con nodo `VFINAL` y aristas desde `BRD2`, `MRD`, `PRD`, `FSD` y `AGENTS`. Matriz `docs-agent` incluye `PR-VFINAL-001` y aliases `_vFinal.md`. Contrato inline agregado con failure modes de freeze (`E_TARGET_EXISTS`, `E_NORMATIVE_DRIFT`, `E_CANONICO_MUTADO`). Trazabilidad ampliada con la fila de los 4 aliases. Archivo individual `prompts/PR-VFINAL-001.md` materializado. Artefactos generados: `docs/brd/BRD_EduSync_vFinal.md`, `docs/mrd/MRD_EduSync_vFinal.md`, `docs/prd/PRD_EduSync_vFinal.md`, `docs/fsd/FSD_EduSync_vFinal.md`. Total prompt-contratos: 36 → 37 |
+| v2.0 | 28/05/2026 | Rodrigo Aspeti | Apertura de la capa viva de implementación (`plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md`, `release/3.0.0`). Cabecera `v1.9 → v2.0` y nueva área `IMPL` reservada al header de IDs (prompts de implementación `prompts/PR-IMPL-NNN.md`, sin filas todavía — 0 prompts hasta el primer `DD-UC-NNN`). Nuevo `ADR-0008` (Java 25 LTS + Spring Boot 4.1.0 + Angular 21 LTS para la capa viva) creado directamente en `docs/adr/`, sin prompt-contrato dedicado, siguiendo el mismo precedente que `ADR-0006`. Nuevos artefactos fuera del ciclo de prompts: `docs/product/DTP.md` v1.0 (punto de partida), `docs/baseline/` marcado `status: congelado` en sus 5 archivos, banners de `docs/product/{BRD,PRD,FSD}.md` corregidos de "COPIA CONGELADA" a "COPIA VIVA", skills `feature-design-doc` y `dtp-sync` materializados en `.cursor/skills/` + `.claude/skills/`, `CODEOWNERS` y `.cursor/rules/baseline-congelado.mdc` creados para proteger `docs/baseline/**`. Total prompt-contratos activos: 37 (sin cambio; `IMPL` queda reservado para la próxima materialización) |
+| v2.1 | 14/07/2026 | Rodrigo Aspeti | Primera materialización del área `IMPL`: `PR-IMPL-001` (bootstrap del esqueleto de código de `release/3.0.0` — `backend/`, `frontend/`, `infra/docker-compose.yml`), derivado de `docs/design/DD-UC-001.md` y `ADR-0011` (monolito modular Spring Modulith module-first + paquete base `com.edusync`, que reemplaza a `bo.edusync`). Cabecera `v2.0 → v2.1`; corrección de la referencia de plantilla a `plantillas/plantillas1/PROMPT_TEMPLATE.md` (ruta real tras la reorganización de `plantillas/`). Índice ampliado con fila `PR-IMPL-001` (estado "Aprobado (prompt)"; ejecución de generación de código real pendiente). Flowchart Mermaid extendido con subgraph `IMPLEMENTACION` y nodo `IMPL001`, con aristas desde `FSD`, `HEX` y `ADR`. Matriz `dev-agent` ampliada con `PR-IMPL-001` y la responsabilidad de materializar `DD-UC-NNN` en código. Contrato inline agregado (Role/Task/Context/Reasoning/Stop/Output/Invariants/Failure modes) con 3 failure modes específicos de bootstrap (`E_PAQUETE_INCORRECTO`, `E_ACOPLAMIENTO_ENTRE_MODULOS`, `E_LOGICA_PREMATURA`). Trazabilidad ampliada con la fila de `DD-UC-001`/`ADR-0011`. Archivo individual `prompts/PR-IMPL-001.md` materializado (9 secciones, con nota de desviación de ruta respecto a `FEATURE_DESIGN_DOC_TEMPLATE.md`). Total prompt-contratos activos: 37 → 38 |
+| v2.2 | 14/07/2026 | Rodrigo Aspeti | **Corrección de ubicación del área `IMPL`**: `PR-IMPL-001` se mueve de `prompts/PR-IMPL-001.md` a `docs/prompts/impl/PR-IMPL-001.md` (v0.1 → v0.2, sin cambios de contenido), siguiendo exactamente `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md` §5 / `MODELO_DOCUMENTAL_IMPLEMENTACION.md`, en lugar de la convención plana de M4 usada por las demás áreas. Se elimina la "nota de desviación" del prompt (ya no aplica). Cabecera (§ línea 8) actualizada para declarar `docs/prompts/impl/PR-IMPL-NNN.md` como la única excepción de ruta del catálogo. Índice y trazabilidad completa actualizan la columna "Archivo"/"Artefacto generado" a la nueva ruta. Sin cambios en el número de prompts (38) ni en el contrato inline (Role/Task/Context/Reasoning/Stop/Output/Invariants/Failure modes idénticos). Propagado también a `docs/design/DD-UC-001.md`, `docs/product/DTP.md`, `AGENTS.md` y los skills `feature-design-doc` (`.cursor/`+`.claude/`). |
+| v2.3 | 14/07/2026 | Rodrigo Aspeti | Segunda materialización del área `IMPL`: `PR-IMPL-002` (módulo `identidad` — dominio `Usuario`/`UsuarioRol`, login JWT, seed del primer `SYSADMIN`, implementación real de `TenantContextProvider`, puerto público `UsuarioCreacionPort`), derivado de `docs/design/DD-UC-002.md` y de `ADR-0001`/`ADR-0010`/`ADR-0011`. Decisión explícita del usuario (14/07/2026): orden `identidad`/login antes de `plataforma`/tenants (invierte el comentario original de `DD-UC-001` §2), y estrategia RLS para tablas plataforma-scoped resuelta con la política `OR tenant_id IS NULL` (sin `ADR-0012` dedicado). Índice ampliado con fila `PR-IMPL-002`. Flowchart Mermaid extendido con nodo `IMPL002` (aristas desde `IMPL001`, `ADR`, `FSD`). Matriz `dev-agent` ampliada. Contrato inline agregado con 4 failure modes específicos (`E_INVARIANTE_ROL_VIOLADA`, `E_ACOPLAMIENTO_ENTRE_MODULOS`, `E_ALCANCE_EXCEDIDO`, `E_FILTRO_TENANT_AUSENTE`). Trazabilidad ampliada. Archivo individual `docs/prompts/impl/PR-IMPL-002.md` materializado desde el inicio en la ruta correcta (sin desviación, a diferencia de `PR-IMPL-001` v0.1). Total prompt-contratos activos: 38 → 39. |
+| v2.4 | 14/07/2026 | Rodrigo Aspeti | Tercera materialización del área `IMPL`: `PR-IMPL-003` (módulo `plataforma` — dominio `Tenant`, scheduler de vencimiento `@Scheduled`, puerto público `TenantConsultaPort`, enforcement de `BR-014` en `AutenticarUsuarioService` de `identidad`), derivado de `docs/design/DD-UC-003.md` y de `ADR-0009`/`ADR-0010`/`ADR-0011`. Decisiones explícitas del usuario (14/07/2026): tenant demo diferido a un Design Doc posterior (no bloqueante); scheduler `@Scheduled` interno (sin `ShedLock` por ahora); alta de tenant + admin en dos llamadas REST separadas (`POST /tenants` y `POST /tenants/{id}/admins`), consistente con el flujo ya documentado en `FSD-UC-011`. Índice ampliado con fila `PR-IMPL-003`. Flowchart Mermaid extendido con nodo `IMPL003` (aristas desde `IMPL002`, `ADR`, `FSD`). Matriz `dev-agent` ampliada. Contrato inline agregado con 4 failure modes específicos (`E_ALTA_COMBINADA`, `E_ACOPLAMIENTO_ENTRE_MODULOS`, `E_DATOS_ELIMINADOS_TENANT_SUSPENDIDO`, `E_ALCANCE_EXCEDIDO`). Trazabilidad ampliada. Archivo individual `docs/prompts/impl/PR-IMPL-003.md` materializado desde el inicio en la ruta correcta. Total prompt-contratos activos: 39 → 40. |

@@ -1,0 +1,67 @@
+C4Deployment
+  title EduSync - Diagrama de Despliegue AWS (C4 Deployment) - release/2.0.0 target
+
+  Deployment_Node(userDevice, "Dispositivos de usuarios", "Browser", "Directores, Docentes y Secretarias en Bolivia") {
+    Container(browser, "Web Browser", "Chrome / Edge / Firefox", "Accede a EduSync por HTTPS")
+  }
+
+  Deployment_Node(aws, "AWS Cloud - us-east-1", "AWS", "Cloud provider elegido por ADR-0006") {
+    Deployment_Node(edge, "Edge / CDN", "CloudFront + S3", "Entrega del Angular SPA con baja latencia") {
+      Container(spa, "Angular SPA", "Angular 17 / S3 static hosting", "Frontend por rol")
+    }
+
+    Deployment_Node(network, "Public subnet", "VPC + ALB + WAF", "Entrada HTTPS/TLS 1.3 y rate limiting") {
+      Container(alb, "Application Load Balancer", "ALB + AWS WAF", "TLS termination, routing by tenant subdomain, 100 req/s per user")
+    }
+
+    Deployment_Node(compute, "Private subnets", "ECS Fargate", "Monolito modular stateless") {
+      Container(api, "EduSync API", "Spring Boot 3.3 / Java 21 / Docker", "api-gateway + domain-layer + adapters")
+      Container(scheduler, "Scheduler workers", "Spring Scheduler in ECS task", "SIERetryScheduler and VentanaExpiracionScheduler")
+    }
+
+    Deployment_Node(data, "Data subnet", "RDS Multi-AZ", "ACID, RLS and DR") {
+      ContainerDb(rds, "PostgreSQL 15", "Amazon RDS Multi-AZ", "Tenant isolation with RLS, audit_log append-only, Flyway migrations")
+    }
+
+    Deployment_Node(async, "Managed messaging", "AWS SQS FIFO", "Event bus v1.1+ target") {
+      ContainerQueue(sqs, "SQS FIFO", "AWS SQS", "Ordered async events by periodoId; DLQ per service")
+      ContainerQueue(dlq, "Dead Letter Queue", "AWS SQS DLQ", "Stores failed consolidation/export events")
+    }
+
+    Deployment_Node(security, "Security services", "KMS + Secrets Manager + CloudTrail", "Secrets, keys and audit") {
+      Container(kms, "AWS KMS", "alias/edusync-pii-key", "Encrypts RUDE, name and birth date at rest")
+      Container(secrets, "AWS Secrets Manager", "Managed secrets", "DB credentials, JWT keys and SIE credentials")
+      Container(cloudtrail, "CloudTrail", "Audit service", "Audits access to KMS and Secrets Manager")
+    }
+
+    Deployment_Node(obs, "Observability", "CloudWatch", "Logs, metrics and alarms") {
+      Container(cwLogs, "CloudWatch Logs", "Structured JSON logs", "No PII in logs; correlationId and tenantId only")
+      Container(cwMetrics, "CloudWatch Metrics", "Metrics and alarms", "p95 latency, error rate, circuit breaker state, uptime")
+      Container(canary, "Synthetic Canary", "CloudWatch Synthetics", "GET /actuator/health every minute")
+    }
+  }
+
+  System_Ext(sie, "SIE - Ministerio de Educacion Bolivia", "External official system for academic exports")
+  System_Ext(terraform, "Terraform state", "Terraform 1.8", "Infrastructure as code; infra/ pending creation")
+
+  Rel(browser, spa, "Loads static assets", "HTTPS via CloudFront")
+  Rel(browser, alb, "Calls API with Bearer JWT", "HTTPS/TLS 1.3")
+  Rel(spa, alb, "REST API requests", "HTTPS/REST")
+  Rel(alb, api, "Routes authenticated traffic", "HTTPS / target group")
+  Rel(api, scheduler, "Shares domain modules in same ECS service family", "In-process / ECS task")
+  Rel(api, rds, "Reads and writes with RLS active", "JDBC / TLS 1.3 [ADR-0001]")
+  Rel(scheduler, rds, "Reads PENDIENTE/FALLIDO jobs and correction windows", "JDBC / TLS 1.3")
+  Rel(api, sqs, "Publishes async domain events in v1.1+", "AWS SDK / TLS 1.3 [ADR-0004]")
+  Rel(sqs, api, "Delivers consolidation/export events", "AWS SDK / TLS 1.3")
+  Rel(sqs, dlq, "Moves poisoned messages after retries", "AWS SQS redrive policy")
+  Rel(api, kms, "Encrypts/decrypts PII columns", "AWS KMS SDK / TLS 1.3 [NFR-007]")
+  Rel(api, secrets, "Reads DB, JWT and SIE credentials", "AWS SDK / TLS 1.3 [NFR-003]")
+  Rel(api, cwLogs, "Writes structured logs without PII", "CloudWatch Logs API")
+  Rel(api, cwMetrics, "Publishes p95, error rate and circuit state", "CloudWatch Metrics API")
+  Rel(canary, alb, "Health check GET /actuator/health", "HTTPS every 1 min [NFR-002]")
+  Rel(api, sie, "Exports official grades by RUDE with circuit breaker", "HTTPS/REST [ADR-0005]")
+  Rel(terraform, aws, "Provisions ECS, RDS, ALB, CloudFront, KMS, SQS and alarms", "Terraform plan/apply")
+  Rel(secrets, cloudtrail, "Audits secret reads and rotations", "AWS CloudTrail")
+  Rel(kms, cloudtrail, "Audits key usage", "AWS CloudTrail")
+
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")

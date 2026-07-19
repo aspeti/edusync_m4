@@ -1,0 +1,14 @@
+# Perfil de entorno de pruebas de integracion / QA (no confundir con el classpath de
+# test de JUnit - Testcontainers reemplaza este perfil cuando existan tests que arranquen
+# el contexto completo, a partir de DD-UC-002). Sin credenciales reales.
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:edusync_test}
+    username: ${DB_USER:edusync}
+    password: ${DB_PASSWORD:edusync_test_local}
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.edusync: DEBUG

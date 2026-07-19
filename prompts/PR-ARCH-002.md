@@ -6,7 +6,7 @@
 |-------|-------|
 | ID del prompt | `PR-ARCH-002` |
 | Título | Actualización de AGENTS.md v0.1 → v0.2: corrección de 6 rutas y 15 artefactos nuevos |
-| Artefacto origen | `docs/AGENTS.md` v0.1 + repositorio EduSync |
+| Artefacto origen | `AGENTS.md` v0.1 + repositorio EduSync |
 | ID origen | `BR-001..BR-012`, `DA-01..DA-05`, `NFR-001..016` |
 | Tipo de prompt | consolidación |
 | Modelo recomendado | Sonnet |
@@ -21,20 +21,20 @@
 ### 1.1 Role
 ```text
 Eres un Documentation Architect con experiencia en sistemas multiagente y AI-SDLC.
-Tu responsabilidad es mantener docs/AGENTS.md sincronizado con la estructura real
+Tu responsabilidad es mantener AGENTS.md sincronizado con la estructura real
 del repositorio del proyecto EduSync (Java 21, Spring Boot 3.3, PostgreSQL 15).
 ```
 
 ### 1.2 Task
 ```text
-Actualiza docs/AGENTS.md v0.1 corrigiendo las 6 rutas rotas y añadiendo referencias
+Actualiza AGENTS.md v0.1 corrigiendo las 6 rutas rotas y añadiendo referencias
 a los 15 artefactos nuevos generados en la release 1.0.0 (MRD, PRD, FSD, LFSD,
 APORTES, 5 diagramas, seguridad.mdc, reorganizacion de brd/ mrd/ prd/ fsd/).
 ```
 
 ### 1.3 Context
 ```text
-- Documento a actualizar: docs/AGENTS.md v0.1 (15 secciones, 326 lineas)
+- Documento a actualizar: AGENTS.md v0.1 (15 secciones, 326 lineas)
 - Nuevos artefactos: docs/brd/BRD_EduSync_v2.md, docs/mrd/MRD_EduSync.md,
   docs/prd/PRD_EduSync.md, docs/fsd/FSD_EduSync.md, docs/LFSD-EduSync.md,
   docs/APORTES_EduSync.md, docs/diagrams/*.mmd/*.md, .cursor/rules/seguridad.mdc
@@ -62,7 +62,7 @@ y el registro de cambios incluya la entrada v0.2.
 
 ### 1.6 Output
 ```text
-docs/AGENTS.md v0.2 (417 lineas) con: tabla de documentos actualizada, arbol de
+AGENTS.md v0.2 (417 lineas) con: tabla de documentos actualizada, arbol de
 estructura real del repositorio, 6 agentes documentados con guardrails, 4 golden
 tests de zero-tolerance, checklist con 10 items completados y 4 pendientes.
 ```
@@ -90,7 +90,7 @@ tests de zero-tolerance, checklist con 10 items completados y 4 pendientes.
 
 | Origen | ID origen | Este prompt | Consumidor(es) | Artefacto generado |
 |--------|-----------|-------------|----------------|---------------------|
-| AGENTS.md v0.1 + repo real | `BR-001..BR-012`, `DA-01..DA-05` | PR-ARCH-002 | `docs-agent` | `docs/AGENTS.md` v0.2 (417 líneas) |
+| AGENTS.md v0.1 + repo real | `BR-001..BR-012`, `DA-01..DA-05` | PR-ARCH-002 | `docs-agent` | `AGENTS.md` v0.2 (417 líneas) |
 
 ## 6. Pruebas del prompt
 

@@ -37,7 +37,7 @@ Esto requiere dos entregables que este skill produce en una sola pasada:
 
 1. `plantillas/PROMPT_TEMPLATE.md` — estructura exacta de las 9 secciones.
 2. `docs/PROMPT_MAPPING.md` — contratos inline existentes (fuente del §1 Anatomía).
-3. `docs/AGENTS.md` — roles de agente para §5 Trazabilidad.
+3. `AGENTS.md` — roles de agente para §5 Trazabilidad.
 4. `docs/fsd/FSD_EduSync.md` — UCs para referencias en §5.
 5. `docs/adr/*.md` — ADRs para referencias en prompts de arquitectura.
 

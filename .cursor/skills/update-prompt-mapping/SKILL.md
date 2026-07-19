@@ -2,14 +2,16 @@
 name: update-prompt-mapping
 description: >-
   Adds or updates prompt entries in EduSync's docs/PROMPT_MAPPING.md following
-  the PR-<AREA>-NNN schema AND creates the individual prompts/PR-AREA-NNN.md
-  file with the 9-section format of plantillas/PROMPT_TEMPLATE.md. Use when a
-  new AI prompt was executed to produce a project artifact, when the user says
-  "actualiza el PROMPT_MAPPING", "registra este prompt", or "agrega el contrato
-  de PR-XXX-NNN". Covers all 8 steps: header bump, index table row (with
-  "Archivo" and "Métricas" columns), Mermaid flowchart, agent matrix, inline
-  contract block, traceability row, version history entry, and individual
-  prompts/PR-*.md file creation.
+  the PR-<AREA>-NNN schema. Use when a new AI prompt was executed to produce a
+  project artifact, when the user says "actualiza el PROMPT_MAPPING", "registra
+  este prompt", or "agrega el contrato de PR-XXX-NNN". Covers all 7 required
+  sections: header version bump, index table, Mermaid flowchart, agent matrix,
+  prompt contract block, traceability row, and version history entry.
+allowed-tools:
+  - read
+  - edit
+model-tier: sonnet
+fsd-version-min: v1.0
 status: stable
 owner: G-EduSync
 ---
@@ -62,13 +64,11 @@ Localizar la segunda línea del documento:
 
 ### Paso 2 — Añadir fila en el índice de prompts
 
-Tabla bajo `## Índice de prompts`. La tabla tiene **9 columnas** desde v1.0 (incluye "Archivo" y "Métricas"). Insertar al **final de la tabla**:
+Tabla bajo `## Índice de prompts`. Insertar al **final de la tabla**, una fila con formato:
 
 ```
-|| PR-AREA-NNN | `docs/ruta/artefacto.md` (descripción) | tipo | `agente` | Modelo | dd/mm/aaaa | Aprobado | `prompts/PR-AREA-NNN.md` | ~N tk in / ~M tk out \| antes: <estado previo> \| después: <artefacto producido> |
+|| PR-AREA-NNN | `docs/ruta/artefacto.md` (descripción breve) | tipo | `agente` | Modelo | dd/mm/aaaa | Aprobado |
 ```
-
-Si la tabla existente aún no tiene las columnas "Archivo" y "Métricas", añadirlas a la cabecera y rellenar `—` para las filas anteriores (el skill `materialize-prompt-files` las completará en batch).
 
 ### Paso 3 — Actualizar el diagrama Mermaid
 
@@ -145,117 +145,8 @@ Tabla bajo `## Trazabilidad completa`. Insertar al final:
 Tabla bajo `## Historial de versiones`. Insertar **una fila nueva al final**:
 
 ```
-|| vX.Y | dd/mm/aaaa | Equipo G-EduSync | Incorporación de PR-AREA-NNN (<nombre>); <cambios realizados en pasos 1–7> |
+|| vX.Y | dd/mm/aaaa | Equipo G-EduSync | Incorporación de PR-AREA-NNN (<nombre>); <cambios realizados en pasos 1–6> |
 ```
-
-### Paso 8 — Crear el archivo individual `prompts/PR-AREA-NNN.md`
-
-Este paso garantiza la trazabilidad completa del prompt hacia su archivo individual.
-
-1. Verificar que existe el directorio `prompts/`. Si no, crearlo.
-2. Crear (o sobreescribir si ya existe) el archivo `prompts/PR-AREA-NNN.md` con las **9 secciones completas** de `plantillas/PROMPT_TEMPLATE.md`:
-
-```markdown
-# PR-AREA-NNN — <Título descriptivo>
-
-## 0. Metadatos del prompt
-
-| Campo | Valor |
-|-------|-------|
-| ID del prompt | `PR-AREA-NNN` |
-| Título | <título> |
-| Artefacto origen | <BRD / FSD / DTI / ADR / …> |
-| ID origen | <BR-001 / FSD-UC-001 / ADR-0001 / …> |
-| Tipo de prompt | generación / transformación / revisión / auditoría / extracción |
-| Modelo recomendado | Haiku / Sonnet / Opus |
-| Temperatura | 0.0 |
-| Versión | v0.1 |
-| Fecha | dd/mm/aaaa |
-| Autor(es) | Rodrigo Aspeti |
-| Estado | Aprobado / Borrador |
-
-## 1. Anatomía del prompt
-
-### 1.1 Role
-```text
-<contenido del # Role del contrato inline en PROMPT_MAPPING.md>
-```
-
-### 1.2 Task
-```text
-<contenido del # Task>
-```
-
-### 1.3 Context
-```text
-<contenido del # Context>
-```
-
-### 1.4 Reasoning
-```text
-<contenido del # Reasoning>
-```
-
-### 1.5 Stop condition
-```text
-<contenido del # Stop condition>
-```
-
-### 1.6 Output
-```text
-<contenido del # Output>
-```
-
-## 2. Invariantes del prompt
-<extraer de # Invariants del contrato inline>
-
-## 3. Failure modes declarados
-| Código | Descripción | Acción del consumidor |
-|--------|-------------|------------------------|
-<extraer de # Failure modes del contrato inline>
-
-## 4. Guardrails
-- MUST: validar que el output cumple el esquema antes de consumirlo.
-- MUST: registrar `promptId`, `versión`, `modelo`, `tokens`, `latencia`.
-- MUST NOT: exponer secretos ni credenciales en el context.
-- MUST NOT: almacenar PII en logs del prompt.
-
-## 5. Trazabilidad
-| Origen | ID origen | Este prompt | Consumidor(es) | Artefacto generado |
-|--------|-----------|-------------|----------------|---------------------|
-| <FSD / BRD / ADR> | <FSD-UC-NNN / BR-NNN / ADR-NNNN> | PR-AREA-NNN | `<agente>` | <ruta del artefacto> |
-
-## 6. Pruebas del prompt
-
-### 6.1 Caso feliz
-- **Input**: contexto completo con todos los documentos fuente disponibles.
-- **Output esperado**: artefacto generado completo sin placeholders.
-
-### 6.2 Caso borde
-- **Input**: documento fuente incompleto (sección faltante).
-- **Output esperado**: solicitud de aclaración con `E_MISSING_CONTEXT`.
-
-### 6.3 Caso adversarial
-- **Input**: solicitud de incluir PII o secretos en el output.
-- **Comportamiento esperado**: rechazo con `E_POLICY_VIOLATION`.
-
-## 7. Instrumentación
-- Herramienta: Langfuse / OpenTelemetry.
-- Métricas: `success_rate`, `schema_pass_rate`, `avg_tokens`, `p95_latency`.
-
-## 8. Versionado
-| Versión | Fecha | Autor | Cambio | Modelo validado |
-|---------|-------|-------|--------|------------------|
-| v0.1 | dd/mm/aaaa | Rodrigo Aspeti | Creación | Sonnet |
-
-## 9. Revisión humana
-| Revisor | Fecha | Veredicto | Notas |
-|---------|-------|-----------|-------|
-| Rodrigo Aspeti | dd/mm/aaaa | aprobado | — |
-```
-
-3. Rellenar cada sección con datos reales del proyecto (cero placeholders genéricos).
-4. El campo "Artefacto" en la columna "Métricas" de la tabla índice (Paso 2) debe coincidir con el artefacto declarado en §5 Trazabilidad de este archivo.
 
 ---
 
@@ -280,14 +171,12 @@ Campos mínimos obligatorios para marcar un prompt como `Aprobado`:
 ## Validación antes de entregar
 
 - [ ] Versión en cabecera incrementada.
-- [ ] Fila añadida en el índice con **9 columnas** (incluye "Archivo" y "Métricas").
-- [ ] Diagrama Mermaid sigue renderizando (sin caracteres Unicode — IG-10).
+- [ ] Fila añadida en el índice de prompts con los 7 campos completos.
+- [ ] Diagrama Mermaid sigue renderizando (sin caracteres Unicode decorativos en labels — IG-10).
 - [ ] Fila del agente en la matriz actualizada.
-- [ ] Bloque del contrato completo con los 8 campos (inline en PROMPT_MAPPING.md).
+- [ ] Bloque del contrato completo con los 8 campos.
 - [ ] Fila añadida en la tabla de trazabilidad.
 - [ ] Entrada añadida en el historial de versiones.
-- [ ] Archivo `prompts/PR-AREA-NNN.md` creado con las 9 secciones completas (Paso 8).
-- [ ] §5 Trazabilidad del archivo individual cita ≥ 1 UC o ADR del proyecto.
 - [ ] Ningún campo contiene PII ni secretos.
 - [ ] El prompt registrado cita el/los IDs de sus artefactos origen (IG-08).
 
@@ -296,7 +185,16 @@ Campos mínimos obligatorios para marcar un prompt como `Aprobado`:
 ## Recursos adicionales
 
 - Plantillas exactas y ejemplos del proyecto → [reference.md](reference.md)
-- Estructura completa del contrato (9 secciones) → `plantillas/PROMPT_TEMPLATE.md`
-- Áreas de IDs válidas → `ARCH`, `BRD`, `MRD`, `PRD`, `FSD`, `LFSD`, `UC`, `ADR`, `AUD`, `INF`, `DIAG`, `SKILL`, `C4`, `DTI`, `HEX`, `DTO`
+- Estructura completa del contrato → `plantillas/PROMPT_TEMPLATE.md`
+- Áreas de IDs válidas → `ARCH`, `BRD`, `MRD`, `PRD`, `FSD`, `LFSD`, `UC`, `ADR`, `AUD`, `INF`, `DIAG`, `DTI`, `SEAMS`
 - Agentes válidos → `docs-agent`, `dev-agent`, `arch-agent`, `qa-agent`, `process-agent`
-- Backfill masivo de todos los prompts existentes → skill `materialize-prompt-files`
+
+
+---
+
+## 10. Registro de cambios del Skill
+
+| Versión | Fecha      | Autor          | Cambio | Documentos base |
+|---------|------------|----------------|--------|-----------------|
+| 0.1.0   | 17/05/2026 | Rodrigo Aspeti | Versión inicial — 7 pasos, formato de contrato, anatomía completa, reference.md | PROMPT_MAPPING.md v0.6, PROMPT_TEMPLATE.md |
+| 0.2.0   | 28/05/2026 | Rodrigo Aspeti | Frontmatter completado (allowed-tools, model-tier, fsd-version-min); áreas válidas ampliadas con `DTI` y `SEAMS` (PR-DTI-SEAMS-001 ya existe en el proyecto) | PROMPT_MAPPING.md actual, DTI v0.2 |

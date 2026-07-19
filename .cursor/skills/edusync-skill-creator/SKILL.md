@@ -2,7 +2,7 @@
 name: edusync-skill-creator
 description: >
   Genera un nuevo SKILL.md para el proyecto EduSync cumpliendo exactamente la
-  plantillas/SKILL_TEMPLATE.md y los guardrails de docs/AGENTS.md. Activar cuando
+  plantillas/SKILL_TEMPLATE.md y los guardrails de AGENTS.md. Activar cuando
   el usuario pide "crea un skill para FSD-UC-NNN", "genera el skill de <función>",
   "nuevo skill para <agente>". Requiere: slug, propósito, artefacto FSD de entrada,
   tipo de salida y agente target. Produce el archivo .claude/skills/<slug>/SKILL.md
@@ -67,7 +67,7 @@ Antes de generar cualquier sección del skill nuevo, leer en este orden:
    con mayor N. Leer contratos API, DDL y paquetes del componente afectado.
 4. **Versión más reciente del PRD** — listar `docs/prd/`, seleccionar mayor N.
 5. **Versión más reciente del MRD** — listar `docs/mrd/`, seleccionar mayor N.
-6. **`docs/AGENTS.md`** — stack autoritativo, guardrails, agentes, golden tests, prompts prohibidos.
+6. **`AGENTS.md`** — stack autoritativo, guardrails, agentes, golden tests, prompts prohibidos.
 7. **`plantillas/SKILL_TEMPLATE.md`** — estructura exacta de las 10 secciones a generar.
 
 > **Regla de versión más reciente:** si al listar un directorio aparece un archivo con
@@ -148,7 +148,7 @@ Redactar cada sección usando los datos leídos en el paso 2. Reglas por secció
 - Si el skill llama al SIE: añadir paso de circuit breaker + timeout + retry.
 
 **§5 — Salida esperada:**
-- Lista de archivos a crear/modificar con sus paths canónicos (ver docs/AGENTS.md §3).
+- Lista de archivos a crear/modificar con sus paths canónicos (ver AGENTS.md §3).
 - Tabla de trazabilidad obligatoria:
 
   | FSD ID | Archivo de implementación | Test que lo verifica |
@@ -243,7 +243,7 @@ Si el skill nuevo introduce un prompt-contrato que no está en docs/PROMPT_MAPPI
 | Fijar versiones de documentos en el skill generado (ej. BRD_v2) en vez de la regla "mayor N" | El skill generado queda desactualizado cuando sube el BRD v3 | En §3 del skill generado escribir la regla de descubrimiento, no el nombre fijo |
 | Omitir la columna "Documentos base" en §10 | Imposible saber con qué versión del FSD fue diseñado el skill | El paso 7 verifica explícitamente esta columna antes de guardar |
 | Crear el skill solo en .claude/skills/ y olvidar .cursor/skills/ | Los integrantes que usan Cursor no tienen acceso al skill | El paso 8 crea ambas rutas siempre |
-| Generar §4 con pasos genéricos sin paths ni clases reales | El agente genera código fuera de la arquitectura hexagonal | Usar los paths canónicos de docs/AGENTS.md §3 y nombres del diccionario FSD §6 |
+| Generar §4 con pasos genéricos sin paths ni clases reales | El agente genera código fuera de la arquitectura hexagonal | Usar los paths canónicos de AGENTS.md §3 y nombres del diccionario FSD §6 |
 
 ---
 
@@ -270,7 +270,7 @@ Si el skill nuevo introduce un prompt-contrato que no está en docs/PROMPT_MAPPI
 - **`E_SLUG_DUPLICATE`** — Ya existe .claude/skills/<slug>/SKILL.md →
   Preguntar si actualizar o crear con slug alternativo. No sobreescribir sin confirmación.
 
-- **`E_INVARIANT_VIOLATION`** — El procedimiento propuesto viola docs/AGENTS.md §11 →
+- **`E_INVARIANT_VIOLATION`** — El procedimiento propuesto viola AGENTS.md §11 →
   STOP, señalar la regla violada y reformular el propósito.
 
 - **`E_TOO_LONG`** — El SKILL.md generado supera 220 líneas →
@@ -283,3 +283,4 @@ Si el skill nuevo introduce un prompt-contrato que no está en docs/PROMPT_MAPPI
 | Versión | Fecha      | Autor          | Cambio          | Documentos base                           |
 |---------|------------|----------------|-----------------|-------------------------------------------|
 | 0.1.0   | 28/05/2026 | Rodrigo Aspeti | versión inicial | BRD v2, FSD v1, PRD v1, MRD v1, LFSD v1 |
+| 0.2.0   | 28/05/2026 | Rodrigo Aspeti | §2 tabla de skills instalados para evitar duplicados (6 skills activos v0.1–v0.2) | ADRs 0001-0006, DTI v0.2 |

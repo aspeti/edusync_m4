@@ -1,0 +1,23 @@
+name: edusync-dev
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: edusync-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-edusync}
+      POSTGRES_USER: ${DB_USER:-edusync}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-edusync_dev_local}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - edusync_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-edusync} -d ${DB_NAME:-edusync}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  edusync_postgres_data:

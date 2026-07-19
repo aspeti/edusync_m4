@@ -7,6 +7,11 @@ description: >-
   este prompt", or "agrega el contrato de PR-XXX-NNN". Covers all 7 required
   sections: header version bump, index table, Mermaid flowchart, agent matrix,
   prompt contract block, traceability row, and version history entry.
+allowed-tools:
+  - read
+  - edit
+model-tier: sonnet
+fsd-version-min: v1.0
 status: stable
 owner: G-EduSync
 ---
@@ -181,5 +186,15 @@ Campos mínimos obligatorios para marcar un prompt como `Aprobado`:
 
 - Plantillas exactas y ejemplos del proyecto → [reference.md](reference.md)
 - Estructura completa del contrato → `plantillas/PROMPT_TEMPLATE.md`
-- Áreas de IDs válidas → `ARCH`, `BRD`, `MRD`, `PRD`, `FSD`, `LFSD`, `UC`, `ADR`, `AUD`, `INF`, `DIAG`
+- Áreas de IDs válidas → `ARCH`, `BRD`, `MRD`, `PRD`, `FSD`, `LFSD`, `UC`, `ADR`, `AUD`, `INF`, `DIAG`, `DTI`, `SEAMS`
 - Agentes válidos → `docs-agent`, `dev-agent`, `arch-agent`, `qa-agent`, `process-agent`
+
+
+---
+
+## 10. Registro de cambios del Skill
+
+| Versión | Fecha      | Autor          | Cambio | Documentos base |
+|---------|------------|----------------|--------|-----------------|
+| 0.1.0   | 17/05/2026 | Rodrigo Aspeti | Versión inicial — 7 pasos, formato de contrato, anatomía completa, reference.md | PROMPT_MAPPING.md v0.6, PROMPT_TEMPLATE.md |
+| 0.2.0   | 28/05/2026 | Rodrigo Aspeti | Frontmatter completado (allowed-tools, model-tier, fsd-version-min); áreas válidas ampliadas con `DTI` y `SEAMS` (PR-DTI-SEAMS-001 ya existe en el proyecto) | PROMPT_MAPPING.md actual, DTI v0.2 |

@@ -1,0 +1,55 @@
+C4Component
+  title Domain Layer - Diagrama de Componentes (C4 Nivel 3) - EduSync v1.0
+
+  Container_Ext(api, "api-gateway", "Spring Boot 3.3 / Java 21", "REST controllers, security filters, DTOs and AuditLogAspect")
+  Container_Ext(db, "postgres-rls", "PostgreSQL 15 / RDS Multi-AZ", "Persistence adapters with tenant isolation and append-only audit_log")
+  Container_Ext(events, "event-bus", "Spring ApplicationEventPublisher -> AWS SQS FIFO v1.1+", "Domain events after commit for consolidation and export flows")
+  Container_Ext(sie, "sie-adapter", "Java 21 / Resilience4j", "External SIE integration through SIEExportPort")
+  Container_Ext(kms, "AWS KMS", "alias/edusync-pii-key", "PII encryption for RUDE, name and birth date")
+
+  Container_Boundary(domain, "domain-layer - Java 21 / Hexagonal Core (no Spring, no JPA)") {
+    Component(inPorts, "Input Ports", "Java interfaces - bo.edusync.domain.port.in", "RegistrarCalificacionUseCase, CerrarMateriaUseCase, ConsolidarCentralizadorUseCase, ExportarSIEUseCase, GestionarCorreccionUseCase, GestionarPeriodoUseCase")
+    Component(outPorts, "Output Ports", "Java interfaces - bo.edusync.domain.port.out", "Repositories, DomainEventPublisher, SIEExportPort, KmsCipherPort, ClockPort, TenantContextProvider")
+
+    Component(calSvc, "CalificacionDomainService", "Java 21 domain service", "Validates teacher assignment, period state, parameter ranges and RUDE. Emits CalificacionRegistradaEvent. BR-001, BR-002, BR-004, BR-007")
+    Component(consSvc, "ConsolidacionDomainService", "Java 21 domain service", "Single owner of Math.floor() and centralizador calculations. Produces PROVISIONAL and OFICIAL results. BR-003, BR-008, BR-011")
+    Component(expSvc, "ExportacionDomainService", "Java 21 domain service", "Builds SIE export state, idempotency key (rude, periodo_id), and delegates transport to SIEExportPort. BR-004, NFR-011")
+    Component(corrSvc, "CorreccionDomainService", "Java 21 domain service", "Validates director authorization, correction window 1-72h, append-only correction flow. BR-005, BR-009, BR-010")
+    Component(periodoSvc, "PeriodoDomainService", "Java 21 domain service", "Validates academic year, T1 -> T2 -> T3 sequence, and parameter immutability after ABIERTO. BR-006, BR-007")
+
+    Component(aggregates, "Aggregate Roots", "Plain Java model", "GestionAcademica, PeriodoAcademico, Estudiante, Calificacion, Centralizador, ExportacionSIE, CorreccionRetroactiva, AuditLogEntry")
+    Component(valueObjects, "Value Objects", "Plain Java records/classes", "Rude, TenantId, Dimension, ValorCalificacion, PuntajeTotal, Ventana, ClaveIdempotencia, Snapshot")
+    Component(domainEvents, "Domain Events", "Java records - immutable", "CalificacionRegistradaEvent, MateriaCerradaEvent, CentralizadorOficialEvent, VentanaExpiradaEvent")
+  }
+
+  Rel(api, inPorts, "Invokes use cases through REST adapters", "In-process / Port IN")
+  Rel(inPorts, calSvc, "Delegates FSD-UC-001 registration and validation", "In-process")
+  Rel(inPorts, consSvc, "Delegates FSD-UC-003 consolidation", "In-process")
+  Rel(inPorts, expSvc, "Delegates FSD-UC-004 export orchestration", "In-process")
+  Rel(inPorts, corrSvc, "Delegates FSD-UC-005 correction workflow", "In-process")
+  Rel(inPorts, periodoSvc, "Delegates FSD-UC-009 period administration", "In-process")
+
+  Rel(calSvc, aggregates, "Creates append-only Calificacion entries", "In-process")
+  Rel(calSvc, valueObjects, "Validates Dimension, ValorCalificacion, Rude and TenantId", "In-process")
+  Rel(calSvc, domainEvents, "Emits CalificacionRegistradaEvent", "In-process")
+  Rel(consSvc, aggregates, "Reads Calificacion and writes Centralizador", "In-process")
+  Rel(consSvc, valueObjects, "Calculates PuntajeTotal with Math.floor()", "In-process [BR-008]")
+  Rel(consSvc, domainEvents, "Emits CentralizadorOficialEvent", "In-process")
+  Rel(expSvc, aggregates, "Creates ExportacionSIE and per-record state", "In-process")
+  Rel(expSvc, valueObjects, "Uses ClaveIdempotencia = rude + periodo_id", "In-process [NFR-011]")
+  Rel(corrSvc, aggregates, "Creates CorreccionRetroactiva and new Calificacion rows", "In-process")
+  Rel(corrSvc, valueObjects, "Validates Ventana 1-72h and Justificacion", "In-process [BR-009]")
+  Rel(periodoSvc, aggregates, "Mutates GestionAcademica and PeriodoAcademico state", "In-process")
+
+  Rel(calSvc, outPorts, "Persists calificaciones and audit intent through ports", "In-process / Port OUT")
+  Rel(consSvc, outPorts, "Reads repositories and publishes consolidation events", "In-process / Port OUT")
+  Rel(expSvc, outPorts, "Uses SIEExportPort and ExportacionSIERepository", "In-process / Port OUT")
+  Rel(corrSvc, outPorts, "Writes correction state and audit intent through ports", "In-process / Port OUT")
+  Rel(periodoSvc, outPorts, "Persists period parameters and uses ClockPort", "In-process / Port OUT")
+
+  Rel(outPorts, db, "Repository adapters persist aggregates with RLS active", "JDBC / TLS 1.3 [DA-01]")
+  Rel(outPorts, events, "DomainEventPublisher sends events AFTER_COMMIT", "Spring Event [DA-04]")
+  Rel(outPorts, sie, "SIEExportPort delegates HTTPS export with circuit breaker", "In-process / Port OUT [DA-05]")
+  Rel(outPorts, kms, "KmsCipherPort encrypts/decrypts PII", "AWS KMS SDK / TLS 1.3 [NFR-007]")
+
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")

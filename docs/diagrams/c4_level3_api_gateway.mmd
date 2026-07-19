@@ -1,0 +1,80 @@
+C4Component
+  title API Gateway - Diagrama de Componentes (C4 Nivel 3) - EduSync v1.0
+
+  Person(docente, "Docente", "Marcela - carga calificaciones por dimension")
+  Person(secretaria, "Secretaria", "Wendy - exporta al SIE ministerial")
+  Person(director, "Director", "Jeanneth - configura periodos y autoriza correcciones")
+
+  Container_Ext(spa, "Angular SPA", "Angular 17, TypeScript", "Frontend reactivo por rol; envia Bearer JWT")
+
+  Container_Boundary(api, "api-gateway - Spring Boot 3.3 / Java 21 / ECS Fargate") {
+
+    Component(jwtAuth, "JwtAuthFilter", "Spring Security 6 + JJWT (RS256)",
+      "Valida Bearer JWT, extrae {tenant_id, user_id, rol} al SecurityContext. Bloquea por expiracion (<= 8h) o firma invalida. NFR-008.")
+    Component(rlsInj, "RLSTenantInjector", "Spring AOP + Interceptor JPA",
+      "Ejecuta SET LOCAL app.tenant_id antes de cada TX abierta por un Use Case. Garantiza aislamiento multitenant. DA-01 / NFR-010.")
+
+    Component(calCtrl, "CalificacionController", "Spring MVC + Jakarta Bean Validation 3.0",
+      "POST /api/v1/calificaciones - registro descentralizado por dimension. FSD-UC-001. BR-001 RBAC, BR-002 rango parametrico.")
+    Component(cenCtrl, "CentralizadorController", "Spring MVC",
+      "GET /api/v1/centralizadores - lectura PROVISIONAL u OFICIAL. FSD-UC-003 (lectura). RB-08 truncado floor.")
+    Component(expCtrl, "ExportacionController", "Spring MVC",
+      "POST /api/v1/exportaciones/sie - lanza job idempotente por (RUDE, periodo_id). FSD-UC-004. BR-004 RUDE como unica clave, NFR-011 idempotencia.")
+    Component(corCtrl, "CorreccionController", "Spring MVC",
+      "POST /api/v1/correcciones (solicitud) + PUT /api/v1/correcciones/{id}/autorizar - flujo con ventana 1-72h. FSD-UC-005. BR-005 autorizacion, BR-009 ventana temporal.")
+    Component(perCtrl, "PeriodoController", "Spring MVC",
+      "POST /api/v1/periodos - secuencia T1 -> T2 -> T3 + configuracion de parametros academicos. FSD-UC-009. BR-006 secuencia, BR-007 inmutabilidad parametros en ABIERTO.")
+
+    Component(auditAsp, "AuditLogAspect", "Spring AOP @Around @Transactional",
+      "INSERTA en audit_log en la misma TX que cada escritura de dominio. Append-only. DA-03 / BR-010 / NFR-006.")
+    Component(errHnd, "GlobalExceptionHandler", "Spring @ControllerAdvice",
+      "Mapea DomainException -> HTTP status + ErrorResponseDTO. Politica unica de errores REST; no expone trazas internas (NFR-003).")
+    Component(dtoLayer, "Web DTOs (Records)", "Java 21 Records + Bean Validation",
+      "CalificacionRequestDTO, CentralizadorDTO, SIEExportRequestDTO, AutorizacionCorreccionDTO, PeriodoRequestDTO, ErrorResponseDTO. NUNCA expone entidades JPA (AGENTS.md sec.5).")
+  }
+
+  Container(domain, "domain-layer", "Java 21 - arquitectura hexagonal (sin Spring/JPA)",
+    "Use cases (puertos IN) + Domain Services. Math.floor() vive aqui (BR-008), no en api-gateway. DA-02.")
+  ContainerDb(db, "postgres-rls", "PostgreSQL 15 (RDS Multi-AZ)",
+    "Tablas de dominio con RLS multitenant + audit_log append-only protegida con RULE PostgreSQL.")
+  Container(events, "event-bus", "Spring ApplicationEventPublisher",
+    "Eventos de dominio publicados con @TransactionalEventListener(AFTER_COMMIT). DA-04.")
+
+  System_Ext(secrets, "AWS Secrets Manager", "Almacena la clave publica RS256 para validar JWT (NFR-008) y el usuario/password de RDS.")
+  System_Ext(kms, "AWS KMS", "Cifra y descifra columnas PII (RUDE, nombre, fecha_nacimiento) al cruzar el adaptador de persistencia. NFR-007 / alias/edusync-pii-key.")
+
+  Rel(docente, spa, "Carga calificaciones por dimension y materia", "HTTPS")
+  Rel(secretaria, spa, "Solicita exportacion al SIE", "HTTPS")
+  Rel(director, spa, "Configura periodos, autoriza correcciones", "HTTPS")
+
+  Rel(spa, jwtAuth, "API REST con header Authorization: Bearer JWT", "HTTPS/REST [NFR-008]")
+  Rel(jwtAuth, secrets, "Lee clave publica RS256 cacheada", "AWS SDK / TLS 1.3")
+  Rel(jwtAuth, rlsInj, "Inyecta tenant_id extraido del claim", "In-process")
+  Rel(rlsInj, db, "SET LOCAL app.tenant_id = :id antes de la TX", "JDBC / TLS 1.3 [DA-01]")
+
+  Rel(spa, calCtrl, "POST /api/v1/calificaciones", "HTTPS/REST [FSD-UC-001]")
+  Rel(spa, cenCtrl, "GET /api/v1/centralizadores", "HTTPS/REST [FSD-UC-003]")
+  Rel(spa, expCtrl, "POST /api/v1/exportaciones/sie", "HTTPS/REST [FSD-UC-004]")
+  Rel(spa, corCtrl, "POST/PUT /api/v1/correcciones", "HTTPS/REST [FSD-UC-005]")
+  Rel(spa, perCtrl, "POST /api/v1/periodos", "HTTPS/REST [FSD-UC-009]")
+
+  Rel(calCtrl, dtoLayer, "Deserializa CalificacionRequestDTO; serializa CalificacionResponseDTO", "In-process")
+  Rel(cenCtrl, dtoLayer, "Serializa CentralizadorDTO", "In-process")
+  Rel(expCtrl, dtoLayer, "Deserializa SIEExportRequestDTO", "In-process")
+  Rel(corCtrl, dtoLayer, "Deserializa AutorizacionCorreccionDTO", "In-process")
+  Rel(perCtrl, dtoLayer, "Deserializa PeriodoRequestDTO", "In-process")
+  Rel(errHnd, dtoLayer, "Serializa ErrorResponseDTO", "In-process")
+
+  Rel(calCtrl, domain, "Invoca RegistrarCalificacionUseCase (Port IN)", "In-process / Port IN")
+  Rel(cenCtrl, domain, "Invoca ConsultarCentralizadorUseCase (Port IN)", "In-process / Port IN")
+  Rel(expCtrl, domain, "Invoca ExportarSIEUseCase (Port IN)", "In-process / Port IN")
+  Rel(corCtrl, domain, "Invoca GestionarCorreccionUseCase (Port IN)", "In-process / Port IN")
+  Rel(perCtrl, domain, "Invoca GestionarPeriodoUseCase (Port IN)", "In-process / Port IN")
+
+  Rel(auditAsp, db, "INSERT INTO audit_log dentro de la misma @Transactional", "JDBC / TLS 1.3 [DA-03 / BR-010]")
+  Rel(domain, auditAsp, "@Around intercepta toda escritura de dominio", "Spring AOP")
+  Rel(domain, events, "Publica CalificacionRegistradaEvent y MateriaCerradaEvent", "In-process @TransactionalEventListener(AFTER_COMMIT) [DA-04]")
+  Rel(domain, db, "Persiste y lee a traves de JpaRepositories con RLS activo", "JDBC / TLS 1.3 [DA-01 / DA-02]")
+  Rel(db, kms, "Cifra y descifra columnas PII al leer/escribir", "AWS KMS SDK / TLS 1.3 [NFR-007]")
+
+  UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")

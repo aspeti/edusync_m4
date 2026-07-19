@@ -9,7 +9,7 @@
 | **Autor** | Rodrigo Aspeti — Dev Lead / PM |
 | **Estado** | Borrador |
 | **Stack** | Java 21 · Spring Boot 3.3 · Jakarta Bean Validation 3.0 · Spring Security 6 · PostgreSQL 15 |
-| **Insumos** | `docs/fsd/FSD_EduSync.md` v1.0 (§4.1 UC-001, §4.2 UC-003, §4.4 UC-005) · `docs/arquitectura_hexagonal_EduSync.md` v0.1 · `docs/AGENTS.md` v0.2 |
+| **Insumos** | `docs/fsd/FSD_EduSync.md` v1.0 (§4.1 UC-001, §4.2 UC-003, §4.4 UC-005) · `docs/arquitectura_hexagonal_EduSync.md` v0.1 · `AGENTS.md` v0.2 |
 | **Prompt aplicado** | `PR-DTO-001` (registrado en `docs/PROMPT_MAPPING.md` v0.9) |
 | **Trazabilidad** | FSD-UC-001 · FSD-UC-003 · FSD-UC-005 · BR-001..BR-011 · DA-01..DA-03 |
 
@@ -27,7 +27,7 @@ Documento de **diseño técnico** que define los **Data Transfer Objects (DTOs)*
 
 Sirve de **contrato vinculante** entre `dev-agent` (implementación), `qa-agent` (golden tests) y `arch-agent` (revisión de invariantes hexagonales).
 
-### Convenciones aplicadas (fuente: `docs/AGENTS.md` §5)
+### Convenciones aplicadas (fuente: `AGENTS.md` §5)
 
 - Todos los DTOs son **Java Records** (Java 21).
 - Idioma del código: inglés (nombres de clase, campos, métodos).
@@ -547,7 +547,7 @@ public enum EstadoAutorizacion {
 | FSD-UC-003 (Disparador, Payload salida, BR-003/008/011) | `docs/fsd/FSD_EduSync.md` §4.2 | §2 |
 | FSD-UC-005 (Solicitud, Autorización, BR-005/009/010) | `docs/fsd/FSD_EduSync.md` §4.4 | §3 |
 | Estructura de paquetes hexagonal | `docs/arquitectura_hexagonal_EduSync.md` §1.1 | §0 |
-| Convenciones de DTOs y Records | `docs/AGENTS.md` §5 | §0 |
+| Convenciones de DTOs y Records | `AGENTS.md` §5 | §0 |
 | Invariantes de dominio (BR-001..BR-012) | `docs/fsd/FSD_EduSync.md` §5 | §§1.6, 2.6, 3.6 |
 | Materialización RLS multitenant (DA-01) | `docs/arquitectura_funcional_EduSync.md` §DA-01 | §§1.6, 2.6, 3.6 |
 | Aislamiento del dominio (DA-02) | `docs/arquitectura_funcional_EduSync.md` §DA-02 | §0, §4 |

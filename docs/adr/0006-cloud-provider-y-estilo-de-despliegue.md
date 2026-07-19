@@ -101,4 +101,4 @@ El estilo de despliegue es **Cloud Native**: la API es stateless (JWT sin sesió
 
 | Versión | Fecha | Autor | Cambio |
 |---------|-------|-------|--------|
-| 1 | 28/05/2026 | Rodrigo Aspeti | ADR formal creado a partir de docs/DTI.md §8; requerido explícitamente por la rúbrica de la Defensa Final (Criterio 2); estado Aceptada |
+| 1 | 28/05/2026 | Rodrigo Aspeti | ADR formal creado a partir de docs/DTI.md §8; requerido explícitamente por la rúbrica del Módulo 4 (Criterio 2); estado Aceptada |

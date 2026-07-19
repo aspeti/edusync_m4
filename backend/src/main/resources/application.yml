@@ -19,3 +19,18 @@ management:
     web:
       exposure:
         include: health,info
+
+edusync:
+  security:
+    jwt:
+      # Solo desarrollo local: JWT_SECRET real MUST venir de AWS Secrets Manager en despliegue
+      # (AGENTS.md §7). Longitud >= 32 caracteres, requerida por HS256 (io.jsonwebtoken.security.Keys).
+      secret: ${JWT_SECRET:dev-only-insecure-secret-change-me-please-32chars-min}
+      expiration-seconds: ${JWT_EXPIRATION_SECONDS:28800}
+  seed:
+    sysadmin:
+      # Valores por defecto NO son un secreto real: solo aplican en un entorno local recien
+      # creado (tabla usuario vacia). MUST sobreescribirse via env vars en cualquier entorno
+      # compartido (AGENTS.md §7).
+      email: ${SYSADMIN_EMAIL:sysadmin@edusync.local}
+      password: ${SYSADMIN_PASSWORD:changeme_local_dev}

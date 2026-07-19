@@ -19,8 +19,8 @@ class UsuarioTest {
     Usuario sysAdmin = Usuario.crear(
         UsuarioId.nueva(), null, "Sys Admin", "sysadmin@edusync.local", "hash", Set.of(Rol.SYSADMIN), true);
 
-    assertThat(sysAdmin.tenantId()).isNull();
-    assertThat(sysAdmin.roles()).containsExactly(Rol.SYSADMIN);
+    assertThat(sysAdmin.getTenantId()).isNull();
+    assertThat(sysAdmin.getRoles()).containsExactly(Rol.SYSADMIN);
   }
 
   @Test
@@ -35,8 +35,8 @@ class UsuarioTest {
         Set.of(Rol.ADMIN, Rol.PROFESOR),
         true);
 
-    assertThat(admin.tenantId()).isEqualTo(tenantId);
-    assertThat(admin.roles()).containsExactlyInAnyOrder(Rol.ADMIN, Rol.PROFESOR);
+    assertThat(admin.getTenantId()).isEqualTo(tenantId);
+    assertThat(admin.getRoles()).containsExactlyInAnyOrder(Rol.ADMIN, Rol.PROFESOR);
   }
 
   @Test

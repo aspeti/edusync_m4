@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,18 +25,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * tenant en el {@code finally} porque Tomcat reutiliza hilos entre requests.
  */
 @Component
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private static final String BEARER_PREFIX = "Bearer ";
 
   private final JwtTokenProvider jwtTokenProvider;
   private final TenantContextProvider tenantContextProvider;
-
-  public JwtAuthenticationFilter(
-      JwtTokenProvider jwtTokenProvider, TenantContextProvider tenantContextProvider) {
-    this.jwtTokenProvider = jwtTokenProvider;
-    this.tenantContextProvider = tenantContextProvider;
-  }
 
   @Override
   protected void doFilterInternal(

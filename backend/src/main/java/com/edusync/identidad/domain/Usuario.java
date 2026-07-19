@@ -5,6 +5,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
+import lombok.Getter;
 
 /**
  * Aggregate Root del modulo {@code identidad}.
@@ -12,7 +14,15 @@ import java.util.stream.Collectors;
  * <p>Invariante permanente (ADR-0010, no transitoria de <em>bootstrap</em>):
  * {@code tenantId == null} si y solo si {@code roles} es exactamente {@code {SYSADMIN}}.
  * Validada aqui, en el dominio, no solo en la capa REST.
+ *
+ * <p>POJO inmutable: constructor privado + factory methods con validacion de invariante
+ * ({@link #crear}/{@link #reconstruir}); sin setters ni builder publico. Los accessors de
+ * los campos simples se generan con Lombok {@code @Getter} bajo el <em>allowlist</em> de
+ * {@code ADR-0012} (nomenclatura JavaBean estandar: {@code getId()}, {@code isActivo()}).
+ * {@link #getRoles()} se escribe a mano porque transforma el tipo del campo interno
+ * ({@code Set<UsuarioRol>} &rarr; {@code Set<Rol>}), igual que {@link #tieneRol(Rol)}.
  */
+@Getter
 public final class Usuario {
 
   private final UsuarioId id;
@@ -20,7 +30,10 @@ public final class Usuario {
   private final String nombreCompleto;
   private final String email;
   private final String passwordHash;
+
+  @Getter(AccessLevel.NONE)
   private final Set<UsuarioRol> roles;
+
   private final boolean activo;
 
   private Usuario(
@@ -90,35 +103,11 @@ public final class Usuario {
     return crear(id, tenantId, nombreCompleto, email, passwordHash, roles, activo);
   }
 
-  public UsuarioId id() {
-    return id;
-  }
-
-  public UUID tenantId() {
-    return tenantId;
-  }
-
-  public String nombreCompleto() {
-    return nombreCompleto;
-  }
-
-  public String email() {
-    return email;
-  }
-
-  public String passwordHash() {
-    return passwordHash;
-  }
-
-  public Set<Rol> roles() {
+  public Set<Rol> getRoles() {
     return roles.stream().map(UsuarioRol::rol).collect(Collectors.toUnmodifiableSet());
   }
 
   public boolean tieneRol(Rol rol) {
-    return roles().contains(rol);
-  }
-
-  public boolean activo() {
-    return activo;
+    return getRoles().contains(rol);
   }
 }

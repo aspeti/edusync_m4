@@ -14,6 +14,7 @@ adrs:
   - "ADR-0008"
   - "ADR-0010"
   - "ADR-0011"
+  - "ADR-0012"
 prompts:
   - "PR-IMPL-002"
 release: "release/3.0.0"
@@ -129,15 +130,17 @@ sequenceDiagram
 
 - [x] `fsd_uc` declarado y enlazado (`FSD-UC-021`, parcial — autenticación).
 - [x] Diseño (§2) y alternativas (§3) documentados, incluida la decisión de RLS plataforma-scoped (alternativa D, con mitigación de filtro explícito).
-- [x] Confirmación explícita del usuario: orden `identidad` (login) antes de `plataforma` (tenants); política RLS `OR tenant_id IS NULL` sin `ADR-0012` dedicado.
-- [ ] Prompt `PR-IMPL-002` creado en `docs/prompts/impl/` y registrado en `PROMPT_MAPPING.md` — **siguiente paso inmediato tras este documento**.
-- [ ] Tests/evals definidos (§6) y pasando — requieren que `PR-IMPL-002` se ejecute primero.
-- [ ] `ModularityTests` en verde con el módulo `identidad` poblado — requiere ejecución de `PR-IMPL-002`.
-- [ ] DTP actualizado (changelog + estado de `FSD-UC-021`) vía `dtp-sync`.
-- [ ] PR de código declara: prompts usados, archivos generados vs. editados a mano — se declarará cuando se ejecute `PR-IMPL-002`.
+- [x] Confirmación explícita del usuario: orden `identidad` (login) antes de `plataforma` (tenants); política RLS `OR tenant_id IS NULL` sin ADR dedicado propio (nota: el número `ADR-0012` quedó libre en esa decisión y se usó después para un tema distinto y transversal — ver última fila de esta tabla).
+- [x] Prompt `PR-IMPL-002` creado en `docs/prompts/impl/` y registrado en `PROMPT_MAPPING.md` (v2.3).
+- [x] Tests/evals definidos (§6) y pasando: 27 tests en verde (`AutenticarUsuarioServiceTest` 4, `CrearUsuarioServiceTest` 3, `AuthIntegrationTest` 4 con Testcontainers PostgreSQL 15, `UsuarioTest` 6, `JwtTokenProviderTest` 3, `ModularityTests` 7).
+- [x] `ModularityTests` en verde (7/7) con el módulo `identidad` poblado — sin ciclos ni accesos ilegales entre módulos.
+- [x] DTP actualizado (changelog + estado de `FSD-UC-021`) vía `dtp-sync` — ver `docs/product/DTP.md` v1.8.
+- [x] PR de código declara: prompts usados (`PR-IMPL-002`, luego `ADR-0012` aplicado retroactivamente sobre el mismo módulo), archivos generados vs. editados a mano — ver `docs/prompts/impl/PR-IMPL-002.md` §1.4/§1.5 y este changelog.
+- [x] **Delta transversal posterior** (`ADR-0012`, 19/07/2026): Lombok (allowlist en `domain/`), springdoc-openapi y Bean Validation aplicados retroactivamente sobre el código ya generado por `PR-IMPL-002` — `Usuario.java` (accessors JavaBean), `UsuarioJpaEntity`/`UsuarioRolJpaEntity` (Lombok sin restricción), `AutenticarUsuarioService`/`CrearUsuarioService` (`@RequiredArgsConstructor`), `LoginRequest` (`@NotBlank`/`@Email`), `AuthController` (`@Valid` + anotaciones Swagger), `shared.web.{GlobalExceptionHandler,OpenApiConfig,ErrorResponse}` (nuevos, transversales a todos los módulos). No es un delta de `FSD-UC-021` (sin cambio de requisitos ni de contrato REST observable) — documentado aquí porque es el primer módulo de código real al que se aplica.
 
 ## 8. Registro de cambios
 
 | Versión | Fecha | Autor | Cambio |
 |---------|-------|-------|--------|
-| v1.0 | 14/07/2026 | Rodrigo Aspeti | Creación del segundo Design Doc de código (`DD-UC-002`), primer feature de negocio real: módulo `identidad` (`Usuario`/`UsuarioRol`, login JWT, seed `SYSADMIN`, `TenantContextProvider` real). Decisión explícita del usuario de invertir el orden sugerido en `DD-UC-001` (identidad/login antes que plataforma/tenants) y de resolver el aislamiento RLS de tablas plataforma-scoped con la alternativa D (política `OR tenant_id IS NULL` + filtro explícito en `UsuarioRepositoryPort`), sin crear un `ADR-0012` dedicado. Estado `aprobado`. |
+| v1.0 | 14/07/2026 | Rodrigo Aspeti | Creación del segundo Design Doc de código (`DD-UC-002`), primer feature de negocio real: módulo `identidad` (`Usuario`/`UsuarioRol`, login JWT, seed `SYSADMIN`, `TenantContextProvider` real). Decisión explícita del usuario de invertir el orden sugerido en `DD-UC-001` (identidad/login antes que plataforma/tenants) y de resolver el aislamiento RLS de tablas plataforma-scoped con la alternativa D (política `OR tenant_id IS NULL` + filtro explícito en `UsuarioRepositoryPort`), sin crear un ADR dedicado propio en ese momento. Estado `aprobado`. |
+| v1.1 | 19/07/2026 | Rodrigo Aspeti | Sincronización del DoD (§7) tras la ejecución real de `PR-IMPL-002` (27 tests en verde, incluye `ModularityTests` 7/7) y la aplicación retroactiva de `ADR-0012` (Lombok con *allowlist* en `domain/`, springdoc-openapi, Bean Validation) sobre este mismo módulo. Sin cambios en §1–§6 (diseño y alcance funcional no cambian). |

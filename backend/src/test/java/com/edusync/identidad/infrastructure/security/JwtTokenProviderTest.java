@@ -29,7 +29,7 @@ class JwtTokenProviderTest {
     assertThat(token.expiresInSeconds()).isEqualTo(28800L);
 
     ClaimsToken claims = provider.validar(token.accessToken());
-    assertThat(claims.userId()).isEqualTo(usuario.id().valor());
+    assertThat(claims.userId()).isEqualTo(usuario.getId().valor());
     assertThat(claims.tenantId()).isEqualTo(tenantId);
     assertThat(claims.roles()).containsExactly("ADMIN");
   }

@@ -44,11 +44,11 @@ public class JwtTokenProvider implements TokenGeneradorPort {
   public TokenAcceso generar(Usuario usuario) {
     Instant ahora = Instant.now();
     Instant expiracion = ahora.plusSeconds(expirationSeconds);
-    String rolesCsv = usuario.roles().stream().map(Enum::name).collect(Collectors.joining(","));
+    String rolesCsv = usuario.getRoles().stream().map(Enum::name).collect(Collectors.joining(","));
 
     String token = Jwts.builder()
-        .subject(usuario.id().valor().toString())
-        .claim(CLAIM_TENANT_ID, usuario.tenantId() != null ? usuario.tenantId().toString() : TENANT_ID_AUSENTE)
+        .subject(usuario.getId().valor().toString())
+        .claim(CLAIM_TENANT_ID, usuario.getTenantId() != null ? usuario.getTenantId().toString() : TENANT_ID_AUSENTE)
         .claim(CLAIM_ROLES, rolesCsv)
         .issuedAt(Date.from(ahora))
         .expiration(Date.from(expiracion))

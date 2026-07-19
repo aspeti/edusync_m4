@@ -10,15 +10,21 @@ import jakarta.persistence.Table;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * Entidad JPA de {@code usuario} (tabla plataforma-scoped, RLS con {@code OR tenant_id IS
  * NULL}, ver {@code V2__identidad_usuario.sql}). Nunca se expone directamente por API
  * (AGENTS.md &sect;5): {@code UsuarioRepositoryAdapter} la traduce a/desde
- * {@code identidad.domain.Usuario}.
+ * {@code identidad.domain.Usuario}. Lombok sin restriccion en {@code infrastructure/}
+ * (ADR-0012): {@code @Getter} reemplaza los accessors manuales.
  */
 @Entity
 @Table(name = "usuario")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UsuarioJpaEntity {
 
   @Id
@@ -42,10 +48,6 @@ public class UsuarioJpaEntity {
   @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
   private Set<UsuarioRolJpaEntity> roles = new HashSet<>();
 
-  protected UsuarioJpaEntity() {
-    // requerido por JPA
-  }
-
   public UsuarioJpaEntity(
       UUID id, UUID tenantId, String nombreCompleto, String email, String passwordHash, boolean activo) {
     this.id = id;
@@ -54,34 +56,6 @@ public class UsuarioJpaEntity {
     this.email = email;
     this.passwordHash = passwordHash;
     this.activo = activo;
-  }
-
-  public UUID getId() {
-    return id;
-  }
-
-  public UUID getTenantId() {
-    return tenantId;
-  }
-
-  public String getNombreCompleto() {
-    return nombreCompleto;
-  }
-
-  public String getEmail() {
-    return email;
-  }
-
-  public String getPasswordHash() {
-    return passwordHash;
-  }
-
-  public boolean isActivo() {
-    return activo;
-  }
-
-  public Set<UsuarioRolJpaEntity> getRoles() {
-    return roles;
   }
 
   public void agregarRol(String rol) {

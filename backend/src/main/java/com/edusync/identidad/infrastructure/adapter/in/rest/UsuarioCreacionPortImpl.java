@@ -4,6 +4,7 @@ import com.edusync.identidad.CrearUsuarioCommand;
 import com.edusync.identidad.UsuarioCreacionPort;
 import com.edusync.identidad.UsuarioId;
 import com.edusync.identidad.application.port.in.CrearUsuarioUseCase;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,13 +16,10 @@ import org.springframework.stereotype.Component;
  * {@code identidad} a traves de esta clase, via llamada Java directa (no HTTP).
  */
 @Component
+@RequiredArgsConstructor
 class UsuarioCreacionPortImpl implements UsuarioCreacionPort {
 
   private final CrearUsuarioUseCase crearUsuarioUseCase;
-
-  UsuarioCreacionPortImpl(CrearUsuarioUseCase crearUsuarioUseCase) {
-    this.crearUsuarioUseCase = crearUsuarioUseCase;
-  }
 
   @Override
   public UsuarioId crear(CrearUsuarioCommand command) {

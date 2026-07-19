@@ -10,6 +10,7 @@ import com.edusync.identidad.domain.Rol;
 import com.edusync.identidad.domain.Usuario;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,16 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
  * de dominio {@code Rol}, manteniendo ese enum interno al modulo.
  */
 @Service
+@RequiredArgsConstructor
 public class CrearUsuarioService implements CrearUsuarioUseCase {
 
   private final UsuarioRepositoryPort usuarioRepositoryPort;
   private final PasswordHasherPort passwordHasherPort;
-
-  public CrearUsuarioService(
-      UsuarioRepositoryPort usuarioRepositoryPort, PasswordHasherPort passwordHasherPort) {
-    this.usuarioRepositoryPort = usuarioRepositoryPort;
-    this.passwordHasherPort = passwordHasherPort;
-  }
 
   @Override
   @Transactional
@@ -52,6 +48,6 @@ public class CrearUsuarioService implements CrearUsuarioUseCase {
         true);
 
     Usuario guardado = usuarioRepositoryPort.guardar(usuario);
-    return guardado.id();
+    return guardado.getId();
   }
 }

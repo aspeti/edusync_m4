@@ -38,8 +38,8 @@
 | **Arq. hexagonal** | `docs/arquitectura_hexagonal_EduSync.md` | Arquitectura hexagonal v0.1 — 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots (Perfil Bolivia SIE, paquete `bo.edusync`, baseline M4). **En actualización** (`ADR-0011`): paquete `com.edusync` + organización monolito modular *module-first* (Spring Modulith) para `release/3.0.0` |
 | **Design Docs (capa viva)** | `docs/design/DD-UC-NNN.md` | Documentos de diseño por feature/*vertical slice*, trazados a `FSD-UC` + `ADR` + `PR-IMPL-NNN`; alimentan el DTP vía `@dtp-sync`. `DD-UC-001` (bootstrap); `DD-UC-002` (módulo `identidad`); `DD-UC-003` (módulo `plataforma`); `DD-UC-004` (frontend login + consola SysAdmin — aprobado, ejecución pendiente) |
 | **DTOs por capa** | `docs/dtos_EduSync.md` | DTOs hexagonales v0.1 — 4 Request, 4 Commands, 3 Response, 5 Domain Events, 5 enums |
-| **Skills de Cursor** | `.cursor/skills/<slug>/SKILL.md` | 27 skills (8 EduSync nativos incl. `feature-design-doc` y `dtp-sync` + 19 canónicos Módulo 4 importados desde `plantillas2/`) |
-| **Skills de Claude Code** | `.claude/skills/<slug>/SKILL.md` | 11 skills (paridad parcial con `.cursor/skills/`, incluye `feature-design-doc` y `dtp-sync`) |
+| **Skills de Cursor** | `.cursor/skills/<slug>/SKILL.md` | **13 skills** en paridad con Claude: 10 EduSync (`feature-design-doc`, `dtp-sync`, `adr-edusync`, `c4-edusync`, `dti-edusync`, `update-prompt-mapping`, `edusync-skill-creator`, `sync-doc-chain`, `poc-runner-edusync`, `materialize-prompt-files`) + 3 de arquitectura (`async-architecture-reviewer`, `distributed-architecture-reviewer-edusync`, `monolith-decomposition-architect`). Los ~16 canónicos restantes de `plantillas/plantillas2/` siguen como plantillas fuente, no materializados como skills activos |
+| **Skills de Claude Code** | `.claude/skills/<slug>/SKILL.md` | **13 skills** — paridad completa con `.cursor/skills/` (mismos slugs y contenido). Entrada Claude: `CLAUDE.md` (importa `AGENTS.md`) + `.claude/rules/` + `.claude/agents/` |
 | **Contratos materializados** | `prompts/PR-<AREA>-NNN.md` | Archivos individuales por prompt-contrato — generados por skill `materialize-prompt-files`. **Excepción**: los prompts del área de implementación (`PR-IMPL-NNN.md`) NO viven aquí — viven en `docs/prompts/impl/PR-IMPL-NNN.md`, siguiendo `FEATURE_DESIGN_DOC_TEMPLATE.md`/`MODELO_DOCUMENTAL_IMPLEMENTACION.md`; es la única área que se desvía de la convención plana de M4 |
 
 ---
@@ -76,37 +76,28 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │   ├── rules/
 │   │   ├── seguridad.mdc            ← OWASP ASVS L2 — Java/Spring
 │   │   └── baseline-congelado.mdc   ← prohibe editar docs/baseline/** a cualquier agente
-│   └── skills/                      ← 27 skills activos en Cursor
-│       ├── c4-edusync/SKILL.md              ← C4 Level 1/2/3 de EduSync (PR-SKILL-002)
-│       ├── dti-edusync/SKILL.md             ← poblar y mantener el DTI (histórico; el DTI vigente ya está congelado en docs/baseline/DTI.md) (PR-SKILL-003)
-│       ├── feature-design-doc/SKILL.md      ← generar DD-UC-NNN en docs/design/ a partir de un FSD-UC vivo
-│       ├── dtp-sync/SKILL.md                ← sincronizar docs/product/DTP.md tras cada PR de implementación; nunca toca docs/baseline/
-│       ├── update-prompt-mapping/SKILL.md   ← actualizar PROMPT_MAPPING (PR-SKILL-001)
-│       ├── edusync-skill-creator/SKILL.md   ← crear nuevos skills EduSync
-│       ├── materialize-prompt-files/SKILL.md← backfill de prompts/PR-*.md
-│       ├── sync-doc-chain/SKILL.md          ← propagar cambios BRD→FSD→ADR→DTI ↔ diagrams
-│       └── <19 canónicos Módulo 4>/SKILL.md ← async-architecture-reviewer, broker-selector,
-│                                            cdc-pipeline-designer, ddd-aggregate-designer,
-│                                            distributed-architecture-reviewer, dr-strategy-designer,
-│                                            event-catalog-author, event-schema-designer,
-│                                            external-api-designer, fsd-gherkin-a-tests-aceptacion,
-│                                            fsd-modelo-datos-a-jpa-flyway, fsd-uc-a-vertical-slice,
-│                                            ipc-style-selector, monolith-decomposition-architect,
-│                                            quantum-opportunity-scout, resilience-strategy-designer,
-│                                            saga-designer, serverless-architect,
-│                                            strangler-fig-migrator
+│   └── skills/                      ← 13 skills activos (paridad con .claude/skills/)
+│       ├── adr-edusync/
+│       ├── async-architecture-reviewer/
+│       ├── c4-edusync/              (+ reference.md)
+│       ├── distributed-architecture-reviewer-edusync/
+│       ├── dti-edusync/
+│       ├── dtp-sync/
+│       ├── edusync-skill-creator/
+│       ├── feature-design-doc/
+│       ├── materialize-prompt-files/
+│       ├── monolith-decomposition-architect/
+│       ├── poc-runner-edusync/
+│       ├── sync-doc-chain/
+│       └── update-prompt-mapping/   (+ reference.md)
+│       # Canónicos restantes de plantillas/plantillas2/ NO materializados como skills activos
 ├── .claude/
-│   └── skills/                      ← 11 skills (paridad parcial con .cursor/skills/)
-│       ├── c4-edusync/SKILL.md
-│       ├── dti-edusync/SKILL.md
-│       ├── feature-design-doc/SKILL.md
-│       ├── dtp-sync/SKILL.md
-│       ├── update-prompt-mapping/SKILL.md
-│       ├── edusync-skill-creator/SKILL.md
-│       ├── sync-doc-chain/SKILL.md
-│       └── adr-edusync/SKILL.md
+│   ├── skills/                      ← 13 skills (paridad completa con .cursor/skills/, mismos slugs)
+│   ├── agents/                      ← 6 subagentes: dev/docs/arch/qa/process/compliance-agent.md
+│   └── rules/                       ← espejo de .cursor/rules: baseline-congelado.md, seguridad.md
 ├── README.md
-├── AGENTS.md                        ← este archivo (v0.23) — convención GitHub/Cursor, raíz requerida por la rúbrica del Módulo 4
+├── AGENTS.md                        ← este archivo (v0.24) — convención multi-agente (Cursor + Claude)
+├── CLAUDE.md                        ← entrada Claude Code (importa AGENTS.md; no duplica reglas)
 ├── CODEOWNERS                       ← revisión humana obligatoria sobre docs/baseline/**
 ├── 01_vision_negocio.md             ← visión y contexto del producto
 ├── 02_parte_dificil.md              ← análisis de riesgos técnicos
@@ -308,7 +299,7 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 - **Datos sensibles institucionales**: calificaciones, promedios, centralizadores. Acceso restringido por RBAC + RLS de PostgreSQL.
 - **Secretos**: provienen exclusivamente de AWS Secrets Manager o variables de entorno inyectadas por ECS Task Definition. **MUST NOT** aparecer en código fuente, logs, prompts de agentes ni en archivos de configuración commiteados.
 - **Logs**: **MUST NOT** registrar `rude`, `password`, `token`, `jwt`, ni ningún campo de calificación individual en logs nivel INFO o superior. Solo referencias por `id` interno (Constitución §0.4 / NFR-007 del FSD).
-- **Regla de seguridad activa**: `.cursor/rules/seguridad.mdc` — OWASP ASVS L2 aplicado en Java/Spring.
+- **Regla de seguridad activa**: `.cursor/rules/seguridad.mdc` y espejo `.claude/rules/seguridad.md` — OWASP ASVS L2 aplicado en Java/Spring.
 - **Cumplimiento aplicable**:
   - **Ley 164 (Bolivia)**: protección de datos personales aplicable a datos de menores de edad (estudiantes).
   - **Regulación ministerial SIE**: formato y protocolo de exportación son obligatorios e inquebrantables; toda desviación constituye incumplimiento sancionable.
@@ -321,11 +312,13 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 
 ### 8.1 Agentes activos en este repositorio
 
+> En Claude Code los mismos roles viven como subagentes en `.claude/agents/<nombre>.md`. En Cursor se invocan por instrucción / skill según la tarea.
+
 | Agente | Propósito | Modelo | Herramientas | Límites estrictos |
 |--------|-----------|--------|--------------|-------------------|
 | `dev-agent` | Implementar casos de uso backend (FSD-UC-001..009) | Sonnet | `read`, `edit`, `run-tests`, `run-linter` | **MUST NOT** tocar `infra/`; **MUST NOT** modificar migraciones Flyway aplicadas; **MUST NOT** calcular promedios fuera de `ConsolidacionDomainService`; **MUST NOT** editar `docs/baseline/**` |
 | `arch-agent` | Evaluar alternativas y documentar decisiones arquitectónicas (DA-01..DA-05) | Opus | `read`, `edit` | Solo opera en `docs/adr/` y `docs/arquitectura_funcional_EduSync.md`; toda decisión requiere aprobación humana |
-| `docs-agent` | Mantener y sincronizar la cadena documental BRD→MRD→PRD→FSD→LFSD en `docs/`, incluida la capa viva `docs/product/` (skills `feature-design-doc`, `dtp-sync`) | Sonnet | `read`, `edit` | Solo opera dentro de `docs/`; **MUST NOT** editar código fuente; **MUST NOT** editar `docs/baseline/**` bajo ninguna circunstancia (ver `.cursor/rules/baseline-congelado.mdc`) |
+| `docs-agent` | Mantener y sincronizar la cadena documental BRD→MRD→PRD→FSD→LFSD en `docs/`, incluida la capa viva `docs/product/` (skills `feature-design-doc`, `dtp-sync`) | Sonnet | `read`, `edit` | Solo opera dentro de `docs/`; **MUST NOT** editar código fuente; **MUST NOT** editar `docs/baseline/**` bajo ninguna circunstancia (ver `.cursor/rules/baseline-congelado.mdc` / `.claude/rules/baseline-congelado.md`). Espejo Claude: `.claude/agents/docs-agent.md` |
 | `qa-agent` | Verificar invariantes de dominio, trazabilidad de audit_log y cobertura de pruebas | Sonnet | `read`, `query-db` (solo SELECT) | **MUST NOT** realizar escrituras; solo lectura y análisis |
 | `process-agent` | Modelar workflows y diagramas de estado (Docente, Director) garantizando consistencia con UCs | Sonnet | `read`, `edit` | Opera en `docs/diagrams/`; diagramas deben usar `stateDiagram-v2` y nombres reales del dominio |
 | `compliance-agent` | Validar que ningún output de `dev-agent` viole invariantes regulatorias del SIE (RUDE, floor, rangos) | Sonnet | `read`, ejecutar golden tests | Solo lectura de artefactos + ejecución de golden tests en CI; bloquea merge si falla |
@@ -539,6 +532,7 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 | v0.21 | 19/07/2026 | Rodrigo Aspeti | **Herramientas de productividad backend**: `docs/adr/0012-*.md` (Aceptada) adopta Lombok, springdoc-openapi y `spring-boot-starter-validation` sobre el módulo `identidad` ya implementado (`PR-IMPL-002`). Decisión refinada en dos rondas con el usuario: se descartó la opción inicial de excluir Lombok por completo de `domain/`, y se acordó permitirlo bajo un *allowlist* estrecho (`@Getter`/`@EqualsAndHashCode`/`@ToString`, nomenclatura JavaBean estándar — `getId()`, `isActivo()` — no el estilo fluido previo) para que los Aggregate Roots sean POJOs inmutables convencionales, sin habilitar `@Data`/`@Setter`/`@Builder` público que evadiría la validación de invariantes de `ADR-0010`. §4 (tabla de stack) añade 3 filas (Lombok 1.18.46, springdoc-openapi-starter-webmvc-ui 3.0.3, Bean Validation); §5 reescribe la regla de `domain/` para distinguir frameworks con comportamiento en runtime (prohibidos) de procesadores de anotaciones sin huella en runtime (permitidos bajo el *allowlist*). Conteo de ADRs 10→11. Refactor aplicado: `Usuario.java` (accessors `id()`/`tenantId()`/etc. → `getId()`/`getTenantId()`/etc., `getRoles()` manual) y sus 7 sitios de llamada; Lombok en `UsuarioJpaEntity`/`UsuarioRolJpaEntity`/servicios de aplicación; `@Valid` en `LoginRequest`; `OpenApiConfig` con `SecurityScheme` Bearer, Swagger UI público en los perfiles actuales (`dev`/`test`), pendiente de revisión cuando exista un perfil de producción. `mvn test` verificado en verde tras el refactor. Sin cambios en `docs/baseline/`. |
 | v0.22 | 19/07/2026 | Rodrigo Aspeti | **Ejecución real de `PR-IMPL-003`, tercer y último prompt de implementación pendiente**: módulo `plataforma` (dominio `Tenant` con ciclo de suscripción y mutabilidad controlada de `estado`, casos de uso `Registrar`/`CambiarEstado`/`CrearAdmin`Tenant, `VencimientoSchedulerService`+Job `@Scheduled`, `TenantController` con `@PreAuthorize("hasRole('SYSADMIN')")`, persistencia JPA, `V3__plataforma_tenant.sql`) queda con código real y funcional sobre `docs/design/DD-UC-003.md`; `FSD-UC-011` (Gestión de Tenants y Suscripciones) cierra su implementación **completa**, primer `FSD-UC` en llegar a ese estado. Enforcement de `BR-014` en `identidad`: nuevo puerto público `identidad.TenantConsultaPort` + `identidad.domain.TenantNoActivoException`, consultado por `AutenticarUsuarioService` (HTTP 403 `E_TENANT_NO_ACTIVO`). **Refinamiento de diseño respecto a `DD-UC-003` §2** (documentado inline en el Javadoc del puerto, sin ADR dedicado — mismo criterio que los refinamientos de `DD-UC-002`): `TenantConsultaPort` se declaró en la raíz de `identidad`, no de `plataforma`, porque `ApplicationModules.verify()` de Spring Modulith rechaza el ciclo que se generaría (`plataforma` ya depende de `identidad` vía `UsuarioCreacionPort`); la implementación real (`TenantConsultaPortImpl`) vive en `plataforma.infrastructure.adapter.out.port` — funcionalmente idéntico al diseño original. Corrección técnica encontrada durante la ejecución: `HttpStatus.UNPROCESSABLE_ENTITY` fue renombrado a `HttpStatus.UNPROCESSABLE_CONTENT` en Spring Framework 7.x (Spring Boot 4.1) — corregido en `TenantController`/`TenantIntegrationTest`. Verificación: `mvn test` (clean) → 45/45 tests verde (incluye `ModularityTests` 7/7, confirmando cero ciclos en la comunicación bidireccional `plataforma`↔`identidad`). `docs/product/DTP.md` v1.8→v1.9 (§A.1 nueva fila, §A.3 `FSD-UC-011` pasa a `completo`, §A.4 solo el commit real en Git queda pendiente). `docs/PROMPT_MAPPING.md` v2.5→v2.6. `docs/design/DD-UC-003.md` v1.0→v1.1 (DoD 100%). Árbol §3 y checklist §16 actualizados: **los 3 prompts de implementación de `release/3.0.0` (`PR-IMPL-001`/`002`/`003`) ya están ejecutados**; solo el commit real en Git queda como siguiente paso. Sin ADR nuevo (conteo se mantiene en 11) ni cambios en `docs/baseline/`. |
 | v0.23 | 19/07/2026 | Rodrigo Aspeti | **Design Doc + prompt de UI**: `docs/design/DD-UC-004.md` y `docs/prompts/impl/PR-IMPL-004.md` (frontend login + consola SysAdmin, JWT en `sessionStorage`, delta `GET /tenants`). `PROMPT_MAPPING` v2.6→v2.7 (41 contratos). `DTP` v1.9→v1.10. `FSD.md` v2.3→v2.4. CRUD usuarios reasignado a futuro `DD-UC-005`. Ejecución de `PR-IMPL-004` pendiente. |
+| v0.24 | 19/07/2026 | Rodrigo Aspeti | **Paridad Cursor ↔ Claude Code**: 13 skills idénticos en `.cursor/skills/` y `.claude/skills/`; entrada `CLAUDE.md` (importa `AGENTS.md`); espejo `.claude/rules/{baseline-congelado,seguridad}.md`; 6 subagentes en `.claude/agents/`. Conteo histórico "27/11 skills" corregido a 13/13 activos. Canónicos restantes de `plantillas/plantillas2/` siguen sin materializar. Sin cambios en código ni `docs/baseline/`. |
 
 ---
 
@@ -557,7 +551,7 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 - [x] Guardrails probados con lista de prompts prohibidos.
 - [x] `docs/adr/0001..0006-*.md` + `0008-*.md` + `0009-*.md` + `0010-*.md` + `0011-*.md` + `0012-*.md` creados — 11 ADRs aprobados (multitenancy RLS, parametrización, audit_log, async, resiliencia SIE, cloud provider, stack vivo Java 25/Boot 4.1.0/Angular 21, generalización del modelo de dominio, multi-rol + `SysAdmin` sin tenant, monolito modular + paquete `com.edusync`, Lombok con *allowlist* en `domain/`/springdoc-openapi/Bean Validation). `ADR-0007` (Strangler Fig) queda *gated*, sin crear.
 - [x] `docs/diagrams/c4_level1.mmd` y `c4_level2.mmd` creados (Contexto + Contenedores).
-- [x] `.cursor/skills/` extendida a 27 skills (8 EduSync incl. `feature-design-doc`/`dtp-sync` + 19 canónicos Módulo 4); `.claude/skills/` a 11.
+- [x] Skills activos: 13 en `.cursor/skills/` y 13 en `.claude/skills/` (paridad completa, 19/07/2026). Los canónicos restantes de `plantillas/plantillas2/` siguen como plantillas fuente.
 - [x] `docs/diagrams/c4_level3_*.mmd` + `deployment_aws.mmd` creados — `api-gateway` (PR-C4-003), `domain-layer` (PR-C4-004), `sie-adapter` (PR-C4-005) y Deployment AWS (PR-C4-006).
 - [x] `docs/roadmap.md` v0.3 creado y actualizado (PR-ROADMAP-001) — hoja de ruta canónica con 4 horizontes + apertura de capa viva; espejo histórico en `docs/baseline/DTI.md` §19, espejo vivo en `docs/product/DTP.md`.
 - [x] `docs/baseline/` protegido — 5 archivos marcados `status: congelado`, `CODEOWNERS`, `.cursor/rules/baseline-congelado.mdc` y el hook `.cursor/hooks.json` → `protect-baseline.js` (enforcement real, no solo advisory) creados y probados manualmente.
@@ -579,8 +573,8 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 - [ ] Limpieza de ~50 referencias históricas a `docs/DTI.md` (ya movido a `docs/baseline/DTI.md`) dispersas en `prompts/PR-*.md`, `plantillas2/`, y skills operativos (`sync-doc-chain`, `c4-edusync`, `adr-edusync`, `poc-runner-edusync`) — fuera de alcance de esta pasada, recomendado como tarea de seguimiento.
 - [x] `docs/aportes/release-2.0.0.md` creado (PR-APORTES-001 v0.1 — 95 tareas auditables, factor 1.00 por caso degenerado n = 1; commit final pendiente del push de `release/2.0.0`).
 - [x] `AGENTS.md` en la **raíz** del repo (rúbrica del Módulo 4 pide ubicación raíz) — completado en v0.9.
+- [x] `.cursor/skills/` y `.claude/skills/` en **paridad completa** (13 skills, mismos slugs); entrada Claude Code vía `CLAUDE.md` + `.claude/rules/` + `.claude/agents/` (6 agentes).
 - [x] Alias `_vFinal` creados para BRD/MRD/PRD/FSD (`PR-VFINAL-001`): `docs/brd/BRD_EduSync_vFinal.md`, `docs/mrd/MRD_EduSync_vFinal.md`, `docs/prd/PRD_EduSync_vFinal.md`, `docs/fsd/FSD_EduSync_vFinal.md`.
 - [x] Bump del DTI a v0.6 + cierre del drift de `adrs_vigentes` (nombres reales `0001..0006-*.md` en frontmatter).
-- [ ] `.claude/skills/` alcanzar paridad con `.cursor/skills/` (faltan los 19 canónicos Módulo 4 + `materialize-prompt-files`).
 - [ ] Stack y versiones a verificar contra `pom.xml` cuando el proyecto de código sea inicializado.
 - [ ] Revisado por al menos un humano del grupo antes de cada release.

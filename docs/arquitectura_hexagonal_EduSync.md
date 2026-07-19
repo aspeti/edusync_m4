@@ -259,7 +259,7 @@ com.edusync/
 
 ## 8. Checklist de implementación (sirve a `dev-agent`)
 
-- [ ] `domain/` no importa nada de `org.springframework.*`, `jakarta.persistence.*`, `com.amazonaws.*`.
+- [ ] `domain/` no importa nada de `org.springframework.*`, `jakarta.persistence.*`, `com.amazonaws.*`. Excepción explícita (`ADR-0012`): `lombok.Getter`, `lombok.EqualsAndHashCode`, `lombok.ToString` están permitidos (procesadores de anotaciones sin huella en runtime, no frameworks); `lombok.Data`, `lombok.Setter` y `lombok.Builder` con acceso público **MUST NOT** aparecer en `domain/` bajo ninguna circunstancia — evadirían la validación de invariantes de los Aggregate Roots.
 - [ ] Cada `*UseCase` del puerto IN tiene un test unitario que stubea los puertos OUT (sin Spring context).
 - [ ] Cada Aggregate Root tiene un test de invariantes (al menos un caso por cada `BR-NNN` listada en §5).
 - [ ] `AuditLogAspect` está activo en CI; `AuditLogTest` verifica que toda escritura genera entrada en `audit_log` en la misma TX.

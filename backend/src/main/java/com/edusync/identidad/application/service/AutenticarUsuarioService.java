@@ -7,6 +7,7 @@ import com.edusync.identidad.application.port.out.TokenGeneradorPort;
 import com.edusync.identidad.application.port.out.UsuarioRepositoryPort;
 import com.edusync.identidad.domain.CredencialesInvalidasException;
 import com.edusync.identidad.domain.Usuario;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -15,28 +16,20 @@ import org.springframework.stereotype.Service;
  * {@code DD-UC-003}/{@code PR-IMPL-003}, cuando exista {@code TenantConsultaPort}.
  */
 @Service
+@RequiredArgsConstructor
 public class AutenticarUsuarioService implements AutenticarUsuarioUseCase {
 
   private final UsuarioRepositoryPort usuarioRepositoryPort;
   private final PasswordHasherPort passwordHasherPort;
   private final TokenGeneradorPort tokenGeneradorPort;
 
-  public AutenticarUsuarioService(
-      UsuarioRepositoryPort usuarioRepositoryPort,
-      PasswordHasherPort passwordHasherPort,
-      TokenGeneradorPort tokenGeneradorPort) {
-    this.usuarioRepositoryPort = usuarioRepositoryPort;
-    this.passwordHasherPort = passwordHasherPort;
-    this.tokenGeneradorPort = tokenGeneradorPort;
-  }
-
   @Override
   public TokenAcceso autenticar(String email, String password) {
     Usuario usuario = usuarioRepositoryPort.buscarPorEmail(email)
-        .filter(Usuario::activo)
+        .filter(Usuario::isActivo)
         .orElseThrow(CredencialesInvalidasException::new);
 
-    if (!passwordHasherPort.coincide(password, usuario.passwordHash())) {
+    if (!passwordHasherPort.coincide(password, usuario.getPasswordHash())) {
       throw new CredencialesInvalidasException();
     }
 

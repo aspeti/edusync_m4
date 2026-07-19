@@ -14,6 +14,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * JWT stateless (sin sesion de servidor, sin CSRF): el unico endpoint publico es el login;
  * todo lo demas requiere {@code Authorization: Bearer &lt;token&gt;} (DD-UC-002 &sect;2).
+ *
+ * <p>Swagger UI/OpenAPI ({@code /swagger-ui.html}, {@code /v3/api-docs/**}) tambien se
+ * deja publico en los perfiles vigentes (`dev`/`test`) — ver la nota de pendiente de
+ * revision en {@code OpenApiConfig} y {@code ADR-0012} &sect;3.
  */
 @Configuration
 @EnableWebSecurity
@@ -28,6 +32,7 @@ public class SecurityConfig {
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/v1/auth/login").permitAll()
             .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+            .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
             .anyRequest().authenticated())
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();

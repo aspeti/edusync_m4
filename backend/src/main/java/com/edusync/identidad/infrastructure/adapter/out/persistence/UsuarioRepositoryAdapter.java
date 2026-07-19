@@ -7,6 +7,7 @@ import com.edusync.identidad.domain.Usuario;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,13 +19,10 @@ import org.springframework.stereotype.Component;
  * {@code UsuarioRepositoryPort} Javadoc).
  */
 @Component
+@RequiredArgsConstructor
 class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
 
   private final UsuarioJpaRepository jpaRepository;
-
-  UsuarioRepositoryAdapter(UsuarioJpaRepository jpaRepository) {
-    this.jpaRepository = jpaRepository;
-  }
 
   @Override
   public Optional<Usuario> buscarPorEmail(String email) {
@@ -49,13 +47,13 @@ class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
   @Override
   public Usuario guardar(Usuario usuario) {
     UsuarioJpaEntity entity = new UsuarioJpaEntity(
-        usuario.id().valor(),
-        usuario.tenantId(),
-        usuario.nombreCompleto(),
-        usuario.email(),
-        usuario.passwordHash(),
-        usuario.activo());
-    usuario.roles().forEach(rol -> entity.agregarRol(rol.name()));
+        usuario.getId().valor(),
+        usuario.getTenantId(),
+        usuario.getNombreCompleto(),
+        usuario.getEmail(),
+        usuario.getPasswordHash(),
+        usuario.isActivo());
+    usuario.getRoles().forEach(rol -> entity.agregarRol(rol.name()));
 
     UsuarioJpaEntity guardado = jpaRepository.save(entity);
     return aDominio(guardado);

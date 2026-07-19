@@ -20,6 +20,14 @@ management:
       exposure:
         include: health,info
 
+# Publico en los perfiles vigentes (dev/test); pendiente de revision cuando exista un
+# perfil de produccion real (ADR-0012 §3, ver tambien shared.web.OpenApiConfig).
+springdoc:
+  swagger-ui:
+    enabled: true
+  api-docs:
+    enabled: true
+
 edusync:
   security:
     jwt:

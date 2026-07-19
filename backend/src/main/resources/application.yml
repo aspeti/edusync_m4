@@ -42,3 +42,8 @@ edusync:
       # compartido (AGENTS.md §7).
       email: ${SYSADMIN_EMAIL:sysadmin@edusync.local}
       password: ${SYSADMIN_PASSWORD:changeme_local_dev}
+  plataforma:
+    scheduler:
+      # Diario a las 03:00 (hora del servidor). @Scheduled interno de Spring, sin ShedLock
+      # (DD-UC-003 §2, alternativa A: suficiente para 1 instancia del monolito).
+      vencimiento-cron: ${EDUSYNC_VENCIMIENTO_CRON:0 0 3 * * *}

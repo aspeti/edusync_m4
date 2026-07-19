@@ -11,10 +11,10 @@
 | Tipo de prompt | generación |
 | Modelo recomendado | Sonnet |
 | Temperatura | 0.0 |
-| Versión | v0.1 |
-| Fecha | 14/07/2026 |
+| Versión | v0.2 |
+| Fecha | 14/07/2026 (ejecutado 19/07/2026) |
 | Autor(es) | Rodrigo Aspeti |
-| Estado | Aprobado |
+| Estado | **Ejecutado** |
 
 > **Convención de ruta**: este prompt vive en `docs/prompts/impl/`, siguiendo `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md` §5 — el área `IMPL` es la única que se desvía de la convención plana `prompts/PR-<AREA>-NNN.md` usada por el resto de áreas.
 
@@ -169,9 +169,11 @@ backend/src/main/resources/db/migration/V3__plataforma_tenant.sql
 | Versión | Fecha | Autor | Cambio | Modelo validado |
 |---------|-------|-------|--------|------------------|
 | v0.1 | 14/07/2026 | Rodrigo Aspeti | Creación a partir de `docs/design/DD-UC-003.md` v1.0 | Sonnet |
+| v0.2 | 19/07/2026 | Rodrigo Aspeti | **Ejecución del prompt**: código real generado en `backend/src/main/java/com/edusync/plataforma/**` + modificaciones en `identidad` (`TenantConsultaPort`, `TenantNoActivoException`, `AutenticarUsuarioService`, `AuthController`). Los 5 criterios de la stop condition se cumplieron: (a)-(e) verificados con `mvn test` → 45/45 tests verdes (incluye `ModularityTests` 7/7) y `TenantIntegrationTest` de punta a punta con Testcontainers. Refinamiento respecto al diseño original (documentado en el Javadoc de `identidad.TenantConsultaPort`): el puerto se declaró en `identidad` en vez de `plataforma`, para evitar un ciclo de módulos rechazado por Spring Modulith. | Sonnet |
 
 ## 9. Revisión humana
 
 | Revisor | Fecha | Veredicto | Notas |
 |---------|-------|-----------|-------|
 | Rodrigo Aspeti | 14/07/2026 | aprobado (prompt) | Prompt aprobado; ejecución del prompt (generación real de código en `backend/`) queda **pendiente**, igual que `PR-IMPL-001`/`PR-IMPL-002` |
+| Rodrigo Aspeti | 19/07/2026 | **aprobado (ejecutado)** | Ejecución verificada: 45/45 tests verdes, `ModularityTests` en verde con la comunicación bidireccional `plataforma`↔`identidad`, sin ciclos de módulo |

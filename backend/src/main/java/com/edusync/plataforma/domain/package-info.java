@@ -1,7 +1,8 @@
 /**
  * Dominio puro del modulo {@code plataforma} (sin dependencias de Spring/JPA).
  *
- * <p>Vacio: la logica real ({@code Tenant}, {@code EstadoTenant}) se anade en
- * {@code DD-UC-003} (docs/design/DD-UC-003.md).
+ * <p>{@link com.edusync.plataforma.domain.Tenant} es el Aggregate Root (ciclo de
+ * suscripcion: {@code ACTIVO}/{@code SUSPENDIDO}/{@code VENCIDO}, {@code BR-013}/
+ * {@code BR-014}). Poblado por {@code DD-UC-003} (docs/design/DD-UC-003.md).
  */
 package com.edusync.plataforma.domain;

@@ -135,10 +135,10 @@ flowchart TB
 - [x] Diseño (§2) y alternativas (§3) documentados.
 - [x] ADR creado/enlazado — `ADR-0011` (monolito modular + paquete base), además de `ADR-0008`/`ADR-0009`/`ADR-0010` como contexto heredado.
 - [x] §4 Impacto en specs vivas registrado (sin tocar el baseline).
-- [x] Prompt(s) versionado(s) en `docs/prompts/impl/` y en `PROMPT_MAPPING.md` — `PR-IMPL-001` creado y registrado; **pendiente de ejecutar** (generar el código real en `backend/`/`frontend/`/`infra/`).
-- [ ] Tests/evals definidos y pasando — `ModularityTests` se define aquí pero requiere que `PR-IMPL-001` se ejecute primero.
-- [ ] DTP actualizado (changelog + estado del FSD-UC) vía `dtp-sync` — pendiente, siguiente paso tras aprobar este documento.
-- [ ] PR declara: prompts usados, archivos generados vs editados a mano — se declarará en el PR de código cuando se ejecute `PR-IMPL-001`.
+- [x] Prompt(s) versionado(s) en `docs/prompts/impl/` y en `PROMPT_MAPPING.md` — `PR-IMPL-001` creado, registrado y **ejecutado** (18/07/2026): código real generado en `backend/`/`frontend/`/`infra/`.
+- [x] Tests/evals definidos y pasando — `ModularityTests`: 7/7 en verde (`mvn test`, sin ciclos ni accesos ilegales entre módulos); `ng build` del frontend sin errores.
+- [x] DTP actualizado (changelog + estado del FSD-UC) vía `dtp-sync` — `docs/product/DTP.md` v1.6→v1.7 (§A.1 nueva fila, §A.3/§A.4 actualizados).
+- [ ] PR declara: prompts usados, archivos generados vs editados a mano — pendiente el commit real en Git (código ya generado y verificado en el working tree).
 
 ## 8. Registro de cambios
 
@@ -146,3 +146,4 @@ flowchart TB
 |---------|-------|-------|--------|
 | v1.0 | 14/07/2026 | Rodrigo Aspeti | Creación del Design Doc de bootstrap del proyecto (primer `DD-UC-NNN` de `release/3.0.0`); crea `ADR-0011` (monolito modular Spring Modulith + paquete base `com.edusync`); define el árbol de carpetas `backend/`/`frontend/`/`infra/` y el prompt `PR-IMPL-001` para materializarlo. Estado `aprobado` por decisión explícita del usuario (Alternativa B de `ADR-0011`, paquete `com.edusync`, frontend SPA única sin Nx). |
 | v1.1 | 14/07/2026 | Rodrigo Aspeti | Corrección de ruta del prompt: `PR-IMPL-001` se referencia ahora en `docs/prompts/impl/` (no `prompts/`), siguiendo `FEATURE_DESIGN_DOC_TEMPLATE.md` §5 — única área que se desvía de la convención plana de M4. Sin cambios en el diseño (§1–§4) ni en el contenido del prompt. |
+| v1.2 | 18/07/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-001`**: código real generado exactamente según el árbol de §2 (`backend/pom.xml`, `EduSyncApplication`, 5 módulos vacíos con `package-info.java`, `shared.tenant.TenantContext`/`shared.exception.DomainException`, `ModularityTests`, `application*.yml`, `V1__init.sql`; `frontend/` Angular 21 standalone con `core`/`shared`/`features`; `infra/docker-compose.yml`). §6/§7 cerrados: `mvn test` → `ModularityTests` 7/7 verde; `ng build` sin errores. DTP sincronizado (`docs/product/DTP.md` v1.7). Estado `aprobado`, DoD casi completo — solo falta el commit real en Git. |

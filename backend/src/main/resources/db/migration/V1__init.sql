@@ -1,0 +1,5 @@
+-- V1__init.sql
+-- Baseline de Flyway para EduSync (release/3.0.0). Intencionalmente vacio: no hay
+-- entidades de dominio todavia (DD-UC-001, bootstrap del proyecto). Deja el historial
+-- de Flyway inicializado para que V2 (modulo identidad, DD-UC-002) y V3 (modulo
+-- plataforma, DD-UC-003) puedan aplicarse sobre una base de esquema limpia.

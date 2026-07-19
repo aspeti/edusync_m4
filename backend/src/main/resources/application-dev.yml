@@ -1,0 +1,14 @@
+# Perfil de desarrollo local. Apunta al PostgreSQL 15 de infra/docker-compose.yml.
+# Sin credenciales reales: valores de desarrollo local no sensibles, sobreescribibles
+# por variables de entorno (AGENTS.md - secretos nunca hardcodeados en codigo fuente).
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:edusync}
+    username: ${DB_USER:edusync}
+    password: ${DB_PASSWORD:edusync_dev_local}
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    com.edusync: DEBUG

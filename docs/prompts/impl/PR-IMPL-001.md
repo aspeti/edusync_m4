@@ -160,3 +160,4 @@ infra/docker-compose.yml
 | Revisor | Fecha | Veredicto | Notas |
 |---------|-------|-----------|-------|
 | Rodrigo Aspeti | 14/07/2026 | aprobado (prompt) | Prompt aprobado; ejecución del prompt (generación real de código en `backend/`/`frontend/`/`infra/`) queda **pendiente** como siguiente paso |
+| Rodrigo Aspeti | 18/07/2026 | ejecutado | Prompt ejecutado: `backend/`, `frontend/`, `infra/docker-compose.yml` generados según §1.6/§2. Stop condition cumplida: árbol de carpetas idéntico a `DD-UC-001` §2, `ModularityTests` 7/7 en verde (`mvn test`), `ng build` sin errores, sin lógica de dominio incluida. Commit real en Git pendiente |

@@ -23,7 +23,7 @@
 | **FSD** | `docs/fsd/FSD_EduSync.md` | Functional Specification Document — 5 FSD-UC, ER, 3 prompt-contratos |
 | **FSD vFinal** | `docs/fsd/FSD_EduSync_vFinal.md` | Snapshot congelado de FSD v1.0 para `release/2.0.0` (generado por `PR-VFINAL-001`) |
 | **LFSD** | `docs/LFSD-EduSync.md` | Low-Level Functional Specification v1.0.1 — arquitectura hexagonal, DDL, APIs, diagramas de secuencia |
-| **PROMPT_MAPPING** | `docs/PROMPT_MAPPING.md` | Catálogo de prompt-contratos `PR-<AREA>-NNN` — v2.7 (41 contratos activos: PR-ARCH..PR-POC-002, PR-C4-003..006, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-IMPL-001..004; v2.6 ejecutó `PR-IMPL-003`; v2.7 materializa `PR-IMPL-004` — frontend login + consola SysAdmin, ejecución pendiente) |
+| **PROMPT_MAPPING** | `docs/PROMPT_MAPPING.md` | Catálogo de prompt-contratos `PR-<AREA>-NNN` — v2.8 (41 contratos activos: PR-ARCH..PR-POC-002, PR-C4-003..006, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-IMPL-001..004; los cuatro `PR-IMPL-*` **ejecutados**, incl. `PR-IMPL-004` UI login + consola SysAdmin) |
 | **APORTES** | `docs/APORTES_EduSync.md` | Informe de aportes individuales — release 1.0.0 |
 | **APORTES release/2.0.0** | `docs/aportes/release-2.0.0.md` | Informe de aportes individuales del release de defensa — grupo unipersonal (n = 1), 95 tareas auditables, factor 1.00, generado por `PR-APORTES-001` |
 | **Roadmap** | `docs/roadmap.md` | Hoja de ruta técnica y de negocio v0.3 — 4 horizontes (`release/1.0.1` → `release/1.1.0`/`release/3.0.0` → `release/1.2.0` → `release/2.0.0`), Gantt, 9 lecciones, métricas BRD/NFR, riesgos y compromisos; fuente canónica detallada (espejo historico en `docs/baseline/DTI.md` §19, espejo vivo hacia adelante en `docs/product/DTP.md` §B) |
@@ -31,12 +31,12 @@
 | **Regla de baseline congelado** | `.cursor/rules/baseline-congelado.mdc` | Prohíbe a cualquier agente editar `docs/baseline/**`; espejo de la regla de este documento (§8.2) |
 | **Hooks de Cursor** | `.cursor/hooks.json` + `.cursor/hooks/*.js` | Automatización, no solo convención: `protect-baseline.js` (`preToolUse`) bloquea con `permission: deny` cualquier `Write`/`StrReplace`/`EditNotebook`/`Delete` sobre `docs/baseline/**`; `warn-shell-baseline.js` (`beforeShellExecution`) pide confirmación ante comandos de shell que escriban/muevan/borren rutas de `docs/baseline/`; `dtp-sync-reminder.js` (`stop`) revisa `git diff`/`git ls-files --others` al final de cada turno y recuerda ejecutar `@dtp-sync` si hay cambios sin commitear en `backend/`, `frontend/`, `docs/design/` o `docs/prompts/impl/PR-IMPL-*.md` sin reflejo en `docs/product/DTP.md` |
 | **Baseline congelado M4** | `docs/baseline/{BRD_EduSync_vFinal,MRD_EduSync_vFinal,PRD_EduSync_vFinal,FSD_EduSync_vFinal,DTI}.md` | Registro histórico **inmutable** evaluado en M4, tag `release/2.0.0`, `status: congelado`. Protegido por `CODEOWNERS` y `.cursor/rules/baseline-congelado.mdc`. El antiguo `docs/DTI.md` (v0.8, §0–§23) es hoy `docs/baseline/DTI.md` — su continuación viva es `docs/product/DTP.md` |
-| **DTP (capa viva)** | `docs/product/DTP.md` | Documento Técnico del Producto v1.10 (19/07/2026) — continuación viva del DTI congelado; §A.3 marca `FSD-UC-011` como **completo** (API) con UI en progreso (`DD-UC-004`) y `FSD-UC-021` en progreso (API login + UI pendiente); `PR-IMPL-004` aprobado, ejecución pendiente |
+| **DTP (capa viva)** | `docs/product/DTP.md` | Documento Técnico del Producto v1.11 (19/07/2026) — continuación viva del DTI congelado; §A.3 marca `FSD-UC-011` como **completo** (API + UI consola SysAdmin) y `FSD-UC-021` en progreso (login API+UI; CRUD → `DD-UC-005`); `PR-IMPL-004` **ejecutado** (50/50 tests, `ng build` verde) |
 | **PRD/FSD/BRD vivos** | `docs/product/{BRD,PRD,FSD}.md` | Copias editables de la capa viva (banner "COPIA VIVA"), abiertas para `release/3.0.0`; el FSD vivo opera en modo LFSD ⚡. Desde `ADR-0009` (v3.1/v2.2/v2.2 resp.): plataforma SaaS multi-tenant configurable (SysAdmin, Tenant con suscripción, Gestión Escolar, periodos/secciones/tipos de evaluación configurables, Cursos/Paralelos, Materias, Profesores, Estudiantes, Inscripciones, Usuarios y Roles) añadida como extensión aditiva sobre el Perfil Bolivia SIE (BR-001..BR-012/RB-01..RB-11, vigentes sin cambios). Desde `ADR-0010`: `BR-024`/`FSD-UC-021` usan un modelo multi-rol (`UsuarioRol` N:M) con la invariante permanente `tenant_id IS NULL ⟺ roles = {SYSADMIN}` |
 | **Diagramas C4** | `docs/diagrams/c4_level1.mmd`, `c4_level2.mmd`, `c4_level3_api_gateway.mmd`, `c4_level3_domain_layer.mmd`, `c4_level3_sie_adapter.mmd`, `deployment_aws.mmd` (+ `.md` espejos para Level 3/Deployment) | C4 Level 1, 2, 3 y Deployment AWS; cumple la base para la rúbrica de diagramas versionados |
 | **ADRs** | `docs/adr/0001..0006-*.md`, `0008-*.md`, `0009-*.md`, `0010-*.md`, `0011-*.md`, `0012-*.md` | 11 ADRs aprobados: 0001 multitenancy RLS, 0002 parametrización reglas normativas, 0003 audit_log append-only, 0004 async consolidación (Spring Events), 0005 resiliencia SIE (Resilience4j), 0006 cloud provider AWS, 0008 stack vivo Java 25 LTS/Spring Boot 4.1.0/Angular 21 LTS, 0009 generalización del modelo de dominio a plataforma SaaS multi-tenant configurable, 0010 modelo multi-rol de usuario + aislamiento permanente del rol `SysAdmin` sin tenant, 0011 monolito modular Spring Modulith (module-first) + paquete base `com.edusync`, 0012 Lombok (`allowlist` en `domain/`)/springdoc-openapi/Bean Validation (ninguno supersede a los anteriores). `ADR-0007` (Strangler Fig) queda *gated*, sin crear todavía (ver `docs/roadmap.md` §4) |
 | **Arq. hexagonal** | `docs/arquitectura_hexagonal_EduSync.md` | Arquitectura hexagonal v0.1 — 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots (Perfil Bolivia SIE, paquete `bo.edusync`, baseline M4). **En actualización** (`ADR-0011`): paquete `com.edusync` + organización monolito modular *module-first* (Spring Modulith) para `release/3.0.0` |
-| **Design Docs (capa viva)** | `docs/design/DD-UC-NNN.md` | Documentos de diseño por feature/*vertical slice*, trazados a `FSD-UC` + `ADR` + `PR-IMPL-NNN`; alimentan el DTP vía `@dtp-sync`. `DD-UC-001` (bootstrap); `DD-UC-002` (módulo `identidad`); `DD-UC-003` (módulo `plataforma`); `DD-UC-004` (frontend login + consola SysAdmin — aprobado, ejecución pendiente) |
+| **Design Docs (capa viva)** | `docs/design/DD-UC-NNN.md` | Documentos de diseño por feature/*vertical slice*, trazados a `FSD-UC` + `ADR` + `PR-IMPL-NNN`; alimentan el DTP vía `@dtp-sync`. `DD-UC-001` (bootstrap); `DD-UC-002` (módulo `identidad`); `DD-UC-003` (módulo `plataforma`); `DD-UC-004` (frontend login + consola SysAdmin — **ejecutado**, DoD 100%) |
 | **DTOs por capa** | `docs/dtos_EduSync.md` | DTOs hexagonales v0.1 — 4 Request, 4 Commands, 3 Response, 5 Domain Events, 5 enums |
 | **Skills de Cursor** | `.cursor/skills/<slug>/SKILL.md` | **13 skills** en paridad con Claude: 10 EduSync (`feature-design-doc`, `dtp-sync`, `adr-edusync`, `c4-edusync`, `dti-edusync`, `update-prompt-mapping`, `edusync-skill-creator`, `sync-doc-chain`, `poc-runner-edusync`, `materialize-prompt-files`) + 3 de arquitectura (`async-architecture-reviewer`, `distributed-architecture-reviewer-edusync`, `monolith-decomposition-architect`). Los ~16 canónicos restantes de `plantillas/plantillas2/` siguen como plantillas fuente, no materializados como skills activos |
 | **Skills de Claude Code** | `.claude/skills/<slug>/SKILL.md` | **13 skills** — paridad completa con `.cursor/skills/` (mismos slugs y contenido). Entrada Claude: `CLAUDE.md` (importa `AGENTS.md`) + `.claude/rules/` + `.claude/agents/` |
@@ -96,7 +96,7 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │   ├── agents/                      ← 6 subagentes: dev/docs/arch/qa/process/compliance-agent.md
 │   └── rules/                       ← espejo de .cursor/rules: baseline-congelado.md, seguridad.md
 ├── README.md
-├── AGENTS.md                        ← este archivo (v0.24) — convención multi-agente (Cursor + Claude)
+├── AGENTS.md                        ← este archivo (v0.25) — convención multi-agente (Cursor + Claude)
 ├── CLAUDE.md                        ← entrada Claude Code (importa AGENTS.md; no duplica reglas)
 ├── CODEOWNERS                       ← revisión humana obligatoria sobre docs/baseline/**
 ├── 01_vision_negocio.md             ← visión y contexto del producto
@@ -123,12 +123,12 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │   │   ├── DD-UC-001.md             ← Bootstrap del proyecto (monolito modular Spring Modulith, paquete com.edusync; crea ADR-0011)
 │   │   ├── DD-UC-002.md             ← Módulo identidad: Usuario/UsuarioRol, login JWT, seed SYSADMIN (FSD-UC-021 parcial)
 │   │   ├── DD-UC-003.md             ← Módulo plataforma: alta y gestión de Tenants, scheduler vencimiento (FSD-UC-011 completo)
-│   │   └── DD-UC-004.md             ← Frontend: login + consola SysAdmin (FSD-UC-021/011 UI; aprobado, ejecución pendiente)
+│   │   └── DD-UC-004.md             ← Frontend: login + consola SysAdmin (FSD-UC-021/011 UI; ejecutado, 19/07/2026)
 │   ├── prompts/impl/                ← ÚNICA excepción a la convención plana de prompts/ (FEATURE_DESIGN_DOC_TEMPLATE.md §5)
 │   │   ├── PR-IMPL-001.md           ← bootstrap del esqueleto backend/frontend/infra (ejecutado, 18/07/2026)
 │   │   ├── PR-IMPL-002.md           ← módulo identidad: login/JWT + seed SysAdmin (ejecutado, 18-19/07/2026; ADR-0012 aplicado)
 │   │   ├── PR-IMPL-003.md           ← módulo plataforma: alta de Tenants + TenantConsultaPort (ejecutado, 19/07/2026)
-│   │   └── PR-IMPL-004.md           ← frontend login + consola SysAdmin + GET /tenants (aprobado, ejecución pendiente)
+│   │   └── PR-IMPL-004.md           ← frontend login + consola SysAdmin + GET /tenants (ejecutado, 19/07/2026)
 │   ├── brd/
 │   │   ├── BRD_EduSync_v1.md        ← BRD inicial
 │   │   └── BRD_EduSync_v2.md        ← BRD consolidado (BR-001..BR-012)
@@ -166,19 +166,19 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │                                      PR-DTI-001, PR-DTI-SEAMS-001, PR-DTO-001, PR-FSD-001,
 │                                      PR-HEX-001, PR-INF-001, PR-LFSD-001, PR-MRD-001, PR-POC-001/002, PR-PRD-001,
 │                                      PR-ROADMAP-001, PR-SKILL-001/002/003, PR-UC-001..005, PR-UC-009, PR-VFINAL-001)
-│                                      — 40 contratos en total contando PR-IMPL-001/002/003 en docs/prompts/impl/
-├── backend/                         ← ✅ esqueleto (PR-IMPL-001, 18/07/2026) + módulo identidad real
-│                                      (PR-IMPL-002 + ADR-0012, 18-19/07/2026) + módulo plataforma real
-│                                      (PR-IMPL-003, 19/07/2026) — monolito modular Spring Boot 4.1.0
-│                                      (Java 25 LTS) sobre spring-modulith-bom 2.1.0, paquete base com.edusync;
-│                                      45/45 tests verde (incluye ModularityTests 7/7). Los 3 prompts de
-│                                      implementación de release/3.0.0 ya ejecutados (reemplaza al antiguo
+│                                      — 41 contratos en total contando PR-IMPL-001..004 en docs/prompts/impl/
+├── backend/                         ← ✅ esqueleto (PR-IMPL-001) + identidad (PR-IMPL-002 + ADR-0012) + plataforma
+│                                      (PR-IMPL-003) + delta GET /tenants (PR-IMPL-004) — monolito modular
+│                                      Spring Boot 4.1.0 (Java 25 LTS) spring-modulith-bom 2.1.0, com.edusync;
+│                                      50/50 tests verde (incluye ModularityTests 7/7). Los 4 prompts IMPL
+│                                      de release/3.0.0 ya ejecutados (reemplaza al antiguo
 │                                      src/domain|application|infrastructure)
 │   ├── pom.xml
 │   └── src/main/java/com/edusync/
 │       ├── EduSyncApplication.java
-│       ├── plataforma/              ← ✅ real (PR-IMPL-003) — Tenant/EstadoTenant, ciclo de suscripcion,
-│       │                              scheduler de vencimiento, TenantConsultaPort (FSD-UC-011 completo, DD-UC-003)
+│       ├── plataforma/              ← ✅ real (PR-IMPL-003 + GET lista PR-IMPL-004) — Tenant/EstadoTenant,
+│       │                              ciclo de suscripcion, scheduler, TenantConsultaPort, ListarTenantsUseCase
+│       │                              (FSD-UC-011 completo API+UI, DD-UC-003/004)
 │       ├── identidad/               ← ✅ real (PR-IMPL-002) — Usuario/UsuarioRol, login JWT, TenantContextProvider,
 │       │                              seed SYSADMIN, UsuarioCreacionPort (FSD-UC-021 parcial, DD-UC-002)
 │       ├── academico/               ← vacio (package-info.java) — GestionEscolar..Inscripcion (FSD-UC-012..020)
@@ -186,9 +186,14 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │       └── shared/                  ← tenant/ real (TenantContext/TenantContextProvider/TenantAwareDataSource),
 │                                      web/ (GlobalExceptionHandler, OpenApiConfig, ErrorResponse — ADR-0012),
 │                                      exception/DomainException; modulo OPEN de Spring Modulith
-├── frontend/                        ← ✅ esqueleto generado (PR-IMPL-001, 18/07/2026) — SPA Angular 21.2.19 LTS
+├── frontend/                        ← ✅ SPA Angular 21.2.19 LTS (PR-IMPL-001 esqueleto + PR-IMPL-004 UI, 19/07/2026)
 │                                      (standalone, sin Nx); ng build sin errores
-│   └── src/app/{core,shared,features}/   ← vacios (README.md por carpeta), listos para el feature de login (DD-UC-002)
+│   └── src/app/
+│       ├── core/auth/               ← ✅ AuthService (JWT sessionStorage), interceptor, guards (DD-UC-004)
+│       ├── features/auth/           ← ✅ login page
+│       ├── features/plataforma/     ← ✅ consola SysAdmin tenants (lista/alta/admin/estado)
+│       ├── features/home/           ← placeholder post-login (roles no-SYSADMIN)
+│       └── shared/layout/           ← shell mínimo
 ├── infra/                           ← ✅ docker-compose.yml generado (PR-IMPL-001, PostgreSQL 15 local, DD-UC-001);
 │                                      IaC Terraform/AWS más adelante
 │   ├── docker-compose.yml
@@ -533,6 +538,7 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 | v0.22 | 19/07/2026 | Rodrigo Aspeti | **Ejecución real de `PR-IMPL-003`, tercer y último prompt de implementación pendiente**: módulo `plataforma` (dominio `Tenant` con ciclo de suscripción y mutabilidad controlada de `estado`, casos de uso `Registrar`/`CambiarEstado`/`CrearAdmin`Tenant, `VencimientoSchedulerService`+Job `@Scheduled`, `TenantController` con `@PreAuthorize("hasRole('SYSADMIN')")`, persistencia JPA, `V3__plataforma_tenant.sql`) queda con código real y funcional sobre `docs/design/DD-UC-003.md`; `FSD-UC-011` (Gestión de Tenants y Suscripciones) cierra su implementación **completa**, primer `FSD-UC` en llegar a ese estado. Enforcement de `BR-014` en `identidad`: nuevo puerto público `identidad.TenantConsultaPort` + `identidad.domain.TenantNoActivoException`, consultado por `AutenticarUsuarioService` (HTTP 403 `E_TENANT_NO_ACTIVO`). **Refinamiento de diseño respecto a `DD-UC-003` §2** (documentado inline en el Javadoc del puerto, sin ADR dedicado — mismo criterio que los refinamientos de `DD-UC-002`): `TenantConsultaPort` se declaró en la raíz de `identidad`, no de `plataforma`, porque `ApplicationModules.verify()` de Spring Modulith rechaza el ciclo que se generaría (`plataforma` ya depende de `identidad` vía `UsuarioCreacionPort`); la implementación real (`TenantConsultaPortImpl`) vive en `plataforma.infrastructure.adapter.out.port` — funcionalmente idéntico al diseño original. Corrección técnica encontrada durante la ejecución: `HttpStatus.UNPROCESSABLE_ENTITY` fue renombrado a `HttpStatus.UNPROCESSABLE_CONTENT` en Spring Framework 7.x (Spring Boot 4.1) — corregido en `TenantController`/`TenantIntegrationTest`. Verificación: `mvn test` (clean) → 45/45 tests verde (incluye `ModularityTests` 7/7, confirmando cero ciclos en la comunicación bidireccional `plataforma`↔`identidad`). `docs/product/DTP.md` v1.8→v1.9 (§A.1 nueva fila, §A.3 `FSD-UC-011` pasa a `completo`, §A.4 solo el commit real en Git queda pendiente). `docs/PROMPT_MAPPING.md` v2.5→v2.6. `docs/design/DD-UC-003.md` v1.0→v1.1 (DoD 100%). Árbol §3 y checklist §16 actualizados: **los 3 prompts de implementación de `release/3.0.0` (`PR-IMPL-001`/`002`/`003`) ya están ejecutados**; solo el commit real en Git queda como siguiente paso. Sin ADR nuevo (conteo se mantiene en 11) ni cambios en `docs/baseline/`. |
 | v0.23 | 19/07/2026 | Rodrigo Aspeti | **Design Doc + prompt de UI**: `docs/design/DD-UC-004.md` y `docs/prompts/impl/PR-IMPL-004.md` (frontend login + consola SysAdmin, JWT en `sessionStorage`, delta `GET /tenants`). `PROMPT_MAPPING` v2.6→v2.7 (41 contratos). `DTP` v1.9→v1.10. `FSD.md` v2.3→v2.4. CRUD usuarios reasignado a futuro `DD-UC-005`. Ejecución de `PR-IMPL-004` pendiente. |
 | v0.24 | 19/07/2026 | Rodrigo Aspeti | **Paridad Cursor ↔ Claude Code**: 13 skills idénticos en `.cursor/skills/` y `.claude/skills/`; entrada `CLAUDE.md` (importa `AGENTS.md`); espejo `.claude/rules/{baseline-congelado,seguridad}.md`; 6 subagentes en `.claude/agents/`. Conteo histórico "27/11 skills" corregido a 13/13 activos. Canónicos restantes de `plantillas/plantillas2/` siguen sin materializar. Sin cambios en código ni `docs/baseline/`. |
+| v0.25 | 19/07/2026 | Rodrigo Aspeti | **Ejecución real de `PR-IMPL-004` + sync documental (`dtp-sync`)**: UI Angular (login + consola SysAdmin, JWT en `sessionStorage`) y delta backend `GET /api/v1/plataforma/tenants` (`ListarTenantsUseCase`). Corrección técnica: `SecurityConfig` (sin Basic Auth in-memory, entry point 401). Verificación: `mvn test` 50/50; `ng build` verde. `docs/PROMPT_MAPPING.md` v2.7→v2.8; `docs/product/DTP.md` v1.10→v1.11; `docs/design/DD-UC-004.md` v1.0→v1.1 (DoD 100%). `FSD-UC-011` completo (API+UI); login UI de `FSD-UC-021` cerrado (CRUD → `DD-UC-005`). Árbol §3 y checklist §16 actualizados. Sin ADR nuevo ni cambios en `docs/baseline/`. |
 
 ---
 
@@ -541,7 +547,7 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 - [x] Sincronizado con `docs/arquitectura_funcional_EduSync.md` (10 UCs + 5 DAs).
 - [x] Sincronizado con `docs/fsd/FSD_EduSync.md` v1.0 (FSD-UC-001, UC-003, UC-004, UC-005, UC-009).
 - [x] Sincronizado con `docs/LFSD-EduSync.md` v1.0.1 (arquitectura hexagonal, DDL, APIs; ruta FSD normalizada).
-- [x] Sincronizado con `docs/PROMPT_MAPPING.md` v2.6 (40 prompt-contratos + carpeta `prompts/`; área `IMPL` con 3 filas `PR-IMPL-001..003`, las tres en `docs/prompts/impl/` y las tres **ejecutadas**).
+- [x] Sincronizado con `docs/PROMPT_MAPPING.md` v2.8 (41 prompt-contratos + carpeta `prompts/`; área `IMPL` con 4 filas `PR-IMPL-001..004`, las cuatro en `docs/prompts/impl/` y las cuatro **ejecutadas**).
 - [x] Sincronizado con `docs/baseline/DTI.md` v0.8 (congelado, tag `release/2.0.0`) — referencia atómica AGENTS ↔ DTI; C4 L1/L2/L3 + Deployment AWS canónicos en `docs/diagrams/`; `docs/roadmap.md` v0.3 declarado fuente canónica del horizonte (espejo histórico en DTI §19, espejo vivo en `docs/product/DTP.md` §B).
 - [x] Todos los paths de archivos verificados contra la estructura real del repositorio.
 - [x] Sin secretos en texto plano.
@@ -566,8 +572,9 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 - [x] Tercer `docs/design/DD-UC-003.md` (módulo `plataforma`: alta y gestión de Tenants, scheduler de vencimiento, `TenantConsultaPort`, `FSD-UC-011` completo) y tercer `docs/prompts/impl/PR-IMPL-003.md` creados y aprobados.
 - [x] Ejecución de `PR-IMPL-001` (18/07/2026): esqueleto real generado en `backend/`, `frontend/`, `infra/docker-compose.yml`; `mvn test` → `ModularityTests` 7/7 verde; `ng build` sin errores. `src/` ya no está vacío.
 - [x] Ejecución de `PR-IMPL-002` (18-19/07/2026): módulo `identidad` con lógica de dominio real (login JWT, `Usuario`/`UsuarioRol`, `TenantContextProvider`); `ADR-0012` (Lombok/springdoc-openapi/Bean Validation) aplicado sobre el mismo módulo; `mvn test` → 27/27 verde (incluye `ModularityTests` 7/7); smoke test manual de Swagger UI/OpenAPI verde.
-- [x] Ejecución de `PR-IMPL-003` (19/07/2026): módulo `plataforma` con lógica de dominio real (`Tenant`, ciclo de suscripción, scheduler de vencimiento, `TenantConsultaPort`) y enforcement de `BR-014` en `identidad`; `FSD-UC-011` queda **completo**; `mvn test` (clean) → 45/45 verde (incluye `ModularityTests` 7/7). **Los 3 prompts de implementación de backend de `release/3.0.0` ya están ejecutados**.
-- [x] Cuarto Design Doc `DD-UC-004` + `PR-IMPL-004` (19/07/2026): UI login + consola SysAdmin (`sessionStorage`, `GET /tenants`) — **aprobados; ejecución pendiente**.
+- [x] Ejecución de `PR-IMPL-003` (19/07/2026): módulo `plataforma` con lógica de dominio real (`Tenant`, ciclo de suscripción, scheduler de vencimiento, `TenantConsultaPort`) y enforcement de `BR-014` en `identidad`; `FSD-UC-011` API **completa**; `mvn test` (clean) → 45/45 verde en ese momento (incluye `ModularityTests` 7/7).
+- [x] Cuarto Design Doc `DD-UC-004` + `PR-IMPL-004` (19/07/2026): UI login + consola SysAdmin (`sessionStorage`, `GET /tenants`) — **aprobados**.
+- [x] Ejecución de `PR-IMPL-004` (19/07/2026): UI Angular real + delta `GET /api/v1/plataforma/tenants`; ajuste `SecurityConfig` (401/403); `mvn test` → **50/50** verde; `ng build` verde. `FSD-UC-011` queda **completo** (API+UI); login UI de `FSD-UC-021` cerrado. Docs sincronizados (`DTP` v1.11, `PROMPT_MAPPING` v2.8). Commit formal pendiente.
 - [x] `docs/adr/0012-*.md` creado — Lombok (allowlist `domain/`), springdoc-openapi y Bean Validation aplicados retroactivamente sobre `identidad` (`PR-IMPL-002`).
 - [ ] Diseño del tenant "demo" como funcionalidad de producto (`ADR-0010` §3, no bloqueante) — pendiente para un Design Doc de seguimiento, distinto de `DD-UC-003` (que resolvió el resto de `FSD-UC-011`).
 - [ ] Limpieza de ~50 referencias históricas a `docs/DTI.md` (ya movido a `docs/baseline/DTI.md`) dispersas en `prompts/PR-*.md`, `plantillas2/`, y skills operativos (`sync-doc-chain`, `c4-edusync`, `adr-edusync`, `poc-runner-edusync`) — fuera de alcance de esta pasada, recomendado como tarea de seguimiento.

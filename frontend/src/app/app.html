@@ -1,8 +1,6 @@
 <!--
-  Placeholder de bootstrap (DD-UC-001 / PR-IMPL-001). El primer feature real
-  (login, DD-UC-002) se implementa bajo src/app/features/.
+  Shell raíz: solo el router-outlet. El layout post-login (nav + outlet) lo gestiona
+  ShellComponent. La pantalla de login es standalone sin shell.
+  DD-UC-004 §2.
 -->
-<main>
-  <h1>{{ title() }}</h1>
-  <router-outlet />
-</main>
+<router-outlet />

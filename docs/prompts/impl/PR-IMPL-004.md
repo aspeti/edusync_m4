@@ -11,10 +11,10 @@
 | Tipo de prompt | generación |
 | Modelo recomendado | Sonnet |
 | Temperatura | 0.0 |
-| Versión | v0.1 |
+| Versión | v0.2 |
 | Fecha | 19/07/2026 |
 | Autor(es) | Rodrigo Aspeti |
-| Estado | Aprobado |
+| Estado | **Ejecutado** |
 
 > **Convención de ruta**: este prompt vive en `docs/prompts/impl/`, siguiendo `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md` §5 — el área `IMPL` es la única que se desvía de la convención plana `prompts/PR-<AREA>-NNN.md` usada por el resto de áreas.
 
@@ -150,9 +150,11 @@ backend/.../TenantController.java (+ GET)
 | Versión | Fecha | Autor | Cambio | Modelo validado |
 |---------|-------|-------|--------|------------------|
 | v0.1 | 19/07/2026 | Rodrigo Aspeti | Creación a partir de `docs/design/DD-UC-004.md` v1.0 | Sonnet |
+| v0.2 | 19/07/2026 | Rodrigo Aspeti | Estado → **Ejecutado**: UI Angular + `GET /tenants` implementados; `mvn test` 50/50; `ng build` verde. Sincronizado con `DTP` v1.11 / `PROMPT_MAPPING` v2.8 | Sonnet |
 
 ## 9. Revisión humana
 
 | Revisor | Fecha | Veredicto | Notas |
 |---------|-------|-----------|-------|
-| Rodrigo Aspeti | 19/07/2026 | aprobado (prompt) | Prompt aprobado; ejecución (código real en `frontend/` + delta `GET /tenants`) queda pendiente |
+| Rodrigo Aspeti | 19/07/2026 | aprobado (prompt) | Prompt aprobado; ejecución de código real en el mismo ciclo |
+| Rodrigo Aspeti | 19/07/2026 | **ejecutado** | Código en working tree; docs sincronizados vía `dtp-sync`; commit formal pendiente |

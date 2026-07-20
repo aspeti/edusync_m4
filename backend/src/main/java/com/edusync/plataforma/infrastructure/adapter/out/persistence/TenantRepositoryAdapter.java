@@ -48,6 +48,14 @@ class TenantRepositoryAdapter implements TenantRepositoryPort {
         .collect(Collectors.toList());
   }
 
+  @Override
+  public List<Tenant> listarTodos() {
+    return jpaRepository.findAll()
+        .stream()
+        .map(this::aDominio)
+        .collect(Collectors.toList());
+  }
+
   private Tenant aDominio(TenantJpaEntity entity) {
     return Tenant.reconstruir(
         TenantId.de(entity.getId()),

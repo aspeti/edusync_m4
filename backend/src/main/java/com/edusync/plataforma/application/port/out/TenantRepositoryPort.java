@@ -20,4 +20,11 @@ public interface TenantRepositoryPort {
    * {@link Tenant#marcarVencidoSiCorresponde}.
    */
   List<Tenant> listarPendientesDeVencer(LocalDate fechaReferencia);
+
+  /**
+   * Devuelve todos los Tenants registrados (sin filtro de estado).
+   * Usado exclusivamente por {@code ListarTenantsUseCase} / consola SysAdmin
+   * ({@code DD-UC-004} §2).
+   */
+  List<Tenant> listarTodos();
 }

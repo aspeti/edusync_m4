@@ -168,12 +168,14 @@ sequenceDiagram
 - [x] Sin ADR nuevo (decisiones de bajo riesgo).
 - [x] §4 Impacto en specs vivas registrado (sin tocar el baseline).
 - [x] Prompt `PR-IMPL-004` creado en `docs/prompts/impl/` y registrado en `PROMPT_MAPPING.md`.
-- [ ] Tests/evals definidos (§6) y pasando — requieren que `PR-IMPL-004` se ejecute primero.
-- [ ] `ng build` + `mvn test` en verde tras la ejecución.
-- [ ] DTP actualizado vía `dtp-sync` — fila de diseño registrada; faltará actualización post-ejecución.
+- [x] `PR-IMPL-004` **ejecutado** (19/07/2026): UI Angular (`core/auth` con JWT en `sessionStorage`, interceptor Bearer, `authGuard`/`roleGuard`; `features/auth/login`; `features/plataforma` lista/alta tenant/alta admin/cambio de estado; shell + `proxy.conf.json`) y delta backend `GET /api/v1/plataforma/tenants` (`ListarTenantsUseCase` + `TenantController` `@PreAuthorize SYSADMIN`). Corrección técnica durante la ejecución: `SecurityConfig` desactiva Basic Auth in-memory de Boot + `HttpStatusEntryPoint(UNAUTHORIZED)` + `/error` público, para preservar el contrato REST 401/403 en tests y clientes.
+- [x] Tests/evals definidos (§6) y pasando: `mvn test` → **50/50** verdes (`ListarTenantsServiceTest` 2, `TenantIntegrationTest` +3 para GET lista/401/403; más los 45 previos); unitarios frontend `AuthService`/`authGuard`/`roleGuard` presentes.
+- [x] `ng build` + `mvn test` en verde tras la ejecución (`ModularityTests` 7/7).
+- [x] DTP actualizado vía `dtp-sync` (`docs/product/DTP.md` v1.11).
 
 ## 8. Registro de cambios
 
 | Versión | Fecha | Autor | Cambio |
 |---------|-------|-------|--------|
 | v1.0 | 19/07/2026 | Rodrigo Aspeti | Creación del cuarto Design Doc (`DD-UC-004`): primer slice de UI (login + consola SysAdmin). Decisiones explícitas del usuario: un solo DD; `GET /api/v1/plataforma/tenants`; JWT en `sessionStorage`. Reasigna el ID `DD-UC-004` (antes citado informalmente para CRUD usuarios en `DD-UC-002`) a esta UI; CRUD usuarios queda como `DD-UC-005`. Estado `aprobado`. |
+| v1.1 | 19/07/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-004`**: UI Angular real (login + consola SysAdmin) y delta backend `GET /api/v1/plataforma/tenants`. JWT solo en `sessionStorage`; wizard tenant+admin en dos pasos; proxy `/api` → `localhost:8080`. Corrección técnica: ajuste de `SecurityConfig` (sin Basic Auth por defecto, entry point 401) para contrato REST coherente. Verificación: `mvn test` 50/50; `ng build` sin errores. §7 DoD marcado completo. Sincronizado con `docs/PROMPT_MAPPING.md` v2.8, `docs/product/DTP.md` v1.11 y `AGENTS.md` v0.25. |

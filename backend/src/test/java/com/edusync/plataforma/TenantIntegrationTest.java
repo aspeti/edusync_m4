@@ -11,12 +11,14 @@ import com.edusync.plataforma.infrastructure.adapter.in.rest.CrearAdminTenantReq
 import com.edusync.plataforma.infrastructure.adapter.in.rest.RegistrarTenantRequest;
 import com.edusync.plataforma.infrastructure.adapter.in.rest.TenantResponse;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -153,6 +155,76 @@ class TenantIntegrationTest {
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
   }
+
+  // ── Tests DD-UC-004: GET /api/v1/plataforma/tenants ──────────────────────────
+
+  @Test
+  void listarTenantsConSysAdminDevuelve200() {
+    HttpHeaders sysAdminHeaders = autenticarComo(sysAdminEmail, sysAdminPassword);
+
+    // Crear un tenant para asegurarnos de que la lista no está vacía
+    restTemplate.exchange(
+        "/api/v1/plataforma/tenants",
+        HttpMethod.POST,
+        new HttpEntity<>(
+            new RegistrarTenantRequest("Colegio Lista Test", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)),
+            sysAdminHeaders),
+        TenantResponse.class);
+
+    ResponseEntity<List<TenantResponse>> response = restTemplate.exchange(
+        "/api/v1/plataforma/tenants",
+        HttpMethod.GET,
+        new HttpEntity<>(sysAdminHeaders),
+        new ParameterizedTypeReference<List<TenantResponse>>() {});
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody()).isNotEmpty();
+  }
+
+  @Test
+  void listarTenantsSinTokenDevuelve401() {
+    ResponseEntity<String> response = restTemplate.exchange(
+        "/api/v1/plataforma/tenants",
+        HttpMethod.GET,
+        new HttpEntity<>(new HttpHeaders()),
+        String.class);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+  }
+
+  @Test
+  void listarTenantsConRolAdminDevuelve403() {
+    HttpHeaders sysAdminHeaders = autenticarComo(sysAdminEmail, sysAdminPassword);
+
+    // Crear un tenant y su admin
+    var tenantId = restTemplate.exchange(
+            "/api/v1/plataforma/tenants",
+            HttpMethod.POST,
+            new HttpEntity<>(
+                new RegistrarTenantRequest("Colegio RBAC Lista", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)),
+                sysAdminHeaders),
+            TenantResponse.class)
+        .getBody()
+        .id();
+    restTemplate.exchange(
+        "/api/v1/plataforma/tenants/" + tenantId + "/admins",
+        HttpMethod.POST,
+        new HttpEntity<>(new CrearAdminTenantRequest("Admin RBAC Lista", "admin-rbac-lista@colegio.edu.bo", "secreto123"), sysAdminHeaders),
+        AdminCreadoResponse.class);
+
+    HttpHeaders adminHeaders = autenticarComo("admin-rbac-lista@colegio.edu.bo", "secreto123");
+
+    ResponseEntity<String> response = restTemplate.exchange(
+        "/api/v1/plataforma/tenants",
+        HttpMethod.GET,
+        new HttpEntity<>(adminHeaders),
+        String.class);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   private HttpHeaders autenticarComo(String email, String password) {
     ResponseEntity<LoginResponse> login = restTemplate.postForEntity(

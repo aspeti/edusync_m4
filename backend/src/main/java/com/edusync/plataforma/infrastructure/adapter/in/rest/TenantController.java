@@ -4,6 +4,7 @@ import com.edusync.identidad.UsuarioId;
 import com.edusync.plataforma.application.port.in.CambiarEstadoTenantUseCase;
 import com.edusync.plataforma.application.port.in.CrearAdminTenantCommand;
 import com.edusync.plataforma.application.port.in.CrearAdminTenantUseCase;
+import com.edusync.plataforma.application.port.in.ListarTenantsUseCase;
 import com.edusync.plataforma.application.port.in.RegistrarTenantCommand;
 import com.edusync.plataforma.application.port.in.RegistrarTenantUseCase;
 import com.edusync.plataforma.domain.EstadoTenant;
@@ -14,12 +15,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,6 +46,23 @@ public class TenantController {
   private final RegistrarTenantUseCase registrarTenantUseCase;
   private final CambiarEstadoTenantUseCase cambiarEstadoTenantUseCase;
   private final CrearAdminTenantUseCase crearAdminTenantUseCase;
+  private final ListarTenantsUseCase listarTenantsUseCase;
+
+  @GetMapping
+  @PreAuthorize("hasRole('SYSADMIN')")
+  @Operation(
+      summary = "Listar todos los Tenants",
+      description = "Devuelve la lista completa de Tenants para la consola SysAdmin (DD-UC-004 §2).")
+  @ApiResponse(responseCode = "200", description = "Lista de Tenants")
+  @ApiResponse(responseCode = "401", description = "Sin autenticacion")
+  @ApiResponse(responseCode = "403", description = "Rol insuficiente (requiere SYSADMIN)")
+  public ResponseEntity<List<TenantResponse>> listar() {
+    List<TenantResponse> tenants = listarTenantsUseCase.listar()
+        .stream()
+        .map(this::aResponse)
+        .toList();
+    return ResponseEntity.ok(tenants);
+  }
 
   @PostMapping
   @PreAuthorize("hasRole('SYSADMIN')")

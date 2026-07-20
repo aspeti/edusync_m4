@@ -24,8 +24,8 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.3 |
-| **Fecha** | 14/07/2026 |
+| **Versión del documento** | v2.4 |
+| **Fecha** | 19/07/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
 | **Estado** | En revisión |
@@ -504,11 +504,12 @@ Escenario: Apertura secuencial válida
 - **Precondiciones:** El SysAdmin tiene sesión activa a nivel plataforma (fuera de cualquier `tenant_id`).
 - **Disparador:** El SysAdmin registra una nueva Unidad Educativa o cambia el estado de una existente.
 - **Flujo principal:**
-  1. El SysAdmin invoca `POST /api/v1/plataforma/tenants` con `{nombre, fechaInicioSuscripcion, fechaVencimientoSuscripcion}`.
-  2. El sistema crea `Tenant` con `estado = ACTIVO`.
-  3. El SysAdmin crea el primer usuario `ADMIN` del tenant: `POST /api/v1/plataforma/tenants/{id}/admins`.
-  4. Para cambiar el estado: `PATCH /api/v1/plataforma/tenants/{id}/estado` con `{estado: ACTIVO|SUSPENDIDO|VENCIDO}`.
-  5. Un scheduler diario marca `VENCIDO` automáticamente a los tenants cuya `fechaVencimientoSuscripcion` ya pasó y no fue renovada.
+  1. El SysAdmin lista los tenants existentes: `GET /api/v1/plataforma/tenants` (consola UI, `DD-UC-004`).
+  2. El SysAdmin invoca `POST /api/v1/plataforma/tenants` con `{nombre, fechaInicioSuscripcion, fechaVencimientoSuscripcion}`.
+  3. El sistema crea `Tenant` con `estado = ACTIVO`.
+  4. El SysAdmin crea el primer usuario `ADMIN` del tenant: `POST /api/v1/plataforma/tenants/{id}/admins`.
+  5. Para cambiar el estado: `PATCH /api/v1/plataforma/tenants/{id}/estado` con `{estado: ACTIVO|SUSPENDIDO|VENCIDO}`.
+  6. Un scheduler diario marca `VENCIDO` automáticamente a los tenants cuya `fechaVencimientoSuscripcion` ya pasó y no fue renovada.
 - **Flujos alternativos / excepciones:**
   - **A1 — Registro sin fecha de vencimiento:** HTTP 422 `E_SUSCRIPCION_INCOMPLETA`.
   - **A2 — Usuario de tenant `SUSPENDIDO`/`VENCIDO` intenta iniciar sesión:** HTTP 403 `E_TENANT_NO_ACTIVO`.
@@ -1359,6 +1360,7 @@ Paso 13 → audit_log entry + notificación
 | v2.1 | 12/07/2026 | Rodrigo Aspeti | Corrección de consistencia de stack: §1 (resumen ejecutivo), §2.4 (tabla "Stack tecnológico") y §7.1 (prompt-contrato de `CalificacionService`) citaban todavía el stack del baseline de M4 (Java 21 / Spring Boot 3.3 / Angular 17) en vez del stack vivo fijado por `ADR-0008` (Java 25 LTS / Spring Boot 4.1.0 / Angular 21 LTS) desde la apertura de `release/3.0.0`. Actualizados los 3 puntos con referencia explícita a `ADR-0008`, sin afectar `docs/baseline/DTI.md` (que documenta correctamente el stack histórico de M4 sin cambios). |
 | v2.2 | 14/07/2026 | Rodrigo Aspeti | Refinamiento del modelo de roles (`ADR-0010`): `BR-024` (§5.1) pasa de "exactamente un rol" a **multi-rol** vía nueva entidad `UsuarioRol` (N:M), con la invariante permanente `tenant_id IS NULL ⟺ roles = {SYSADMIN}`. Actualizados §3.1 (nota en actor `SYSADMIN`), §6.3.1 (diagrama ER con `USUARIO_ROL`), §6.3.2 (diccionario de datos: `Usuario.rol` reemplazado por `UsuarioRol`), §4.6.1 (`FSD-UC-011`, nota no bloqueante sobre el *bootstrap* del primer SysAdmin y el tenant demo pendiente de diseño) y §4.6.11 (`FSD-UC-021`, endpoint `roles: [...]` y nuevos escenarios Gherkin). Nuevos términos de glosario (§14). Sin cambios en `ADR-0009` ni en el resto de BR-013..BR-023. |
 | v2.3 | 14/07/2026 | Rodrigo Aspeti | `FSD-UC-011` (§4.6.1) implementado en `docs/design/DD-UC-003.md` (módulo `plataforma`: alta y gestión de Tenants, scheduler de vencimiento, `TenantConsultaPort`, enforcement de `BR-014`). Corrección de referencia: la nota `ADR-0010` sobre el tenant "demo" ya no cita el ID inexistente `DD-UC-011`; ahora referencia explícitamente `docs/design/DD-UC-003.md` para el bootstrap del `SYSADMIN`/alta de tenant ya implementada, y deja claro que el diseño del tenant demo queda diferido a un Design Doc de seguimiento aún sin crear (distinto de `DD-UC-003`). Sin cambios de requisito, solo corrección de trazabilidad. |
+| v2.4 | 19/07/2026 | Rodrigo Aspeti | `FSD-UC-011` (§4.6.1): se añade al flujo principal el paso de lectura `GET /api/v1/plataforma/tenants` (lista para consola SysAdmin, `DD-UC-004` / `PR-IMPL-004`). Sin cambio de reglas de negocio; solo documenta el endpoint de consulta necesario para la UI. |
 
 ---
 

@@ -72,4 +72,61 @@ class UsuarioTest {
     assertThatThrownBy(() -> Usuario.crear(UsuarioId.nueva(), null, "X", "x@x.com", "hash", Set.of(), true))
         .isInstanceOf(InvarianteRolException.class);
   }
+
+  // ── DD-UC-005: mutaciones inmutables ─────────────────────────────────────────
+
+  @Test
+  void conRolesDevuelveNuevaInstanciaConLosRolesReemplazados() {
+    UUID tenantId = UUID.randomUUID();
+    Usuario original =
+        Usuario.crear(UsuarioId.nueva(), tenantId, "X", "x@x.com", "hash", Set.of(Rol.PROFESOR), true);
+
+    Usuario actualizado = original.conRoles(Set.of(Rol.ADMIN, Rol.SECRETARIA));
+
+    assertThat(actualizado.getRoles()).containsExactlyInAnyOrder(Rol.ADMIN, Rol.SECRETARIA);
+    assertThat(original.getRoles()).containsExactly(Rol.PROFESOR);
+    assertThat(actualizado.getId()).isEqualTo(original.getId());
+  }
+
+  @Test
+  void conRolesRevalidaLaInvarianteYRechazaSysAdminCombinado() {
+    UUID tenantId = UUID.randomUUID();
+    Usuario original =
+        Usuario.crear(UsuarioId.nueva(), tenantId, "X", "x@x.com", "hash", Set.of(Rol.ADMIN), true);
+
+    assertThatThrownBy(() -> original.conRoles(Set.of(Rol.SYSADMIN)))
+        .isInstanceOf(InvarianteRolException.class);
+  }
+
+  @Test
+  void conRolesRechazaConjuntoVacio() {
+    Usuario original = Usuario.crear(
+        UsuarioId.nueva(), UUID.randomUUID(), "X", "x@x.com", "hash", Set.of(Rol.PROFESOR), true);
+
+    assertThatThrownBy(() -> original.conRoles(Set.of())).isInstanceOf(InvarianteRolException.class);
+  }
+
+  @Test
+  void activarYDesactivarDevuelvenNuevaInstanciaSinMutarLaOriginal() {
+    Usuario activo = Usuario.crear(
+        UsuarioId.nueva(), UUID.randomUUID(), "X", "x@x.com", "hash", Set.of(Rol.PROFESOR), true);
+
+    Usuario desactivado = activo.desactivar();
+    assertThat(desactivado.isActivo()).isFalse();
+    assertThat(activo.isActivo()).isTrue();
+
+    Usuario reactivado = desactivado.activar();
+    assertThat(reactivado.isActivo()).isTrue();
+  }
+
+  @Test
+  void conPasswordHashDevuelveNuevaInstanciaConElHashReemplazado() {
+    Usuario original = Usuario.crear(
+        UsuarioId.nueva(), UUID.randomUUID(), "X", "x@x.com", "hash-viejo", Set.of(Rol.PROFESOR), true);
+
+    Usuario actualizado = original.conPasswordHash("hash-nuevo");
+
+    assertThat(actualizado.getPasswordHash()).isEqualTo("hash-nuevo");
+    assertThat(original.getPasswordHash()).isEqualTo("hash-viejo");
+  }
 }

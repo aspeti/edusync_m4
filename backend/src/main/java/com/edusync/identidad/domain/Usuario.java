@@ -110,4 +110,30 @@ public final class Usuario {
   public boolean tieneRol(Rol rol) {
     return getRoles().contains(rol);
   }
+
+  /**
+   * Devuelve una nueva instancia con el conjunto de roles reemplazado, revalidando la
+   * invariante permanente de {@link #crear} (DD-UC-005 &sect;2, ADR-0010). Nunca muta esta
+   * instancia.
+   *
+   * @throws InvarianteRolException si {@code nuevosRoles} viola la invariante
+   */
+  public Usuario conRoles(Set<Rol> nuevosRoles) {
+    return crear(id, tenantId, nombreCompleto, email, passwordHash, nuevosRoles, activo);
+  }
+
+  /** Devuelve una nueva instancia activada (DD-UC-005 &sect;2). */
+  public Usuario activar() {
+    return crear(id, tenantId, nombreCompleto, email, passwordHash, getRoles(), true);
+  }
+
+  /** Devuelve una nueva instancia desactivada; no puede iniciar sesion (DD-UC-005 &sect;2). */
+  public Usuario desactivar() {
+    return crear(id, tenantId, nombreCompleto, email, passwordHash, getRoles(), false);
+  }
+
+  /** Devuelve una nueva instancia con el hash de contrasena reemplazado (DD-UC-005 &sect;2). */
+  public Usuario conPasswordHash(String nuevoPasswordHash) {
+    return crear(id, tenantId, nombreCompleto, email, nuevoPasswordHash, getRoles(), activo);
+  }
 }

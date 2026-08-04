@@ -24,8 +24,8 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.4 |
-| **Fecha** | 19/07/2026 |
+| **Versión del documento** | v2.5 |
+| **Fecha** | 04/08/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
 | **Estado** | En revisión |
@@ -711,8 +711,9 @@ Escenario: Historial académico a través de dos gestiones escolares
   3. `PATCH /api/v1/usuarios/{id}/roles` con `{roles: [...]}` permite modificar el conjunto de roles vigentes de un usuario de tenant, repitiendo la misma validación.
   4. `PATCH /api/v1/usuarios/{id}/estado` con `{activo: boolean}`.
   5. `POST /api/v1/usuarios/{id}/restablecer-password` inicia el flujo de restablecimiento (enlace de un solo uso).
+  6. `GET /api/v1/usuarios` lista los usuarios del tenant del Admin autenticado (paso de lectura no explícito en la redacción original; añadido en `DD-UC-005`/`PR-IMPL-005`, mismo precedente que `GET /tenants` en `FSD-UC-011`/`DD-UC-004`: un CRUD sin lectura no es operable).
 - **Flujos alternativos / excepciones:**
-  - **A1 — Rol `ASESOR` sin curso/paralelo asignado:** HTTP 422 `E_ASESOR_SIN_CURSO`.
+  - **A1 — Rol `ASESOR` sin curso/paralelo asignado:** HTTP 422 `E_ASESOR_SIN_CURSO`. **Diferido** (`DD-UC-005`, 04/08/2026): el rol `ASESOR` ya puede asignarse (el modelo de roles de `ADR-0010` lo soporta), pero esta validación de la referencia a `Curso`/`Paralelo` no está implementada — depende del módulo `academico` (`FSD-UC-012..020`), bloqueado por los 5 puntos pendientes de `ADR-0009` §3.
   - **A2 — Enlace de restablecimiento ya usado o expirado:** HTTP 410 `E_ENLACE_INVALIDO`.
   - **A3 — Intento de asignar `SYSADMIN` combinado con un rol de tenant, o a un usuario con `tenant_id` no nulo:** HTTP 422 `E_ROL_INCOMPATIBLE` (`ADR-0010`).
   - **A4 — `roles` vacío:** HTTP 422 `E_ROLES_VACIO` (todo usuario activo requiere al menos un rol vigente).
@@ -1361,6 +1362,7 @@ Paso 13 → audit_log entry + notificación
 | v2.2 | 14/07/2026 | Rodrigo Aspeti | Refinamiento del modelo de roles (`ADR-0010`): `BR-024` (§5.1) pasa de "exactamente un rol" a **multi-rol** vía nueva entidad `UsuarioRol` (N:M), con la invariante permanente `tenant_id IS NULL ⟺ roles = {SYSADMIN}`. Actualizados §3.1 (nota en actor `SYSADMIN`), §6.3.1 (diagrama ER con `USUARIO_ROL`), §6.3.2 (diccionario de datos: `Usuario.rol` reemplazado por `UsuarioRol`), §4.6.1 (`FSD-UC-011`, nota no bloqueante sobre el *bootstrap* del primer SysAdmin y el tenant demo pendiente de diseño) y §4.6.11 (`FSD-UC-021`, endpoint `roles: [...]` y nuevos escenarios Gherkin). Nuevos términos de glosario (§14). Sin cambios en `ADR-0009` ni en el resto de BR-013..BR-023. |
 | v2.3 | 14/07/2026 | Rodrigo Aspeti | `FSD-UC-011` (§4.6.1) implementado en `docs/design/DD-UC-003.md` (módulo `plataforma`: alta y gestión de Tenants, scheduler de vencimiento, `TenantConsultaPort`, enforcement de `BR-014`). Corrección de referencia: la nota `ADR-0010` sobre el tenant "demo" ya no cita el ID inexistente `DD-UC-011`; ahora referencia explícitamente `docs/design/DD-UC-003.md` para el bootstrap del `SYSADMIN`/alta de tenant ya implementada, y deja claro que el diseño del tenant demo queda diferido a un Design Doc de seguimiento aún sin crear (distinto de `DD-UC-003`). Sin cambios de requisito, solo corrección de trazabilidad. |
 | v2.4 | 19/07/2026 | Rodrigo Aspeti | `FSD-UC-011` (§4.6.1): se añade al flujo principal el paso de lectura `GET /api/v1/plataforma/tenants` (lista para consola SysAdmin, `DD-UC-004` / `PR-IMPL-004`). Sin cambio de reglas de negocio; solo documenta el endpoint de consulta necesario para la UI. |
+| v2.5 | 04/08/2026 | Rodrigo Aspeti | `FSD-UC-021` (§4.6.11) implementado (backend) en `docs/design/DD-UC-005.md`/`PR-IMPL-005`: se añade al flujo principal el paso de lectura `GET /api/v1/usuarios` (mismo precedente que `GET /tenants` en v2.4); el flujo alternativo **A1** (`E_ASESOR_SIN_CURSO`) se marca explícitamente **diferido** — el rol `ASESOR` ya es asignable, pero la validación de la referencia a `Curso`/`Paralelo` depende del módulo `academico`, bloqueado por `ADR-0009` §3. Sin cambio de reglas de negocio; solo documenta el endpoint de consulta y el alcance real de A1. |
 
 ---
 

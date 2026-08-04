@@ -17,8 +17,10 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * JWT stateless (sin sesion de servidor, sin CSRF): el unico endpoint publico es el login;
- * todo lo demas requiere {@code Authorization: Bearer &lt;token&gt;} (DD-UC-002 &sect;2).
+ * JWT stateless (sin sesion de servidor, sin CSRF): los unicos endpoints publicos son el
+ * login y la confirmacion de restablecimiento de contrasena (DD-UC-005 &sect;1, el usuario
+ * no tiene sesion en ese paso); todo lo demas requiere
+ * {@code Authorization: Bearer &lt;token&gt;} (DD-UC-002 &sect;2).
  *
  * <p>Swagger UI/OpenAPI ({@code /swagger-ui.html}, {@code /v3/api-docs/**}) tambien se
  * deja publico en los perfiles vigentes (`dev`/`test`) — ver la nota de pendiente de
@@ -49,6 +51,7 @@ public class SecurityConfig {
             .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/v1/auth/login").permitAll()
+            .requestMatchers("/api/v1/auth/restablecer-password/confirmar").permitAll()
             .requestMatchers("/actuator/health", "/actuator/info").permitAll()
             .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
             // Boot reenvia 4xx/5xx a /error; si exige auth, TestRestTemplate/clientes

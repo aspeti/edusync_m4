@@ -2,7 +2,9 @@ package com.edusync.identidad.application.port.out;
 
 import com.edusync.identidad.UsuarioId;
 import com.edusync.identidad.domain.Usuario;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Puerto de salida: persistencia de {@link Usuario}. Implementado por
@@ -25,6 +27,13 @@ public interface UsuarioRepositoryPort {
   boolean existePorEmail(String email);
 
   long contarTodos();
+
+  /**
+   * Lista los usuarios de un tenant (DD-UC-005). A diferencia de {@link #buscarPorEmail},
+   * este metodo filtra explicitamente por {@code tenantId} en la capa de aplicacion (mismo
+   * patron mitigador documentado arriba): nunca debe depender solo de la politica RLS.
+   */
+  List<Usuario> listarPorTenant(UUID tenantId);
 
   Usuario guardar(Usuario usuario);
 }

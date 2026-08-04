@@ -6,9 +6,11 @@ import com.edusync.identidad.UsuarioId;
 /**
  * Puerto de entrada: creacion de usuarios. Implementado por {@code CrearUsuarioService}.
  *
- * <p>Uso interno del modulo en este Design Doc (seed del primer {@code SYSADMIN}); expuesto
- * a otros modulos unicamente a traves de {@code identidad.UsuarioCreacionPort}, nunca
- * importando esta interfaz directamente (es un paquete interno, {@code application}).
+ * <p>Uso interno del modulo {@code identidad} (seed del primer {@code SYSADMIN} en
+ * {@code DD-UC-002}; alta de usuarios de tenant desde {@code UsuarioController} en
+ * {@code DD-UC-005}); expuesto a otros modulos unicamente a traves de
+ * {@code identidad.UsuarioCreacionPort}, nunca importando esta interfaz directamente desde
+ * fuera del modulo (es un paquete interno, {@code application}).
  */
 public interface CrearUsuarioUseCase {
 

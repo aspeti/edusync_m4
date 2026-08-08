@@ -35,7 +35,9 @@ export class AuthService {
   readonly claims = computed<JwtPayload | null>(() => {
     const token = this._token();
     if (!token) return null;
-    return decodeJwtPayload(token);
+    const payload = decodeJwtPayload(token);
+    if (payload === null || isTokenExpired(payload)) return null;
+    return payload;
   });
 
   readonly roles = computed<string[]>(() => this.claims()?.roles ?? []);
@@ -58,8 +60,20 @@ export class AuthService {
     this._token.set(null);
   }
 
+  /**
+   * Devuelve el JWT vigente o {@code null}. Si el token está expirado o es
+   * ilegible, limpia {@code sessionStorage} para no reenviarlo en el próximo
+   * login (evita 401 {@code E_TOKEN_INVALIDO} del filtro JWT del backend).
+   */
   getToken(): string | null {
-    return this._token();
+    const token = this._token();
+    if (!token) return null;
+    const payload = decodeJwtPayload(token);
+    if (payload === null || isTokenExpired(payload)) {
+      this.logout();
+      return null;
+    }
+    return token;
   }
 
   hasRole(role: string): boolean {

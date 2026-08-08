@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { AuthService } from './auth.service';
@@ -15,7 +15,9 @@ describe('AuthService', () => {
   const fakeToken =
     'eyJhbGciOiJIUzI1NiJ9.' +
     btoa(JSON.stringify({ sub: 'test@test.com', roles: ['SYSADMIN'], tenantId: null, exp: 9999999999, iat: 1 }))
-      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '') +
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '') +
     '.fakeSignature';
 
   beforeEach(() => {
@@ -37,45 +39,79 @@ describe('AuthService', () => {
     expect(service.getToken()).toBeNull();
   });
 
-  it('login guarda el token en sessionStorage y marca isAuthenticated', fakeAsync(() => {
+  it('login guarda el token en sessionStorage y marca isAuthenticated', () => {
     service.login({ email: 'test@test.com', password: 'pass' }).subscribe();
 
     const req = httpMock.expectOne('/api/v1/auth/login');
     expect(req.request.method).toBe('POST');
     req.flush({ accessToken: fakeToken, expiresIn: 28800 });
-    tick();
 
     expect(service.isAuthenticated()).toBe(true);
     expect(sessionStorage.getItem('edusync_access_token')).toBe(fakeToken);
-  }));
+  });
 
-  it('logout limpia el token y sessionStorage', fakeAsync(() => {
+  it('logout limpia el token y sessionStorage', () => {
     service.login({ email: 'test@test.com', password: 'pass' }).subscribe();
     httpMock.expectOne('/api/v1/auth/login').flush({ accessToken: fakeToken, expiresIn: 28800 });
-    tick();
 
     service.logout();
 
     expect(service.isAuthenticated()).toBe(false);
     expect(sessionStorage.getItem('edusync_access_token')).toBeNull();
-  }));
+  });
 
-  it('hasRole retorna true para SYSADMIN tras login', fakeAsync(() => {
+  it('hasRole retorna true para SYSADMIN tras login', () => {
     service.login({ email: 'test@test.com', password: 'pass' }).subscribe();
     httpMock.expectOne('/api/v1/auth/login').flush({ accessToken: fakeToken, expiresIn: 28800 });
-    tick();
 
     expect(service.hasRole('SYSADMIN')).toBe(true);
     expect(service.hasRole('ADMIN')).toBe(false);
-  }));
+  });
 
-  it('mapea correctamente los claims del JWT', fakeAsync(() => {
+  it('mapea correctamente los claims del JWT', () => {
     service.login({ email: 'test@test.com', password: 'pass' }).subscribe();
     httpMock.expectOne('/api/v1/auth/login').flush({ accessToken: fakeToken, expiresIn: 28800 });
-    tick();
 
     const claims = service.claims();
     expect(claims?.sub).toBe('test@test.com');
     expect(claims?.roles).toContain('SYSADMIN');
-  }));
+  });
+
+  it('hasRole no confunde SYSADMIN con ADMIN cuando roles vienen como CSV', () => {
+    const csvToken =
+      'eyJhbGciOiJIUzI1NiJ9.' +
+      btoa(JSON.stringify({ sub: 'sys@edusync.local', roles: 'SYSADMIN', tenantId: '', exp: 9999999999, iat: 1 }))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '') +
+      '.fakeSignature';
+
+    service.login({ email: 'sys@edusync.local', password: 'pass' }).subscribe();
+    httpMock.expectOne('/api/v1/auth/login').flush({ accessToken: csvToken, expiresIn: 28800 });
+
+    expect(service.hasRole('SYSADMIN')).toBe(true);
+    expect(service.hasRole('ADMIN')).toBe(false);
+  });
+
+  it('getToken limpia un JWT expirado de sessionStorage', () => {
+    const expiredToken =
+      'eyJhbGciOiJIUzI1NiJ9.' +
+      btoa(JSON.stringify({ sub: 'u', roles: 'SYSADMIN', exp: 1, iat: 1 }))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '') +
+      '.sig';
+
+    sessionStorage.setItem('edusync_access_token', expiredToken);
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    service = TestBed.inject(AuthService);
+    httpMock = TestBed.inject(HttpTestingController);
+
+    expect(service.isAuthenticated()).toBe(false);
+    expect(service.getToken()).toBeNull();
+    expect(sessionStorage.getItem('edusync_access_token')).toBeNull();
+  });
 });

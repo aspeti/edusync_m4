@@ -3,9 +3,11 @@ import { authGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
 
 /**
- * Rutas de la SPA Angular 21 de EduSync (DD-UC-004 §2):
+ * Rutas de la SPA Angular 21 de EduSync (DD-UC-004 §2 + DD-UC-006 §2):
  * - /login                        → pública
+ * - /restablecer-password         → pública (sin sesión, DD-UC-006)
  * - /plataforma/**                → authGuard + roleGuard(SYSADMIN)
+ * - /usuarios/**                  → authGuard + roleGuard(ADMIN)
  * - /home                         → authGuard (placeholder para otros roles)
  * - /                             → redirect a /login
  */
@@ -14,6 +16,13 @@ export const routes: Routes = [
     path: 'login',
     loadComponent: () =>
       import('./features/auth/login/login.page').then((m) => m.LoginPage),
+  },
+  {
+    path: 'restablecer-password',
+    loadComponent: () =>
+      import('./features/auth/reset-password-confirm/reset-password-confirm.page').then(
+        (m) => m.ResetPasswordConfirmPage
+      ),
   },
   {
     path: '',
@@ -41,6 +50,20 @@ export const routes: Routes = [
         data: { role: 'SYSADMIN' },
         loadComponent: () =>
           import('./features/plataforma/tenants-list.page').then((m) => m.TenantsListPage),
+      },
+      {
+        path: 'usuarios/nuevo',
+        canActivate: [roleGuard],
+        data: { role: 'ADMIN' },
+        loadComponent: () =>
+          import('./features/usuarios/usuario-create.page').then((m) => m.UsuarioCreatePage),
+      },
+      {
+        path: 'usuarios',
+        canActivate: [roleGuard],
+        data: { role: 'ADMIN' },
+        loadComponent: () =>
+          import('./features/usuarios/usuarios-list.page').then((m) => m.UsuariosListPage),
       },
       {
         path: 'home',

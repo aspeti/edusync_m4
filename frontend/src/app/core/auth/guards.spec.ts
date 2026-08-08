@@ -74,4 +74,20 @@ describe('roleGuard', () => {
     );
     expect(result).toEqual(router.createUrlTree(['/home']));
   });
+
+  it('SYSADMIN (CSV del backend) no pasa el guard de ADMIN', () => {
+    const csvToken =
+      'eyJhbGciOiJIUzI1NiJ9.' +
+      btoa(JSON.stringify({ sub: 'sys@test.com', roles: 'SYSADMIN', exp: 9999999999, iat: 1 }))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '') +
+      '.sig';
+    sessionStorage.setItem('edusync_access_token', csvToken);
+    const route = { data: { role: 'ADMIN' } } as unknown as ActivatedRouteSnapshot;
+    const result = TestBed.runInInjectionContext(() =>
+      roleGuard(route, {} as RouterStateSnapshot)
+    );
+    expect(result).toEqual(router.createUrlTree(['/home']));
+  });
 });

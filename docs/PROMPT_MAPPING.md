@@ -1,7 +1,7 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.10`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.12`.
 > Cada prompt sigue la estructura de `plantillas/plantillas1/PROMPT_TEMPLATE.md`.
 > Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
@@ -55,6 +55,7 @@
 | PR-IMPL-003 | `backend/src/main/java/com/edusync/plataforma/**` — módulo `plataforma` (alta/gestión de Tenants, scheduler de vencimiento, `TenantConsultaPort`) | generación | `dev-agent` | Sonnet | 19/07/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-003.md` | ~2 300 tk in / ~6 200 tk out (estimado) \| antes: módulo `plataforma` vacío (solo `package-info.java`) \| después: 45/45 tests verde (incluye `ModularityTests` 7/7); `Tenant` con ciclo de suscripción real, `TenantConsultaPort` resuelve BR-014 en `identidad` |
 | PR-IMPL-004 | `frontend/src/app/**` + delta `GET /api/v1/plataforma/tenants` — UI login + consola SysAdmin | generación | `dev-agent` | Sonnet | 19/07/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-004.md` | ~2 200 tk in / ~6 000 tk out (estimado) \| antes: frontend vacío (solo esqueleto) \| después: login + consola SysAdmin; `GET /tenants`; `mvn test` 50/50; `ng build` verde |
 | PR-IMPL-005 | `backend/src/main/java/com/edusync/identidad/**` (delta) + `V4__identidad_password_reset_token.sql` — CRUD de Usuarios y Roles (alta multi-rol, roles, estado, restablecimiento de contraseña) | generación | `dev-agent` | Sonnet | 04/08/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-005.md` | ~2 400 tk in / ~6 500 tk out (estimado) \| antes: `FSD-UC-021` sin CRUD administrativo (solo login) \| después: `POST/GET/PATCH /usuarios`, restablecimiento de contraseña con token de un solo uso; `mvn test` 72/72 verde (incluye `ModularityTests` 7/7) |
+| PR-IMPL-006 | `frontend/src/app/features/usuarios/**` + `features/auth/reset-password-confirm/**` — consola Angular de Usuarios y Roles + pantalla pública de confirmación | generación | `dev-agent` | Sonnet | 04/08/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-006.md` | ~2 100 tk in / ~5 800 tk out (estimado) \| antes: `FSD-UC-021` sin UI de CRUD (solo login) \| después: consola Admin de usuarios (lista/alta/roles/estado/reset) + confirmación pública; `ng build` en verde, sin delta de backend |
 
 ---
 
@@ -207,6 +208,7 @@ flowchart TD
         IMPL003["PR-IMPL-003\nModulo plataforma\n(alta y gestion de Tenants)"]
         IMPL004["PR-IMPL-004\nFrontend UI\n(login + consola SysAdmin)"]
         IMPL005["PR-IMPL-005\nCRUD Usuarios y Roles\n(roles, estado, reset password)"]
+        IMPL006["PR-IMPL-006\nConsola Angular\nUsuarios y Roles"]
     end
     FSD --> IMPL001
     HEX --> IMPL001
@@ -223,6 +225,9 @@ flowchart TD
     IMPL002 --> IMPL005
     ADR --> IMPL005
     FSD --> IMPL005
+    IMPL005 --> IMPL006
+    ADR --> IMPL006
+    FSD --> IMPL006
 ```
 
 ---
@@ -232,7 +237,7 @@ flowchart TD
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
 | `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-POC-001, PR-POC-002, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills → POCs → roadmap → aportes → aliases vFinal); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel, configuración de agentes, evidencia de pruebas de concepto, hoja de ruta de release, informe de aportes individuales y snapshots congelados de entrega | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md`; POCs en `docs/pocs/`; roadmap canónico en `docs/roadmap.md`; aportes por release en `docs/aportes/release-<x.y.z>.md`; aliases `_vFinal.md` en `docs/brd/`, `docs/mrd/`, `docs/prd/`, `docs/fsd/` |
-| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
 | `arch-agent` | PR-ADR-001..005, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
@@ -2786,6 +2791,63 @@ V4__identidad_password_reset_token.sql.
 
 ---
 
+### PR-IMPL-006 — Frontend: consola de administracion de Usuarios y Roles
+
+```markdown
+# Role
+Eres un Senior Frontend Engineer con experiencia en Angular 21 (standalone,
+signals) consumiendo un backend Java 25 / Spring Boot 4.1.0 hexagonal.
+
+# Task
+Implementa la consola Angular de Usuarios y Roles segun
+docs/design/DD-UC-006.md §2: features/usuarios/ (lista, alta multi-rol,
+edicion de roles, cambio de estado, restablecer password) y
+features/auth/reset-password-confirm/ (publica); ruta /usuarios protegida
+por roleGuard(ADMIN); ruta publica /restablecer-password; redirect ADMIN
+-> /usuarios en login.page.ts. Sin delta de backend.
+
+# Context
+- Fuente: docs/design/DD-UC-006.md (patron sin design system, checkboxes de
+  rol fijos, mensaje transparente sobre reset log-only).
+- Contratos ya existentes (DD-UC-005): GET/POST /usuarios, PATCH roles/estado,
+  POST restablecer-password, POST confirmar.
+- ADRs: ADR-0008, ADR-0010 (SYSADMIN nunca seleccionable).
+- Prerrequisito: PR-IMPL-001..005 ejecutados.
+- Restricciones: sin delta backend; sin campo curso/paralelo; sin simular
+  envio de email.
+
+# Reasoning
+1. usuario.model.ts.
+2. usuarios-list.page.ts (lista + dialogs roles/estado + boton reset).
+3. usuario-create.page.ts (alta multi-rol).
+4. reset-password-confirm.page.ts (publica, mapea 410).
+5. Routes + login.page.ts redirect.
+6. ng build verde.
+
+# Stop condition
+Detente cuando el Admin gestiona usuarios de punta a punta, el reset
+muestra el mensaje transparente log-only, la confirmacion publica funciona
+con token valido/invalido, y ng build esta en verde.
+
+# Output
+frontend/src/app/features/usuarios/**, features/auth/reset-password-confirm/**,
+delta en app.routes.ts/login.page.ts.
+
+# Invariants
+- SYSADMIN nunca seleccionable como rol.
+- Mensaje transparente sobre reset log-only (no simular envio).
+- Sin campo curso/paralelo para ASESOR.
+- ng build en verde.
+
+# Failure modes
+- E_SYSADMIN_SELECCIONABLE: eliminar la opcion del template.
+- E_ENVIO_SIMULADO: usar el mensaje transparente de DD-UC-006.
+- E_CAMPO_CURSO_ASESOR: revertir, corresponde a un DD futuro.
+- E_DELTA_BACKEND: este prompt es frontend-only.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
@@ -2875,6 +2937,7 @@ V4__identidad_password_reset_token.sql.
 | Design Doc `DD-UC-003` + `ADR-0009` + `ADR-0010` + `ADR-0011` + `docs/product/FSD.md` (`FSD-UC-011`) | `DD-UC-003, ADR-0009, ADR-0010, ADR-0011, FSD-UC-011` | PR-IMPL-003 | `dev-agent` | Módulo `plataforma` (alta/gestión de Tenants, scheduler de vencimiento, `TenantConsultaPort`, enforcement de `BR-014`) — **ejecutado 19/07/2026** | `backend/src/main/java/com/edusync/plataforma/**`, `identidad/TenantConsultaPort.java`, `identidad/domain/TenantNoActivoException.java`; prompt en `docs/prompts/impl/PR-IMPL-003.md` |
 | Design Doc `DD-UC-004` + `ADR-0008` + `ADR-0010` + `ADR-0011` + `docs/product/FSD.md` (`FSD-UC-021`, `FSD-UC-011`) | `DD-UC-004, ADR-0008, ADR-0010, ADR-0011, FSD-UC-021, FSD-UC-011` | PR-IMPL-004 | `dev-agent` | Frontend UI (login + consola SysAdmin) + delta `GET /api/v1/plataforma/tenants` — **ejecutado 19/07/2026** | `frontend/src/app/core/auth/**`, `frontend/src/app/features/auth/**`, `frontend/src/app/features/plataforma/**`, `ListarTenantsUseCase`/`TenantController` GET, ajuste `SecurityConfig`; prompt en `docs/prompts/impl/PR-IMPL-004.md` |
 | Design Doc `DD-UC-005` + `ADR-0001` + `ADR-0010` + `ADR-0011` + `ADR-0012` + `docs/product/FSD.md` (`FSD-UC-021`) | `DD-UC-005, ADR-0001, ADR-0010, ADR-0011, ADR-0012, FSD-UC-021` | PR-IMPL-005 | `dev-agent` | CRUD backend de Usuarios y Roles (alta multi-rol, roles, estado, restablecimiento de contraseña) — **ejecutado 04/08/2026** | `backend/src/main/java/com/edusync/identidad/**` (delta: `Usuario.conRoles/activar/desactivar/conPasswordHash`, `PasswordResetToken`, `UsuarioController`, `PasswordResetController`), `V4__identidad_password_reset_token.sql`; prompt en `docs/prompts/impl/PR-IMPL-005.md` |
+| Design Doc `DD-UC-006` + `ADR-0008` + `ADR-0010` + `docs/product/FSD.md` (`FSD-UC-021`) | `DD-UC-006, ADR-0008, ADR-0010, FSD-UC-021` | PR-IMPL-006 | `dev-agent` | Consola Angular de Usuarios y Roles + pantalla pública de confirmación de restablecimiento — **ejecutado 04/08/2026** | `frontend/src/app/features/usuarios/**`, `features/auth/reset-password-confirm/**`, delta `shell.component.ts`/`login.page.ts`/`app.routes.ts`; prompt en `docs/prompts/impl/PR-IMPL-006.md` |
 
 ---
 
@@ -2913,3 +2976,5 @@ V4__identidad_password_reset_token.sql.
 | v2.8 | 19/07/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-004`**: pasa de "Aprobado (prompt)" a **"Ejecutado"** en el índice — UI Angular real (`core/auth` con JWT en `sessionStorage`, login, consola SysAdmin tenants) + delta backend `ListarTenantsUseCase`/`GET /api/v1/plataforma/tenants`. Corrección técnica: `SecurityConfig` (sin Basic Auth in-memory de Boot, `HttpStatusEntryPoint` 401, `/error` público) para contrato REST 401/403 coherente. Fila de índice y trazabilidad actualizan estado/métricas (`mvn test` 50/50; `ng build` verde). Sin filas nuevas en el índice. Propagado a `docs/design/DD-UC-004.md` (DoD 100% + changelog v1.1), `docs/product/DTP.md` (v1.10→v1.11) y `AGENTS.md` (v0.24→v0.25). Total prompt-contratos activos: 41 (sin cambio). |
 | v2.9 | 04/08/2026 | Rodrigo Aspeti | Quinta materialización del área `IMPL`: `PR-IMPL-005` (CRUD backend de Usuarios y Roles — alta multi-rol, `PATCH` roles/estado, restablecimiento de contraseña), derivado de `docs/design/DD-UC-005.md` (`FSD-UC-021`, resto no cubierto por `DD-UC-002`/`DD-UC-004`) y de `ADR-0001`/`ADR-0010`/`ADR-0011`/`ADR-0012`. Decisiones explícitas del usuario (04/08/2026): notificación de reset *log-only* (sin proveedor de email decidido); rol `ASESOR` asignable sin la validación `E_ASESOR_SIN_CURSO` (diferida, bloqueada por `ADR-0009` §3, módulo `academico` inexistente); filtro de tenant explícito en la capa de aplicación (mismo patrón `DD-UC-002` §2); `404` en vez de `403` para usuarios de otro tenant; UI Angular diferida a un futuro `DD-UC-006`. Índice ampliado con fila `PR-IMPL-005` (estado "Aprobado (prompt)"). Flowchart Mermaid extendido con nodo `IMPL005` (aristas desde `IMPL002`, `ADR`, `FSD`). Matriz `dev-agent` ampliada. Contrato inline agregado con 4 failure modes (`E_INVARIANTE_ROL_VIOLADA`, `E_FILTRO_TENANT_AUSENTE`, `E_TOKEN_EN_LOG`, `E_ALCANCE_EXCEDIDO`). Trazabilidad ampliada. Archivo `docs/prompts/impl/PR-IMPL-005.md` materializado. Total prompt-contratos activos: 41 → 42. Ejecución de código real pendiente. |
 | v2.10 | 04/08/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-005`**: pasa de "Aprobado (prompt)" a **"Ejecutado"** en el índice — CRUD backend de Usuarios y Roles real: `Usuario.conRoles/activar/desactivar/conPasswordHash` (mutaciones inmutables que revalidan `ADR-0010`); mini-agregado `PasswordResetToken` (token de un solo uso, solo se persiste el hash SHA-256); `UsuarioController` (`POST/GET /usuarios`, `PATCH roles/estado`, `POST restablecer-password`) y `PasswordResetController` (`POST confirmar`, público); `LogNotificacionAdapter` placeholder; `V4__identidad_password_reset_token.sql` (sin `tenant_id`/RLS propios — misma justificación que la tabla `tenant` de `V3` y que el flujo de login en `V2`: la confirmación es pública, sin tenant activo en la sesión). **Bug corregido durante la ejecución** (no exclusivo de este prompt, pero recién expuesto por él: es el primer caso en que `UsuarioRepositoryPort.guardar()` se invoca sobre un usuario ya persistido): `UsuarioRepositoryAdapter.guardar()` construía siempre una entidad JPA nueva con roles de UUID aleatorio nuevo; al hacer merge de una entidad *detached* con una colección `@OneToMany(orphanRemoval=true)` reemplazada, Hibernate encola los INSERT de los roles nuevos antes que los DELETE de los antiguos, violando `uq_usuario_rol` cuando el nuevo conjunto conserva un rol ya existente (p. ej. `PATCH /estado` sin cambiar roles). Corregido reutilizando la entidad ya administrada (`findById` dentro de la misma transacción) y mutando la colección de roles *in-place* (`UsuarioJpaEntity.reemplazarRoles`), documentado en el Javadoc de ambos métodos. **Gap de tooling detectado, fuera de alcance de este prompt**: `mvn checkstyle:check` falla con 1073 violaciones en **todo** el módulo backend (incluyendo archivos de `PR-IMPL-001`..`004`, sin tocar por este prompt) porque el `pom.xml` usa el ruleset `sun_checks.xml` por defecto (límite de 80 columnas, `@param`/`@return` Javadoc obligatorios, parámetros `final`) en vez de un ruleset Google Java Style acorde a `AGENTS.md` §5; el linter nunca estuvo realmente en verde en este proyecto. No se reconfiguró en este prompt (fuera de alcance de una feature de CRUD); recomendado como tarea de seguimiento dedicada. Verificación: `mvn test` → **72/72** verde (incluye `ModularityTests` 7/7, `UsuarioIntegrationTest` 3/3 con Testcontainers PostgreSQL 15 cubriendo aislamiento cross-tenant). Fila de índice y trazabilidad actualizan estado/métricas. Sin filas nuevas en el índice. Propagado a `docs/design/DD-UC-005.md` (DoD + changelog v1.1), `docs/product/DTP.md` (v1.11→v1.12) y `AGENTS.md` (v0.25→v0.26). Total prompt-contratos activos: 42 (sin cambio). |
+| v2.11 | 04/08/2026 | Rodrigo Aspeti | Sexta materialización del área `IMPL`: `PR-IMPL-006` (consola Angular de Usuarios y Roles — lista, alta multi-rol, edición de roles, cambio de estado, restablecimiento de contraseña, pantalla pública de confirmación), derivado de `docs/design/DD-UC-006.md` (`FSD-UC-021`, cierre de UI) y de `ADR-0008`/`ADR-0010`. Sin delta de backend (`DD-UC-005` ya expone todos los contratos consumidos). Decisiones explícitas del usuario (04/08/2026): reutilizar el patrón sin design system de `features/plataforma/`; roles como checkboxes fijos, `SYSADMIN` nunca seleccionable; mensaje transparente sobre la limitación *log-only* del restablecimiento, sin simular un envío de correo; sin campo de curso/paralelo para `ASESOR`. Índice ampliado con fila `PR-IMPL-006` (estado "Aprobado (prompt)"). Flowchart Mermaid extendido con nodo `IMPL006` (aristas desde `IMPL005`, `ADR`, `FSD`). Matriz `dev-agent` ampliada. Contrato inline agregado con 4 failure modes (`E_SYSADMIN_SELECCIONABLE`, `E_ENVIO_SIMULADO`, `E_CAMPO_CURSO_ASESOR`, `E_DELTA_BACKEND`). Trazabilidad ampliada. Archivo `docs/prompts/impl/PR-IMPL-006.md` materializado. Total prompt-contratos activos: 42 → 43. Ejecución de código real pendiente. |
+| v2.12 | 04/08/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-006`**: pasa de "Aprobado (prompt)" a **"Ejecutado"** en el índice — consola Angular real: `usuarios/usuario.model.ts`, `usuarios-list.page.ts` (lista + dialog de edición de roles + toggle de estado + botón de restablecimiento con mensaje transparente sobre la limitación *log-only*), `usuario-create.page.ts` (alta multi-rol), `auth/reset-password-confirm/reset-password-confirm.page.ts` (pública, mapea `410 E_ENLACE_INVALIDO`). Delta menor no listado en `DD-UC-006` §2 original, agregado por necesidad de alcanzabilidad: `shell.component.ts` gana enlaces de nav condicionales por rol (`SYSADMIN`→Tenants, `ADMIN`→Usuarios); `login.page.ts` redirige `ADMIN` → `/usuarios`. Verificación: `ng build` en verde (3 lazy chunks nuevos); `ng test` no ejecutable en este entorno (Vitest sin paquete de browser instalado), documentado como limitación de entorno. Sin delta de backend (confirmado por `git status`). Fila de índice y trazabilidad actualizan estado/métricas. Sin filas nuevas en el índice. Propagado a `docs/design/DD-UC-006.md` (DoD + changelog v1.1), `docs/product/DTP.md` (v1.12→v1.13) y `AGENTS.md` (v0.26→v0.27). Total prompt-contratos activos: 43 (sin cambio). |

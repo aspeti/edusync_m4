@@ -11,6 +11,25 @@ export interface JwtPayload {
   iat: number;
 }
 
+/**
+ * El backend emite {@code roles} como CSV ({@code "ADMIN,SECRETARIA"},
+ * {@code JwtTokenProvider}); algunos tests usan array JSON. Normaliza ambos a
+ * {@code string[]} para que {@code Array.includes} no caiga en el includes de
+ * String (p. ej. {@code "SYSADMIN".includes("ADMIN") === true}).
+ */
+export function normalizeRoles(raw: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return raw.map(String).map((r) => r.trim()).filter((r) => r.length > 0);
+  }
+  if (typeof raw === 'string') {
+    return raw
+      .split(',')
+      .map((r) => r.trim())
+      .filter((r) => r.length > 0);
+  }
+  return [];
+}
+
 export function decodeJwtPayload(token: string): JwtPayload | null {
   try {
     const parts = token.split('.');
@@ -19,7 +38,11 @@ export function decodeJwtPayload(token: string): JwtPayload | null {
     // Padding base64url → base64 estándar
     const padded = payload.replace(/-/g, '+').replace(/_/g, '/');
     const decoded = atob(padded);
-    return JSON.parse(decoded) as JwtPayload;
+    const parsed = JSON.parse(decoded) as Omit<JwtPayload, 'roles'> & { roles?: unknown };
+    return {
+      ...parsed,
+      roles: normalizeRoles(parsed.roles),
+    };
   } catch {
     return null;
   }

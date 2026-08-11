@@ -47,3 +47,18 @@ edusync:
       # Diario a las 03:00 (hora del servidor). @Scheduled interno de Spring, sin ShedLock
       # (DD-UC-003 §2, alternativa A: suficiente para 1 instancia del monolito).
       vencimiento-cron: ${EDUSYNC_VENCIMIENTO_CRON:0 0 3 * * *}
+  # Spike LLM. Solo POST /api/v1/ai/chat. MUST NOT enviar PII/RUDE/notas.
+  # provider: ollama | open-webui. API keys SOLO por env (nunca en git).
+  ai:
+    enabled: ${EDUSYNC_AI_ENABLED:true}
+    provider: ${EDUSYNC_AI_PROVIDER:ollama}
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      model: ${OLLAMA_MODEL:llama3.1:latest}
+      timeout-seconds: ${OLLAMA_TIMEOUT_SECONDS:120}
+    open-webui:
+      base-url: ${OPEN_WEBUI_BASE_URL:http://localhost:3000}
+      # Vacío por defecto. Definir OPEN_WEBUI_API_KEY en el entorno local (.env gitignored).
+      api-key: ${OPEN_WEBUI_API_KEY:}
+      model: ${OPEN_WEBUI_MODEL:llama3.1:latest}
+      timeout-seconds: ${OPEN_WEBUI_TIMEOUT_SECONDS:120}

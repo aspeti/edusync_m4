@@ -1,0 +1,15 @@
+# Copiar a application-local.yml (gitignored) y activar perfil:
+#   SPRING_PROFILES_ACTIVE=dev,local
+# Preferible: usar solo variables de entorno (.env) sin este archivo.
+#
+# NUNCA poner la API key real en un archivo que se vaya a commitear.
+
+edusync:
+  ai:
+    enabled: true
+    provider: open-webui
+    open-webui:
+      base-url: http://localhost:3000
+      # Mejor: dejar vacío aquí y definir OPEN_WEBUI_API_KEY en el entorno
+      api-key: ${OPEN_WEBUI_API_KEY:}
+      model: llama3.1:latest

@@ -38,8 +38,8 @@
 | **Arq. hexagonal** | `docs/arquitectura_hexagonal_EduSync.md` | Arquitectura hexagonal v0.1 — 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots (Perfil Bolivia SIE, paquete `bo.edusync`, baseline M4). **En actualización** (`ADR-0011`): paquete `com.edusync` + organización monolito modular *module-first* (Spring Modulith) para `release/3.0.0` |
 | **Design Docs (capa viva)** | `docs/design/DD-UC-NNN.md` | Documentos de diseño por feature/*vertical slice*, trazados a `FSD-UC` + `ADR` + `PR-IMPL-NNN`; alimentan el DTP vía `@dtp-sync`. `DD-UC-001` (bootstrap); `DD-UC-002` (módulo `identidad`); `DD-UC-003` (módulo `plataforma`); `DD-UC-004` (frontend login + consola SysAdmin); `DD-UC-005` (CRUD backend de Usuarios y Roles); `DD-UC-006` (consola Angular de Usuarios y Roles — **ejecutado**, DoD 100%; `FSD-UC-021` cierra backend+UI) |
 | **DTOs por capa** | `docs/dtos_EduSync.md` | DTOs hexagonales v0.1 — 4 Request, 4 Commands, 3 Response, 5 Domain Events, 5 enums |
-| **Skills de Cursor** | `.cursor/skills/<slug>/SKILL.md` | **13 skills** en paridad con Claude: 10 EduSync (`feature-design-doc`, `dtp-sync`, `adr-edusync`, `c4-edusync`, `dti-edusync`, `update-prompt-mapping`, `edusync-skill-creator`, `sync-doc-chain`, `poc-runner-edusync`, `materialize-prompt-files`) + 3 de arquitectura (`async-architecture-reviewer`, `distributed-architecture-reviewer-edusync`, `monolith-decomposition-architect`). Los ~16 canónicos restantes de `plantillas/plantillas2/` siguen como plantillas fuente, no materializados como skills activos |
-| **Skills de Claude Code** | `.claude/skills/<slug>/SKILL.md` | **13 skills** — paridad completa con `.cursor/skills/` (mismos slugs y contenido). Entrada Claude: `CLAUDE.md` (importa `AGENTS.md`) + `.claude/rules/` + `.claude/agents/` |
+| **Skills de Cursor** | `.cursor/skills/<slug>/SKILL.md` | **14 skills** en paridad con Claude: 11 EduSync (`feature-design-doc`, `dtp-sync`, `adr-edusync`, `c4-edusync`, `dti-edusync`, `update-prompt-mapping`, `edusync-skill-creator`, `sync-doc-chain`, `poc-runner-edusync`, `materialize-prompt-files`, `ollama-edusync`) + 3 de arquitectura (`async-architecture-reviewer`, `distributed-architecture-reviewer-edusync`, `monolith-decomposition-architect`). Los ~16 canónicos restantes de `plantillas/plantillas2/` siguen como plantillas fuente, no materializados como skills activos |
+| **Skills de Claude Code** | `.claude/skills/<slug>/SKILL.md` | **14 skills** — paridad completa con `.cursor/skills/` (mismos slugs y contenido). Entrada Claude: `CLAUDE.md` (importa `AGENTS.md`) + `.claude/rules/` + `.claude/agents/` |
 | **Contratos materializados** | `prompts/PR-<AREA>-NNN.md` | Archivos individuales por prompt-contrato — generados por skill `materialize-prompt-files`. **Excepción**: los prompts del área de implementación (`PR-IMPL-NNN.md`) NO viven aquí — viven en `docs/prompts/impl/PR-IMPL-NNN.md`, siguiendo `FEATURE_DESIGN_DOC_TEMPLATE.md`/`MODELO_DOCUMENTAL_IMPLEMENTACION.md`; es la única área que se desvía de la convención plana de M4 |
 
 ---
@@ -76,7 +76,8 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │   ├── rules/
 │   │   ├── seguridad.mdc            ← OWASP ASVS L2 — Java/Spring
 │   │   └── baseline-congelado.mdc   ← prohibe editar docs/baseline/** a cualquier agente
-│   └── skills/                      ← 13 skills activos (paridad con .claude/skills/)
+│   ├── agents/                      ← espejo Claude: ollama-agent.md (+ resto documentado en §8.1)
+│   └── skills/                      ← 14 skills activos (paridad con .claude/skills/)
 │       ├── adr-edusync/
 │       ├── async-architecture-reviewer/
 │       ├── c4-edusync/              (+ reference.md)
@@ -87,13 +88,14 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │       ├── feature-design-doc/
 │       ├── materialize-prompt-files/
 │       ├── monolith-decomposition-architect/
+│       ├── ollama-edusync/
 │       ├── poc-runner-edusync/
 │       ├── sync-doc-chain/
 │       └── update-prompt-mapping/   (+ reference.md)
 │       # Canónicos restantes de plantillas/plantillas2/ NO materializados como skills activos
 ├── .claude/
-│   ├── skills/                      ← 13 skills (paridad completa con .cursor/skills/, mismos slugs)
-│   ├── agents/                      ← 6 subagentes: dev/docs/arch/qa/process/compliance-agent.md
+│   ├── skills/                      ← 14 skills (paridad completa con .cursor/skills/, mismos slugs)
+│   ├── agents/                      ← 7 subagentes: dev/docs/arch/qa/process/compliance/ollama-agent.md
 │   └── rules/                       ← espejo de .cursor/rules: baseline-congelado.md, seguridad.md
 ├── README.md
 ├── AGENTS.md                        ← este archivo (v0.25) — convención multi-agente (Cursor + Claude)
@@ -334,6 +336,7 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 | `qa-agent` | Verificar invariantes de dominio, trazabilidad de audit_log y cobertura de pruebas | Sonnet | `read`, `query-db` (solo SELECT) | **MUST NOT** realizar escrituras; solo lectura y análisis |
 | `process-agent` | Modelar workflows y diagramas de estado (Docente, Director) garantizando consistencia con UCs | Sonnet | `read`, `edit` | Opera en `docs/diagrams/`; diagramas deben usar `stateDiagram-v2` y nombres reales del dominio |
 | `compliance-agent` | Validar que ningún output de `dev-agent` viole invariantes regulatorias del SIE (RUDE, floor, rangos) | Sonnet | `read`, ejecutar golden tests | Solo lectura de artefactos + ejecución de golden tests en CI; bloquea merge si falla |
+| `ollama-agent` | Integrar/extender LLM en runtime vía Ollama local (`llama3.1:latest`, `POST /api/v1/ai/chat`, paquete `shared.ai`) | Sonnet | `read`, `edit`, `run-tests` | **MUST NOT** loguear/enviar PII/RUDE/notas al modelo; **MUST NOT** cambiar de proveedor LLM sin ADR; **MUST NOT** editar `docs/baseline/**`; skill `ollama-edusync`. Espejo: `.claude/agents/ollama-agent.md` + `.cursor/agents/ollama-agent.md` |
 
 ### 8.2 Guardrails generales
 

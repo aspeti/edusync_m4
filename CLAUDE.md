@@ -9,9 +9,9 @@ Lee y sigue **siempre** `AGENTS.md` (importado arriba) como fuente de verdad del
 | Recurso | Cursor | Claude Code |
 |---------|--------|-------------|
 | Instrucciones del repo | `AGENTS.md` | `AGENTS.md` (import) + este `CLAUDE.md` |
-| Skills del proyecto | `.cursor/skills/<slug>/SKILL.md` | `.claude/skills/<slug>/SKILL.md` (**mismos 13 slugs**) |
+| Skills del proyecto | `.cursor/skills/<slug>/SKILL.md` | `.claude/skills/<slug>/SKILL.md` (**mismos slugs**, incl. `ollama-edusync`) |
 | Reglas | `.cursor/rules/*.mdc` | `.claude/rules/*.md` (espejo) |
-| Subagentes | descritos en `AGENTS.md` §8.1 | `.claude/agents/*.md` |
+| Subagentes | `.cursor/agents/*.md` + `AGENTS.md` §8.1 | `.claude/agents/*.md` (espejo; incl. `ollama-agent`) |
 | Hooks de protección baseline | `.cursor/hooks.json` | Sin equivalente automático; respetar rules + `AGENTS.md` §8.2 |
 
 ## Skills disponibles (invocar con `/nombre` o pedir la tarea)
@@ -31,10 +31,11 @@ Lee y sigue **siempre** `AGENTS.md` (importado arriba) como fuente de verdad del
 | `async-architecture-reviewer` | Auditar arquitectura asíncrona (DTI §7) |
 | `distributed-architecture-reviewer-edusync` | Auditar arquitectura distribuida (DTI §6) |
 | `monolith-decomposition-architect` | Propuesta de descomposición / seams |
+| `ollama-edusync` | Integrar/extender Ollama local (`llama3.1:latest`, `POST /api/v1/ai/chat`) |
 
 ## Subagentes
 
-Definidos en `.claude/agents/` (`dev-agent`, `docs-agent`, `arch-agent`, `qa-agent`, `process-agent`, `compliance-agent`). Preferir el subagente cuyo alcance coincida. Límites: `AGENTS.md` §8.1.
+Definidos en `.claude/agents/` (y espejo `.cursor/agents/`): `dev-agent`, `docs-agent`, `arch-agent`, `qa-agent`, `process-agent`, `compliance-agent`, `ollama-agent`. Preferir el subagente cuyo alcance coincida. Límites: `AGENTS.md` §8.1.
 
 ## Guardrails no negociables (recordatorio)
 

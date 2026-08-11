@@ -12,3 +12,8 @@ spring:
 logging:
   level:
     com.edusync: DEBUG
+
+edusync:
+  ai:
+    enabled: false
+    provider: ollama

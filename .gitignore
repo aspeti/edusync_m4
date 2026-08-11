@@ -13,6 +13,19 @@ frontend/.angular/
 .DS_Store
 Thumbs.db
 
-# Variables de entorno / secretos locales (nunca commitear valores reales)
+# Variables de entorno / secretos locales (NUNCA commitear valores reales)
 .env
-.env.local
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.p12
+*.jks
+secrets/
+**/secrets/
+
+# Perfiles Spring locales con secretos (usar application-local.yml.example como plantilla)
+**/application-local.yml
+**/application-local.yaml
+**/application-secret.yml
+**/application-secret.yaml

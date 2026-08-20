@@ -3,11 +3,12 @@ import { authGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
 
 /**
- * Rutas de la SPA Angular 21 de EduSync (DD-UC-004 §2 + DD-UC-006 §2):
+ * Rutas de la SPA Angular 21 de EduSync (DD-UC-004 §2 + DD-UC-006 §2 + DD-UC-009 §2):
  * - /login                        → pública
  * - /restablecer-password         → pública (sin sesión, DD-UC-006)
  * - /plataforma/**                → authGuard + roleGuard(SYSADMIN)
  * - /usuarios/**                  → authGuard + roleGuard(ADMIN)
+ * - /academico/gestiones-escolares/** → authGuard + roleGuard(ADMIN) (DD-UC-009)
  * - /home                         → authGuard (placeholder para otros roles)
  * - /                             → redirect a /login
  */
@@ -64,6 +65,24 @@ export const routes: Routes = [
         data: { role: 'ADMIN' },
         loadComponent: () =>
           import('./features/usuarios/usuarios-list.page').then((m) => m.UsuariosListPage),
+      },
+      {
+        path: 'academico/gestiones-escolares/nuevo',
+        canActivate: [roleGuard],
+        data: { role: 'ADMIN' },
+        loadComponent: () =>
+          import('./features/academico/gestion-escolar-create.page').then(
+            (m) => m.GestionEscolarCreatePage
+          ),
+      },
+      {
+        path: 'academico/gestiones-escolares',
+        canActivate: [roleGuard],
+        data: { role: 'ADMIN' },
+        loadComponent: () =>
+          import('./features/academico/gestiones-escolares-list.page').then(
+            (m) => m.GestionesEscolaresListPage
+          ),
       },
       {
         path: 'home',

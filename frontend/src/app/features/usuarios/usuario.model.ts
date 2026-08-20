@@ -6,3 +6,13 @@ export interface UsuarioResponse {
   roles: string[];
   activo: boolean;
 }
+
+/**
+ * Filtros opcionales de {@code GET /api/v1/usuarios} (DD-UC-007, patron reutilizable).
+ * Campo vacio/`undefined` = sin filtro.
+ */
+export interface UsuarioFiltro {
+  q?: string;
+  activo?: boolean;
+  rol?: string;
+}

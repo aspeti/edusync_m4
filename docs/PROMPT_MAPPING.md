@@ -1,11 +1,11 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.15`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.17`.
 > Cada prompt sigue la estructura de `plantillas/plantillas1/PROMPT_TEMPLATE.md`.
 > Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
-> **Área `IMPL`** (desde `v2.0`): prompts de implementación de la capa viva (`release/3.0.0` en adelante), archivo `docs/prompts/impl/PR-IMPL-NNN.md` (única área que se desvía del directorio raíz `prompts/`, siguiendo `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md`/`MODELO_DOCUMENTAL_IMPLEMENTACION.md`), trazados a un `FSD-UC` y opcionalmente a un `DD-UC-NNN` en `docs/design/`. Ver `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md` y los skills `feature-design-doc` / `dtp-sync`. Primera entrada desde `v2.1`: `PR-IMPL-001` (bootstrap del esqueleto de código, `DD-UC-001`, `ADR-0011`) — **ejecutado** 18/07/2026. Segunda entrada desde `v2.3`: `PR-IMPL-002` (módulo `identidad` — login/JWT, `DD-UC-002`, `ADR-0001`/`ADR-0010`) — **ejecutado** 18-19/07/2026 (+ `ADR-0012` aplicado retroactivamente). Tercera entrada desde `v2.4`: `PR-IMPL-003` (módulo `plataforma` — alta y gestión de Tenants, `DD-UC-003`, `FSD-UC-011`) — **ejecutado** 19/07/2026. Cuarta entrada desde `v2.7`: `PR-IMPL-004` (frontend login + consola SysAdmin, `DD-UC-004`) — **ejecutado** 19/07/2026. Quinta entrada desde `v2.9`: `PR-IMPL-005` (CRUD backend de Usuarios y Roles, `DD-UC-005`, `FSD-UC-021` resto) — **ejecutado** 04/08/2026. Sexta entrada desde `v2.11`: `PR-IMPL-006` (consola Angular de Usuarios y Roles, `DD-UC-006`) — **ejecutado** 04/08/2026. Séptima entrada desde `v2.13`: `PR-IMPL-007` (filtros y paginación reutilizables en `GET /usuarios`/`GET /plataforma/tenants`, `DD-UC-007`) — **ejecutado** 20/08/2026. Octava entrada desde `v2.14`: `PR-IMPL-008` (módulo `academico` — `GestionEscolar`, alta/listado/ciclo de estado, `DD-UC-008`, `FSD-UC-012`) — **ejecutado** 20/08/2026 (119/119 tests backend verde, incluye `ModularityTests` 7/7).
+> **Área `IMPL`** (desde `v2.0`): prompts de implementación de la capa viva (`release/3.0.0` en adelante), archivo `docs/prompts/impl/PR-IMPL-NNN.md` (única área que se desvía del directorio raíz `prompts/`, siguiendo `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md`/`MODELO_DOCUMENTAL_IMPLEMENTACION.md`), trazados a un `FSD-UC` y opcionalmente a un `DD-UC-NNN` en `docs/design/`. Ver `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md` y los skills `feature-design-doc` / `dtp-sync`. Primera entrada desde `v2.1`: `PR-IMPL-001` (bootstrap del esqueleto de código, `DD-UC-001`, `ADR-0011`) — **ejecutado** 18/07/2026. Segunda entrada desde `v2.3`: `PR-IMPL-002` (módulo `identidad` — login/JWT, `DD-UC-002`, `ADR-0001`/`ADR-0010`) — **ejecutado** 18-19/07/2026 (+ `ADR-0012` aplicado retroactivamente). Tercera entrada desde `v2.4`: `PR-IMPL-003` (módulo `plataforma` — alta y gestión de Tenants, `DD-UC-003`, `FSD-UC-011`) — **ejecutado** 19/07/2026. Cuarta entrada desde `v2.7`: `PR-IMPL-004` (frontend login + consola SysAdmin, `DD-UC-004`) — **ejecutado** 19/07/2026. Quinta entrada desde `v2.9`: `PR-IMPL-005` (CRUD backend de Usuarios y Roles, `DD-UC-005`, `FSD-UC-021` resto) — **ejecutado** 04/08/2026. Sexta entrada desde `v2.11`: `PR-IMPL-006` (consola Angular de Usuarios y Roles, `DD-UC-006`) — **ejecutado** 04/08/2026. Séptima entrada desde `v2.13`: `PR-IMPL-007` (filtros y paginación reutilizables en `GET /usuarios`/`GET /plataforma/tenants`, `DD-UC-007`) — **ejecutado** 20/08/2026. Octava entrada desde `v2.14`: `PR-IMPL-008` (módulo `academico` — `GestionEscolar`, alta/listado/ciclo de estado, `DD-UC-008`, `FSD-UC-012`) — **ejecutado** 20/08/2026 (119/119 tests backend verde, incluye `ModularityTests` 7/7). Novena entrada desde `v2.16`: `PR-IMPL-009` (consola Angular de Gestión Escolar, `DD-UC-009`, cierre de UI de `FSD-UC-012`) — **ejecutado** 20/08/2026 (`ng build` verde, 2 lazy chunks nuevos).
 
 ---
 
@@ -58,6 +58,7 @@
 | PR-IMPL-006 | `frontend/src/app/features/usuarios/**` + `features/auth/reset-password-confirm/**` — consola Angular de Usuarios y Roles + pantalla pública de confirmación | generación | `dev-agent` | Sonnet | 04/08/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-006.md` | ~2 100 tk in / ~5 800 tk out (estimado) \| antes: `FSD-UC-021` sin UI de CRUD (solo login) \| después: consola Admin de usuarios (lista/alta/roles/estado/reset) + confirmación pública; `ng build` en verde, sin delta de backend |
 | PR-IMPL-007 | `backend/src/main/java/com/edusync/shared/{PageQuery,PageResult,web/PageResponse}.java` (nuevo) + delta `identidad`/`plataforma` + `frontend/src/app/features/{usuarios,plataforma}/**` — filtros y paginación reutilizables en `GET /usuarios` y `GET /plataforma/tenants` | generación | `dev-agent` | Sonnet | 20/08/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-007.md` | ~2 300 tk in / ~6 300 tk out (estimado) \| antes: ambos `GetAll` devolvían `T[]` sin filtrar ni paginar \| después: `PageResponse<T>` con `q`/filtros/`page`/`size`; `Specification`/`JpaSpecificationExecutor` (primer uso); `mvn test` 98/98 verde, `ng build` verde |
 | PR-IMPL-008 | `backend/src/main/java/com/edusync/academico/**` (nuevo) + `V5__academico_gestion_escolar.sql` — módulo `academico`: `GestionEscolar` (alta, listado con filtros/paginación, ciclo de estado) | generación | `dev-agent` | Sonnet | 20/08/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-008.md` | 119/119 tests backend verde (incluye `ModularityTests` 7/7) \| antes: módulo `academico` vacío (solo `package-info.java`) \| después: `POST/GET/PATCH /gestiones-escolares` con RLS y `PageResponse<GestionEscolarResponse>` |
+| PR-IMPL-009 | `frontend/src/app/features/academico/**` (nuevo) — consola Angular de Gestión Escolar (lista con filtros/paginación, alta, cambio de estado restringido a transiciones válidas) | generación | `dev-agent` | Sonnet | 20/08/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-009.md` | `ng build` verde (2 lazy chunks nuevos) \| antes: `academico` sin UI (solo backend de `DD-UC-008`) \| después: `/academico/gestiones-escolares` funcional para el rol `ADMIN`, con diálogo de estado que solo ofrece transiciones válidas |
 
 ---
 
@@ -213,6 +214,7 @@ flowchart TD
         IMPL006["PR-IMPL-006\nConsola Angular\nUsuarios y Roles"]
         IMPL007["PR-IMPL-007\nFiltros + paginacion\nUsuarios y Tenants"]
         IMPL008["PR-IMPL-008\nModulo academico\nGestionEscolar"]
+        IMPL009["PR-IMPL-009\nConsola Angular\nGestion Escolar"]
     end
     FSD --> IMPL001
     HEX --> IMPL001
@@ -239,6 +241,9 @@ flowchart TD
     IMPL007 --> IMPL008
     ADR --> IMPL008
     FSD --> IMPL008
+    IMPL008 --> IMPL009
+    ADR --> IMPL009
+    FSD --> IMPL009
 ```
 
 ---
@@ -248,7 +253,7 @@ flowchart TD
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
 | `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-POC-001, PR-POC-002, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills → POCs → roadmap → aportes → aliases vFinal); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel, configuración de agentes, evidencia de pruebas de concepto, hoja de ruta de release, informe de aportes individuales y snapshots congelados de entrega | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md`; POCs en `docs/pocs/`; roadmap canónico en `docs/roadmap.md`; aportes por release en `docs/aportes/release-<x.y.z>.md`; aliases `_vFinal.md` en `docs/brd/`, `docs/mrd/`, `docs/prd/`, `docs/fsd/` |
-| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006, PR-IMPL-007, PR-IMPL-008 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006, PR-IMPL-007, PR-IMPL-008, PR-IMPL-009 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
 | `arch-agent` | PR-ADR-001..005, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
@@ -3001,6 +3006,72 @@ backend/src/test/java/com/edusync/academico/**.
 
 ---
 
+### PR-IMPL-009 — Frontend: consola de Gestion Escolar
+
+```markdown
+# Role
+Eres un Senior Frontend Engineer con experiencia en Angular 21 (standalone,
+signals) consumiendo un backend Java 25 / Spring Boot 4.1.0 hexagonal.
+
+# Task
+Implementa la consola Angular de Gestion Escolar segun docs/design/DD-UC-009.md
+§2: features/academico/ (lista con filtros q/estado + paginacion, alta,
+cambio de estado restringido a las transiciones validas del estado actual);
+ruta /academico/gestiones-escolares (+ /nuevo) protegida por
+roleGuard(ADMIN); enlace de nav "Gestion Escolar" en shell.component.ts.
+Sin delta de backend.
+
+# Context
+- Fuente: docs/design/DD-UC-009.md (dialogo de estado calcula client-side
+  las transiciones validas, a diferencia del dialogo generico de Tenant).
+- Contratos ya existentes (DD-UC-008, sin cambios): GET/POST
+  /gestiones-escolares (q, estado, page, size), PATCH
+  /gestiones-escolares/{id}/estado.
+- Precedentes: features/plataforma/tenants-list.page.ts (lista con filtro q
+  + select de estado + paginacion PageResponse<T>),
+  features/usuarios/usuario-create.page.ts (formulario de alta).
+- ADRs: ADR-0008, ADR-0009.
+- Prerrequisito: PR-IMPL-001..008 ejecutados (backend completo).
+- Restricciones: sin delta de backend; sin pantallas de FSD-UC-013..020;
+  sin insinuar en la UI la precondicion de periodos/secciones para ACTIVA
+  (diferida en DD-UC-008 §2).
+
+# Reasoning
+1. gestion-escolar.model.ts (GestionEscolarResponse, GestionEscolarFiltro).
+2. gestiones-escolares-list.page.ts: GET con q/estado/page/size +
+   transicionesValidas(estadoActual) para el dialogo de cambio de estado.
+3. gestion-escolar-create.page.ts: POST con nombre/fechaInicio/fechaFin,
+   mapear 422 E_FECHAS_INVALIDAS.
+4. app.routes.ts: /academico/gestiones-escolares[, /nuevo] (roleGuard ADMIN).
+5. shell.component.ts: enlace "Gestion Escolar" condicional a rol ADMIN.
+6. ng build verde.
+
+# Stop condition
+Detente cuando el Admin puede crear/listar/filtrar/paginar/cambiar estado de
+una GestionEscolar, el dialogo solo ofrece transiciones validas, el boton de
+cambio de estado no aparece sobre CERRADA, y ng build esta en verde. No
+implementes delta de backend ni pantallas de FSD-UC-013..020.
+
+# Output
+frontend/src/app/features/academico/{gestion-escolar.model,
+gestiones-escolares-list.page,gestion-escolar-create.page}.ts,
+frontend/src/app/app.routes.ts (delta),
+frontend/src/app/shared/layout/shell.component.ts (delta).
+
+# Invariants
+- El dialogo de cambio de estado nunca ofrece una transicion invalida.
+- Sin delta de backend.
+- ng build en verde.
+
+# Failure modes
+- E_TRANSICION_OFRECIDA_INVALIDA: corregir transicionesValidas(estadoActual).
+- E_PRECONDICION_INVENTADA: revertir, esta diferida a DD-UC-008 §2.
+- E_ALCANCE_EXCEDIDO: revertir, corresponde a un Design Doc de seguimiento.
+- E_DELTA_BACKEND: rechazar, este prompt es frontend-only.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
@@ -3093,6 +3164,7 @@ backend/src/test/java/com/edusync/academico/**.
 | Design Doc `DD-UC-006` + `ADR-0008` + `ADR-0010` + `docs/product/FSD.md` (`FSD-UC-021`) | `DD-UC-006, ADR-0008, ADR-0010, FSD-UC-021` | PR-IMPL-006 | `dev-agent` | Consola Angular de Usuarios y Roles + pantalla pública de confirmación de restablecimiento — **ejecutado 04/08/2026** | `frontend/src/app/features/usuarios/**`, `features/auth/reset-password-confirm/**`, delta `shell.component.ts`/`login.page.ts`/`app.routes.ts`; prompt en `docs/prompts/impl/PR-IMPL-006.md` |
 | Design Doc `DD-UC-007` + `ADR-0008` + `ADR-0011` + `docs/product/FSD.md` (`FSD-UC-011`, `FSD-UC-021`) | `DD-UC-007, ADR-0008, ADR-0011, FSD-UC-011, FSD-UC-021` | PR-IMPL-007 | `dev-agent` | Filtros y paginación reutilizables en `GET /usuarios` y `GET /plataforma/tenants` — **ejecutado 20/08/2026** | `backend/src/main/java/com/edusync/shared/{PageQuery,PageResult,web/PageResponse}.java`, delta `identidad/**`/`plataforma/**` (`UsuarioFiltro`/`TenantFiltro`, `*Specifications`), `frontend/src/app/core/api/page-response.model.ts`, delta `features/usuarios/**`/`features/plataforma/**`; prompt en `docs/prompts/impl/PR-IMPL-007.md` |
 | Design Doc `DD-UC-008` + `ADR-0001` + `ADR-0008` + `ADR-0009` + `ADR-0011` + `ADR-0012` + `docs/product/FSD.md` (`FSD-UC-012`) | `DD-UC-008, ADR-0001, ADR-0008, ADR-0009, ADR-0011, ADR-0012, FSD-UC-012` | PR-IMPL-008 | `dev-agent` | Módulo `academico`: `GestionEscolar` (alta, listado con filtros/paginación, ciclo de estado `PLANIFICACION`/`ACTIVA`/`CERRADA`) — **ejecutado 20/08/2026** | `backend/src/main/java/com/edusync/academico/**` (nuevo), `V5__academico_gestion_escolar.sql`; prompt en `docs/prompts/impl/PR-IMPL-008.md` |
+| Design Doc `DD-UC-009` + `ADR-0008` + `ADR-0009` + `docs/product/FSD.md` (`FSD-UC-012`) | `DD-UC-009, ADR-0008, ADR-0009, FSD-UC-012` | PR-IMPL-009 | `dev-agent` | Consola Angular de Gestión Escolar (lista con filtros/paginación, alta, cambio de estado restringido a transiciones válidas) — **ejecutado 20/08/2026** | `frontend/src/app/features/academico/**` (nuevo), delta `app.routes.ts`/`shell.component.ts`; prompt en `docs/prompts/impl/PR-IMPL-009.md` |
 
 ---
 
@@ -3136,3 +3208,5 @@ backend/src/test/java/com/edusync/academico/**.
 | v2.13 | 20/08/2026 | Rodrigo Aspeti | Séptima materialización del área `IMPL` (**aprobada y ejecutada en el mismo turno**): `PR-IMPL-007` (filtros y paginación reutilizables en los dos listados `GetAll` existentes — `GET /usuarios` con `q`/`activo`/`rol` y `GET /plataforma/tenants` con `q`/`estado`, ambos con `page`/`size`), derivado de `docs/design/DD-UC-007.md` (`FSD-UC-011`, `FSD-UC-021`, mejora no funcional) y de `ADR-0008`/`ADR-0011`. Patrón reutilizable creado desde cero: `shared.PageQuery`/`shared.PageResult<T>` (framework-free, para `application`/`domain`) + `shared.web.PageResponse<T>` (DTO REST), y primer uso de `Specification`/`JpaSpecificationExecutor` en el proyecto (`UsuarioSpecifications`, `TenantSpecifications`) para combinar filtros opcionales sin condicionales anidados. El filtro `q` de usuarios busca por `nombreCompleto` **o** `email` (case-insensitive, `LOWER(...) LIKE %valor%`). Invariante preservada: `UsuarioRepositoryPort.listarPorTenant(UUID)` (sin paginar) se conserva intacto porque lo consume `shared.ai.BuscarUsuarioPorNombrePortImpl`. Índice ampliado con fila `PR-IMPL-007` (estado "Ejecutado"). Flowchart Mermaid extendido con nodo `IMPL007` (aristas desde `IMPL004`, `IMPL005`, `ADR`). Matriz `dev-agent` ampliada. Contrato inline agregado con 4 failure modes (`E_TENANT_DESDE_CLIENTE`, `E_METODO_NO_PAGINADO_ELIMINADO`, `E_CALCULO_EN_ADAPTADOR`, `E_CONTRATO_SIN_DOCUMENTAR`). Trazabilidad ampliada. Archivo `docs/prompts/impl/PR-IMPL-007.md` materializado. Verificación: `mvn test` → **98/98** verde (incluye `ModularityTests` 7/7 y nuevos tests de filtro/paginación en `UsuarioIntegrationTest`/`TenantIntegrationTest`); `ng build` verde. Propagado a `docs/design/DD-UC-007.md` (creado en este turno), `docs/product/DTP.md` y `AGENTS.md` (vía `dtp-sync`). Total prompt-contratos activos: 43 → 44. |
 | v2.14 | 20/08/2026 | Rodrigo Aspeti | Octava materialización del área `IMPL` (**diseño aprobado, ejecución pendiente**): `PR-IMPL-008` (módulo `academico` — `GestionEscolar`: alta, listado con filtros `q`/`estado` y paginación reutilizando el patrón de `DD-UC-007`, ciclo de estado `PLANIFICACION`/`ACTIVA`/`CERRADA`), derivado de `docs/design/DD-UC-008.md` (`FSD-UC-012`) y de `ADR-0001`/`ADR-0008`/`ADR-0009`/`ADR-0011`/`ADR-0012`. Primer feature de negocio real del módulo `academico` (hasta ahora solo `package-info.java` desde `PR-IMPL-001`). Decisiones explícitas del usuario (confirmadas vía preguntas estructuradas, 20/08/2026): (1) backend completo con `PATCH estado`, sin exigir periodos/secciones configurados para activar (el FSD no lo declara como validación bloqueante, solo como secuencia deseable); (2) backend-only, UI Angular diferida a un Design Doc de seguimiento (mismo patrón `DD-UC-005`→`DD-UC-006`); (3) sin `audit_log` todavía — misma postura de aislamiento que `Tenant`/`Usuario` (RLS + filtro explícito por `tenant_id` + RBAC), gobernanza formal diferida (`ADR-0009` §3 punto 5). Índice ampliado con fila `PR-IMPL-008` (estado "Aprobado (prompt)"). Flowchart Mermaid extendido con nodo `IMPL008` (aristas desde `IMPL001`, `IMPL007`, `ADR`, `FSD`). Matriz `dev-agent` ampliada. Contrato inline agregado con 5 failure modes (`E_TENANT_DESDE_CLIENTE`, `E_VALIDACION_PERIODOS_ANTICIPADA`, `E_SETTER_DIRECTO`, `E_CICLO_MODULO`, `E_AUDIT_LOG_INVENTADO`). Trazabilidad ampliada. Archivo `docs/prompts/impl/PR-IMPL-008.md` materializado. Ejecución de código real pendiente. Total prompt-contratos activos: 44 → 45. |
 | v2.15 | 20/08/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-008`**: pasa de "Aprobado (prompt)" a **"Ejecutado"** en el índice — código real del módulo `academico`: `domain` (`GestionEscolar` Aggregate Root con factory `crear()` y mutador controlado `cambiarEstado()`, `EstadoGestionEscolar`, `GestionEscolarId`, 3 excepciones), `application` (3 puertos `in`, `GestionEscolarRepositoryPort` `out`, `GestionEscolarFiltro`, 3 servicios transaccionales), `infrastructure` (`GestionEscolarJpaEntity`/`JpaRepository`/`Specifications`/`RepositoryAdapter`, `GestionEscolarController` con `POST`/`GET`/`PATCH .../estado` bajo `@PreAuthorize("hasRole('ADMIN')")`, DTOs, `ErrorResponse`), migración `V5__academico_gestion_escolar.sql` (tabla con `tenant_id NOT NULL` + RLS `FORCE`, sin la excepción `OR tenant_id IS NULL` de `usuario`). 21 tests nuevos: 8 unitarios de dominio (fechas inválidas, transiciones válidas/inválidas), 7 de servicios con Mockito (incluye rechazo cross-tenant), 6 de integración con Testcontainers (alta, listado filtrado/paginado, ciclo de estado, aislamiento cross-tenant → 404). Verificación: `mvn test` → **119/119** verde (incluye `ModularityTests` 7/7, confirmando que `academico` no depende de `identidad`/`plataforma` fuera de `shared`). Fila de índice y trazabilidad actualizan estado/métricas. Sin filas nuevas en el índice. Propagado a `docs/design/DD-UC-008.md` (DoD 100%), `docs/product/DTP.md` (v1.15→v1.16) y `AGENTS.md` (pendiente de bump a v0.29 en un paso posterior de `dtp-sync`). Total prompt-contratos activos: 45 (sin cambio). |
+| v2.16 | 20/08/2026 | Rodrigo Aspeti | Novena materialización del área `IMPL`: `PR-IMPL-009` (consola Angular de Gestión Escolar — lista con filtros `q`/`estado` y paginación, alta, cambio de estado restringido a las transiciones válidas del estado actual), derivado de `docs/design/DD-UC-009.md` y de `ADR-0008`/`ADR-0009`. Primer *vertical slice* de UI del módulo `academico`. Decisión explícita de diseño: el diálogo de cambio de estado calcula client-side las transiciones válidas (a diferencia del diálogo genérico de `Tenant`, que ofrece los 3 estados siempre porque cualquier transición es válida allí). Índice ampliado con fila `PR-IMPL-009` (estado "Aprobado (prompt)", ejecución pendiente). Flowchart Mermaid extendido con nodo `IMPL009` (aristas desde `IMPL008`, `ADR`, `FSD`). Matriz `dev-agent` ampliada. Contrato inline agregado con 4 failure modes específicos (`E_TRANSICION_OFRECIDA_INVALIDA`, `E_PRECONDICION_INVENTADA`, `E_ALCANCE_EXCEDIDO`, `E_DELTA_BACKEND`). Trazabilidad ampliada. Archivo individual `docs/prompts/impl/PR-IMPL-009.md` materializado desde el inicio en la ruta correcta. Total prompt-contratos activos: 45 → 46. |
+| v2.17 | 20/08/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-009`** en el mismo día que su diseño: pasa de "Aprobado (prompt)" a **"Ejecutado"** en el índice — consola Angular real del módulo `academico`: `gestion-escolar.model.ts` (`GestionEscolarResponse`, `GestionEscolarFiltro`), `gestiones-escolares-list.page.ts` (lista con filtros/paginación + diálogo de cambio de estado que solo ofrece las transiciones válidas del estado actual, oculta el botón sobre `CERRADA`), `gestion-escolar-create.page.ts` (alta con mapeo de `422 E_FECHAS_INVALIDAS`). Delta menor agregado durante la ejecución, no listado explícitamente en el diseño original: `app.routes.ts` gana `/academico/gestiones-escolares[, /nuevo]` (`roleGuard` `ADMIN`); `shell.component.ts` gana el enlace "Gestión Escolar" junto a "Usuarios". Sin delta de backend. Verificación: `ng build` → verde, 2 lazy chunks nuevos (`gestiones-escolares-list-page`, `gestion-escolar-create-page`); `ng test` no ejecutable en este entorno (Vitest sin paquete de browser instalado, misma limitación documentada en prompts previos de UI). Fila de índice y trazabilidad actualizan estado/métricas. Sin filas nuevas en el índice. `FSD-UC-012` cierra su implementación **completa** (backend + UI). Propagado a `docs/design/DD-UC-009.md` (DoD 100%, v1.0→v1.1) y `docs/product/DTP.md` (v1.17→v1.18). Total prompt-contratos activos: 46 (sin cambio). |

@@ -2,25 +2,31 @@ import { Component, OnInit, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { TenantResponse } from './tenant.model';
+import { GestionEscolarResponse } from './gestion-escolar.model';
 import { ApiBase } from '../../core/api/api-base';
 import { PageResponse } from '../../core/api/page-response.model';
 
 /**
- * Página de lista de Tenants — consola SysAdmin.
- * GET /api/v1/plataforma/tenants (DD-UC-004 §2), con filtros y paginación (DD-UC-007,
- * patrón reutilizable): `q` busca por nombre, `estado` es un filtro exacto.
+ * Página de lista de Gestiones Escolares — consola Admin de tenant.
+ * GET /api/v1/gestiones-escolares (DD-UC-008 §2), con filtros y paginación
+ * (DD-UC-007, patron reutilizable): `q` busca por nombre, `estado` es un filtro exacto.
+ *
+ * A diferencia del dialogo de cambio de estado de Tenant (que ofrece las 3
+ * opciones siempre porque cualquier transicion es valida alli), aqui el
+ * dialogo solo ofrece las transiciones validas del estado actual
+ * (transicionesValidas), reflejando la maquina de estados de
+ * GestionEscolar.cambiarEstado() (DD-UC-009 §2/§3).
  */
 @Component({
-  selector: 'app-tenants-list-page',
+  selector: 'app-gestiones-escolares-list-page',
   standalone: true,
   imports: [RouterLink, FormsModule],
   template: `
     <div style="max-width: 1000px; margin: 0 auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2>Tenants</h2>
-        <a routerLink="/plataforma/tenants/nuevo" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; text-decoration: none; border-radius: 4px;">
-          + Nuevo Tenant
+        <h2>Gestión Escolar</h2>
+        <a routerLink="/academico/gestiones-escolares/nuevo" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; text-decoration: none; border-radius: 4px;">
+          + Nueva Gestión Escolar
         </a>
       </div>
 
@@ -43,7 +49,7 @@ import { PageResponse } from '../../core/api/page-response.model';
       </div>
 
       @if (loading()) {
-        <p>Cargando tenants...</p>
+        <p>Cargando gestiones escolares...</p>
       }
 
       @if (errorMsg()) {
@@ -52,38 +58,38 @@ import { PageResponse } from '../../core/api/page-response.model';
         </div>
       }
 
-      @if (!loading() && tenants().length === 0 && !errorMsg()) {
-        <p>No hay tenants que coincidan con los filtros.</p>
+      @if (!loading() && gestiones().length === 0 && !errorMsg()) {
+        <p>No hay gestiones escolares que coincidan con los filtros.</p>
       }
 
-      @if (tenants().length > 0) {
+      @if (gestiones().length > 0) {
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr style="background: #f5f5f5;">
               <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Nombre</th>
               <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Estado</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Inicio suscripción</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Vencimiento</th>
+              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Fecha inicio</th>
+              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Fecha fin</th>
               <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            @for (tenant of tenants(); track tenant.id) {
+            @for (gestion of gestiones(); track gestion.id) {
               <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 0.5rem;">{{ tenant.nombre }}</td>
+                <td style="padding: 0.5rem;">{{ gestion.nombre }}</td>
                 <td style="padding: 0.5rem;">
-                  <span [style.color]="estadoColor(tenant.estado)">{{ tenant.estado }}</span>
+                  <span [style.color]="estadoColor(gestion.estado)">{{ gestion.estado }}</span>
                 </td>
-                <td style="padding: 0.5rem;">{{ tenant.fechaInicioSuscripcion }}</td>
-                <td style="padding: 0.5rem;">{{ tenant.fechaVencimientoSuscripcion }}</td>
-                <td style="padding: 0.5rem; display: flex; gap: 0.5rem;">
-                  <a [routerLink]="['/plataforma/tenants', tenant.id, 'admin']"
-                     style="color: #1e3a5f; text-decoration: underline; cursor: pointer;">
-                    Crear admin
-                  </a>
-                  <button (click)="cambiarEstado(tenant)" style="cursor: pointer; font-size: 0.85rem;">
-                    Cambiar estado
-                  </button>
+                <td style="padding: 0.5rem;">{{ gestion.fechaInicio }}</td>
+                <td style="padding: 0.5rem;">{{ gestion.fechaFin }}</td>
+                <td style="padding: 0.5rem;">
+                  @if (transicionesValidas(gestion.estado).length > 0) {
+                    <button (click)="cambiarEstado(gestion)" style="cursor: pointer; font-size: 0.85rem;">
+                      Cambiar estado
+                    </button>
+                  } @else {
+                    <span style="color: #999; font-size: 0.85rem;">Sin transiciones</span>
+                  }
                 </td>
               </tr>
             }
@@ -92,7 +98,7 @@ import { PageResponse } from '../../core/api/page-response.model';
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
           <span style="color: #666; font-size: 0.9rem;">
-            {{ totalElements() }} tenant(s) — página {{ page() + 1 }} de {{ totalPaginas() || 1 }}
+            {{ totalElements() }} gestión(es) — página {{ page() + 1 }} de {{ totalPaginas() || 1 }}
           </span>
           <div style="display: flex; gap: 0.5rem;">
             <button (click)="irAPagina(page() - 1)" [disabled]="page() === 0" style="padding: 0.3rem 0.8rem; cursor: pointer;">
@@ -109,8 +115,9 @@ import { PageResponse } from '../../core/api/page-response.model';
         <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">
           <div style="background:white;padding:2rem;border-radius:8px;min-width:320px;">
             <h3>Cambiar estado de "{{ estadoDialog()!.nombre }}"</h3>
+            <p style="color:#666;font-size:0.85rem;">Estado actual: {{ estadoDialog()!.estado }}</p>
             <div style="display:flex;flex-direction:column;gap:0.5rem;margin:1rem 0;">
-              @for (op of estadoOpciones; track op) {
+              @for (op of opcionesDialog(); track op) {
                 <label style="cursor:pointer;">
                   <input type="radio" name="estado" [value]="op" [(ngModel)]="nuevoEstado" /> {{ op }}
                 </label>
@@ -132,11 +139,12 @@ import { PageResponse } from '../../core/api/page-response.model';
     </div>
   `,
 })
-export class TenantsListPage implements OnInit {
-  tenants = signal<TenantResponse[]>([]);
+export class GestionesEscolaresListPage implements OnInit {
+  gestiones = signal<GestionEscolarResponse[]>([]);
   loading = signal(true);
   errorMsg = signal<string | null>(null);
-  estadoDialog = signal<TenantResponse | null>(null);
+  estadoDialog = signal<GestionEscolarResponse | null>(null);
+  opcionesDialog = signal<string[]>([]);
   nuevoEstado = '';
   estadoError = signal<string | null>(null);
   estadoSaving = signal(false);
@@ -151,33 +159,33 @@ export class TenantsListPage implements OnInit {
   totalPaginas = signal(0);
   private readonly tamanoPagina = 20;
 
-  readonly estadoOpciones = ['ACTIVO', 'SUSPENDIDO', 'VENCIDO'];
+  readonly estadoOpciones = ['PLANIFICACION', 'ACTIVA', 'CERRADA'];
 
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
-    this.cargarTenants();
+    this.cargarGestiones();
   }
 
   aplicarFiltros(): void {
     this.page.set(0);
-    this.cargarTenants();
+    this.cargarGestiones();
   }
 
   limpiarFiltros(): void {
     this.filtroQ = '';
     this.filtroEstado = '';
     this.page.set(0);
-    this.cargarTenants();
+    this.cargarGestiones();
   }
 
   irAPagina(nuevaPagina: number): void {
     if (nuevaPagina < 0 || nuevaPagina >= this.totalPaginas()) return;
     this.page.set(nuevaPagina);
-    this.cargarTenants();
+    this.cargarGestiones();
   }
 
-  cargarTenants(): void {
+  cargarGestiones(): void {
     this.loading.set(true);
     this.errorMsg.set(null);
 
@@ -185,28 +193,45 @@ export class TenantsListPage implements OnInit {
     if (this.filtroQ.trim()) params = params.set('q', this.filtroQ.trim());
     if (this.filtroEstado) params = params.set('estado', this.filtroEstado);
 
-    this.http.get<PageResponse<TenantResponse>>(`${ApiBase.BASE}/plataforma/tenants`, { params }).subscribe({
+    this.http.get<PageResponse<GestionEscolarResponse>>(`${ApiBase.BASE}/gestiones-escolares`, { params }).subscribe({
       next: (respuesta) => {
-        this.tenants.set(respuesta.content);
+        this.gestiones.set(respuesta.content);
         this.totalElements.set(respuesta.totalElements);
         this.totalPaginas.set(respuesta.totalPages);
         this.loading.set(false);
       },
       error: () => {
-        this.errorMsg.set('Error al cargar los tenants.');
+        this.errorMsg.set('Error al cargar las gestiones escolares.');
         this.loading.set(false);
       },
     });
   }
 
   estadoColor(estado: string): string {
-    return estado === 'ACTIVO' ? '#2e7d32' : estado === 'SUSPENDIDO' ? '#e65100' : '#757575';
+    return estado === 'ACTIVA' ? '#2e7d32' : estado === 'PLANIFICACION' ? '#e65100' : '#757575';
   }
 
-  cambiarEstado(tenant: TenantResponse): void {
-    this.nuevoEstado = tenant.estado;
+  /**
+   * Refleja la maquina de estados de GestionEscolar.cambiarEstado() (backend,
+   * DD-UC-008): solo estas transiciones son validas. CERRADA no tiene salida
+   * en este slice.
+   */
+  transicionesValidas(estadoActual: string): string[] {
+    switch (estadoActual) {
+      case 'PLANIFICACION':
+        return ['ACTIVA'];
+      case 'ACTIVA':
+        return ['CERRADA', 'PLANIFICACION'];
+      default:
+        return [];
+    }
+  }
+
+  cambiarEstado(gestion: GestionEscolarResponse): void {
+    this.opcionesDialog.set(this.transicionesValidas(gestion.estado));
+    this.nuevoEstado = '';
     this.estadoError.set(null);
-    this.estadoDialog.set(tenant);
+    this.estadoDialog.set(gestion);
   }
 
   cerrarDialog(): void {
@@ -215,18 +240,18 @@ export class TenantsListPage implements OnInit {
   }
 
   confirmarEstado(): void {
-    const tenant = this.estadoDialog();
-    if (!tenant || !this.nuevoEstado) return;
+    const gestion = this.estadoDialog();
+    if (!gestion || !this.nuevoEstado) return;
     this.estadoSaving.set(true);
     this.estadoError.set(null);
 
     this.http
-      .patch<TenantResponse>(`${ApiBase.BASE}/plataforma/tenants/${tenant.id}/estado`, {
+      .patch<GestionEscolarResponse>(`${ApiBase.BASE}/gestiones-escolares/${gestion.id}/estado`, {
         estado: this.nuevoEstado,
       })
       .subscribe({
         next: (updated) => {
-          this.tenants.update((list) => list.map((t) => (t.id === updated.id ? updated : t)));
+          this.gestiones.update((list) => list.map((g) => (g.id === updated.id ? updated : g)));
           this.estadoSaving.set(false);
           this.cerrarDialog();
         },

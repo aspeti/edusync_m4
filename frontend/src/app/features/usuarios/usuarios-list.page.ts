@@ -1,26 +1,50 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { UsuarioResponse } from './usuario.model';
 import { ApiBase } from '../../core/api/api-base';
+import { PageResponse } from '../../core/api/page-response.model';
 
 /**
  * Página de lista de Usuarios — consola Admin del tenant.
- * GET /api/v1/usuarios (DD-UC-006 §2). Mismo patrón sin design system de
- * TenantsListPage (DD-UC-004).
+ * GET /api/v1/usuarios (DD-UC-006 §2), con filtros y paginación (DD-UC-007, patrón
+ * reutilizable): `q` busca por nombre o email, `activo` y `rol` son filtros exactos.
  */
 @Component({
   selector: 'app-usuarios-list-page',
   standalone: true,
   imports: [RouterLink, FormsModule],
   template: `
-    <div style="max-width: 900px; margin: 0 auto;">
+    <div style="max-width: 1000px; margin: 0 auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h2>Usuarios</h2>
         <a routerLink="/usuarios/nuevo" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; text-decoration: none; border-radius: 4px;">
           + Nuevo Usuario
         </a>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; background: #fafafa; padding: 0.75rem; border-radius: 4px;">
+        <input
+          type="text"
+          placeholder="Buscar por nombre o email..."
+          [(ngModel)]="filtroQ"
+          (keyup.enter)="aplicarFiltros()"
+          style="padding: 0.4rem; flex: 1; min-width: 200px;"
+        />
+        <select [(ngModel)]="filtroRol" style="padding: 0.4rem;">
+          <option value="">Todos los roles</option>
+          @for (rol of rolesDisponibles; track rol) {
+            <option [value]="rol">{{ rol }}</option>
+          }
+        </select>
+        <select [(ngModel)]="filtroActivo" style="padding: 0.4rem;">
+          <option value="">Todos los estados</option>
+          <option value="true">Activos</option>
+          <option value="false">Inactivos</option>
+        </select>
+        <button (click)="aplicarFiltros()" style="padding: 0.4rem 1rem; cursor: pointer;">Buscar</button>
+        <button (click)="limpiarFiltros()" style="padding: 0.4rem 1rem; cursor: pointer;">Limpiar</button>
       </div>
 
       @if (loading()) {
@@ -40,7 +64,7 @@ import { ApiBase } from '../../core/api/api-base';
       }
 
       @if (!loading() && usuarios().length === 0 && !errorMsg()) {
-        <p>No hay usuarios registrados aún.</p>
+        <p>No hay usuarios que coincidan con los filtros.</p>
       }
 
       @if (usuarios().length > 0) {
@@ -80,6 +104,20 @@ import { ApiBase } from '../../core/api/api-base';
             }
           </tbody>
         </table>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+          <span style="color: #666; font-size: 0.9rem;">
+            {{ totalElements() }} usuario(s) — página {{ page() + 1 }} de {{ totalPaginas() || 1 }}
+          </span>
+          <div style="display: flex; gap: 0.5rem;">
+            <button (click)="irAPagina(page() - 1)" [disabled]="page() === 0" style="padding: 0.3rem 0.8rem; cursor: pointer;">
+              ← Anterior
+            </button>
+            <button (click)="irAPagina(page() + 1)" [disabled]="page() + 1 >= totalPaginas()" style="padding: 0.3rem 0.8rem; cursor: pointer;">
+              Siguiente →
+            </button>
+          </div>
+        </div>
       }
 
       @if (rolesDialog()) {
@@ -124,6 +162,17 @@ export class UsuariosListPage implements OnInit {
   resetInfoMsg = signal<string | null>(null);
   reseteando = signal<string | null>(null);
 
+  // Filtros (DD-UC-007): `q` busca por nombre o email; `rol`/`activo` son filtros exactos.
+  filtroQ = '';
+  filtroRol = '';
+  filtroActivo = '';
+
+  // Paginación (DD-UC-007).
+  page = signal(0);
+  totalElements = signal(0);
+  totalPaginas = signal(0);
+  private readonly tamanoPagina = 20;
+
   rolesDialog = signal<UsuarioResponse | null>(null);
   rolesSeleccionados: string[] = [];
   rolesError = signal<string | null>(null);
@@ -138,12 +187,39 @@ export class UsuariosListPage implements OnInit {
     this.cargarUsuarios();
   }
 
+  aplicarFiltros(): void {
+    this.page.set(0);
+    this.cargarUsuarios();
+  }
+
+  limpiarFiltros(): void {
+    this.filtroQ = '';
+    this.filtroRol = '';
+    this.filtroActivo = '';
+    this.page.set(0);
+    this.cargarUsuarios();
+  }
+
+  irAPagina(nuevaPagina: number): void {
+    if (nuevaPagina < 0 || nuevaPagina >= this.totalPaginas()) return;
+    this.page.set(nuevaPagina);
+    this.cargarUsuarios();
+  }
+
   cargarUsuarios(): void {
     this.loading.set(true);
     this.errorMsg.set(null);
-    this.http.get<UsuarioResponse[]>(`${ApiBase.BASE}/usuarios`).subscribe({
-      next: (data) => {
-        this.usuarios.set(data);
+
+    let params = new HttpParams().set('page', this.page()).set('size', this.tamanoPagina);
+    if (this.filtroQ.trim()) params = params.set('q', this.filtroQ.trim());
+    if (this.filtroRol) params = params.set('rol', this.filtroRol);
+    if (this.filtroActivo) params = params.set('activo', this.filtroActivo);
+
+    this.http.get<PageResponse<UsuarioResponse>>(`${ApiBase.BASE}/usuarios`, { params }).subscribe({
+      next: (respuesta) => {
+        this.usuarios.set(respuesta.content);
+        this.totalElements.set(respuesta.totalElements);
+        this.totalPaginas.set(respuesta.totalPages);
         this.loading.set(false);
       },
       error: () => {

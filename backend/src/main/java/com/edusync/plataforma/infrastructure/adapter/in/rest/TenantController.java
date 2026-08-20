@@ -7,17 +7,21 @@ import com.edusync.plataforma.application.port.in.CrearAdminTenantUseCase;
 import com.edusync.plataforma.application.port.in.ListarTenantsUseCase;
 import com.edusync.plataforma.application.port.in.RegistrarTenantCommand;
 import com.edusync.plataforma.application.port.in.RegistrarTenantUseCase;
+import com.edusync.plataforma.application.port.in.TenantFiltro;
 import com.edusync.plataforma.domain.EstadoTenant;
 import com.edusync.plataforma.domain.Tenant;
 import com.edusync.plataforma.domain.TenantId;
+import com.edusync.shared.PageQuery;
 import com.edusync.shared.exception.DomainException;
+import com.edusync.shared.web.PageResponse;
+import com.edusync.shared.web.PaginacionParams;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -51,17 +55,19 @@ public class TenantController {
   @GetMapping
   @PreAuthorize("hasRole('SYSADMIN')")
   @Operation(
-      summary = "Listar todos los Tenants",
-      description = "Devuelve la lista completa de Tenants para la consola SysAdmin (DD-UC-004 §2).")
-  @ApiResponse(responseCode = "200", description = "Lista de Tenants")
+      summary = "Listar Tenants (filtrable y paginado)",
+      description =
+          "Consola SysAdmin (DD-UC-004 §2). Filtros y paginacion opcionales (DD-UC-007): sin "
+              + "query params, comportamiento identico al listado completo previo "
+              + "(page=0, size=20).")
+  @ApiResponse(responseCode = "200", description = "Pagina de Tenants")
   @ApiResponse(responseCode = "401", description = "Sin autenticacion")
   @ApiResponse(responseCode = "403", description = "Rol insuficiente (requiere SYSADMIN)")
-  public ResponseEntity<List<TenantResponse>> listar() {
-    List<TenantResponse> tenants = listarTenantsUseCase.listar()
-        .stream()
-        .map(this::aResponse)
-        .toList();
-    return ResponseEntity.ok(tenants);
+  public ResponseEntity<PageResponse<TenantResponse>> listar(
+      @ParameterObject TenantFiltro filtro, @ParameterObject PaginacionParams paginacion) {
+    var resultado = listarTenantsUseCase.listar(
+        filtro, PageQuery.of(paginacion.page(), paginacion.size()));
+    return ResponseEntity.ok(PageResponse.from(resultado, this::aResponse));
   }
 
   @PostMapping

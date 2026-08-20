@@ -1,15 +1,21 @@
 package com.edusync.identidad.infrastructure.adapter.out.persistence;
 
 import com.edusync.identidad.UsuarioId;
+import com.edusync.identidad.application.port.in.UsuarioFiltro;
 import com.edusync.identidad.application.port.out.UsuarioRepositoryPort;
 import com.edusync.identidad.domain.Rol;
 import com.edusync.identidad.domain.Usuario;
+import com.edusync.shared.PageQuery;
+import com.edusync.shared.PageResult;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 /**
@@ -49,6 +55,16 @@ class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
   @Override
   public List<Usuario> listarPorTenant(UUID tenantId) {
     return jpaRepository.findByTenantId(tenantId).stream().map(this::aDominio).toList();
+  }
+
+  @Override
+  public PageResult<Usuario> listarPorTenant(UUID tenantId, UsuarioFiltro filtro, PageQuery pageQuery) {
+    Specification<UsuarioJpaEntity> spec =
+        UsuarioSpecifications.deTenant(tenantId).and(UsuarioSpecifications.conFiltro(filtro));
+    Page<UsuarioJpaEntity> pagina =
+        jpaRepository.findAll(spec, PageRequest.of(pageQuery.page(), pageQuery.size()));
+    List<Usuario> contenido = pagina.getContent().stream().map(this::aDominio).toList();
+    return PageResult.of(contenido, pageQuery, pagina.getTotalElements());
   }
 
   /**

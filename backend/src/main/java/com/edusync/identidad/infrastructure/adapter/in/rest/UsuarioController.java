@@ -7,18 +7,22 @@ import com.edusync.identidad.application.port.in.CambiarEstadoUsuarioUseCase;
 import com.edusync.identidad.application.port.in.CrearUsuarioUseCase;
 import com.edusync.identidad.application.port.in.IniciarRestablecimientoPasswordUseCase;
 import com.edusync.identidad.application.port.in.ListarUsuariosUseCase;
+import com.edusync.identidad.application.port.in.UsuarioFiltro;
 import com.edusync.identidad.domain.Rol;
 import com.edusync.identidad.domain.Usuario;
+import com.edusync.shared.PageQuery;
 import com.edusync.shared.exception.DomainException;
 import com.edusync.shared.tenant.TenantContextProvider;
+import com.edusync.shared.web.PageResponse;
+import com.edusync.shared.web.PaginacionParams;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -69,13 +73,18 @@ public class UsuarioController {
 
   @GetMapping
   @PreAuthorize("hasRole('ADMIN')")
-  @Operation(summary = "Listar usuarios del tenant", description = "Scoped al tenant del Admin autenticado (DD-UC-005 §1).")
-  @ApiResponse(responseCode = "200", description = "Lista de usuarios")
-  public ResponseEntity<List<UsuarioResponse>> listar() {
-    List<UsuarioResponse> usuarios = listarUsuariosUseCase.listar(tenantActual()).stream()
-        .map(this::aResponse)
-        .toList();
-    return ResponseEntity.ok(usuarios);
+  @Operation(
+      summary = "Listar usuarios del tenant (filtrable y paginado)",
+      description =
+          "Scoped al tenant del Admin autenticado (DD-UC-005 §1). Filtros y paginacion "
+              + "opcionales (DD-UC-007): sin query params, comportamiento identico al listado "
+              + "completo previo (page=0, size=20).")
+  @ApiResponse(responseCode = "200", description = "Pagina de usuarios")
+  public ResponseEntity<PageResponse<UsuarioResponse>> listar(
+      @ParameterObject UsuarioFiltro filtro, @ParameterObject PaginacionParams paginacion) {
+    var resultado = listarUsuariosUseCase.listar(
+        tenantActual(), filtro, PageQuery.of(paginacion.page(), paginacion.size()));
+    return ResponseEntity.ok(PageResponse.from(resultado, this::aResponse));
   }
 
   @PatchMapping("/{id}/roles")

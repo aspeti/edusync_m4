@@ -14,8 +14,8 @@ import com.edusync.plataforma.infrastructure.adapter.in.rest.AdminCreadoResponse
 import com.edusync.plataforma.infrastructure.adapter.in.rest.CrearAdminTenantRequest;
 import com.edusync.plataforma.infrastructure.adapter.in.rest.RegistrarTenantRequest;
 import com.edusync.plataforma.infrastructure.adapter.in.rest.TenantResponse;
+import com.edusync.shared.web.PageResponse;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,13 +86,16 @@ class UsuarioIntegrationTest {
     var usuarioId = creado.getBody().id();
 
     // Listado scoped al tenant.
-    ResponseEntity<List<UsuarioResponse>> lista = restTemplate.exchange(
+    ResponseEntity<PageResponse<UsuarioResponse>> lista = restTemplate.exchange(
         "/api/v1/usuarios",
         HttpMethod.GET,
         new HttpEntity<>(adminTenantA),
-        new ParameterizedTypeReference<List<UsuarioResponse>>() {});
+        new ParameterizedTypeReference<PageResponse<UsuarioResponse>>() {});
     assertThat(lista.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(lista.getBody()).extracting(UsuarioResponse::id).contains(usuarioId);
+    assertThat(lista.getBody()).isNotNull();
+    assertThat(lista.getBody().content()).extracting(UsuarioResponse::id).contains(usuarioId);
+    assertThat(lista.getBody().page()).isZero();
+    assertThat(lista.getBody().size()).isEqualTo(20);
 
     // PATCH roles.
     ResponseEntity<UsuarioResponse> rolesActualizados = restTemplate.exchange(
@@ -124,12 +127,65 @@ class UsuarioIntegrationTest {
     assertThat(patchCrossTenant.getBody()).isNotNull();
     assertThat(patchCrossTenant.getBody().codigo()).isEqualTo("E_USUARIO_NO_ENCONTRADO");
 
-    ResponseEntity<List<UsuarioResponse>> listaTenantB = restTemplate.exchange(
+    ResponseEntity<PageResponse<UsuarioResponse>> listaTenantB = restTemplate.exchange(
         "/api/v1/usuarios",
         HttpMethod.GET,
         new HttpEntity<>(adminTenantB),
-        new ParameterizedTypeReference<List<UsuarioResponse>>() {});
-    assertThat(listaTenantB.getBody()).extracting(UsuarioResponse::id).doesNotContain(usuarioId);
+        new ParameterizedTypeReference<PageResponse<UsuarioResponse>>() {});
+    assertThat(listaTenantB.getBody()).isNotNull();
+    assertThat(listaTenantB.getBody().content()).extracting(UsuarioResponse::id).doesNotContain(usuarioId);
+  }
+
+  @Test
+  void listarUsuariosConFiltroQPorEmailYPaginacion() {
+    HttpHeaders adminHeaders = crearTenantYAutenticarAdmin("Colegio Filtros", "admin-filtros@colegio.edu.bo");
+
+    restTemplate.exchange(
+        "/api/v1/usuarios",
+        HttpMethod.POST,
+        new HttpEntity<>(
+            new CrearUsuarioRequest("Roberto Fernandez", "roberto.fernandez@colegio.edu.bo", "secreto123", Set.of("PROFESOR")),
+            adminHeaders),
+        UsuarioResponse.class);
+    restTemplate.exchange(
+        "/api/v1/usuarios",
+        HttpMethod.POST,
+        new HttpEntity<>(
+            new CrearUsuarioRequest("Maria Elena Rojas", "maria.rojas@colegio.edu.bo", "secreto123", Set.of("SECRETARIA")),
+            adminHeaders),
+        UsuarioResponse.class);
+
+    // Filtro q por email (sin coincidir con el nombre).
+    ResponseEntity<PageResponse<UsuarioResponse>> porEmail = restTemplate.exchange(
+        "/api/v1/usuarios?q=roberto.fernandez",
+        HttpMethod.GET,
+        new HttpEntity<>(adminHeaders),
+        new ParameterizedTypeReference<PageResponse<UsuarioResponse>>() {});
+    assertThat(porEmail.getBody()).isNotNull();
+    assertThat(porEmail.getBody().content()).extracting(UsuarioResponse::email)
+        .containsExactly("roberto.fernandez@colegio.edu.bo");
+
+    // Filtro por rol.
+    ResponseEntity<PageResponse<UsuarioResponse>> porRol = restTemplate.exchange(
+        "/api/v1/usuarios?rol=SECRETARIA",
+        HttpMethod.GET,
+        new HttpEntity<>(adminHeaders),
+        new ParameterizedTypeReference<PageResponse<UsuarioResponse>>() {});
+    assertThat(porRol.getBody()).isNotNull();
+    assertThat(porRol.getBody().content()).extracting(UsuarioResponse::email)
+        .containsExactly("maria.rojas@colegio.edu.bo");
+
+    // Paginacion: size=1 devuelve 1 elemento y totalElements >= 2.
+    ResponseEntity<PageResponse<UsuarioResponse>> paginado = restTemplate.exchange(
+        "/api/v1/usuarios?page=0&size=1",
+        HttpMethod.GET,
+        new HttpEntity<>(adminHeaders),
+        new ParameterizedTypeReference<PageResponse<UsuarioResponse>>() {});
+    assertThat(paginado.getBody()).isNotNull();
+    assertThat(paginado.getBody().content()).hasSize(1);
+    assertThat(paginado.getBody().size()).isEqualTo(1);
+    assertThat(paginado.getBody().totalElements()).isGreaterThanOrEqualTo(2);
+    assertThat(paginado.getBody().totalPages()).isGreaterThanOrEqualTo(2);
   }
 
   @Test

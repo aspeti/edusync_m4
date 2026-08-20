@@ -10,8 +10,8 @@ import com.edusync.plataforma.infrastructure.adapter.in.rest.CambiarEstadoTenant
 import com.edusync.plataforma.infrastructure.adapter.in.rest.CrearAdminTenantRequest;
 import com.edusync.plataforma.infrastructure.adapter.in.rest.RegistrarTenantRequest;
 import com.edusync.plataforma.infrastructure.adapter.in.rest.TenantResponse;
+import com.edusync.shared.web.PageResponse;
 import java.time.LocalDate;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -171,15 +171,73 @@ class TenantIntegrationTest {
             sysAdminHeaders),
         TenantResponse.class);
 
-    ResponseEntity<List<TenantResponse>> response = restTemplate.exchange(
+    ResponseEntity<PageResponse<TenantResponse>> response = restTemplate.exchange(
         "/api/v1/plataforma/tenants",
         HttpMethod.GET,
         new HttpEntity<>(sysAdminHeaders),
-        new ParameterizedTypeReference<List<TenantResponse>>() {});
+        new ParameterizedTypeReference<PageResponse<TenantResponse>>() {});
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody()).isNotEmpty();
+    assertThat(response.getBody().content()).isNotEmpty();
+    assertThat(response.getBody().page()).isZero();
+    assertThat(response.getBody().size()).isEqualTo(20);
+  }
+
+  @Test
+  void listarTenantsConFiltroQYEstadoYPaginacion() {
+    HttpHeaders sysAdminHeaders = autenticarComo(sysAdminEmail, sysAdminPassword);
+
+    restTemplate.exchange(
+        "/api/v1/plataforma/tenants",
+        HttpMethod.POST,
+        new HttpEntity<>(
+            new RegistrarTenantRequest("Colegio Norte Filtro", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)),
+            sysAdminHeaders),
+        TenantResponse.class);
+    ResponseEntity<TenantResponse> suspendidoResponse = restTemplate.exchange(
+        "/api/v1/plataforma/tenants",
+        HttpMethod.POST,
+        new HttpEntity<>(
+            new RegistrarTenantRequest("Colegio Sur Filtro", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)),
+            sysAdminHeaders),
+        TenantResponse.class);
+    var idSuspendido = suspendidoResponse.getBody().id();
+    restTemplate.exchange(
+        "/api/v1/plataforma/tenants/" + idSuspendido + "/estado",
+        HttpMethod.PATCH,
+        new HttpEntity<>(new CambiarEstadoTenantRequest("SUSPENDIDO"), sysAdminHeaders),
+        TenantResponse.class);
+
+    // Filtro q por nombre.
+    ResponseEntity<PageResponse<TenantResponse>> porNombre = restTemplate.exchange(
+        "/api/v1/plataforma/tenants?q=norte filtro",
+        HttpMethod.GET,
+        new HttpEntity<>(sysAdminHeaders),
+        new ParameterizedTypeReference<PageResponse<TenantResponse>>() {});
+    assertThat(porNombre.getBody()).isNotNull();
+    assertThat(porNombre.getBody().content()).extracting(TenantResponse::nombre)
+        .containsExactly("Colegio Norte Filtro");
+
+    // Filtro por estado.
+    ResponseEntity<PageResponse<TenantResponse>> porEstado = restTemplate.exchange(
+        "/api/v1/plataforma/tenants?estado=SUSPENDIDO",
+        HttpMethod.GET,
+        new HttpEntity<>(sysAdminHeaders),
+        new ParameterizedTypeReference<PageResponse<TenantResponse>>() {});
+    assertThat(porEstado.getBody()).isNotNull();
+    assertThat(porEstado.getBody().content()).extracting(TenantResponse::id).contains(idSuspendido);
+    assertThat(porEstado.getBody().content()).allSatisfy(t -> assertThat(t.estado()).isEqualTo("SUSPENDIDO"));
+
+    // Paginacion: size=1.
+    ResponseEntity<PageResponse<TenantResponse>> paginado = restTemplate.exchange(
+        "/api/v1/plataforma/tenants?page=0&size=1",
+        HttpMethod.GET,
+        new HttpEntity<>(sysAdminHeaders),
+        new ParameterizedTypeReference<PageResponse<TenantResponse>>() {});
+    assertThat(paginado.getBody()).isNotNull();
+    assertThat(paginado.getBody().content()).hasSize(1);
+    assertThat(paginado.getBody().totalElements()).isGreaterThanOrEqualTo(2);
   }
 
   @Test

@@ -1,7 +1,10 @@
 package com.edusync.identidad.application.port.out;
 
 import com.edusync.identidad.UsuarioId;
+import com.edusync.identidad.application.port.in.UsuarioFiltro;
 import com.edusync.identidad.domain.Usuario;
+import com.edusync.shared.PageQuery;
+import com.edusync.shared.PageResult;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,6 +37,13 @@ public interface UsuarioRepositoryPort {
    * patron mitigador documentado arriba): nunca debe depender solo de la politica RLS.
    */
   List<Usuario> listarPorTenant(UUID tenantId);
+
+  /**
+   * Version paginada y filtrable de {@link #listarPorTenant(UUID)} (DD-UC-007), usada por
+   * {@code GET /api/v1/usuarios}. Misma mitigacion obligatoria: filtra explicitamente por
+   * {@code tenantId}, nunca depende solo de RLS.
+   */
+  PageResult<Usuario> listarPorTenant(UUID tenantId, UsuarioFiltro filtro, PageQuery pageQuery);
 
   Usuario guardar(Usuario usuario);
 }

@@ -1,7 +1,10 @@
 package com.edusync.plataforma.application.port.out;
 
+import com.edusync.plataforma.application.port.in.TenantFiltro;
 import com.edusync.plataforma.domain.Tenant;
 import com.edusync.plataforma.domain.TenantId;
+import com.edusync.shared.PageQuery;
+import com.edusync.shared.PageResult;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -22,9 +25,9 @@ public interface TenantRepositoryPort {
   List<Tenant> listarPendientesDeVencer(LocalDate fechaReferencia);
 
   /**
-   * Devuelve todos los Tenants registrados (sin filtro de estado).
+   * Devuelve una pagina de Tenants, opcionalmente filtrada por nombre/estado (DD-UC-007).
    * Usado exclusivamente por {@code ListarTenantsUseCase} / consola SysAdmin
    * ({@code DD-UC-004} §2).
    */
-  List<Tenant> listarTodos();
+  PageResult<Tenant> listarTodos(TenantFiltro filtro, PageQuery pageQuery);
 }

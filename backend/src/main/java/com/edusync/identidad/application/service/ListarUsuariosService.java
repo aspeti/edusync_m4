@@ -1,9 +1,11 @@
 package com.edusync.identidad.application.service;
 
 import com.edusync.identidad.application.port.in.ListarUsuariosUseCase;
+import com.edusync.identidad.application.port.in.UsuarioFiltro;
 import com.edusync.identidad.application.port.out.UsuarioRepositoryPort;
 import com.edusync.identidad.domain.Usuario;
-import java.util.List;
+import com.edusync.shared.PageQuery;
+import com.edusync.shared.PageResult;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,7 +19,7 @@ public class ListarUsuariosService implements ListarUsuariosUseCase {
 
   @Override
   @Transactional(readOnly = true)
-  public List<Usuario> listar(UUID tenantId) {
-    return usuarioRepositoryPort.listarPorTenant(tenantId);
+  public PageResult<Usuario> listar(UUID tenantId, UsuarioFiltro filtro, PageQuery pageQuery) {
+    return usuarioRepositoryPort.listarPorTenant(tenantId, filtro, pageQuery);
   }
 }

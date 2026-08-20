@@ -1,14 +1,19 @@
 package com.edusync.plataforma.infrastructure.adapter.out.persistence;
 
+import com.edusync.plataforma.application.port.in.TenantFiltro;
 import com.edusync.plataforma.application.port.out.TenantRepositoryPort;
 import com.edusync.plataforma.domain.EstadoTenant;
 import com.edusync.plataforma.domain.Tenant;
 import com.edusync.plataforma.domain.TenantId;
+import com.edusync.shared.PageQuery;
+import com.edusync.shared.PageResult;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 /**
@@ -49,11 +54,11 @@ class TenantRepositoryAdapter implements TenantRepositoryPort {
   }
 
   @Override
-  public List<Tenant> listarTodos() {
-    return jpaRepository.findAll()
-        .stream()
-        .map(this::aDominio)
-        .collect(Collectors.toList());
+  public PageResult<Tenant> listarTodos(TenantFiltro filtro, PageQuery pageQuery) {
+    Page<TenantJpaEntity> pagina = jpaRepository.findAll(
+        TenantSpecifications.conFiltro(filtro), PageRequest.of(pageQuery.page(), pageQuery.size()));
+    List<Tenant> contenido = pagina.getContent().stream().map(this::aDominio).collect(Collectors.toList());
+    return PageResult.of(contenido, pageQuery, pagina.getTotalElements());
   }
 
   private Tenant aDominio(TenantJpaEntity entity) {

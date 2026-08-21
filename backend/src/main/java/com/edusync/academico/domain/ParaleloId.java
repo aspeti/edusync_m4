@@ -3,7 +3,7 @@ package com.edusync.academico.domain;
 import java.util.Objects;
 import java.util.UUID;
 
-/** Identidad de un {@link Paralelo}. Interno al modulo (sin uso publico documentado hoy). */
+/** Identidad de un {@link Paralelo}. Interno al modulo. */
 public record ParaleloId(UUID valor) {
 
   public ParaleloId {

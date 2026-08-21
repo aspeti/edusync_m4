@@ -24,7 +24,7 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.6 |
+| **Versión del documento** | v2.7 |
 | **Fecha** | 21/08/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
@@ -650,16 +650,27 @@ Escenario: Institución define 2 bimestres en lugar de 3 trimestres
 
 ### 4.6.8 FSD-UC-018 — Gestión de Materias
 
-- **Trazabilidad:** `PRD-REQ-028`, `PRD-US-026`
+- **Trazabilidad:** `PRD-REQ-028`, `PRD-US-026` — `DD-UC-012` / `PR-IMPL-012` (backend + UI fullstack, 21/08/2026).
 - **Actor principal:** Admin / Secretaria
 - **Precondiciones:** `Curso` existente (§4.6.7).
 - **Disparador:** CRUD de `Materia` y su asignación a `Curso` y a `Profesor`.
 - **Flujo principal:**
   1. `POST /api/v1/materias` con `{nombre}`.
-  2. `POST /api/v1/materias/{id}/asignaciones-curso` con `{cursoId, paraleloId}`.
-  3. `POST /api/v1/materias/{id}/asignaciones-profesor` con `{profesorId, cursoId, paraleloId}`.
+  2. `GET /api/v1/materias` (lista filtrable y paginada del tenant: `q`, `page`, `size`).
+  3. `GET /api/v1/materias/{id}` (detalle).
+  4. `GET /api/v1/materias/profesores-disponibles` (catálogo `{id, nombreCompleto}` de usuarios `PROFESOR` activos del tenant; no es `FSD-UC-019`).
+  5. `POST /api/v1/materias/{id}/asignaciones-curso` con `{cursoId, paraleloId}`.
+  6. `GET /api/v1/materias/{id}/asignaciones-curso` (lista simple, sin paginar).
+  7. `POST /api/v1/materias/{id}/asignaciones-profesor` con `{profesorId, cursoId, paraleloId}`.
+  8. `GET /api/v1/materias/{id}/asignaciones-profesor` (lista simple, sin paginar).
 - **Flujos alternativos / excepciones:**
   - **A1 — Asignación de profesor a materia sin curso previamente asignado:** HTTP 409 `E_MATERIA_SIN_CURSO`.
+  - **A2 — Materia inexistente o de otro tenant:** HTTP 404 `E_MATERIA_NO_ENCONTRADA`.
+  - **A3 — Curso / Paralelo / Profesor inexistente o de otro tenant:** HTTP 404 `E_CURSO_NO_ENCONTRADO` / `E_PARALELO_NO_ENCONTRADO` / `E_PROFESOR_NO_ENCONTRADO`.
+- **Notas de implementación (`DD-UC-012`):**
+  - `Materia` es catálogo del tenant; las FKs a curso/profesor viven en aggregates de asignación independientes (no embebidas en `Materia`).
+  - `GET /api/v1/cursos` y `GET /api/v1/cursos/{id}/paralelos` también admiten `SECRETARIA` (los `POST` de Curso/Paralelo siguen `ADMIN`).
+  - `PATCH`/`DELETE` de Materia o asignaciones permanecen fuera de este slice.
 - **Postcondiciones:** `Materia` con `Curso`/`Paralelo` y `Profesor` asignados; prerequisito de `FSD-UC-015`.
 - **Reglas de negocio aplicables:** BR-022.
 
@@ -1369,6 +1380,7 @@ Paso 13 → audit_log entry + notificación
 | v2.4 | 19/07/2026 | Rodrigo Aspeti | `FSD-UC-011` (§4.6.1): se añade al flujo principal el paso de lectura `GET /api/v1/plataforma/tenants` (lista para consola SysAdmin, `DD-UC-004` / `PR-IMPL-004`). Sin cambio de reglas de negocio; solo documenta el endpoint de consulta necesario para la UI. |
 | v2.5 | 04/08/2026 | Rodrigo Aspeti | `FSD-UC-021` (§4.6.11) implementado (backend) en `docs/design/DD-UC-005.md`/`PR-IMPL-005`: se añade al flujo principal el paso de lectura `GET /api/v1/usuarios` (mismo precedente que `GET /tenants` en v2.4); el flujo alternativo **A1** (`E_ASESOR_SIN_CURSO`) se marca explícitamente **diferido** — el rol `ASESOR` ya es asignable, pero la validación de la referencia a `Curso`/`Paralelo` depende del módulo `academico`, bloqueado por `ADR-0009` §3. Sin cambio de reglas de negocio; solo documenta el endpoint de consulta y el alcance real de A1. |
 | v2.6 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-017` (§4.6.7) cierra implementación **completa** (backend + UI): se documentan los pasos de lectura `GET /api/v1/cursos` (filtro `q` + paginación) y `GET /api/v1/cursos/{id}/paralelos` (lista simple), la excepción **A1** `404 E_CURSO_NO_ENCONTRADO`, y la trazabilidad a `DD-UC-010`/`PR-IMPL-010` (backend, 20/08/2026) y `DD-UC-011`/`PR-IMPL-011` (UI, 21/08/2026). Sin cambio de reglas de negocio (`BR-021` vigente); `PATCH`/`DELETE` de `Curso`/`Paralelo` permanecen fuera de este slice. Propagado vía `sync-doc-chain` a `docs/product/DTP.md` y `docs/PROMPT_MAPPING.md`. |
+| v2.7 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-018` (§4.6.8) cierra implementación **completa** (backend + UI fullstack, `DD-UC-012`/`PR-IMPL-012`): se documentan `GET /materias` (filtro `q` + paginación), `GET /materias/{id}`, `GET /materias/profesores-disponibles`, `GET` de asignaciones, A2/A3 404, y la nota de RBAC `SECRETARIA` en los GET de Cursos. Sin cambio de `BR-022`; `PATCH`/`DELETE` y `FSD-UC-019` permanecen fuera. |
 
 ---
 

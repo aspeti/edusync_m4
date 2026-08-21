@@ -5,6 +5,7 @@ import com.edusync.academico.domain.CursoId;
 import com.edusync.academico.domain.Paralelo;
 import com.edusync.academico.domain.ParaleloId;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,13 @@ class ParaleloRepositoryAdapter implements ParaleloRepositoryPort {
         paralelo.getId().valor(), paralelo.getTenantId(), paralelo.getCursoId().valor(), paralelo.getNombre());
     ParaleloJpaEntity guardado = jpaRepository.save(entity);
     return aDominio(guardado);
+  }
+
+  @Override
+  public Optional<Paralelo> buscarPorIdYTenant(ParaleloId id, UUID tenantId) {
+    return jpaRepository.findById(id.valor())
+        .filter(entity -> entity.getTenantId().equals(tenantId))
+        .map(this::aDominio);
   }
 
   @Override

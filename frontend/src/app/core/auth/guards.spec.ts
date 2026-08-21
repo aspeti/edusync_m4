@@ -90,4 +90,36 @@ describe('roleGuard', () => {
     );
     expect(result).toEqual(router.createUrlTree(['/home']));
   });
+
+  it('SECRETARIA entra a data.roles [ADMIN, SECRETARIA]', () => {
+    const secretariaToken =
+      'eyJhbGciOiJIUzI1NiJ9.' +
+      btoa(JSON.stringify({ sub: 'sec@test.com', roles: ['SECRETARIA'], exp: 9999999999, iat: 1 }))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '') +
+      '.sig';
+    sessionStorage.setItem('edusync_access_token', secretariaToken);
+    const route = { data: { roles: ['ADMIN', 'SECRETARIA'] } } as unknown as ActivatedRouteSnapshot;
+    const result = TestBed.runInInjectionContext(() =>
+      roleGuard(route, {} as RouterStateSnapshot)
+    );
+    expect(result).toBe(true);
+  });
+
+  it('PROFESOR no entra a data.roles [ADMIN, SECRETARIA]', () => {
+    const profesorToken =
+      'eyJhbGciOiJIUzI1NiJ9.' +
+      btoa(JSON.stringify({ sub: 'prof@test.com', roles: ['PROFESOR'], exp: 9999999999, iat: 1 }))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '') +
+      '.sig';
+    sessionStorage.setItem('edusync_access_token', profesorToken);
+    const route = { data: { roles: ['ADMIN', 'SECRETARIA'] } } as unknown as ActivatedRouteSnapshot;
+    const result = TestBed.runInInjectionContext(() =>
+      roleGuard(route, {} as RouterStateSnapshot)
+    );
+    expect(result).toEqual(router.createUrlTree(['/home']));
+  });
 });

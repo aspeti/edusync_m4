@@ -35,15 +35,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Adaptador REST publico de {@code FSD-UC-017} (Cursos y Paralelos, {@code DD-UC-010}). Todos
- * los endpoints requieren rol {@code ADMIN} y operan exclusivamente sobre el tenant del actor
- * autenticado ({@link TenantContextProvider}, mismo patron mitigador de
- * {@code DD-UC-002}/{@code DD-UC-005}/{@code DD-UC-008}): nunca se confia en un
- * {@code tenantId} provisto por el cliente.
+ * los {@code POST} requieren rol {@code ADMIN}; los {@code GET} tambien admiten
+ * {@code SECRETARIA} ({@code DD-UC-012}: el formulario de asignacion de Materias necesita
+ * esos listados). Operan exclusivamente sobre el tenant del actor autenticado
+ * ({@link TenantContextProvider}): nunca se confia en un {@code tenantId} provisto por el
+ * cliente.
  */
 @RestController
 @RequestMapping("/api/v1/cursos")
 @RequiredArgsConstructor
-@Tag(name = "Academico", description = "Cursos y Paralelos: alta y listado (DD-UC-010, solo ADMIN)")
+@Tag(name = "Academico", description = "Cursos y Paralelos: alta (ADMIN) y listado (ADMIN o SECRETARIA)")
 public class CursoController {
 
   private final CrearCursoUseCase crearCursoUseCase;
@@ -62,7 +63,7 @@ public class CursoController {
   }
 
   @GetMapping
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA')")
   @Operation(
       summary = "Listar Cursos del tenant (filtrable y paginado)",
       description =
@@ -89,7 +90,7 @@ public class CursoController {
   }
 
   @GetMapping("/{id}/paralelos")
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA')")
   @Operation(
       summary = "Listar los Paralelos de un Curso",
       description = "Sin paginar (DD-UC-010 §2: cardinalidad acotada).")

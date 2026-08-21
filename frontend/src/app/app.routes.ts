@@ -11,6 +11,7 @@ import { roleGuard } from './core/auth/role.guard';
  * - /usuarios/**                  → authGuard + roleGuard(ADMIN)
  * - /academico/gestiones-escolares/** → authGuard + roleGuard(ADMIN) (DD-UC-009)
  * - /academico/cursos/**          → authGuard + roleGuard(ADMIN) (DD-UC-011)
+ * - /academico/materias/**        → authGuard + roleGuard(ADMIN|SECRETARIA) (DD-UC-012)
  * - /home                         → authGuard (placeholder para otros roles)
  * - /                             → redirect a /login
  */
@@ -106,6 +107,27 @@ export const routes: Routes = [
         data: { role: 'ADMIN' },
         loadComponent: () =>
           import('./features/academico/cursos-list.page').then((m) => m.CursosListPage),
+      },
+      {
+        path: 'academico/materias/nuevo',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'SECRETARIA'] },
+        loadComponent: () =>
+          import('./features/academico/materia-create.page').then((m) => m.MateriaCreatePage),
+      },
+      {
+        path: 'academico/materias/:id',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'SECRETARIA'] },
+        loadComponent: () =>
+          import('./features/academico/materia-detalle.page').then((m) => m.MateriaDetallePage),
+      },
+      {
+        path: 'academico/materias',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'SECRETARIA'] },
+        loadComponent: () =>
+          import('./features/academico/materias-list.page').then((m) => m.MateriasListPage),
       },
       {
         path: 'home',

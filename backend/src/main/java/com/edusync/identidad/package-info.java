@@ -13,6 +13,8 @@
  * son internos). {@code TenantConsultaPort} es un puerto de salida (SPI) que
  * {@code identidad} declara para si misma pero que implementa {@code plataforma}
  * (ver su Javadoc para el porque de esta inversion, {@code DD-UC-003}).
+ * {@code identidad} tambien implementa {@code academico.ProfesorConsultaPort}
+ * ({@code DD-UC-012}): arista {@code identidad -> academico}, sin ciclo.
  *
  * <p>Poblado por {@code DD-UC-002} / {@code PR-IMPL-002} (ADR-0001, ADR-0010, ADR-0011);
  * {@code TenantConsultaPort} y el enforcement de {@code BR-014} llegan en

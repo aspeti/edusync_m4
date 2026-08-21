@@ -24,8 +24,8 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.5 |
-| **Fecha** | 04/08/2026 |
+| **Versión del documento** | v2.6 |
+| **Fecha** | 21/08/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
 | **Estado** | En revisión |
@@ -637,9 +637,14 @@ Escenario: Institución define 2 bimestres en lugar de 3 trimestres
 - **Disparador:** El Admin crea un `Curso` y sus `Paralelo`.
 - **Flujo principal:**
   1. `POST /api/v1/cursos` con `{nombre}` (ej. "Primero de Primaria").
-  2. `POST /api/v1/cursos/{id}/paralelos` con `{nombre}` (ej. "A"), repetible.
+  2. `GET /api/v1/cursos` (lista filtrable y paginada del tenant: `q`, `page`, `size`) — `DD-UC-010` / `PR-IMPL-010`.
+  3. `POST /api/v1/cursos/{id}/paralelos` con `{nombre}` (ej. "A"), repetible.
+  4. `GET /api/v1/cursos/{id}/paralelos` (lista simple, sin paginar) — `DD-UC-010` / `PR-IMPL-010`.
+- **Flujos alternativos / excepciones:**
+  - **A1 — Curso inexistente o de otro tenant:** HTTP 404 `E_CURSO_NO_ENCONTRADO` en las operaciones sobre `/cursos/{id}/paralelos`.
 - **Postcondiciones:** `Curso` con uno o más `Paralelo` asociados, disponibles para `Materia` e `Inscripcion`.
 - **Reglas de negocio aplicables:** BR-021.
+- **Implementación:** backend `DD-UC-010`/`PR-IMPL-010` (ejecutado 20/08/2026); UI Angular `DD-UC-011`/`PR-IMPL-011` (ejecutado 21/08/2026). Fuera de este slice: `PATCH`/`DELETE` de `Curso`/`Paralelo`.
 
 ---
 
@@ -1363,6 +1368,7 @@ Paso 13 → audit_log entry + notificación
 | v2.3 | 14/07/2026 | Rodrigo Aspeti | `FSD-UC-011` (§4.6.1) implementado en `docs/design/DD-UC-003.md` (módulo `plataforma`: alta y gestión de Tenants, scheduler de vencimiento, `TenantConsultaPort`, enforcement de `BR-014`). Corrección de referencia: la nota `ADR-0010` sobre el tenant "demo" ya no cita el ID inexistente `DD-UC-011`; ahora referencia explícitamente `docs/design/DD-UC-003.md` para el bootstrap del `SYSADMIN`/alta de tenant ya implementada, y deja claro que el diseño del tenant demo queda diferido a un Design Doc de seguimiento aún sin crear (distinto de `DD-UC-003`). Sin cambios de requisito, solo corrección de trazabilidad. |
 | v2.4 | 19/07/2026 | Rodrigo Aspeti | `FSD-UC-011` (§4.6.1): se añade al flujo principal el paso de lectura `GET /api/v1/plataforma/tenants` (lista para consola SysAdmin, `DD-UC-004` / `PR-IMPL-004`). Sin cambio de reglas de negocio; solo documenta el endpoint de consulta necesario para la UI. |
 | v2.5 | 04/08/2026 | Rodrigo Aspeti | `FSD-UC-021` (§4.6.11) implementado (backend) en `docs/design/DD-UC-005.md`/`PR-IMPL-005`: se añade al flujo principal el paso de lectura `GET /api/v1/usuarios` (mismo precedente que `GET /tenants` en v2.4); el flujo alternativo **A1** (`E_ASESOR_SIN_CURSO`) se marca explícitamente **diferido** — el rol `ASESOR` ya es asignable, pero la validación de la referencia a `Curso`/`Paralelo` depende del módulo `academico`, bloqueado por `ADR-0009` §3. Sin cambio de reglas de negocio; solo documenta el endpoint de consulta y el alcance real de A1. |
+| v2.6 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-017` (§4.6.7) cierra implementación **completa** (backend + UI): se documentan los pasos de lectura `GET /api/v1/cursos` (filtro `q` + paginación) y `GET /api/v1/cursos/{id}/paralelos` (lista simple), la excepción **A1** `404 E_CURSO_NO_ENCONTRADO`, y la trazabilidad a `DD-UC-010`/`PR-IMPL-010` (backend, 20/08/2026) y `DD-UC-011`/`PR-IMPL-011` (UI, 21/08/2026). Sin cambio de reglas de negocio (`BR-021` vigente); `PATCH`/`DELETE` de `Curso`/`Paralelo` permanecen fuera de este slice. Propagado vía `sync-doc-chain` a `docs/product/DTP.md` y `docs/PROMPT_MAPPING.md`. |
 
 ---
 

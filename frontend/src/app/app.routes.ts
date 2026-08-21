@@ -81,6 +81,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'academico/gestiones-escolares/:id/periodos',
+        canActivate: [roleGuard],
+        data: { role: 'ADMIN' },
+        loadComponent: () =>
+          import('./features/academico/gestion-periodos.page').then((m) => m.GestionPeriodosPage),
+      },
+      {
         path: 'academico/gestiones-escolares',
         canActivate: [roleGuard],
         data: { role: 'ADMIN' },

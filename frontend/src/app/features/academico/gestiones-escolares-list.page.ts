@@ -83,6 +83,9 @@ import { PageResponse } from '../../core/api/page-response.model';
                 <td style="padding: 0.5rem;">{{ gestion.fechaInicio }}</td>
                 <td style="padding: 0.5rem;">{{ gestion.fechaFin }}</td>
                 <td style="padding: 0.5rem;">
+                  <a [routerLink]="['/academico/gestiones-escolares', gestion.id, 'periodos']" style="margin-right: 0.5rem; font-size: 0.85rem;">
+                    Periodos
+                  </a>
                   @if (transicionesValidas(gestion.estado).length > 0) {
                     <button (click)="cambiarEstado(gestion)" style="cursor: pointer; font-size: 0.85rem;">
                       Cambiar estado

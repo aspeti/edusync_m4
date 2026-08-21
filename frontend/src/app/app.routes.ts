@@ -12,6 +12,7 @@ import { roleGuard } from './core/auth/role.guard';
  * - /academico/gestiones-escolares/** → authGuard + roleGuard(ADMIN) (DD-UC-009)
  * - /academico/cursos/**          → authGuard + roleGuard(ADMIN) (DD-UC-011)
  * - /academico/materias/**        → authGuard + roleGuard(ADMIN|SECRETARIA) (DD-UC-012)
+ * - /academico/estudiantes/**     → authGuard + roleGuard(ADMIN|SECRETARIA) (DD-UC-013)
  * - /home                         → authGuard (placeholder para otros roles)
  * - /                             → redirect a /login
  */
@@ -128,6 +129,27 @@ export const routes: Routes = [
         data: { roles: ['ADMIN', 'SECRETARIA'] },
         loadComponent: () =>
           import('./features/academico/materias-list.page').then((m) => m.MateriasListPage),
+      },
+      {
+        path: 'academico/estudiantes/nuevo',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'SECRETARIA'] },
+        loadComponent: () =>
+          import('./features/academico/estudiante-create.page').then((m) => m.EstudianteCreatePage),
+      },
+      {
+        path: 'academico/estudiantes/:id',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'SECRETARIA'] },
+        loadComponent: () =>
+          import('./features/academico/estudiante-detalle.page').then((m) => m.EstudianteDetallePage),
+      },
+      {
+        path: 'academico/estudiantes',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'SECRETARIA'] },
+        loadComponent: () =>
+          import('./features/academico/estudiantes-list.page').then((m) => m.EstudiantesListPage),
       },
       {
         path: 'home',

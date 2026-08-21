@@ -24,7 +24,7 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.7 |
+| **Versión del documento** | v2.8 |
 | **Fecha** | 21/08/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
@@ -692,18 +692,27 @@ Escenario: Institución define 2 bimestres en lugar de 3 trimestres
 
 ### 4.6.10 FSD-UC-020 — Gestión de Estudiantes e Inscripciones
 
-- **Trazabilidad:** `PRD-REQ-030`, `PRD-US-027`, `PRD-US-028`
-- **Actor principal:** Secretaria
+- **Trazabilidad:** `PRD-REQ-030`, `PRD-US-027`, `PRD-US-028` — `DD-UC-013` / `PR-IMPL-013` (backend + UI fullstack, 21/08/2026).
+- **Actor principal:** Secretaria / Admin
 - **Precondiciones:** `GestionEscolar`, `Curso` y `Paralelo` existentes para la inscripción.
 - **Disparador:** Alta de un `Estudiante` (independiente de su matrícula) y su posterior `Inscripcion`.
 - **Flujo principal:**
-  1. `POST /api/v1/estudiantes` con `{nombreCompleto, datosPersonales, estado}` — sin requerir `GestionEscolar`/`Curso` en este paso.
-  2. `POST /api/v1/inscripciones` con `{estudianteId, gestionEscolarId, cursoId, paraleloId, fechaInscripcion}`.
-  3. El sistema crea `Inscripcion` con `estado = ACTIVA`.
+  1. `POST /api/v1/estudiantes` con `{rude, nombreCompleto, estado?, datosPersonales?}` — `rude` obligatorio y único por tenant (`BR-004`/`RB-01`); sin requerir `GestionEscolar`/`Curso` en este paso.
+  2. `GET /api/v1/estudiantes` (lista filtrable y paginada: `q` sobre `nombreCompleto` contains **o** `rude` exacto, `estado`, `page`, `size`).
+  3. `GET /api/v1/estudiantes/{id}` (detalle).
+  4. `POST /api/v1/inscripciones` con `{estudianteId, gestionEscolarId, cursoId, paraleloId, fechaInscripcion}` — el body **no** acepta `estado`.
+  5. El sistema crea `Inscripcion` con `estado = ACTIVA`.
+  6. `GET /api/v1/estudiantes/{id}/inscripciones` (historial, lista simple sin paginar).
 - **Flujos alternativos / excepciones:**
   - **A1 — Inscripción duplicada del mismo estudiante en la misma `GestionEscolar`:** HTTP 409 `E_INSCRIPCION_DUPLICADA`.
+  - **A2 — Estudiante / Gestión Escolar / Curso / Paralelo inexistente o de otro tenant:** HTTP 404 `E_ESTUDIANTE_NO_ENCONTRADO` / `E_GESTION_ESCOLAR_NO_ENCONTRADA` / `E_CURSO_NO_ENCONTRADO` / `E_PARALELO_NO_ENCONTRADO`.
+  - **A3 — RUDE duplicado en el tenant:** HTTP 409 `E_RUDE_DUPLICADO` (el mensaje **no** interpola el código).
+- **Notas de implementación (`DD-UC-013`):**
+  - `Estudiante` e `Inscripcion` son Aggregates independientes (`BR-023`); el historial se reconstruye listando inscripciones, no embebiendo una colección.
+  - `GET /api/v1/gestiones-escolares` también admite `SECRETARIA` (los `POST`/`PATCH` de Gestión Escolar siguen `ADMIN`). Los GET de Cursos/Paralelos ya admitían `SECRETARIA` (`DD-UC-012`).
+  - `PATCH`/`DELETE` de Estudiante o Inscripcion permanecen fuera de este slice.
 - **Postcondiciones:** El historial académico del `Estudiante` es reconstructible a través de todas sus `Inscripcion` en distintas `GestionEscolar`.
-- **Reglas de negocio aplicables:** BR-023.
+- **Reglas de negocio aplicables:** BR-023, BR-004.
 - **Criterios de aceptación:**
 
 ```gherkin
@@ -1381,6 +1390,7 @@ Paso 13 → audit_log entry + notificación
 | v2.5 | 04/08/2026 | Rodrigo Aspeti | `FSD-UC-021` (§4.6.11) implementado (backend) en `docs/design/DD-UC-005.md`/`PR-IMPL-005`: se añade al flujo principal el paso de lectura `GET /api/v1/usuarios` (mismo precedente que `GET /tenants` en v2.4); el flujo alternativo **A1** (`E_ASESOR_SIN_CURSO`) se marca explícitamente **diferido** — el rol `ASESOR` ya es asignable, pero la validación de la referencia a `Curso`/`Paralelo` depende del módulo `academico`, bloqueado por `ADR-0009` §3. Sin cambio de reglas de negocio; solo documenta el endpoint de consulta y el alcance real de A1. |
 | v2.6 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-017` (§4.6.7) cierra implementación **completa** (backend + UI): se documentan los pasos de lectura `GET /api/v1/cursos` (filtro `q` + paginación) y `GET /api/v1/cursos/{id}/paralelos` (lista simple), la excepción **A1** `404 E_CURSO_NO_ENCONTRADO`, y la trazabilidad a `DD-UC-010`/`PR-IMPL-010` (backend, 20/08/2026) y `DD-UC-011`/`PR-IMPL-011` (UI, 21/08/2026). Sin cambio de reglas de negocio (`BR-021` vigente); `PATCH`/`DELETE` de `Curso`/`Paralelo` permanecen fuera de este slice. Propagado vía `sync-doc-chain` a `docs/product/DTP.md` y `docs/PROMPT_MAPPING.md`. |
 | v2.7 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-018` (§4.6.8) cierra implementación **completa** (backend + UI fullstack, `DD-UC-012`/`PR-IMPL-012`): se documentan `GET /materias` (filtro `q` + paginación), `GET /materias/{id}`, `GET /materias/profesores-disponibles`, `GET` de asignaciones, A2/A3 404, y la nota de RBAC `SECRETARIA` en los GET de Cursos. Sin cambio de `BR-022`; `PATCH`/`DELETE` y `FSD-UC-019` permanecen fuera. |
+| v2.8 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-020` (§4.6.10) cierra implementación **completa** (backend + UI fullstack, `DD-UC-013`/`PR-IMPL-013`): se documentan `rude` obligatorio en el POST, `GET /estudiantes` (`q`/`estado` + paginación), `GET /estudiantes/{id}`, historial `GET .../inscripciones`, A2 404 y A3 `409 E_RUDE_DUPLICADO`. Sin cambio de `BR-023`; incluir `rude` aplica `BR-004` vigente (no es la reconciliación de `ADR-0009` §3 punto 1). `PATCH`/`DELETE` permanecen fuera. |
 
 ---
 

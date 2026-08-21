@@ -34,15 +34,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Adaptador REST publico de {@code FSD-UC-012} (Gestion Escolar, {@code DD-UC-008}).
- * Todos los endpoints requieren rol {@code ADMIN} y operan exclusivamente sobre el tenant
- * del actor autenticado ({@link TenantContextProvider}, mismo patron mitigador de
- * {@code DD-UC-002}/{@code DD-UC-005}): nunca se confia en un {@code tenantId} provisto
- * por el cliente.
+ * {@code POST} y {@code PATCH .../estado} requieren {@code ADMIN}. El {@code GET} de
+ * listado admite tambien {@code SECRETARIA} ({@code DD-UC-013}): el formulario de
+ * inscripcion necesita el catalogo. Operan exclusivamente sobre el tenant del actor
+ * autenticado ({@link TenantContextProvider}): nunca se confia en un {@code tenantId}
+ * provisto por el cliente.
  */
 @RestController
 @RequestMapping("/api/v1/gestiones-escolares")
 @RequiredArgsConstructor
-@Tag(name = "Academico", description = "Gestion Escolar: alta, listado y ciclo de estado (DD-UC-008, solo ADMIN)")
+@Tag(name = "Academico", description = "Gestion Escolar: alta, listado y ciclo de estado (DD-UC-008; GET tambien SECRETARIA desde DD-UC-013)")
 public class GestionEscolarController {
 
   private final CrearGestionEscolarUseCase crearGestionEscolarUseCase;
@@ -64,12 +65,13 @@ public class GestionEscolarController {
   }
 
   @GetMapping
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA')")
   @Operation(
       summary = "Listar Gestiones Escolares del tenant (filtrable y paginado)",
       description =
-          "Scoped al tenant del Admin autenticado (DD-UC-008 §2). Filtros y paginacion "
-              + "opcionales (DD-UC-007): sin query params, page=0 y size=20 por defecto.")
+          "Scoped al tenant del actor autenticado (DD-UC-008 §2). Lectura tambien SECRETARIA "
+              + "(DD-UC-013). Filtros y paginacion opcionales (DD-UC-007): sin query params, "
+              + "page=0 y size=20 por defecto.")
   @ApiResponse(responseCode = "200", description = "Pagina de Gestiones Escolares")
   public ResponseEntity<PageResponse<GestionEscolarResponse>> listar(
       @ParameterObject GestionEscolarFiltro filtro, @ParameterObject PaginacionParams paginacion) {

@@ -9,7 +9,8 @@ import { Router } from '@angular/router';
  * añade el enlace "Usuarios" condicional al rol ADMIN; DD-UC-009 §2 añade
  * el enlace "Gestión Escolar", también condicional al rol ADMIN; DD-UC-011 §2
  * añade el enlace "Cursos", mismo condicional; DD-UC-012 §2 añade "Materias"
- * si ADMIN o SECRETARIA; DD-UC-013 §2 añade "Estudiantes" con el mismo condicional.
+ * si ADMIN o SECRETARIA; DD-UC-013 §2 añade "Estudiantes" con el mismo condicional;
+ * DD-UC-014 §2 añade "Profesores" con el mismo condicional.
  */
 @Component({
   selector: 'app-shell',
@@ -29,6 +30,7 @@ import { Router } from '@angular/router';
       @if (auth.hasRole('ADMIN') || auth.hasRole('SECRETARIA')) {
         <a routerLink="/academico/materias" style="color: white; text-decoration: none;">Materias</a>
         <a routerLink="/academico/estudiantes" style="color: white; text-decoration: none;">Estudiantes</a>
+        <a routerLink="/academico/profesores" style="color: white; text-decoration: none;">Profesores</a>
       }
       <span style="flex: 1"></span>
       <button (click)="logout()" style="cursor: pointer; padding: 0.25rem 0.75rem;">Cerrar sesión</button>

@@ -8,4 +8,6 @@ interface AsignacionMateriaProfesorJpaRepository
     extends JpaRepository<AsignacionMateriaProfesorJpaEntity, UUID> {
 
   List<AsignacionMateriaProfesorJpaEntity> findByMateriaIdAndTenantId(UUID materiaId, UUID tenantId);
+
+  List<AsignacionMateriaProfesorJpaEntity> findByProfesorIdAndTenantId(UUID profesorId, UUID tenantId);
 }

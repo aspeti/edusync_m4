@@ -37,6 +37,13 @@ class AsignacionMateriaProfesorRepositoryAdapter implements AsignacionMateriaPro
         .toList();
   }
 
+  @Override
+  public List<AsignacionMateriaProfesor> listarPorProfesorYTenant(UUID profesorId, UUID tenantId) {
+    return jpaRepository.findByProfesorIdAndTenantId(profesorId, tenantId).stream()
+        .map(this::aDominio)
+        .toList();
+  }
+
   private AsignacionMateriaProfesor aDominio(AsignacionMateriaProfesorJpaEntity entity) {
     return AsignacionMateriaProfesor.reconstruir(
         AsignacionMateriaProfesorId.de(entity.getId()),

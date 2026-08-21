@@ -24,7 +24,7 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.8 |
+| **Versión del documento** | v2.9 |
 | **Fecha** | 21/08/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
@@ -678,15 +678,33 @@ Escenario: Institución define 2 bimestres en lugar de 3 trimestres
 
 ### 4.6.9 FSD-UC-019 — Gestión de Profesores
 
-- **Trazabilidad:** `PRD-REQ-029`, `PRD-US-026`
+- **Trazabilidad:** `PRD-REQ-029`, `PRD-US-026` — `DD-UC-014` / `PR-IMPL-014` (backend + UI fullstack, 21/08/2026).
 - **Actor principal:** Admin / Secretaria
 - **Precondiciones:** `Tenant` activo.
 - **Disparador:** CRUD de `Profesor` (como perfil dentro de `Usuario` con rol `PROFESOR`) y consulta de sus asignaciones vigentes.
 - **Flujo principal:**
-  1. `POST /api/v1/usuarios` con `rol = PROFESOR` (ver `FSD-UC-021`).
-  2. `GET /api/v1/profesores/{id}/asignaciones` retorna las `Materia`/`Curso`/`Paralelo` asignadas (originadas en `FSD-UC-018`).
-- **Postcondiciones:** `Profesor` disponible para asignación a `Materia`.
+  1. `POST /api/v1/usuarios` con `rol = PROFESOR` (ver `FSD-UC-021`) — el alta **no** se duplica aquí.
+  2. `GET /api/v1/profesores` (lista filtrable y paginada: `q` sobre nombreCompleto **o** email, `activo`, `page`, `size`). Inferido por la misma razón práctica que `GET /estudiantes` en `FSD-UC-020`: `SECRETARIA` no puede usar `GET /usuarios` (`ADMIN`-only).
+  3. `GET /api/v1/profesores/{id}` (detalle `{id, nombreCompleto, activo}`).
+  4. `GET /api/v1/profesores/{id}/asignaciones` retorna las `Materia`/`Curso`/`Paralelo` asignadas (originadas en `FSD-UC-018`), lista simple enriquecida con nombres.
+- **Flujos alternativos / excepciones:**
+  - **A1 — Profesor inexistente, de otro tenant, o usuario sin rol `PROFESOR`:** HTTP 404 `E_PROFESOR_NO_ENCONTRADO` (nunca 403).
+- **Notas de implementación (`DD-UC-014`):**
+  - No hay entidad/tabla `Profesor`; `profesorId` es `Usuario.id`. Sin `POST /profesores` ni Flyway.
+  - Un profesor inactivo **con** rol `PROFESOR` sigue visible en detalle/asignaciones (historial). La escritura de una asignación nueva sigue exigiendo profesor activo (`FSD-UC-018`).
+  - Las escrituras de asignación permanecen en `POST /materias/{id}/asignaciones-profesor`. `GET /materias/profesores-disponibles` conserva `{id, nombreCompleto}`.
+  - `PATCH`/`DELETE` de usuario permanecen en `FSD-UC-021` (`ADMIN`).
+- **Postcondiciones:** `Profesor` consultable con sus asignaciones vigentes; disponible para asignación a `Materia` si está activo.
 - **Reglas de negocio aplicables:** BR-022.
+- **Criterios de aceptación:**
+
+```gherkin
+Escenario: Secretaria consulta las asignaciones vigentes de un profesor
+  Dado el profesor "Marcela López" con la materia "Matemáticas" asignada a "Primero de Primaria" paralelo "A"
+  Cuando la Secretaria abre el detalle de ese profesor
+  Entonces ve la asignación Materia/Curso/Paralelo
+    Y no puede crear una asignación nueva desde esa pantalla
+```
 
 ---
 
@@ -1391,6 +1409,7 @@ Paso 13 → audit_log entry + notificación
 | v2.6 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-017` (§4.6.7) cierra implementación **completa** (backend + UI): se documentan los pasos de lectura `GET /api/v1/cursos` (filtro `q` + paginación) y `GET /api/v1/cursos/{id}/paralelos` (lista simple), la excepción **A1** `404 E_CURSO_NO_ENCONTRADO`, y la trazabilidad a `DD-UC-010`/`PR-IMPL-010` (backend, 20/08/2026) y `DD-UC-011`/`PR-IMPL-011` (UI, 21/08/2026). Sin cambio de reglas de negocio (`BR-021` vigente); `PATCH`/`DELETE` de `Curso`/`Paralelo` permanecen fuera de este slice. Propagado vía `sync-doc-chain` a `docs/product/DTP.md` y `docs/PROMPT_MAPPING.md`. |
 | v2.7 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-018` (§4.6.8) cierra implementación **completa** (backend + UI fullstack, `DD-UC-012`/`PR-IMPL-012`): se documentan `GET /materias` (filtro `q` + paginación), `GET /materias/{id}`, `GET /materias/profesores-disponibles`, `GET` de asignaciones, A2/A3 404, y la nota de RBAC `SECRETARIA` en los GET de Cursos. Sin cambio de `BR-022`; `PATCH`/`DELETE` y `FSD-UC-019` permanecen fuera. |
 | v2.8 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-020` (§4.6.10) cierra implementación **completa** (backend + UI fullstack, `DD-UC-013`/`PR-IMPL-013`): se documentan `rude` obligatorio en el POST, `GET /estudiantes` (`q`/`estado` + paginación), `GET /estudiantes/{id}`, historial `GET .../inscripciones`, A2 404 y A3 `409 E_RUDE_DUPLICADO`. Sin cambio de `BR-023`; incluir `rude` aplica `BR-004` vigente (no es la reconciliación de `ADR-0009` §3 punto 1). `PATCH`/`DELETE` permanecen fuera. |
+| v2.9 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-019` (§4.6.9) cierra implementación **completa** (backend + UI fullstack, `DD-UC-014`/`PR-IMPL-014`): se documentan `GET /profesores` (`q`/`activo` + paginación), `GET /profesores/{id}`, `GET /profesores/{id}/asignaciones` enriquecido, A1 `404 E_PROFESOR_NO_ENCONTRADO`. Sin entidad/tabla `Profesor`; alta permanece en `FSD-UC-021`; escrituras de asignación en `FSD-UC-018`. Sin cambio de `BR-022`. |
 
 ---
 

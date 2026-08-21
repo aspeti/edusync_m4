@@ -23,12 +23,12 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión** | v2.2 |
-| **Fecha** | 14/07/2026 |
+| **Versión** | v2.3 |
+| **Fecha** | 21/08/2026 |
 | **Product Manager / Autor** | Rodrigo Aspeti — Dev Lead / PM EduSync |
 | **Revisores** | Docente + Tech Lead + QA |
 | **Estado** | En revisión |
-| **BRD de referencia** | `docs/product/BRD.md` (v3.1) |
+| **BRD de referencia** | `docs/product/BRD.md` (v3.2) |
 | **MRD de referencia** | `docs/MRD-EduSync.md` (v1.0) |
 | **Insumos M2 (UI/UX)** | Sistema de diseño Atomic Design + Design Tokens · WCAG 2.2 AA · Semáforos visuales de reprobación · Wireframes de carga de notas y dashboard director |
 | **Fase Spec Kit cubierta** | Specify ✅ / Plan ⬜ / Tasks ⬜ / Implement ⬜ |
@@ -629,7 +629,7 @@ Escenario: Reactivación tras renovación de suscripción
 | ID | Historia | Prioridad | Valor | Esfuerzo | Criterios |
 |----|----------|-----------|-------|----------|-----------|
 | PRD-US-020 | Como Admin, quiero crear una Gestión Escolar con nombre, fechas de inicio/fin y estado, para definir el marco temporal del ciclo escolar de mi institución | Must | 9 | 5 | §5.8.1 |
-| PRD-US-021 | Como Admin, quiero definir el número de periodos de evaluación de mi Gestión Escolar (por ejemplo 2, 3 o 4), cada uno con nombre, fechas y estado, para adaptar el sistema a la estructura académica real de mi institución sin depender de un número fijo de trimestres | Must | 9 | 6 | §5.8.2 |
+| PRD-US-021 | Como Admin, quiero que al crear la Gestión Escolar el sistema siembre 3 periodos (editables) y que la apertura sea secuencial (no abrir el periodo 2 si el 1 no está cerrado), para adaptar el ciclo sin hardcodear trimestres | Must | 9 | 6 | §5.8.2 |
 
 #### 5.8.1 Criterios PRD-US-020
 
@@ -643,21 +643,21 @@ Escenario: Admin crea una Gestión Escolar
 #### 5.8.2 Criterios PRD-US-021
 
 ```gherkin
-Escenario: Admin configura una estructura de bimestres en lugar de trimestres
-  Dado una Gestión Escolar en estado "Planificación"
-  Cuando el Admin define 2 periodos "Bimestre 1" y "Bimestre 2" con sus fechas
-  Entonces el sistema acepta la configuración sin requerir un tercer periodo
-    Y el resto del sistema (evaluaciones, cálculo de notas) opera sobre esos 2 periodos sin cambio de código
+Escenario: Seed de 3 periodos al crear la Gestión Escolar
+  Dado un Admin autenticado
+  Cuando crea una Gestión Escolar
+  Entonces el sistema siembra 3 periodos (Trimestre 1, 2 y 3) en estado PENDIENTE
+    Y el Admin puede añadir, quitar o renombrar periodos mientras ninguno esté ABIERTO
 
-Escenario: Admin configura una estructura de tres trimestres
-  Dado una Gestión Escolar en estado "Planificación"
-  Cuando el Admin define 3 periodos "Trimestre 1", "Trimestre 2" y "Trimestre 3"
-  Entonces el sistema acepta igualmente esta configuración
+Escenario: No se abre el periodo 2 si el 1 sigue abierto
+  Dado una Gestión Escolar con Trimestre 1 en estado ABIERTO
+  Cuando el Admin intenta abrir Trimestre 2
+  Entonces el sistema rechaza con E_PERIODO_NO_SECUENCIAL
 
-Nota: la regla de secuencialidad de apertura entre periodos (equivalente genérico de RB-05) y
-la disponibilidad de un promedio final solo con todos los periodos cerrados (equivalente
-genérico de RB-11) quedan pendientes de definición (ver ADR-0009 §3); no implementar
-hasta su resolución.
+Escenario: Promedio de gestión visible con periodos incompletos
+  Dado N=3 y solo el periodo 1 con nota de periodo 93
+  Cuando el Admin consulta el promedio de la gestión
+  Entonces el sistema muestra 31 (93/3, periodos vacíos = 0) marcado PROVISIONAL
 ```
 
 ---
@@ -666,51 +666,48 @@ hasta su resolución.
 
 | ID | Historia | Prioridad | Valor | Esfuerzo | Criterios |
 |----|----------|-----------|-------|----------|-----------|
-| PRD-US-022 | Como Admin, quiero configurar las secciones de evaluación de un periodo (nombre, orden, nota máxima, peso porcentual, cantidad máxima de evaluaciones), para adaptar el sistema al modelo pedagógico de mi institución | Must | 9 | 6 | §5.9.1 |
-| PRD-US-023 | Como Profesor, quiero registrar evaluaciones dentro de una sección eligiendo un tipo de evaluación del catálogo configurable de mi institución (Examen, Práctica, Proyecto, etc.), para no depender de tipos codificados de forma fija | Must | 8 | 5 | §5.9.2 |
-| PRD-US-024 | Como Admin, quiero que el sistema calcule automáticamente el promedio de cada sección y la nota final del periodo aplicando los pesos configurados, para no depender de una fórmula fija en el código | Must | 9 | 6 | §5.9.3 |
+| PRD-US-022 | Como Admin, quiero una plantilla de secciones a nivel de Gestión Escolar (nombre + nota en puntos que suman 100), sembrada con Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10, inmutable cuando un periodo ya está ABIERTO | Must | 9 | 6 | §5.9.1 |
+| PRD-US-023 | Como Profesor, quiero registrar una o más evaluaciones en cada sección de mi materia, todas en la escala `[0, nota]` de esa sección (si Saber = 45, todas son 0–45) | Must | 8 | 5 | §5.9.2 |
+| PRD-US-024 | Como Admin, quiero que el sistema calcule automáticamente nota de sección = promedio simple, nota de periodo = suma de secciones redondeada a entero, y promedio de gestión = suma/N visible en PROVISIONAL | Must | 9 | 6 | §5.9.3 |
 
 #### 5.9.1 Criterios PRD-US-022
 
 ```gherkin
-Escenario: Admin configura secciones "Ser / Saber / Hacer / Autoevaluación"
-  Dado un periodo en configuración
-  Cuando el Admin define las secciones "Ser" (peso 10%), "Saber" (peso 50%), "Hacer" (peso 30%)
-    y "Autoevaluación" (peso 10%), cada una con su nota máxima y cantidad máxima de evaluaciones
-  Entonces el sistema guarda las 4 secciones asociadas al periodo
+Escenario: Seed de 4 secciones que suman 100
+  Dado un Admin que crea una Gestión Escolar
+  Entonces el sistema siembra Ser=5, Saber=45, Hacer=40, Autoevaluación=10
+    Y esas secciones aplican a todos los periodos de la gestión
 
-Nota: la validación de que la suma de los pesos porcentuales sea exactamente 100% queda
-pendiente de definición (ver ADR-0009 §3, BRD §11.1 nota de BR-018); no implementar
-esta validación hasta su resolución explícita.
+Escenario: No se editan secciones con un periodo ABIERTO
+  Dado Trimestre 1 en estado ABIERTO
+  Cuando el Admin intenta cambiar la nota de Saber de 45 a 40
+  Entonces el sistema rechaza con E_SECCIONES_INMUTABLES
 ```
 
 #### 5.9.2 Criterios PRD-US-023
 
 ```gherkin
-Escenario: Profesor registra una evaluación de tipo "Quiz" en la sección "Saber"
-  Dado que la institución configuró el catálogo de tipos de evaluación con "Examen", "Práctica" y "Quiz"
-  Cuando el Profesor crea la evaluación "Quiz 1" en la sección "Saber" con puntaje máximo 20
-  Entonces el sistema persiste la evaluación referenciando el tipo "Quiz" del catálogo de la institución
-
-Escenario: Intento de usar un tipo de evaluación no configurado
-  Cuando el Profesor intenta crear una evaluación con un tipo que no existe en el catálogo de la institución
-  Entonces el sistema rechaza la operación y sugiere crear el tipo primero
+Escenario: Evaluaciones de Saber siempre en escala 0–45
+  Dado la sección Saber con nota=45
+  Cuando el Profesor crea dos evaluaciones en Saber de su materia
+  Entonces ambas se califican en [0, 45]
+    Y una nota 46 es rechazada con E_RANGO_INVALIDO
 ```
 
 #### 5.9.3 Criterios PRD-US-024
 
 ```gherkin
-Escenario: Cálculo de nota final con pesos configurados
-  Dado un estudiante con promedio de sección "Ser"=8, "Saber"=40, "Hacer"=25, "Autoevaluación"=9
-    y pesos de sección Ser=10%, Saber=50%, Hacer=30%, Autoevaluación=10% sobre sus notas máximas respectivas
-  Cuando el sistema calcula la nota final del periodo
-  Entonces el resultado se compone de la suma ponderada de los promedios de cada sección
-    según los pesos configurados por la institución
+Escenario: Nota de periodo como suma de promedios de sección
+  Dado secciones Ser=5, Saber=45, Hacer=40, Autoevaluación=10
+  Y en Saber dos evaluaciones en escala 0–45 con notas 35 y 40
+  Y Ser=5, Hacer=40, AE=10
+  Cuando el motor recalcula
+  Entonces nota_seccion(Saber) = 37.50
+    Y nota_periodo = 93
+    Y si N=3 y solo existe ese periodo, promedio_gestion = 31 (PROVISIONAL)
 
-Nota: el criterio de redondeo/truncado del modelo genérico (si floor() se mantiene como
-default configurable o se abre a otras estrategias) queda pendiente de definición
-(ver ADR-0009 §3); no asumir floor() como comportamiento por defecto de este módulo
-sin confirmación explícita.
+Nota: el modelo genérico usa round HALF_UP (2 decimales en sección, entero en periodo/gestión).
+floor() permanece exclusivo del Perfil Bolivia SIE (FSD-UC-003). Ver ADR-0013.
 ```
 
 ---
@@ -866,10 +863,10 @@ Escenario: Usuario restablece su contraseña
 |----|---------------------|--------------------------|-----------|
 | PRD-REQ-021 | El sistema debe permitir al SysAdmin registrar Unidades Educativas (tenants), gestionar su suscripción (fecha inicio/vencimiento) y su estado (activo/suspendido/vencido), y administrar sus usuarios Admin | PRD-US-018, PRD-US-019 | Must |
 | PRD-REQ-022 | El sistema debe permitir al Admin crear una Gestión Escolar con nombre, fechas de inicio/fin y estado (Planificación/Activa/Cerrada) | PRD-US-020 | Must |
-| PRD-REQ-023 | El sistema debe permitir al Admin definir un número configurable de periodos de evaluación por Gestión Escolar, cada uno con nombre, fechas y estado | PRD-US-021 | Must |
-| PRD-REQ-024 | El sistema debe permitir al Admin configurar secciones de evaluación por periodo con nombre, orden, nota máxima, peso porcentual y cantidad máxima de evaluaciones | PRD-US-022 | Must |
-| PRD-REQ-025 | El sistema debe permitir registrar evaluaciones asociadas a una sección, usando un catálogo de tipos de evaluación configurable por institución | PRD-US-023 | Must |
-| PRD-REQ-026 | El sistema debe calcular automáticamente el promedio de cada sección y la nota final del periodo aplicando los pesos porcentuales configurados | PRD-US-024 | Must |
+| PRD-REQ-023 | El sistema debe sembrar 3 periodos al crear la Gestión Escolar (N configurable) y exigir apertura secuencial | PRD-US-021 | Must |
+| PRD-REQ-024 | El sistema debe sembrar una plantilla de secciones a nivel de gestión (suma de `nota` = 100), inmutable con un periodo `ABIERTO` | PRD-US-022 | Must |
+| PRD-REQ-025 | El sistema debe permitir 1..N evaluaciones por sección de materia, todas en escala `[0, seccion.nota]` | PRD-US-023 | Must |
+| PRD-REQ-026 | El sistema debe calcular nota de sección = promedio simple, nota de periodo = suma redondeada a entero, promedio de gestión = /N visible PROVISIONAL | PRD-US-024 | Must |
 | PRD-REQ-027 | El sistema debe permitir administrar Cursos y sus Paralelos | PRD-US-025 | Must |
 | PRD-REQ-028 | El sistema debe permitir el CRUD de Materias y su asignación a Cursos y a Profesores | PRD-US-026 | Must |
 | PRD-REQ-029 | El sistema debe permitir el CRUD de Profesores y su asignación a Materias, Cursos y Paralelos | PRD-US-026 | Must |
@@ -1033,10 +1030,10 @@ Escenario: Usuario restablece su contraseña
 | PRD-REQ-020 | BR-010 | MRD-N-04 | UC-10 | FSD-UC-010 |
 | PRD-REQ-021 | BR-013..BR-015 | — | `ADR-0009` | FSD-UC-011 |
 | PRD-REQ-022 | BR-016 | — | `ADR-0009` | FSD-UC-012 |
-| PRD-REQ-023 | BR-017 | — | `ADR-0009` | FSD-UC-013 |
-| PRD-REQ-024 | BR-018 | — | `ADR-0009` | FSD-UC-014 |
-| PRD-REQ-025 | BR-019 | — | `ADR-0009` | FSD-UC-015 |
-| PRD-REQ-026 | BR-020 | — | `ADR-0009` | FSD-UC-016 |
+| PRD-REQ-023 | BR-017 | — | `ADR-0009`, `ADR-0013` | FSD-UC-013 |
+| PRD-REQ-024 | BR-018 | — | `ADR-0009`, `ADR-0013` | FSD-UC-014 |
+| PRD-REQ-025 | BR-019 | — | `ADR-0009`, `ADR-0013` | FSD-UC-015 |
+| PRD-REQ-026 | BR-020 | — | `ADR-0009`, `ADR-0013` | FSD-UC-016 |
 | PRD-REQ-027 | BR-021 | — | `ADR-0009` | FSD-UC-017 |
 | PRD-REQ-028 | BR-022 | — | `ADR-0009` | FSD-UC-018 |
 | PRD-REQ-029 | BR-022 | — | `ADR-0009` | FSD-UC-019 |
@@ -1084,6 +1081,7 @@ Escenario: Usuario restablece su contraseña
 | v2.0 | 12/07/2026 | Rodrigo Aspeti | Generalización a plataforma SaaS multi-tenant configurable (`ADR-0009`), alineada con BRD v3.0. Épicas E1..E6 (17 historias) se mantienen como **Perfil Bolivia SIE** sin cambios. Se añaden épicas E7..E11 (13 historias, PRD-US-018..030) y PRD-REQ-021..031: plataforma SaaS/tenants (SysAdmin), Gestión Escolar, periodos y secciones de evaluación configurables, evaluaciones con tipo configurable, cálculo de notas con pesos configurables, Cursos/Paralelos, Materias, Profesores, Estudiantes, Inscripciones, Usuarios y Roles. Nueva nota de nomenclatura de roles (§0.1). Alcance ampliado (§3.1). Puntos pendientes de definición explícitamente marcados en los criterios Gherkin de E8/E9 (secuencialidad, redondeo, suma de pesos) — ver `ADR-0009` §3. |
 | v2.1 | 12/07/2026 | Rodrigo Aspeti | Corrección de consistencia de stack: §9 (dependencia "Spring Security + JWT") y §10 ("Stack obligatorio") citaban todavía el stack del baseline de M4 (Java 21 / Spring Boot 3.3 / Angular 17) en vez del stack vivo fijado por `ADR-0008` (Java 25 LTS / Spring Boot 4.1.0 / Angular 21 LTS) desde la apertura de `release/3.0.0`. Actualizados ambos puntos con referencia explícita a `ADR-0008`. |
 | v2.2 | 14/07/2026 | Rodrigo Aspeti | Refinamiento del modelo de roles (`ADR-0010`): PRD-US-029 y PRD-REQ-031 pasan de "asignación de rol" (uno) a **multi-rol** (uno o más roles simultáneos), con la invariante de que SysAdmin nunca se combina con un rol de tenant. Nuevo escenario Gherkin en §5.11.1 (multi-rol). Sin cambios en el resto de épicas/requisitos. |
+| v2.3 | 21/08/2026 | Rodrigo Aspeti | `ADR-0013`: E8/E9 (PRD-US-021..024, PRD-REQ-023..026) alineados al modelo genérico (seed 3+4, plantilla por gestión, escala `[0, nota]`, promedio simple, `round` entero, promedio de gestión `/ N` `PROVISIONAL`, apertura secuencial). Sin cambio en E1–E7 ni Perfil Bolivia SIE. |
 
 ---
 

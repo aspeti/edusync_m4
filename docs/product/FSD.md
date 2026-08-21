@@ -24,13 +24,13 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.9 |
+| **Versión del documento** | v2.10 |
 | **Fecha** | 21/08/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
 | **Estado** | En revisión |
 | **Modo elegido** | **FSD Clásico 🔧** |
-| **Trazabilidad a PRD** | `docs/product/PRD.md` (v2.2) |
+| **Trazabilidad a PRD** | `docs/product/PRD.md` (v2.3) |
 | **Insumos M2 (UI/UX)** | Sistema Atomic Design · Design Tokens · Semáforos visuales de reprobación · WCAG 2.2 AA |
 | **Fase Spec Kit cubierta** | Specify ✅ / Plan ✅ / Tasks ✅ / Implement ⬜ |
 | **Prompts utilizados** | `PR-ARCH-001`, `PR-BRD-002`, `PR-DIAG-001`, `PR-DIAG-002` (ver `docs/PROMPT_MAPPING.md`) |
@@ -536,96 +536,125 @@ Escenario: Bloqueo de acceso por tenant vencido
 - **Disparador:** El Admin crea una `GestionEscolar` para su tenant.
 - **Flujo principal:**
   1. `POST /api/v1/gestiones-escolares` con `{nombre, fechaInicio, fechaFin}`.
-  2. El sistema crea `GestionEscolar` con `estado = PLANIFICACION`.
-  3. El Admin transiciona a `estado = ACTIVA` una vez configurados sus periodos (FSD-UC-013) y secciones (FSD-UC-014).
-  4. Al finalizar el ciclo, el Admin transiciona a `estado = CERRADA`.
+  2. El sistema crea `GestionEscolar` con `estado = PLANIFICACION` y **siembra** 3 `PeriodoEvaluacion` (`Trimestre 1`..`3`, `PENDIENTE`) y 4 `SeccionEvaluacion` (Ser 5, Saber 45, Hacer 40, Autoevaluación 10; Σ `nota` = 100) (`ADR-0013`).
+  3. El Admin puede ajustar periodos y secciones mientras ningún periodo esté `ABIERTO`.
+  4. El Admin transiciona a `estado = ACTIVA`.
+  5. Al finalizar el ciclo, el Admin transiciona a `estado = CERRADA`.
 - **Flujos alternativos / excepciones:**
   - **A1 — Fechas inválidas (`fechaFin` ≤ `fechaInicio`):** HTTP 422 `E_FECHAS_INVALIDAS`.
-- **Postcondiciones:** `GestionEscolar` disponible como contenedor de `PeriodoEvaluacion`, `Curso` e `Inscripcion`.
-- **Reglas de negocio aplicables:** BR-016.
+- **Postcondiciones:** `GestionEscolar` disponible como contenedor de `PeriodoEvaluacion`, plantilla de `SeccionEvaluacion`, `Curso` e `Inscripcion`.
+- **Reglas de negocio aplicables:** BR-016, `ADR-0013`.
 - **Datos de entrada:** `{ "nombre": "string", "fechaInicio": "date", "fechaFin": "date" }`
+- **Nota de implementación:** el `POST` vigente de `PR-IMPL-008` aún no siembra periodos/secciones; el seed se materializa junto a `FSD-UC-013`/`014`.
 
 ---
 
 ### 4.6.3 FSD-UC-013 — Configuración de Periodos de Evaluación
 
-- **Trazabilidad:** `PRD-REQ-023`, `PRD-US-021`
+- **Trazabilidad:** `PRD-REQ-023`, `PRD-US-021`, `ADR-0013`
 - **Actor principal:** Admin
-- **Precondiciones:** `GestionEscolar` en estado `PLANIFICACION` o `ACTIVA`.
-- **Disparador:** El Admin define los periodos de su `GestionEscolar`.
+- **Precondiciones:** `GestionEscolar` existente (seed de 3 periodos al crear, `FSD-UC-012`).
+- **Disparador:** El Admin ajusta los periodos de su `GestionEscolar`.
 - **Flujo principal:**
-  1. `POST /api/v1/gestiones-escolares/{id}/periodos` con `{nombre, fechaInicio, fechaFin}`, repetible **N** veces (N ≥ 1, sin máximo fijo en el dominio).
+  1. `POST /api/v1/gestiones-escolares/{id}/periodos` con `{nombre, fechaInicio, fechaFin}` (N ≥ 1).
   2. Cada `PeriodoEvaluacion` se crea con `estado = PENDIENTE`.
+  3. `PATCH /api/v1/periodos-evaluacion/{id}/estado` con `{estado: ABIERTO|CERRADO}`: el periodo *k* solo pasa a `ABIERTO` si *k−1* está `CERRADO`.
 - **Flujos alternativos / excepciones:**
   - **A1 — Periodos con fechas solapadas:** HTTP 422 `E_PERIODOS_SOLAPADOS`.
-- **Postcondiciones:** `GestionEscolar` con N `PeriodoEvaluacion` asociados.
+  - **A2 — Apertura no secuencial:** HTTP 422 `E_PERIODO_NO_SECUENCIAL`.
+- **Postcondiciones:** `GestionEscolar` con N `PeriodoEvaluacion` ordenados.
 - **Reglas de negocio aplicables:** BR-017.
-- **Pendiente de definición (`ADR-0009` §3):** la secuencialidad de apertura entre periodos (equivalente genérico de `RB-05`) y la condición para habilitar un promedio final "anual" (equivalente genérico de `RB-11`) no están definidas; no implementar bloqueo/desbloqueo de apertura entre periodos sin resolver este punto.
 - **Criterios de aceptación:**
 
 ```gherkin
 Escenario: Institución define 2 bimestres en lugar de 3 trimestres
-  Dado una GestionEscolar en estado PLANIFICACION
-  Cuando el Admin crea los periodos "Bimestre 1" y "Bimestre 2" con sus fechas
-  Entonces el sistema acepta la configuración con N=2 sin exigir un tercer periodo
+  Dado una GestionEscolar en PLANIFICACION sin periodos ABIERTO
+  Cuando el Admin deja solo "Bimestre 1" y "Bimestre 2"
+  Entonces el sistema opera con N=2
+
+Escenario: No se abre el periodo 2 si el 1 sigue abierto
+  Dado Trimestre 1 ABIERTO
+  Cuando el Admin intenta abrir Trimestre 2
+  Entonces el sistema responde 422 E_PERIODO_NO_SECUENCIAL
 ```
 
 ---
 
 ### 4.6.4 FSD-UC-014 — Configuración de Secciones de Evaluación
 
-- **Trazabilidad:** `PRD-REQ-024`, `PRD-US-022`
+- **Trazabilidad:** `PRD-REQ-024`, `PRD-US-022`, `ADR-0013`
 - **Actor principal:** Admin
-- **Precondiciones:** `PeriodoEvaluacion` existente (§4.6.3).
-- **Disparador:** El Admin configura las secciones de evaluación de un periodo.
+- **Precondiciones:** `GestionEscolar` existente (seed de 4 secciones al crear).
+- **Disparador:** El Admin ajusta la plantilla de secciones **de la gestión** (no de cada periodo).
 - **Flujo principal:**
-  1. `POST /api/v1/periodos-evaluacion/{id}/secciones` con `{nombre, orden, notaMaxima, pesoPorcentual, cantidadMaximaEvaluaciones}`, repetible.
-  2. Cada `SeccionEvaluacion` se crea con `estado = ACTIVA`.
+  1. `POST /api/v1/gestiones-escolares/{id}/secciones` con `{nombre, orden, nota}`.
+  2. `PATCH` de nombre/`nota` permitido solo si **ningún** periodo de la gestión está `ABIERTO`.
 - **Flujos alternativos / excepciones:**
-  - **A1 — `pesoPorcentual` fuera de rango `[0, 100]`:** HTTP 422 `E_PESO_INVALIDO`.
-- **Postcondiciones:** `PeriodoEvaluacion` con sus `SeccionEvaluacion` configuradas.
+  - **A1 — `nota` fuera de (0, 100]:** HTTP 422 `E_PESO_INVALIDO`.
+  - **A2 — Suma de `nota` ≠ 100:** HTTP 422 `E_SUMA_SECCIONES_INVALIDA`.
+  - **A3 — Edición con un periodo `ABIERTO`:** HTTP 422 `E_SECCIONES_INMUTABLES`.
+- **Postcondiciones:** Plantilla de secciones compartida por todos los periodos de la gestión.
 - **Reglas de negocio aplicables:** BR-018.
-- **Pendiente de definición (`ADR-0009` §3):** validación de que la suma de `pesoPorcentual` de todas las secciones de un periodo sea exactamente 100 %; no implementar esta validación como bloqueante sin confirmación explícita de negocio.
-- **Datos de entrada:** `{ "nombre": "string", "orden": "integer", "notaMaxima": "decimal", "pesoPorcentual": "decimal(0-100)", "cantidadMaximaEvaluaciones": "integer" }`
+- **Datos de entrada:** `{ "nombre": "string", "orden": "integer", "nota": "decimal" }`
+- **Criterios de aceptación:**
+
+```gherkin
+Escenario: Seed Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10
+  Cuando el Admin crea una GestionEscolar
+  Entonces existen 4 secciones cuya suma de nota es 100
+    Y aplican a todos los periodos de esa gestión
+```
 
 ---
 
-### 4.6.5 FSD-UC-015 — Gestión de Evaluaciones y Tipos de Evaluación
+### 4.6.5 FSD-UC-015 — Gestión de Evaluaciones
 
-- **Trazabilidad:** `PRD-REQ-025`, `PRD-US-023`
-- **Actor principal:** Profesor (creación de evaluaciones) / Admin (catálogo de tipos)
-- **Precondiciones:** `SeccionEvaluacion` configurada; el Profesor está asignado a la `Materia`/`Curso`/`Paralelo` correspondiente.
-- **Disparador:** El Admin crea un `TipoEvaluacion` en el catálogo del tenant, o el Profesor crea una `Evaluacion` dentro de una sección.
-- **Flujo principal — Catálogo de tipos:**
-  1. `POST /api/v1/tipos-evaluacion` con `{nombre}` (ej. "Examen", "Práctica", "Quiz"), con alcance por `tenant_id`.
-- **Flujo principal — Evaluación:**
-  1. `POST /api/v1/evaluaciones` con `{nombre, tipoEvaluacionId, seccionEvaluacionId, fecha, puntajeMaximo, descripcion?}`.
-  2. El sistema verifica que `tipoEvaluacionId` exista en el catálogo del tenant y que el número de evaluaciones de la sección no exceda `cantidadMaximaEvaluaciones` (§4.6.4).
-- **Flujos alternativos / excepciones:**
-  - **A1 — Tipo de evaluación no existe en el catálogo del tenant:** HTTP 422 `E_TIPO_EVALUACION_INVALIDO`.
-  - **A2 — Cantidad máxima de evaluaciones de la sección excedida:** HTTP 409 `E_LIMITE_EVALUACIONES_SECCION`.
-- **Postcondiciones:** `Evaluacion` persistida, referenciando `TipoEvaluacion` y `SeccionEvaluacion`.
-- **Reglas de negocio aplicables:** BR-019.
-- **Datos de entrada:** `{ "nombre": "string", "tipoEvaluacionId": "uuid", "seccionEvaluacionId": "uuid", "fecha": "date", "puntajeMaximo": "decimal", "descripcion": "string?" }`
-
----
-
-### 4.6.6 FSD-UC-016 — Cálculo de Notas configurable
-
-- **Trazabilidad:** `PRD-REQ-026`, `PRD-US-024`
-- **Actor principal:** Sistema (Motor de Cálculo de Notas)
-- **Precondiciones:** Existen `Evaluacion` calificadas dentro de las `SeccionEvaluacion` de un periodo.
-- **Disparador:** Registro/actualización de una calificación de `Evaluacion`, análogo al patrón de `FSD-UC-003`.
+- **Trazabilidad:** `PRD-REQ-025`, `PRD-US-023`, `ADR-0013`
+- **Actor principal:** Profesor (creación de evaluaciones en su materia)
+- **Precondiciones:** `SeccionEvaluacion` de la gestión; el Profesor está asignado a la `Materia` (`BR-022`); el periodo está `ABIERTO`.
+- **Disparador:** El Profesor crea una `Evaluacion` en una sección de su materia y periodo.
 - **Flujo principal:**
-  1. El motor agrupa las calificaciones de un estudiante por `SeccionEvaluacion`.
-  2. Calcula el promedio de cada sección sobre las evaluaciones registradas.
-  3. Calcula la nota final del periodo como la suma ponderada: `Σ (promedio_seccion × pesoPorcentual_seccion / 100)`.
-  4. Persiste el resultado como vista provisional del periodo.
+  1. `POST /api/v1/evaluaciones` con `{nombre, materiaId, periodoEvaluacionId, seccionEvaluacionId, fecha, descripcion?}`.
+  2. El sistema asigna `puntajeMaximo = seccion.nota` (no lo envía el cliente).
 - **Flujos alternativos / excepciones:**
-  - **A1 — Sección sin evaluaciones registradas para un estudiante:** el sistema excluye la sección del cálculo y marca el resultado como `INCOMPLETO` hasta que exista al menos una evaluación.
-- **Postcondiciones:** Nota final del periodo disponible como vista provisional (no oficial).
+  - **A1 — Materia sin profesor asignado:** HTTP 409 `E_MATERIA_SIN_PROFESOR` (`BR-022`).
+  - **A2 — Calificación fuera de `[0, seccion.nota]`:** HTTP 422 `E_RANGO_INVALIDO`.
+- **Postcondiciones:** `Evaluacion` persistida en (`Materia` × `Periodo` × `Seccion`).
+- **Reglas de negocio aplicables:** BR-019, BR-022.
+- **Datos de entrada:** `{ "nombre": "string", "materiaId": "uuid", "periodoEvaluacionId": "uuid", "seccionEvaluacionId": "uuid", "fecha": "date", "descripcion": "string?" }`
+- **Fuera de este slice:** catálogo `TipoEvaluacion` (diferido, `ADR-0013` §3.5).
+
+---
+
+### 4.6.6 FSD-UC-016 — Cálculo de Notas (modelo genérico)
+
+- **Trazabilidad:** `PRD-REQ-026`, `PRD-US-024`, `ADR-0013`
+- **Actor principal:** Sistema (motor de dominio)
+- **Precondiciones:** Existen calificaciones de `Evaluacion` para un estudiante en una materia y periodo.
+- **Disparador:** Persistencia o actualización de una calificación.
+- **Flujo principal:**
+  1. Recálculo en la **misma transacción**, solo en dominio (equivalente genérico de `BR-008`).
+  2. `nota_seccion = round_2d( (Σ nota_eval) / n )` en escala `[0, seccion.nota]`. `n` = evaluaciones **con nota**; si `n = 0` la sección queda `INCOMPLETO` (no se inventa 0).
+  3. `nota_periodo = round_HALF_UP_entero( Σ nota_seccion )`.
+  4. `promedio_gestion = round_HALF_UP_entero( (Σ nota_periodo_o_cero) / N )`, **visible** con datos parciales, marcado `PROVISIONAL`. Periodo sin nota = 0. `N` = cantidad de periodos de la gestión.
+  5. **No** se aplica `floor()` (eso queda en `FSD-UC-003` / Perfil Bolivia SIE).
+- **Flujos alternativos / excepciones:**
+  - **A1 — Sección sin evaluaciones con nota:** se omite del promedio de sección (`INCOMPLETO`); no bloquea mostrar el promedio de gestión.
+- **Postcondiciones:** Vista `PROVISIONAL` de sección, periodo y gestión.
 - **Reglas de negocio aplicables:** BR-020.
-- **Pendiente de definición (`ADR-0009` §3):** el criterio de redondeo/truncado (si `floor()` se mantiene como default configurable o se abre a otras estrategias) y la gobernanza de inmutabilidad de este cálculo (equivalente genérico de `BR-005`/`BR-011`) no están definidos; no asumir `floor()` como comportamiento por defecto sin confirmación explícita.
+- **Criterios de aceptación:**
+
+```gherkin
+Escenario: Nota de periodo como suma de promedios de sección en escala propia
+  Dado secciones Ser=5, Saber=45, Hacer=40, Autoevaluación=10
+  Y en Saber dos evaluaciones en escala 0–45 con notas 35 y 40
+  Cuando el motor recalcula
+  Entonces nota_seccion(Saber) = 37.50
+  Y con Ser=5, Hacer=40, AE=10
+  Entonces nota_periodo = 93
+  Y con N=3 y solo ese periodo
+  Entonces promedio_gestion = 31 marcado PROVISIONAL
+```
 
 ---
 
@@ -806,17 +835,17 @@ Escenario: Rechazo de SYSADMIN combinado con rol de tenant
 | BR-013 | El SysAdmin registra `Tenant` con fecha de inicio y vencimiento de suscripción, y administra su estado (`ACTIVO`/`SUSPENDIDO`/`VENCIDO`). | política | BRD BR-013 | FSD-UC-011 |
 | BR-014 | Ningún usuario de un `Tenant` en estado `SUSPENDIDO` o `VENCIDO` puede autenticarse; sus datos académicos no se eliminan. | política + validación | BRD BR-014 | FSD-UC-011 |
 | BR-015 | El SysAdmin administra usuarios `ADMIN` de cada tenant sin acceso a los datos académicos del tenant. | política de aislamiento | BRD BR-015 | FSD-UC-011 |
-| BR-016 | Toda `GestionEscolar` requiere nombre, fecha de inicio, fecha de fin y estado (`PLANIFICACION`/`ACTIVA`/`CERRADA`) antes de pasar a `ACTIVA`. | validación | BRD BR-016 | FSD-UC-012 |
-| BR-017 | El número de `PeriodoEvaluacion` de una `GestionEscolar` es configurable (N ≥ 1); el dominio no asume un valor fijo. | arquitectura | BRD BR-017 | FSD-UC-013 |
-| BR-018 | Cada `SeccionEvaluacion` de un periodo define nombre, orden, nota máxima, peso porcentual y cantidad máxima de evaluaciones; el dominio no asume secciones fijas. | arquitectura | BRD BR-018 | FSD-UC-014 |
-| BR-019 | Toda `Evaluacion` referencia un `TipoEvaluacion` del catálogo configurable del tenant; el dominio no codifica tipos de evaluación de forma fija. | arquitectura | BRD BR-019 | FSD-UC-015 |
-| BR-020 | La nota final de un periodo se calcula como la suma ponderada de los promedios de cada `SeccionEvaluacion` según su peso porcentual configurado. | cálculo | BRD BR-020 | FSD-UC-016 |
+| BR-016 | Toda `GestionEscolar` requiere nombre, fecha de inicio, fecha de fin y estado (`PLANIFICACION`/`ACTIVA`/`CERRADA`). Al crearla se siembran 3 periodos y 4 secciones (`ADR-0013`). | validación | BRD BR-016 | FSD-UC-012 |
+| BR-017 | El número de `PeriodoEvaluacion` es configurable (N ≥ 1, seed = 3). Apertura secuencial: el periodo *k* no abre si *k−1* no está `CERRADO`. | arquitectura | BRD BR-017, `ADR-0013` | FSD-UC-013 |
+| BR-018 | Plantilla de `SeccionEvaluacion` **por gestión** (nombre, orden, `nota`); Σ `nota` = 100; inmutable desde el primer periodo `ABIERTO`. Defaults Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10. | arquitectura | BRD BR-018, `ADR-0013` | FSD-UC-014 |
+| BR-019 | Toda `Evaluacion` de una materia usa una sección de la plantilla y se califica en `[0, seccion.nota]`. | arquitectura | BRD BR-019, `ADR-0013` | FSD-UC-015 |
+| BR-020 | `nota_seccion = (Σ / n)` a 2 decimales; `nota_periodo = round(Σ secciones)` a entero HALF_UP; `promedio_gestion = round((Σ periodos_o_cero) / N)` visible `PROVISIONAL`. Sin `floor()` en el genérico. | cálculo | BRD BR-020, `ADR-0013` | FSD-UC-016 |
 | BR-021 | Un `Curso` puede tener uno o más `Paralelo`; `Materia` e `Inscripcion` referencian siempre un `Curso` y, cuando aplica, un `Paralelo` válidos. | validación | BRD BR-021 | FSD-UC-017 |
 | BR-022 | Ninguna `Evaluacion` puede registrarse sobre una `Materia` sin `Profesor` asignado. | validación | BRD BR-022 | FSD-UC-018, FSD-UC-019 |
 | BR-023 | `Estudiante` e `Inscripcion` son entidades independientes; el historial académico de un estudiante se reconstruye a través de todas sus `Inscripcion` en distintas `GestionEscolar`. | arquitectura | BRD BR-023 | FSD-UC-020 |
 | BR-024 | Todo `Usuario` activo tiene **uno o más** roles vigentes (`SYSADMIN`/`ADMIN`/`SECRETARIA`/`ASESOR`/`PROFESOR`), modelados como relación N:M (`UsuarioRol`, §6.3.2). El rol `ASESOR` requiere `Curso`/`Paralelo` asignado. **Invariante:** `tenant_id IS NULL` ⟺ el conjunto de roles es exactamente `{SYSADMIN}`; `SYSADMIN` nunca se combina con un rol de tenant en el mismo usuario, de forma permanente (`ADR-0010`). | validación | BRD BR-024, `ADR-0010` | FSD-UC-021 |
 
-> **Pendiente de definición (`ADR-0009` §3):** BR-013..BR-024 no incluyen todavía reglas de gobernanza (auditoría inalterable, inmutabilidad post-cierre, ventana de corrección retroactiva) equivalentes a BR-005/BR-009/BR-010/BR-011, ni la generalización de BR-006/BR-007 (secuencialidad y parámetros inmutables) a N periodos, ni la validación de suma de pesos de BR-018. No implementar ninguno de estos comportamientos en código sin una decisión explícita de seguimiento.
+> **Pendiente de definición (`ADR-0009` §3 punto 5 / `ADR-0013` §3.5):** BR-013..BR-024 no incluyen todavía reglas de gobernanza (auditoría inalterable, inmutabilidad post-cierre, ventana de corrección retroactiva) equivalentes a BR-005/BR-009/BR-010/BR-011. Los puntos 1–4 de `ADR-0009` §3 están resueltos en `ADR-0013`.
 >
 > **Nota (`ADR-0010`):** BR-024 refina la redacción original de `ADR-0009` ("exactamente un rol") a un modelo multi-rol. Ver §6.3.1 (diagrama ER con `USUARIO_ROL`), §6.3.2 (diccionario de datos) y §4.6.11 (`FSD-UC-021`).
 
@@ -937,7 +966,7 @@ erDiagram
 
 ### 6.3 Modelo de datos del modelo generalizado *(nuevo desde v2.0 — `ADR-0009`)*
 
-> **Pendiente de definición (`ADR-0009` §3):** la reconciliación entre este modelo y el de §6.1/§6.2 (`GestionAcademica`/`ParametroAcademico`) no está resuelta. Ambos conviven en este documento hasta que un Design Doc de seguimiento decida si el Perfil Bolivia SIE se migra a una instancia parametrizada de este modelo genérico o si permanecen como rutas de datos separadas.
+> **`ADR-0013`:** el Perfil Bolivia SIE (§6.1/§6.2) es una **instancia parametrizada** del modelo genérico (defaults 3 periodos + 4 secciones). La implementación de `release/3.0.0` usa este modelo (§6.3). `floor()`/Decidir/SIE siguen documentados en §6.1/§6.2 para `FSD-UC-003`/`004` (`notassie`), sin segundo motor cotidiano.
 
 #### 6.3.1 Diagrama ER (Mermaid)
 
@@ -951,12 +980,14 @@ erDiagram
     USUARIO ||--o{ USUARIO_ROL : tiene
 
     GESTION_ESCOLAR ||--o{ PERIODO_EVALUACION : contiene
+    GESTION_ESCOLAR ||--o{ SECCION_EVALUACION : "plantilla"
     GESTION_ESCOLAR ||--o{ INSCRIPCION : agrupa
 
-    PERIODO_EVALUACION ||--o{ SECCION_EVALUACION : define
-
-    SECCION_EVALUACION ||--o{ EVALUACION : contiene
-    TIPO_EVALUACION ||--o{ EVALUACION : clasifica
+    MATERIA ||--o{ EVALUACION : "en periodo y seccion"
+    PERIODO_EVALUACION ||--o{ EVALUACION : acota
+    SECCION_EVALUACION ||--o{ EVALUACION : escala
+    ESTUDIANTE ||--o{ CALIFICACION_EVALUACION : obtiene
+    EVALUACION ||--o{ CALIFICACION_EVALUACION : recibe
 
     CURSO ||--o{ PARALELO : tiene
     CURSO ||--o{ MATERIA : ofrece
@@ -969,7 +1000,7 @@ erDiagram
     USUARIO }o--o| CURSO : "ASESOR asignado a"
 ```
 
-> **`USUARIO_ROL` (nuevo, `ADR-0010`):** relación N:M que reemplaza al atributo `Usuario.rol` de valor único (`ADR-0009`). Un `Usuario` puede tener uno o más roles; ver invariante de exclusión mutua `SYSADMIN`/tenant en §6.3.2 y `BR-024` (§5.1).
+> **`TIPO_EVALUACION`:** permanece en el diagrama como catálogo opcional **diferido** (`ADR-0013` §3.5); no es prerequisito de `FSD-UC-015` en este slice.
 
 #### 6.3.2 Diccionario de datos
 
@@ -999,26 +1030,25 @@ erDiagram
 | **PeriodoEvaluacion** | `gestion_escolar_id` | UUID (FK) | sí | — | sistema |
 | **PeriodoEvaluacion** | `nombre` | VARCHAR(50) | sí | ej. "Bimestre 1" | Admin |
 | **PeriodoEvaluacion** | `fecha_inicio` / `fecha_fin` | DATE | sí | — | Admin |
-| **PeriodoEvaluacion** | `estado` | ENUM | sí | PENDIENTE / ABIERTO / CERRADO *(transiciones pendientes de definición, `ADR-0009` §3)* | sistema |
+| **PeriodoEvaluacion** | `estado` | ENUM | sí | PENDIENTE / ABIERTO / CERRADO; apertura secuencial (`ADR-0013`) | sistema |
 | **SeccionEvaluacion** | `id` | UUID | sí | — | sistema |
-| **SeccionEvaluacion** | `periodo_evaluacion_id` | UUID (FK) | sí | — | sistema |
+| **SeccionEvaluacion** | `gestion_escolar_id` | UUID (FK) | sí | plantilla de la gestión, no del periodo (`ADR-0013`) | sistema |
 | **SeccionEvaluacion** | `nombre` | VARCHAR(50) | sí | ej. "Saber" | Admin |
 | **SeccionEvaluacion** | `orden` | INTEGER | sí | ≥ 1 | Admin |
-| **SeccionEvaluacion** | `nota_maxima` | DECIMAL(5,2) | sí | > 0 | Admin |
-| **SeccionEvaluacion** | `peso_porcentual` | DECIMAL(5,2) | sí | en [0, 100]; suma de pesos del periodo pendiente de validación (`ADR-0009` §3) | Admin |
-| **SeccionEvaluacion** | `cantidad_maxima_evaluaciones` | INTEGER | sí | ≥ 1 | Admin |
-| **SeccionEvaluacion** | `estado` | ENUM | sí | ACTIVA / INACTIVA | Admin |
-| **TipoEvaluacion** | `id` | UUID | sí | — | sistema |
-| **TipoEvaluacion** | `tenant_id` | UUID (FK) | sí | RLS | sistema |
-| **TipoEvaluacion** | `nombre` | VARCHAR(50) | sí | ej. "Examen", "Quiz"; único por tenant | Admin |
+| **SeccionEvaluacion** | `nota` | DECIMAL(5,2) | sí | > 0; Σ `nota` de la gestión = 100 | Admin |
 | **Evaluacion** | `id` | UUID | sí | — | sistema |
-| **Evaluacion** | `seccion_evaluacion_id` | UUID (FK) | sí | — | sistema |
-| **Evaluacion** | `tipo_evaluacion_id` | UUID (FK) | sí | — | Profesor |
+| **Evaluacion** | `materia_id` | UUID (FK) | sí | — | Profesor |
+| **Evaluacion** | `periodo_evaluacion_id` | UUID (FK) | sí | — | Profesor |
+| **Evaluacion** | `seccion_evaluacion_id` | UUID (FK) | sí | — | Profesor |
 | **Evaluacion** | `nombre` | VARCHAR(100) | sí | — | Profesor |
 | **Evaluacion** | `fecha` | DATE | sí | — | Profesor |
-| **Evaluacion** | `puntaje_maximo` | DECIMAL(5,2) | sí | > 0 | Profesor |
+| **Evaluacion** | `puntaje_maximo` | DECIMAL(5,2) | sí | **= `seccion.nota`**, no configurable por eval | sistema |
 | **Evaluacion** | `descripcion` | TEXT | no | — | Profesor |
 | **Evaluacion** | `estado` | ENUM | sí | ACTIVA / ANULADA | Profesor |
+| **CalificacionEvaluacion** | `id` | UUID | sí | — | sistema |
+| **CalificacionEvaluacion** | `evaluacion_id` | UUID (FK) | sí | — | Profesor |
+| **CalificacionEvaluacion** | `estudiante_id` | UUID (FK) | sí | — | Profesor |
+| **CalificacionEvaluacion** | `valor` | DECIMAL(5,2) | sí | en `[0, seccion.nota]` | Profesor |
 | **Curso** | `id` | UUID | sí | — | sistema |
 | **Curso** | `tenant_id` | UUID (FK) | sí | RLS | sistema |
 | **Curso** | `nombre` | VARCHAR(100) | sí | ej. "Primero de Primaria" | Admin |
@@ -1042,7 +1072,7 @@ erDiagram
 | **Inscripcion** | `fecha_inscripcion` | DATE | sí | — | Secretaria |
 | **Inscripcion** | `estado` | ENUM | sí | ACTIVA / RETIRADA / TRANSFERIDA | Secretaria |
 
-> Nota: `Estudiante` (genérico, §6.3.2) coexiste con `Estudiante` (Perfil Bolivia SIE, §6.2, identificado por RUDE) hasta que se resuelva la reconciliación de `ADR-0009` §3.
+> Nota: `Estudiante` genérico (§6.3.2) usa `rude` obligatorio único por tenant (`FSD-UC-020` / `BR-004`). El diccionario Bolivia §6.2 permanece como perfil de exportación SIE. `TipoEvaluacion` queda diferido (`ADR-0013` §3.5).
 
 ---
 
@@ -1386,9 +1416,9 @@ Paso 13 → audit_log entry + notificación
 | **SysAdmin** *(nuevo, `ADR-0009`, refinado por `ADR-0010`)* | Rol de plataforma (SaaS) que administra `Tenant`s (Unidades Educativas), su ciclo de suscripción y sus usuarios `ADMIN`. No pertenece a ningún tenant y no accede a sus datos académicos; su `tenant_id` es nulo de forma **permanente** y nunca se combina con un rol de tenant en el mismo usuario (`ADR-0010`). |
 | **UsuarioRol** *(nuevo, `ADR-0010`)* | Relación N:M entre `Usuario` y `Rol` que permite que un mismo usuario tenga uno o más roles simultáneos. Reemplaza al atributo `Usuario.rol` de valor único definido originalmente en `ADR-0009`. |
 | **Tenant** *(genérico, `ADR-0009`)* | Unidad Educativa con ciclo de vida propio a nivel plataforma: fecha de inicio/vencimiento de suscripción y estado (`ACTIVO`/`SUSPENDIDO`/`VENCIDO`). Extiende, sin reemplazar, el `tenant_id` de RLS (`ADR-0001`). |
-| **Gestión Escolar** *(genérico, `ADR-0009`)* | Unidad organizativa de un ciclo escolar en el modelo generalizado, con un número **configurable** de `PeriodoEvaluacion` (no fijo en 3). |
-| **Sección de Evaluación** *(genérico, `ADR-0009`)* | Componente configurable de la calificación de un periodo (ej. Ser/Saber/Hacer/Autoevaluación u otro esquema), con nombre, orden, nota máxima, peso porcentual y cantidad máxima de evaluaciones definidos por la institución. |
-| **Tipo de Evaluación** *(genérico, `ADR-0009`)* | Categoría configurable de una `Evaluacion` (ej. Examen, Práctica, Quiz), definida en un catálogo propio de cada tenant, no codificada de forma fija en el dominio. |
+| **Gestión Escolar** *(genérico, `ADR-0009`/`0013`)* | Unidad organizativa de un ciclo escolar, con N `PeriodoEvaluacion` (seed 3) y una plantilla de `SeccionEvaluacion` (seed 4, Σ `nota` = 100). |
+| **Sección de Evaluación** *(genérico, `ADR-0013`)* | Componente de la plantilla de la gestión (ej. Saber `nota`=45). Todas las evaluaciones de esa sección usan la escala `[0, nota]`. |
+| **Tipo de Evaluación** *(genérico, `ADR-0009`)* | Catálogo opcional diferido (`ADR-0013` §3.5). |
 | **Paralelo** *(genérico, `ADR-0009`)* | Subdivisión de un `Curso` (ej. "A", "B", "C"). Un curso puede tener uno o más paralelos. |
 | **Inscripción** *(genérico, `ADR-0009`)* | Vínculo entre un `Estudiante` y una `GestionEscolar`/`Curso`/`Paralelo` concretos, con fecha y estado. El historial académico de un estudiante se reconstruye a través de todas sus inscripciones. |
 | **Asesor** *(nuevo, `ADR-0009`)* | Rol de tenant con acceso de solo lectura al avance académico de un `Curso`/`Paralelo` asignado; sin permisos de escritura sobre calificaciones ni nóminas. |
@@ -1410,6 +1440,7 @@ Paso 13 → audit_log entry + notificación
 | v2.7 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-018` (§4.6.8) cierra implementación **completa** (backend + UI fullstack, `DD-UC-012`/`PR-IMPL-012`): se documentan `GET /materias` (filtro `q` + paginación), `GET /materias/{id}`, `GET /materias/profesores-disponibles`, `GET` de asignaciones, A2/A3 404, y la nota de RBAC `SECRETARIA` en los GET de Cursos. Sin cambio de `BR-022`; `PATCH`/`DELETE` y `FSD-UC-019` permanecen fuera. |
 | v2.8 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-020` (§4.6.10) cierra implementación **completa** (backend + UI fullstack, `DD-UC-013`/`PR-IMPL-013`): se documentan `rude` obligatorio en el POST, `GET /estudiantes` (`q`/`estado` + paginación), `GET /estudiantes/{id}`, historial `GET .../inscripciones`, A2 404 y A3 `409 E_RUDE_DUPLICADO`. Sin cambio de `BR-023`; incluir `rude` aplica `BR-004` vigente (no es la reconciliación de `ADR-0009` §3 punto 1). `PATCH`/`DELETE` permanecen fuera. |
 | v2.9 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-019` (§4.6.9) cierra implementación **completa** (backend + UI fullstack, `DD-UC-014`/`PR-IMPL-014`): se documentan `GET /profesores` (`q`/`activo` + paginación), `GET /profesores/{id}`, `GET /profesores/{id}/asignaciones` enriquecido, A1 `404 E_PROFESOR_NO_ENCONTRADO`. Sin entidad/tabla `Profesor`; alta permanece en `FSD-UC-021`; escrituras de asignación en `FSD-UC-018`. Sin cambio de `BR-022`. |
+| v2.10 | 21/08/2026 | Rodrigo Aspeti | `ADR-0013` resuelve `ADR-0009` §3 puntos 1–4: `FSD-UC-012`..`016`, BR-016..020, ER §6.3 y diccionario alineados al modelo genérico (plantilla de secciones por gestión, seed 3+4, suma 100, escala `[0, nota]`, promedio simple, `round` entero HALF_UP, promedio de gestión `/ N` `PROVISIONAL`, apertura secuencial). Punto 5 (gobernanza) sigue pendiente. Sin código en este bump. |
 
 ---
 

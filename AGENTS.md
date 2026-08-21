@@ -23,7 +23,7 @@
 | **FSD** | `docs/fsd/FSD_EduSync.md` | Functional Specification Document — 5 FSD-UC, ER, 3 prompt-contratos |
 | **FSD vFinal** | `docs/fsd/FSD_EduSync_vFinal.md` | Snapshot congelado de FSD v1.0 para `release/2.0.0` (generado por `PR-VFINAL-001`) |
 | **LFSD** | `docs/LFSD-EduSync.md` | Low-Level Functional Specification v1.0.1 — arquitectura hexagonal, DDL, APIs, diagramas de secuencia |
-| **PROMPT_MAPPING** | `docs/PROMPT_MAPPING.md` | Catálogo de prompt-contratos `PR-<AREA>-NNN` — v2.29 (51 contratos activos: PR-ARCH..PR-POC-002, PR-C4-003..006, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-IMPL-001..014; `PR-IMPL-001`..`014` **ejecutados**, incl. `PR-IMPL-014` — módulo `academico`, consola de Profesores backend + UI fullstack, `FSD-UC-019`) |
+| **PROMPT_MAPPING** | `docs/PROMPT_MAPPING.md` | Catálogo de prompt-contratos `PR-<AREA>-NNN` — v2.30 (52 contratos activos: PR-ARCH..PR-POC-002, PR-C4-003..006, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-ADR-006, PR-IMPL-001..014; `PR-IMPL-001`..`014` **ejecutados**; `PR-ADR-006` = `ADR-0013`) |
 | **APORTES** | `docs/APORTES_EduSync.md` | Informe de aportes individuales — release 1.0.0 |
 | **APORTES release/2.0.0** | `docs/aportes/release-2.0.0.md` | Informe de aportes individuales del release de defensa — grupo unipersonal (n = 1), 95 tareas auditables, factor 1.00, generado por `PR-APORTES-001` |
 | **Roadmap** | `docs/roadmap.md` | Hoja de ruta técnica y de negocio v0.3 — 4 horizontes (`release/1.0.1` → `release/1.1.0`/`release/3.0.0` → `release/1.2.0` → `release/2.0.0`), Gantt, 9 lecciones, métricas BRD/NFR, riesgos y compromisos; fuente canónica detallada (espejo historico en `docs/baseline/DTI.md` §19, espejo vivo hacia adelante en `docs/product/DTP.md` §B) |
@@ -31,10 +31,10 @@
 | **Regla de baseline congelado** | `.cursor/rules/baseline-congelado.mdc` | Prohíbe a cualquier agente editar `docs/baseline/**`; espejo de la regla de este documento (§8.2) |
 | **Hooks de Cursor** | `.cursor/hooks.json` + `.cursor/hooks/*.js` | Automatización, no solo convención: `protect-baseline.js` (`preToolUse`) bloquea con `permission: deny` cualquier `Write`/`StrReplace`/`EditNotebook`/`Delete` sobre `docs/baseline/**`; `warn-shell-baseline.js` (`beforeShellExecution`) pide confirmación ante comandos de shell que escriban/muevan/borren rutas de `docs/baseline/`; `dtp-sync-reminder.js` (`stop`) revisa `git diff`/`git ls-files --others` al final de cada turno y recuerda ejecutar `@dtp-sync` si hay cambios sin commitear en `backend/`, `frontend/`, `docs/design/` o `docs/prompts/impl/PR-IMPL-*.md` sin reflejo en `docs/product/DTP.md` |
 | **Baseline congelado M4** | `docs/baseline/{BRD_EduSync_vFinal,MRD_EduSync_vFinal,PRD_EduSync_vFinal,FSD_EduSync_vFinal,DTI}.md` | Registro histórico **inmutable** evaluado en M4, tag `release/2.0.0`, `status: congelado`. Protegido por `CODEOWNERS` y `.cursor/rules/baseline-congelado.mdc`. El antiguo `docs/DTI.md` (v0.8, §0–§23) es hoy `docs/baseline/DTI.md` — su continuación viva es `docs/product/DTP.md` |
-| **DTP (capa viva)** | `docs/product/DTP.md` | Documento Técnico del Producto v1.29 (21/08/2026) — continuación viva del DTI congelado; §A.3 marca `FSD-UC-011`, `FSD-UC-012`, `FSD-UC-017`, `FSD-UC-018`, `FSD-UC-019`, `FSD-UC-020` y `FSD-UC-021` como **completos** (backend + UI); `PR-IMPL-007`..`PR-IMPL-014` **ejecutados** (184/184 tests backend, `ng build` verde) |
-| **PRD/FSD/BRD vivos** | `docs/product/{BRD,PRD,FSD}.md` | Copias editables de la capa viva (banner "COPIA VIVA"), abiertas para `release/3.0.0`; el FSD vivo opera en modo LFSD ⚡ (`docs/product/FSD.md` v2.9). Desde `ADR-0009` (v3.1/v2.2/v2.2 resp.): plataforma SaaS multi-tenant configurable (SysAdmin, Tenant con suscripción, Gestión Escolar, periodos/secciones/tipos de evaluación configurables, Cursos/Paralelos, Materias, Profesores, Estudiantes, Inscripciones, Usuarios y Roles) añadida como extensión aditiva sobre el Perfil Bolivia SIE (BR-001..BR-012/RB-01..RB-11, vigentes sin cambios). Desde `ADR-0010`: `BR-024`/`FSD-UC-021` usan un modelo multi-rol (`UsuarioRol` N:M) con la invariante permanente `tenant_id IS NULL ⟺ roles = {SYSADMIN}` |
+| **DTP (capa viva)** | `docs/product/DTP.md` | Documento Técnico del Producto v1.30 (21/08/2026) — continuación viva del DTI congelado; §A.3 marca `FSD-UC-011`, `FSD-UC-012`, `FSD-UC-017`, `FSD-UC-018`, `FSD-UC-019`, `FSD-UC-020` y `FSD-UC-021` como **completos** (backend + UI); `FSD-UC-013`..`016` **desbloqueados para diseño** (`ADR-0013`); `PR-IMPL-007`..`PR-IMPL-014` **ejecutados** (184/184 tests backend, `ng build` verde) |
+| **PRD/FSD/BRD vivos** | `docs/product/{BRD,PRD,FSD}.md` | Copias editables de la capa viva (banner "COPIA VIVA"), abiertas para `release/3.0.0`; el FSD vivo opera en modo LFSD ⚡ (`docs/product/FSD.md` v2.10, BRD v3.2, PRD v2.3). Desde `ADR-0009`/`ADR-0013`: plataforma SaaS multi-tenant configurable; periodos/secciones/cálculo genérico resueltos (puntos 1–4 de `ADR-0009` §3). Desde `ADR-0010`: `BR-024`/`FSD-UC-021` multi-rol. |
 | **Diagramas C4** | `docs/diagrams/c4_level1.mmd`, `c4_level2.mmd`, `c4_level3_api_gateway.mmd`, `c4_level3_domain_layer.mmd`, `c4_level3_sie_adapter.mmd`, `deployment_aws.mmd` (+ `.md` espejos para Level 3/Deployment) | C4 Level 1, 2, 3 y Deployment AWS; cumple la base para la rúbrica de diagramas versionados |
-| **ADRs** | `docs/adr/0001..0006-*.md`, `0008-*.md`, `0009-*.md`, `0010-*.md`, `0011-*.md`, `0012-*.md` | 11 ADRs aprobados: 0001 multitenancy RLS, 0002 parametrización reglas normativas, 0003 audit_log append-only, 0004 async consolidación (Spring Events), 0005 resiliencia SIE (Resilience4j), 0006 cloud provider AWS, 0008 stack vivo Java 25 LTS/Spring Boot 4.1.0/Angular 21 LTS, 0009 generalización del modelo de dominio a plataforma SaaS multi-tenant configurable, 0010 modelo multi-rol de usuario + aislamiento permanente del rol `SysAdmin` sin tenant, 0011 monolito modular Spring Modulith (module-first) + paquete base `com.edusync`, 0012 Lombok (`allowlist` en `domain/`)/springdoc-openapi/Bean Validation (ninguno supersede a los anteriores). `ADR-0007` (Strangler Fig) queda *gated*, sin crear todavía (ver `docs/roadmap.md` §4) |
+| **ADRs** | `docs/adr/0001..0006-*.md`, `0008-*.md`, `0009-*.md`, `0010-*.md`, `0011-*.md`, `0012-*.md`, `0013-*.md` | 12 ADRs aprobados: 0001..0006, 0008 stack vivo, 0009 generalización SaaS, 0010 multi-rol, 0011 Modulith, 0012 Lombok/OpenAPI/Bean Validation, **0013 modelo genérico de periodos/secciones/cálculo** (resuelve `ADR-0009` §3 puntos 1–4; ninguno supersede a los anteriores). `ADR-0007` (Strangler Fig) queda *gated*. |
 | **Arq. hexagonal** | `docs/arquitectura_hexagonal_EduSync.md` | Arquitectura hexagonal v0.1 — 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots (Perfil Bolivia SIE, paquete `bo.edusync`, baseline M4). **En actualización** (`ADR-0011`): paquete `com.edusync` + organización monolito modular *module-first* (Spring Modulith) para `release/3.0.0` |
 | **Design Docs (capa viva)** | `docs/design/DD-UC-NNN.md` | Documentos de diseño por feature/*vertical slice*, trazados a `FSD-UC` + `ADR` + `PR-IMPL-NNN`; alimentan el DTP vía `@dtp-sync`. `DD-UC-001` (bootstrap); `DD-UC-002` (módulo `identidad`); `DD-UC-003` (módulo `plataforma`); `DD-UC-004` (frontend login + consola SysAdmin); `DD-UC-005` (CRUD backend de Usuarios y Roles); `DD-UC-006` (consola Angular de Usuarios y Roles); `DD-UC-007` (filtros y paginación reutilizables en Usuarios y Tenants — **ejecutado**, DoD 100%; mejora no funcional sobre `FSD-UC-011`/`FSD-UC-021`, ambos ya completos); `DD-UC-008` (módulo `academico`: `GestionEscolar` — alta, listado con filtros/paginación, ciclo de estado — **ejecutado**, DoD 100%; primer feature de negocio real de `academico`, `FSD-UC-012` completo en backend); `DD-UC-009` (consola Angular de Gestión Escolar — **ejecutado**, DoD 100%; primer *vertical slice* de UI de `academico`, `FSD-UC-012` completo backend+UI); `DD-UC-010` (módulo `academico`: `Curso`/`Paralelo` — alta y listado, sin ciclo de vida — **ejecutado**, DoD 100%; segundo feature de negocio real de `academico`, `FSD-UC-017` completo en backend); `DD-UC-011` (consola Angular de Cursos y Paralelos — **ejecutado**, DoD 100%; segundo *vertical slice* de UI de `academico`, después de `DD-UC-009`, `FSD-UC-017` completo backend+UI); `DD-UC-012` (módulo `academico`: `Materia` + asignaciones Curso/Profesor, backend + UI fullstack — **ejecutado**, DoD 100%; tercer feature de negocio real de `academico`, `FSD-UC-018` completo backend+UI); `DD-UC-013` (módulo `academico`: `Estudiante` + `Inscripcion`, backend + UI fullstack — **ejecutado**, DoD 100%; cuarto feature de negocio real de `academico`, `FSD-UC-020` completo backend+UI); `DD-UC-014` (módulo `academico`: Profesores, consulta inversa de asignaciones, backend + UI fullstack — **ejecutado**, DoD 100%; quinto feature de negocio real de `academico`, `FSD-UC-019` completo backend+UI) |
 | **DTOs por capa** | `docs/dtos_EduSync.md` | DTOs hexagonales v0.1 — 4 Request, 4 Commands, 3 Response, 5 Domain Events, 5 enums |
@@ -98,7 +98,7 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │   ├── agents/                      ← 7 subagentes: dev/docs/arch/qa/process/compliance/ollama-agent.md
 │   └── rules/                       ← espejo de .cursor/rules: baseline-congelado.md, seguridad.md
 ├── README.md
-├── AGENTS.md                        ← este archivo (v0.40) — convención multi-agente (Cursor + Claude)
+├── AGENTS.md                        ← este archivo (v0.41) — convención multi-agente (Cursor + Claude)
 ├── CLAUDE.md                        ← entrada Claude Code (importa AGENTS.md; no duplica reglas)
 ├── CODEOWNERS                       ← revisión humana obligatoria sobre docs/baseline/**
 ├── 01_vision_negocio.md             ← visión y contexto del producto
@@ -160,7 +160,7 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │   │   └── PRD_EduSync.md           ← Product Requirements v1.0 (17 US, 6 épicas)
 │   ├── fsd/
 │   │   └── FSD_EduSync.md           ← FSD Clásico v1.0 (5 FSD-UC, ER 16 entidades)
-│   ├── adr/                         ← 11 ADRs aprobados (0007 Strangler Fig queda gated, sin crear)
+│   ├── adr/                         ← 12 ADRs aprobados (0007 Strangler Fig queda gated, sin crear)
 │   │   ├── 0001-multitenancy-rls-postgresql.md
 │   │   ├── 0002-parametrizacion-reglas-normativas.md
 │   │   ├── 0003-persistencia-inmutable-audit-log.md
@@ -171,7 +171,8 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │   │   ├── 0009-generalizacion-modelo-dominio-multitenant-configurable.md
 │   │   ├── 0010-modelo-multirol-usuario-y-sysadmin-sin-tenant.md
 │   │   ├── 0011-monolito-modular-spring-modulith-package-base.md
-│   │   └── 0012-lombok-openapi-validation-productividad-backend.md
+│   │   ├── 0012-lombok-openapi-validation-productividad-backend.md
+│   │   └── 0013-modelo-generico-periodos-secciones-calculo.md
 │   └── diagrams/                    ← diagramas Mermaid (fuente de verdad visual)
 │       ├── ai-sdlc.mmd              ← comparativa AI-SDLC vs. SDLC tradicional
 │       ├── c4_level1.mmd            ← C4 Level 1 — Contexto del sistema
@@ -222,7 +223,7 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 │       │                              DD-UC-012); ProfesorConsultaPort en raíz (Open Host Service, impl en identidad);
 │       │                              Estudiante + Inscripcion (FSD-UC-020 completo backend+UI, DD-UC-013);
 │       │                              Profesores (FSD-UC-019 completo backend+UI, DD-UC-014);
-│       │                              resto (PeriodoEvaluacion..Evaluacion, FSD-UC-013..016) vacío
+│       │                              PeriodoEvaluacion/SeccionEvaluacion/Evaluacion (FSD-UC-013..016 **diseño desbloqueado** `ADR-0013`, código pendiente)
 │       ├── notassie/                ← vacio (package-info.java) — Perfil Bolivia SIE: Calificacion/Consolidacion/ExportacionSIE (FSD-UC-001/003/004/005/009)
 │       └── shared/                  ← tenant/ real (TenantContext/TenantContextProvider/TenantAwareDataSource),
 │                                      web/ (GlobalExceptionHandler, OpenApiConfig, ErrorResponse — ADR-0012,
@@ -337,7 +338,7 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 
 - **MUST**: vincular toda calificación al estudiante exclusivamente por su código `RUDE`. **MUST NOT** usar nombre, apellido, número de lista ni posición visual como clave de asociación en ninguna operación de escritura o exportación (BR-004 / Constitución §0.2).
 - **MUST**: validar que el valor de cada dimensión (Ser, Saber, Hacer, Decidir, Autoevaluación) esté dentro del rango paramétrico vigente **antes de persistir**. Si está fuera de rango → error de negocio `E_RANGO_INVALIDO`. La validación ocurre en `CalificacionDomainService`, no en el controlador (BR-002).
-- **MUST**: el cálculo de promedios y la aplicación de `floor()` ocurren **exclusivamente** en `ConsolidacionDomainService`. **MUST NOT** realizar cálculos de promedio en adaptadores, consultas SQL ad-hoc ni en el frontend (BR-008). La función de truncado es `Math.floor()`, nunca `Math.round()`, `HALF_UP` ni `CEILING`.
+- **MUST**: el cálculo de promedios ocurre **exclusivamente** en el motor de dominio (nunca en adaptadores, SQL ad-hoc ni frontend). **Perfil Bolivia SIE / `FSD-UC-003`:** `floor()` solo en `ConsolidacionDomainService` (`BR-008`, golden `FloorTest`). **Modelo genérico / `FSD-UC-016` (`ADR-0013`):** promedio simple + `round` HALF_UP (2 decimales en sección, entero en periodo y gestión); **MUST NOT** usar `floor()` en ese motor.
 - **MUST**: verificar el estado del periodo académico antes de cualquier escritura. Si el periodo está en `CERRADO`, la operación **MUST** ser rechazada con `E_PERIODO_NO_MODIFICABLE`, salvo que exista una `AutorizacionCorreccion` activa y vigente autorizada por el Director (BR-005 / FSD-UC-005).
 - **MUST**: registrar una entrada en `audit_log` en la **misma transacción** que cada escritura exitosa. La entrada **MUST** incluir: `tenant_id`, `actor_id`, `accion`, `entidad_afectada`, `entidad_id`, `valor_anterior`, `valor_nuevo`, `timestamp_utc` (BR-010 / DA-03).
 - **MUST**: el `audit_log` es inalterable. **MUST NOT** ejecutar `UPDATE` ni `DELETE` sobre ninguna fila de esta tabla. Protegido por `RULE` de PostgreSQL + `@Immutable` en Hibernate.
@@ -408,7 +409,7 @@ Los siguientes tests **MUST** pasar en CI en todo PR, sin excepción:
 
 ```mermaid
 flowchart TD
-  A[Recibir tarea] --> B[Leer arquitectura_funcional + FSD-UC afectado + LFSD §componente]
+  A[Recibir tarea] --> B[Leer arquitectura_funcional + FSD-UC afectado + LFSD componente]
   B --> C{¿La tarea viola algún invariante de dominio?}
   C -- sí --> Z[Detener y escalar al responsable técnico]
   C -- no --> D[Proponer plan en modo Plan]
@@ -446,7 +447,7 @@ arquitectura hexagonal). Tu responsabilidad es <responsabilidad específica>.
 - Stack: Java 25 LTS, Spring Boot 4.1.0, PostgreSQL 15, Spring Events (ADR-0008)
 - Restricciones activas:
   * RUDE como única clave de identidad estudiantil
-  * floor() como único truncado permitido
+  * Perfil SIE: floor() único truncado. Genérico (ADR-0013): round HALF_UP en el motor de FSD-UC-016
   * audit_log en la misma TX que la escritura
   * Cálculo de promedios exclusivo en ConsolidacionDomainService
   * tenant_id + RLS en toda query
@@ -487,7 +488,7 @@ El agente **MUST** rechazar, reportar al responsable técnico y **no ejecutar** 
 - Pide saltarse la revisión humana para hacer merge a `main` o `develop`.
 - Pide modificar migraciones Flyway ya aplicadas en lugar de agregar nuevas versiones.
 - Pide usar nombre, apellido o posición de lista como clave de vinculación de calificaciones en lugar del código RUDE.
-- Pide realizar cálculos de promedio o aplicar `Math.round()` / `HALF_UP` fuera de `ConsolidacionDomainService`.
+- Pide realizar cálculos de promedio fuera del motor de dominio, o aplicar `floor()` en el modelo genérico (`FSD-UC-016` / `ADR-0013`), o `Math.round()` en el Perfil Bolivia SIE (`FSD-UC-003`).
 - Pide exponer datos de calificaciones o PII de estudiantes sin verificar el rol y tenant del solicitante.
 - Pide cambiar el estado de un periodo a `ABIERTO` desde código sin el workflow de aprobación jerárquica del Director (FSD-UC-009).
 - Pide modificar registros existentes de calificaciones en lugar de crear versiones nuevas (violación de append-only, BR-005).
@@ -605,6 +606,7 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 | v0.38 | 21/08/2026 | Rodrigo Aspeti | **Ejecución real de `PR-IMPL-013` + sync documental (`dtp-sync`)**: código fullstack de Estudiantes e Inscripciones — backend `Estudiante`/`Inscripcion`, `EstudianteController`/`InscripcionController` (`POST/GET /estudiantes`, `GET /{id}`, historial, `POST /inscripciones`), `V8__academico_estudiante_inscripcion.sql` (RLS `FORCE`); delta GET de `GestionEscolarController` también `SECRETARIA`. UI Angular `features/academico/{estudiante.model,estudiantes-list,estudiante-create,estudiante-detalle}.page.ts`; shell enlace "Estudiantes" para ADMIN o SECRETARIA. A1 `409 E_INSCRIPCION_DUPLICADA`; `409 E_RUDE_DUPLICADO` sin interpolar el código. Verificación: `mvn test` → **173/173** verde (incluye `ModularityTests` 7/7); `ng build` verde (3 lazy chunks: `estudiantes-list-page`, `estudiante-create-page`, `estudiante-detalle-page`). `docs/product/FSD.md` v2.7→v2.8; `docs/PROMPT_MAPPING.md` v2.26→v2.27; `docs/product/DTP.md` v1.26→v1.27; `docs/design/DD-UC-013.md` v1.0→v1.1 (DoD 100%); `docs/prompts/impl/PR-IMPL-013.md` v0.1→v0.2 (estado "Ejecutado"). `FSD-UC-020` cierra su implementación **completa** (backend + UI) — quinto `FSD-UC` en cerrar ambas capas, después de `FSD-UC-021`, `FSD-UC-012`, `FSD-UC-017` y `FSD-UC-018`. Árbol §3 y tabla §1 actualizados. Sin ADR nuevo ni cambios en `docs/baseline/`. Commit formal pendiente. |
 | v0.39 | 21/08/2026 | Rodrigo Aspeti | **Decimocuarto Design Doc + `PR-IMPL-014`** — diseño aprobado, ejecución pendiente: tercer *vertical slice* fullstack del módulo `academico` (`docs/design/DD-UC-014.md`) — consola de Profesores, consulta inversa de asignaciones (`FSD-UC-019`). Decisiones explícitas: sin entidad/tabla `Profesor` (perfil de `Usuario`); extensión de `ProfesorConsultaPort`; `GET /profesores` + `GET /{id}` + `GET /{id}/asignaciones`; alta permanece en `FSD-UC-021`; escrituras de asignación en `FSD-UC-018`; RBAC `ADMIN`+`SECRETARIA`; consola Angular lista/detalle de solo lectura. `docs/prompts/impl/PR-IMPL-014.md` v0.1 (estado "Aprobado (prompt)"). `docs/PROMPT_MAPPING.md` v2.27→v2.28 (51 contratos); `docs/product/DTP.md` v1.27→v1.28. Sin ADR nuevo ni cambios en `docs/baseline/`. Ejecución de `PR-IMPL-014` (código real) pendiente. |
 | v0.40 | 21/08/2026 | Rodrigo Aspeti | **Ejecución real de `PR-IMPL-014` + sync documental (`dtp-sync`)**: código fullstack de Profesores — extensión de `ProfesorConsultaPort` (`buscarPorIdYTenant`, `listarDelTenant`), `ProfesorController` (`GET /profesores`, `GET /{id}`, `GET /{id}/asignaciones` enriquecido), sin tabla ni Flyway. UI Angular `features/academico/{profesor.model,profesores-list,profesor-detalle}.page.ts`; shell enlace "Profesores" para ADMIN o SECRETARIA. A1 `404 E_PROFESOR_NO_ENCONTRADO`. Verificación: `mvn test` → **184/184** verde (incluye `ModularityTests` 7/7); `ng build` verde (2 lazy chunks: `profesores-list-page`, `profesor-detalle-page`). `docs/product/FSD.md` v2.8→v2.9; `docs/PROMPT_MAPPING.md` v2.28→v2.29; `docs/product/DTP.md` v1.28→v1.29; `docs/design/DD-UC-014.md` v1.0→v1.1 (DoD 100%); `docs/prompts/impl/PR-IMPL-014.md` v0.1→v0.2 (estado "Ejecutado"). `FSD-UC-019` cierra su implementación **completa** (backend + UI) — sexto `FSD-UC` en cerrar ambas capas. Árbol §3 y tabla §1 actualizados. Sin ADR nuevo ni cambios en `docs/baseline/`. Commit formal pendiente. |
+| v0.41 | 21/08/2026 | Rodrigo Aspeti | **`ADR-0013`** (modelo genérico de periodos, secciones y cálculo de notas): resuelve `ADR-0009` §3 puntos 1–4. `docs/product/BRD.md` v3.1→v3.2, `PRD.md` v2.2→v2.3, `FSD.md` v2.9→v2.10, `DTP.md` v1.29→v1.30, `PROMPT_MAPPING.md` v2.29→v2.30 (`PR-ADR-006`). Dualidad de cálculo: genérico = `round` HALF_UP; SIE = `floor()` (`§6`). `FSD-UC-013`..`016` desbloqueados para diseño. Punto 5 (gobernanza) sigue pendiente. Sin código. Baseline intacto. |
 
 ---
 
@@ -621,7 +623,7 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 - [x] 6 agentes documentados con sus límites estrictos.
 - [x] 4 golden tests obligatorios de zero-tolerance definidos.
 - [x] Guardrails probados con lista de prompts prohibidos.
-- [x] `docs/adr/0001..0006-*.md` + `0008-*.md` + `0009-*.md` + `0010-*.md` + `0011-*.md` + `0012-*.md` creados — 11 ADRs aprobados (multitenancy RLS, parametrización, audit_log, async, resiliencia SIE, cloud provider, stack vivo Java 25/Boot 4.1.0/Angular 21, generalización del modelo de dominio, multi-rol + `SysAdmin` sin tenant, monolito modular + paquete `com.edusync`, Lombok con *allowlist* en `domain/`/springdoc-openapi/Bean Validation). `ADR-0007` (Strangler Fig) queda *gated*, sin crear.
+- [x] `docs/adr/0001..0006-*.md` + `0008-*.md` + `0009-*.md` + `0010-*.md` + `0011-*.md` + `0012-*.md` + `0013-*.md` creados — 12 ADRs aprobados. `ADR-0007` (Strangler Fig) queda *gated*, sin crear.
 - [x] `docs/diagrams/c4_level1.mmd` y `c4_level2.mmd` creados (Contexto + Contenedores).
 - [x] Skills activos: 13 en `.cursor/skills/` y 13 en `.claude/skills/` (paridad completa, 19/07/2026). Los canónicos restantes de `plantillas/plantillas2/` siguen como plantillas fuente.
 - [x] `docs/diagrams/c4_level3_*.mmd` + `deployment_aws.mmd` creados — `api-gateway` (PR-C4-003), `domain-layer` (PR-C4-004), `sie-adapter` (PR-C4-005) y Deployment AWS (PR-C4-006).
@@ -631,7 +633,7 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 - [x] `docs/product/DTP.md` v1.0 creado como punto de partida de la capa viva (`release/3.0.0`), con el delta de stack `ADR-0008` registrado en §A.2.
 - [x] `docs/adr/0009-*.md` creado y `docs/product/{BRD,PRD,FSD}.md` + `DTP.md` v1.1 actualizados con la generalización del modelo de dominio a plataforma SaaS multi-tenant configurable, como extensión aditiva sobre el Perfil Bolivia SIE (BR-001..BR-012/RB-01..RB-11 y FSD-UC-001..009 vigentes sin cambios).
 - [x] `docs/adr/0010-*.md` creado y `docs/product/{BRD,PRD,FSD}.md` + `DTP.md` v1.2 actualizados con el modelo multi-rol de usuario (`UsuarioRol` N:M) y la invariante permanente `tenant_id IS NULL ⟺ roles = {SYSADMIN}`, refinando `BR-024`/`FSD-UC-021` sin contradecir `ADR-0009`.
-- [ ] Resolución de los 5 puntos pendientes de definición de `ADR-0009` §3 (reconciliación con el modelo Bolivia, secuencialidad/redondeo genérico, validación de suma de pesos, gobernanza de módulos nuevos) — bloqueante antes de implementar código sobre `FSD-UC-012`..`FSD-UC-020`.
+- [x] Resolución de los puntos 1–4 de `ADR-0009` §3 vía `ADR-0013` (21/08/2026): modelo genérico único, secuencialidad, `round` genérico, suma de secciones = 100. **Sigue pendiente** el punto 5 (gobernanza de módulos nuevos). `FSD-UC-013`..`016` desbloqueados para diseño (código aún no).
 - [ ] `pocs/POC-NN/` pendiente — evidencia ejecutiva de POC-01 (RLS) y POC-02 (Circuit Breaker SIE) bloqueando promoción a `release/1.1.0`.
 - [x] Primer `docs/design/DD-UC-001.md` (bootstrap del proyecto, `FSD-UC-011`/`FSD-UC-021`, crea `ADR-0011`) y primer `docs/prompts/impl/PR-IMPL-001.md` creados y aprobados.
 - [x] Segundo `docs/design/DD-UC-002.md` (módulo `identidad`: login JWT, seed `SYSADMIN`, `TenantContextProvider` real, `FSD-UC-021` parcial) y segundo `docs/prompts/impl/PR-IMPL-002.md` creados y aprobados.

@@ -3,12 +3,14 @@ import { authGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
 
 /**
- * Rutas de la SPA Angular 21 de EduSync (DD-UC-004 §2 + DD-UC-006 §2 + DD-UC-009 §2):
+ * Rutas de la SPA Angular 21 de EduSync (DD-UC-004 §2 + DD-UC-006 §2 + DD-UC-009 §2
+ * + DD-UC-011 §2):
  * - /login                        → pública
  * - /restablecer-password         → pública (sin sesión, DD-UC-006)
  * - /plataforma/**                → authGuard + roleGuard(SYSADMIN)
  * - /usuarios/**                  → authGuard + roleGuard(ADMIN)
  * - /academico/gestiones-escolares/** → authGuard + roleGuard(ADMIN) (DD-UC-009)
+ * - /academico/cursos/**          → authGuard + roleGuard(ADMIN) (DD-UC-011)
  * - /home                         → authGuard (placeholder para otros roles)
  * - /                             → redirect a /login
  */
@@ -83,6 +85,27 @@ export const routes: Routes = [
           import('./features/academico/gestiones-escolares-list.page').then(
             (m) => m.GestionesEscolaresListPage
           ),
+      },
+      {
+        path: 'academico/cursos/nuevo',
+        canActivate: [roleGuard],
+        data: { role: 'ADMIN' },
+        loadComponent: () =>
+          import('./features/academico/curso-create.page').then((m) => m.CursoCreatePage),
+      },
+      {
+        path: 'academico/cursos/:id/paralelos',
+        canActivate: [roleGuard],
+        data: { role: 'ADMIN' },
+        loadComponent: () =>
+          import('./features/academico/curso-paralelos.page').then((m) => m.CursoParalelosPage),
+      },
+      {
+        path: 'academico/cursos',
+        canActivate: [roleGuard],
+        data: { role: 'ADMIN' },
+        loadComponent: () =>
+          import('./features/academico/cursos-list.page').then((m) => m.CursosListPage),
       },
       {
         path: 'home',

@@ -7,7 +7,8 @@ import { Router } from '@angular/router';
  * Shell mínimo post-login: barra de navegación + router outlet.
  * DD-UC-004 §2 (dentro del alcance: layout shell mínimo); DD-UC-006 §2
  * añade el enlace "Usuarios" condicional al rol ADMIN; DD-UC-009 §2 añade
- * el enlace "Gestión Escolar", también condicional al rol ADMIN.
+ * el enlace "Gestión Escolar", también condicional al rol ADMIN; DD-UC-011 §2
+ * añade el enlace "Cursos", mismo condicional.
  */
 @Component({
   selector: 'app-shell',
@@ -22,6 +23,7 @@ import { Router } from '@angular/router';
       @if (auth.hasRole('ADMIN')) {
         <a routerLink="/usuarios" style="color: white; text-decoration: none;">Usuarios</a>
         <a routerLink="/academico/gestiones-escolares" style="color: white; text-decoration: none;">Gestión Escolar</a>
+        <a routerLink="/academico/cursos" style="color: white; text-decoration: none;">Cursos</a>
       }
       <span style="flex: 1"></span>
       <button (click)="logout()" style="cursor: pointer; padding: 0.25rem 0.75rem;">Cerrar sesión</button>

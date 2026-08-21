@@ -88,6 +88,13 @@ export const routes: Routes = [
           import('./features/academico/gestion-periodos.page').then((m) => m.GestionPeriodosPage),
       },
       {
+        path: 'academico/gestiones-escolares/:id/secciones',
+        canActivate: [roleGuard],
+        data: { role: 'ADMIN' },
+        loadComponent: () =>
+          import('./features/academico/gestion-secciones.page').then((m) => m.GestionSeccionesPage),
+      },
+      {
         path: 'academico/gestiones-escolares',
         canActivate: [roleGuard],
         data: { role: 'ADMIN' },

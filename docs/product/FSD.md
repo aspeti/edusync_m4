@@ -24,7 +24,7 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.11 |
+| **Versión del documento** | v2.12 |
 | **Fecha** | 21/08/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
@@ -536,7 +536,7 @@ Escenario: Bloqueo de acceso por tenant vencido
 - **Disparador:** El Admin crea una `GestionEscolar` para su tenant.
 - **Flujo principal:**
   1. `POST /api/v1/gestiones-escolares` con `{nombre, fechaInicio, fechaFin}`.
-  2. El sistema crea `GestionEscolar` con `estado = PLANIFICACION` y **siembra** 3 `PeriodoEvaluacion` (`Trimestre 1`..`3`, `PENDIENTE`) (`ADR-0013`, `PR-IMPL-015`). El seed de 4 `SeccionEvaluacion` (Ser 5, Saber 45, Hacer 40, Autoevaluación 10; Σ `nota` = 100) permanece en `FSD-UC-014`.
+  2. El sistema crea `GestionEscolar` con `estado = PLANIFICACION` y **siembra** 3 `PeriodoEvaluacion` (`Trimestre 1`..`3`, `PENDIENTE`) y 4 `SeccionEvaluacion` (Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10; Σ `nota` = 100) (`ADR-0013`, `PR-IMPL-015`/`016`).
   3. El Admin puede ajustar periodos y secciones mientras ningún periodo esté `ABIERTO`.
   4. El Admin transiciona a `estado = ACTIVA`.
   5. Al finalizar el ciclo, el Admin transiciona a `estado = CERRADA`.
@@ -545,7 +545,7 @@ Escenario: Bloqueo de acceso por tenant vencido
 - **Postcondiciones:** `GestionEscolar` disponible como contenedor de `PeriodoEvaluacion`, plantilla de `SeccionEvaluacion`, `Curso` e `Inscripcion`.
 - **Reglas de negocio aplicables:** BR-016, `ADR-0013`.
 - **Datos de entrada:** `{ "nombre": "string", "fechaInicio": "date", "fechaFin": "date" }`
-- **Nota de implementación:** el `POST` de `PR-IMPL-015` siembra 3 periodos; las 4 secciones siguen diferidas a `FSD-UC-014`. `GET /api/v1/gestiones-escolares/{id}` queda expuesto para la consola de periodos.
+- **Nota de implementación:** el `POST` de `PR-IMPL-015`/`016` siembra 3 periodos **y** 4 secciones. `GET /api/v1/gestiones-escolares/{id}` queda expuesto para las consolas de periodos y secciones.
 
 ---
 
@@ -565,6 +565,7 @@ Escenario: Bloqueo de acceso por tenant vencido
   - **A2 — Apertura no secuencial:** HTTP 422 `E_PERIODO_NO_SECUENCIAL`.
   - **A3 — N/datos congelados:** HTTP 422 `E_PERIODOS_INMUTABLES` (POST/DELETE/PATCH datos con un periodo `ABIERTO`).
   - **A4 — Último periodo:** HTTP 422 `E_PERIODO_UNICO` al `DELETE` del último.
+  - **A5 — Plantilla de secciones inválida:** HTTP 422 `E_SUMA_SECCIONES_INVALIDA` al pasar a `ABIERTO` si no hay secciones o Σ `nota` ≠ 100 (`FSD-UC-014`).
   - Gestión o periodo inexistente / otro tenant: HTTP 404 `E_GESTION_ESCOLAR_NO_ENCONTRADA` / `E_PERIODO_NO_ENCONTRADO`.
 - **Postcondiciones:** `GestionEscolar` con N `PeriodoEvaluacion` ordenados.
 - **Reglas de negocio aplicables:** BR-017.
@@ -586,20 +587,22 @@ Escenario: No se abre el periodo 2 si el 1 sigue abierto
 
 ### 4.6.4 FSD-UC-014 — Configuración de Secciones de Evaluación
 
-- **Trazabilidad:** `PRD-REQ-024`, `PRD-US-022`, `ADR-0013`
+- **Trazabilidad:** `PRD-REQ-024`, `PRD-US-022`, `ADR-0013`, `DD-UC-016`, `PR-IMPL-016`
 - **Actor principal:** Admin
-- **Precondiciones:** `GestionEscolar` existente (seed de 4 secciones al crear).
+- **Precondiciones:** `GestionEscolar` existente (seed de 4 secciones al crear, `FSD-UC-012`).
 - **Disparador:** El Admin ajusta la plantilla de secciones **de la gestión** (no de cada periodo).
 - **Flujo principal:**
-  1. `POST /api/v1/gestiones-escolares/{id}/secciones` con `{nombre, orden, nota}`.
-  2. `PATCH` de nombre/`nota` permitido solo si **ningún** periodo de la gestión está `ABIERTO`.
+  1. `GET /api/v1/gestiones-escolares/{id}/secciones` (ADMIN o SECRETARIA; lista ordenada por `orden`, sin paginar).
+  2. `PUT /api/v1/gestiones-escolares/{id}/secciones` con `{secciones:[{nombre, nota}]}` — **reemplazo atómico** de la plantilla (`orden` = índice 1-based; M ≥ 1; Σ `nota` = 100.00). Operación canónica de rebalanceo.
+  3. `POST /api/v1/gestiones-escolares/{id}/secciones` con `{nombre, orden, nota}` y `PATCH /api/v1/secciones-evaluacion/{id}` `{nombre?, nota?}` — tras la mutación la suma **debe** seguir = 100.
 - **Flujos alternativos / excepciones:**
   - **A1 — `nota` fuera de (0, 100]:** HTTP 422 `E_PESO_INVALIDO`.
-  - **A2 — Suma de `nota` ≠ 100:** HTTP 422 `E_SUMA_SECCIONES_INVALIDA`.
-  - **A3 — Edición con un periodo `ABIERTO`:** HTTP 422 `E_SECCIONES_INMUTABLES`.
+  - **A2 — Suma de `nota` ≠ 100 (o plantilla vacía):** HTTP 422 `E_SUMA_SECCIONES_INVALIDA`. También al abrir un periodo si la plantilla está vacía o no suma 100.
+  - **A3 — Freeze sticky:** HTTP 422 `E_SECCIONES_INMUTABLES` si **algún** periodo de la gestión está `ABIERTO` **o** `CERRADO` (no todos `PENDIENTE`). El freeze **no se levanta** al cerrar el periodo (`ADR-0013` §3.1.5; más estricto que un freeze solo-mientras-ABIERTO).
+  - Gestión o sección inexistente / otro tenant: HTTP 404 `E_GESTION_ESCOLAR_NO_ENCONTRADA` / `E_SECCION_NO_ENCONTRADA`.
 - **Postcondiciones:** Plantilla de secciones compartida por todos los periodos de la gestión.
 - **Reglas de negocio aplicables:** BR-018.
-- **Datos de entrada:** `{ "nombre": "string", "orden": "integer", "nota": "decimal" }`
+- **Datos de entrada (POST item):** `{ "nombre": "string", "orden": "integer", "nota": "decimal" }`
 - **Criterios de aceptación:**
 
 ```gherkin
@@ -607,6 +610,11 @@ Escenario: Seed Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10
   Cuando el Admin crea una GestionEscolar
   Entonces existen 4 secciones cuya suma de nota es 100
     Y aplican a todos los periodos de esa gestión
+
+Escenario: No se editan secciones con un periodo ABIERTO
+  Dado Trimestre 1 ABIERTO
+  Cuando el Admin intenta cambiar la nota de Saber de 45 a 40
+  Entonces el sistema responde 422 E_SECCIONES_INMUTABLES
 ```
 
 ---
@@ -841,7 +849,7 @@ Escenario: Rechazo de SYSADMIN combinado con rol de tenant
 | BR-015 | El SysAdmin administra usuarios `ADMIN` de cada tenant sin acceso a los datos académicos del tenant. | política de aislamiento | BRD BR-015 | FSD-UC-011 |
 | BR-016 | Toda `GestionEscolar` requiere nombre, fecha de inicio, fecha de fin y estado (`PLANIFICACION`/`ACTIVA`/`CERRADA`). Al crearla se siembran 3 periodos y 4 secciones (`ADR-0013`). | validación | BRD BR-016 | FSD-UC-012 |
 | BR-017 | El número de `PeriodoEvaluacion` es configurable (N ≥ 1, seed = 3). Apertura secuencial: el periodo *k* no abre si *k−1* no está `CERRADO`. | arquitectura | BRD BR-017, `ADR-0013` | FSD-UC-013 |
-| BR-018 | Plantilla de `SeccionEvaluacion` **por gestión** (nombre, orden, `nota`); Σ `nota` = 100; inmutable desde el primer periodo `ABIERTO`. Defaults Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10. | arquitectura | BRD BR-018, `ADR-0013` | FSD-UC-014 |
+| BR-018 | Plantilla de `SeccionEvaluacion` **por gestión** (nombre, orden, `nota`); Σ `nota` = 100; inmutable desde que algún periodo deja de estar `PENDIENTE` (freeze sticky: `ABIERTO` o `CERRADO`). Defaults Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10. | arquitectura | BRD BR-018, `ADR-0013` | FSD-UC-014 |
 | BR-019 | Toda `Evaluacion` de una materia usa una sección de la plantilla y se califica en `[0, seccion.nota]`. | arquitectura | BRD BR-019, `ADR-0013` | FSD-UC-015 |
 | BR-020 | `nota_seccion = (Σ / n)` a 2 decimales; `nota_periodo = round(Σ secciones)` a entero HALF_UP; `promedio_gestion = round((Σ periodos_o_cero) / N)` visible `PROVISIONAL`. Sin `floor()` en el genérico. | cálculo | BRD BR-020, `ADR-0013` | FSD-UC-016 |
 | BR-021 | Un `Curso` puede tener uno o más `Paralelo`; `Materia` e `Inscripcion` referencian siempre un `Curso` y, cuando aplica, un `Paralelo` válidos. | validación | BRD BR-021 | FSD-UC-017 |
@@ -1446,6 +1454,7 @@ Paso 13 → audit_log entry + notificación
 | v2.9 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-019` (§4.6.9) cierra implementación **completa** (backend + UI fullstack, `DD-UC-014`/`PR-IMPL-014`): se documentan `GET /profesores` (`q`/`activo` + paginación), `GET /profesores/{id}`, `GET /profesores/{id}/asignaciones` enriquecido, A1 `404 E_PROFESOR_NO_ENCONTRADO`. Sin entidad/tabla `Profesor`; alta permanece en `FSD-UC-021`; escrituras de asignación en `FSD-UC-018`. Sin cambio de `BR-022`. |
 | v2.10 | 21/08/2026 | Rodrigo Aspeti | `ADR-0013` resuelve `ADR-0009` §3 puntos 1–4: `FSD-UC-012`..`016`, BR-016..020, ER §6.3 y diccionario alineados al modelo genérico (plantilla de secciones por gestión, seed 3+4, suma 100, escala `[0, nota]`, promedio simple, `round` entero HALF_UP, promedio de gestión `/ N` `PROVISIONAL`, apertura secuencial). Punto 5 (gobernanza) sigue pendiente. Sin código en este bump. |
 | v2.11 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-013` (§4.6.3) cierra implementación **completa** (backend + UI fullstack, `DD-UC-015`/`PR-IMPL-015`): se documentan `GET` gestión/`periodos`, `PATCH`/`DELETE`, A3 `E_PERIODOS_INMUTABLES`, A4 `E_PERIODO_UNICO`. Seed de 3 periodos al `POST` de gestión; las 4 secciones siguen en `FSD-UC-014`. |
+| v2.12 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-014` (§4.6.4) cierra implementación **completa** (backend + UI fullstack, `DD-UC-016`/`PR-IMPL-016`): se documentan `GET`/`PUT` secciones, freeze sticky (A3 alineado a `ADR-0013` §3.1.5), A2 también al abrir un periodo sin plantilla Σ=100. Seed de 4 secciones al `POST` de gestión (`FSD-UC-012`). |
 
 ---
 

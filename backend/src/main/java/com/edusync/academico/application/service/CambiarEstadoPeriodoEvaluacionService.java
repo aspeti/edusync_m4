@@ -2,6 +2,7 @@ package com.edusync.academico.application.service;
 
 import com.edusync.academico.application.port.in.CambiarEstadoPeriodoEvaluacionUseCase;
 import com.edusync.academico.application.port.out.PeriodoEvaluacionRepositoryPort;
+import com.edusync.academico.application.port.out.SeccionEvaluacionRepositoryPort;
 import com.edusync.academico.domain.EstadoPeriodoEvaluacion;
 import com.edusync.academico.domain.PeriodoEvaluacion;
 import com.edusync.academico.domain.PeriodoEvaluacionId;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CambiarEstadoPeriodoEvaluacionService implements CambiarEstadoPeriodoEvaluacionUseCase {
 
   private final PeriodoEvaluacionRepositoryPort periodoEvaluacionRepositoryPort;
+  private final SeccionEvaluacionRepositoryPort seccionEvaluacionRepositoryPort;
 
   @Override
   @Transactional
@@ -27,6 +29,8 @@ public class CambiarEstadoPeriodoEvaluacionService implements CambiarEstadoPerio
         .orElseThrow(PeriodoNoEncontradoException::new);
 
     if (nuevoEstado == EstadoPeriodoEvaluacion.ABIERTO) {
+      SeccionEvaluacionPolitica.exigirSumaCien(
+          seccionEvaluacionRepositoryPort.listarPorGestionYTenant(periodo.getGestionEscolarId(), tenantId));
       List<PeriodoEvaluacion> hermanos = periodoEvaluacionRepositoryPort.listarPorGestionYTenant(
           periodo.getGestionEscolarId(), tenantId);
       if (periodo.getOrden() > 1) {

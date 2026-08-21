@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.edusync.academico.application.port.in.CrearPeriodoEvaluacionCommand;
 import com.edusync.academico.application.port.out.GestionEscolarRepositoryPort;
 import com.edusync.academico.application.port.out.PeriodoEvaluacionRepositoryPort;
+import com.edusync.academico.application.port.out.SeccionEvaluacionRepositoryPort;
 import com.edusync.academico.domain.EstadoPeriodoEvaluacion;
 import com.edusync.academico.domain.GestionEscolar;
 import com.edusync.academico.domain.GestionEscolarId;
@@ -34,6 +35,7 @@ class PeriodoEvaluacionServicesTest {
 
   private GestionEscolarRepositoryPort gestionPort;
   private PeriodoEvaluacionRepositoryPort periodoPort;
+  private SeccionEvaluacionRepositoryPort seccionPort;
   private CrearPeriodoEvaluacionService crearService;
   private CambiarEstadoPeriodoEvaluacionService cambiarEstadoService;
   private EliminarPeriodoEvaluacionService eliminarService;
@@ -45,8 +47,9 @@ class PeriodoEvaluacionServicesTest {
   void setUp() {
     gestionPort = mock(GestionEscolarRepositoryPort.class);
     periodoPort = mock(PeriodoEvaluacionRepositoryPort.class);
+    seccionPort = mock(SeccionEvaluacionRepositoryPort.class);
     crearService = new CrearPeriodoEvaluacionService(gestionPort, periodoPort);
-    cambiarEstadoService = new CambiarEstadoPeriodoEvaluacionService(periodoPort);
+    cambiarEstadoService = new CambiarEstadoPeriodoEvaluacionService(periodoPort, seccionPort);
     eliminarService = new EliminarPeriodoEvaluacionService(periodoPort);
   }
 
@@ -86,6 +89,7 @@ class PeriodoEvaluacionServicesTest {
     PeriodoEvaluacion t1 = periodo("T1", LocalDate.of(2027, 2, 1), LocalDate.of(2027, 5, 31), 1, EstadoPeriodoEvaluacion.ABIERTO);
     PeriodoEvaluacion t2 = periodo("T2", LocalDate.of(2027, 6, 1), LocalDate.of(2027, 8, 31), 2, EstadoPeriodoEvaluacion.PENDIENTE);
     when(periodoPort.buscarPorIdYTenant(t2.getId(), tenantId)).thenReturn(Optional.of(t2));
+    when(seccionPort.listarPorGestionYTenant(t2.getGestionEscolarId(), tenantId)).thenReturn(seccionesValidas());
     when(periodoPort.listarPorGestionYTenant(t2.getGestionEscolarId(), tenantId)).thenReturn(List.of(t1, t2));
 
     assertThatThrownBy(() ->
@@ -99,6 +103,7 @@ class PeriodoEvaluacionServicesTest {
     PeriodoEvaluacion t1 = periodo("T1", LocalDate.of(2027, 2, 1), LocalDate.of(2027, 5, 31), 1, EstadoPeriodoEvaluacion.CERRADO);
     PeriodoEvaluacion t2 = periodo("T2", LocalDate.of(2027, 6, 1), LocalDate.of(2027, 8, 31), 2, EstadoPeriodoEvaluacion.PENDIENTE);
     when(periodoPort.buscarPorIdYTenant(t2.getId(), tenantId)).thenReturn(Optional.of(t2));
+    when(seccionPort.listarPorGestionYTenant(t2.getGestionEscolarId(), tenantId)).thenReturn(seccionesValidas());
     when(periodoPort.listarPorGestionYTenant(t2.getGestionEscolarId(), tenantId)).thenReturn(List.of(t1, t2));
     when(periodoPort.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -137,5 +142,21 @@ class PeriodoEvaluacionServicesTest {
       String nombre, LocalDate inicio, LocalDate fin, int orden, EstadoPeriodoEvaluacion estado) {
     return PeriodoEvaluacion.reconstruir(
         PeriodoEvaluacionId.nueva(), tenantId, gestionId, nombre, inicio, fin, orden, estado);
+  }
+
+  private List<com.edusync.academico.domain.SeccionEvaluacion> seccionesValidas() {
+    return List.of(
+        com.edusync.academico.domain.SeccionEvaluacion.reconstruir(
+            com.edusync.academico.domain.SeccionEvaluacionId.nueva(),
+            tenantId, gestionId, "Ser", 1, new java.math.BigDecimal("5")),
+        com.edusync.academico.domain.SeccionEvaluacion.reconstruir(
+            com.edusync.academico.domain.SeccionEvaluacionId.nueva(),
+            tenantId, gestionId, "Saber", 2, new java.math.BigDecimal("45")),
+        com.edusync.academico.domain.SeccionEvaluacion.reconstruir(
+            com.edusync.academico.domain.SeccionEvaluacionId.nueva(),
+            tenantId, gestionId, "Hacer", 3, new java.math.BigDecimal("40")),
+        com.edusync.academico.domain.SeccionEvaluacion.reconstruir(
+            com.edusync.academico.domain.SeccionEvaluacionId.nueva(),
+            tenantId, gestionId, "Autoevaluación", 4, new java.math.BigDecimal("10")));
   }
 }

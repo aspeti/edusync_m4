@@ -86,6 +86,9 @@ import { PageResponse } from '../../core/api/page-response.model';
                   <a [routerLink]="['/academico/gestiones-escolares', gestion.id, 'periodos']" style="margin-right: 0.5rem; font-size: 0.85rem;">
                     Periodos
                   </a>
+                  <a [routerLink]="['/academico/gestiones-escolares', gestion.id, 'secciones']" style="margin-right: 0.5rem; font-size: 0.85rem;">
+                    Secciones
+                  </a>
                   @if (transicionesValidas(gestion.estado).length > 0) {
                     <button (click)="cambiarEstado(gestion)" style="cursor: pointer; font-size: 0.85rem;">
                       Cambiar estado

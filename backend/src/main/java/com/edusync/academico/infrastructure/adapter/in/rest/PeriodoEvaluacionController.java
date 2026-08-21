@@ -88,7 +88,8 @@ public class PeriodoEvaluacionController {
           "E_PERIODOS_SOLAPADOS",
           "E_PERIODO_NO_SECUENCIAL",
           "E_PERIODOS_INMUTABLES",
-          "E_PERIODO_UNICO" -> HttpStatus.UNPROCESSABLE_CONTENT;
+          "E_PERIODO_UNICO",
+          "E_SUMA_SECCIONES_INVALIDA" -> HttpStatus.UNPROCESSABLE_CONTENT;
       default -> HttpStatus.CONFLICT;
     };
     return ResponseEntity.status(status).body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));

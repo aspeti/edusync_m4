@@ -5,14 +5,20 @@ import com.edusync.academico.application.port.in.CrearGestionEscolarCommand;
 import com.edusync.academico.application.port.in.CrearGestionEscolarUseCase;
 import com.edusync.academico.application.port.in.CrearPeriodoEvaluacionCommand;
 import com.edusync.academico.application.port.in.CrearPeriodoEvaluacionUseCase;
+import com.edusync.academico.application.port.in.CrearSeccionEvaluacionCommand;
+import com.edusync.academico.application.port.in.CrearSeccionEvaluacionUseCase;
 import com.edusync.academico.application.port.in.GestionEscolarFiltro;
 import com.edusync.academico.application.port.in.ListarGestionesEscolaresUseCase;
 import com.edusync.academico.application.port.in.ListarPeriodosEvaluacionUseCase;
+import com.edusync.academico.application.port.in.ListarSeccionesEvaluacionUseCase;
 import com.edusync.academico.application.port.in.ObtenerGestionEscolarUseCase;
+import com.edusync.academico.application.port.in.ReemplazarSeccionesEvaluacionCommand;
+import com.edusync.academico.application.port.in.ReemplazarSeccionesEvaluacionUseCase;
 import com.edusync.academico.domain.EstadoGestionEscolar;
 import com.edusync.academico.domain.GestionEscolar;
 import com.edusync.academico.domain.GestionEscolarId;
 import com.edusync.academico.domain.PeriodoEvaluacion;
+import com.edusync.academico.domain.SeccionEvaluacion;
 import com.edusync.shared.PageQuery;
 import com.edusync.shared.exception.DomainException;
 import com.edusync.shared.tenant.TenantContextProvider;
@@ -34,6 +40,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,12 +51,13 @@ import org.springframework.web.bind.annotation.RestController;
  * listado y detalle admite tambien {@code SECRETARIA} ({@code DD-UC-013}/{@code DD-UC-015}).
  * Operan exclusivamente sobre el tenant del actor autenticado
  * ({@link TenantContextProvider}): nunca se confia en un {@code tenantId}
- * provisto por el cliente. Seed de 3 periodos al crear ({@code DD-UC-015}).
+ * provisto por el cliente. Seed de 3 periodos y 4 secciones al crear
+ * ({@code DD-UC-015}/{@code DD-UC-016}).
  */
 @RestController
 @RequestMapping("/api/v1/gestiones-escolares")
 @RequiredArgsConstructor
-@Tag(name = "Academico", description = "Gestion Escolar + Periodos anidados (DD-UC-008/015; GET tambien SECRETARIA)")
+@Tag(name = "Academico", description = "Gestion Escolar + Periodos/Secciones anidados (DD-UC-008/015/016; GET tambien SECRETARIA)")
 public class GestionEscolarController {
 
   private final CrearGestionEscolarUseCase crearGestionEscolarUseCase;
@@ -58,13 +66,16 @@ public class GestionEscolarController {
   private final CambiarEstadoGestionEscolarUseCase cambiarEstadoGestionEscolarUseCase;
   private final CrearPeriodoEvaluacionUseCase crearPeriodoEvaluacionUseCase;
   private final ListarPeriodosEvaluacionUseCase listarPeriodosEvaluacionUseCase;
+  private final ListarSeccionesEvaluacionUseCase listarSeccionesEvaluacionUseCase;
+  private final ReemplazarSeccionesEvaluacionUseCase reemplazarSeccionesEvaluacionUseCase;
+  private final CrearSeccionEvaluacionUseCase crearSeccionEvaluacionUseCase;
   private final TenantContextProvider tenantContextProvider;
 
   @PostMapping
   @PreAuthorize("hasRole('ADMIN')")
   @Operation(
       summary = "Crear una Gestion Escolar",
-      description = "Nace en PLANIFICACION y siembra 3 trimestres PENDIENTE (FSD-UC-012/013, ADR-0013).")
+      description = "Nace en PLANIFICACION y siembra 3 trimestres PENDIENTE y 4 secciones (FSD-UC-012/013/014, ADR-0013).")
   @ApiResponse(responseCode = "201", description = "Gestion Escolar creada")
   @ApiResponse(responseCode = "422", description = "fechaFin no posterior a fechaInicio (E_FECHAS_INVALIDAS)")
   public ResponseEntity<GestionEscolarResponse> crear(@Valid @RequestBody CrearGestionEscolarRequest request) {
@@ -125,6 +136,50 @@ public class GestionEscolarController {
     return ResponseEntity.status(HttpStatus.CREATED).body(aPeriodoResponse(periodo));
   }
 
+  @GetMapping("/{id}/secciones")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA')")
+  @Operation(summary = "Listar secciones de una Gestion Escolar", description = "Sin paginar, ordenadas por orden.")
+  @ApiResponse(responseCode = "200", description = "Lista de secciones")
+  @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")
+  public ResponseEntity<List<SeccionEvaluacionResponse>> listarSecciones(@PathVariable UUID id) {
+    List<SeccionEvaluacionResponse> secciones = listarSeccionesEvaluacionUseCase.listar(tenantActual(), id).stream()
+        .map(this::aSeccionResponse)
+        .toList();
+    return ResponseEntity.ok(secciones);
+  }
+
+  @PutMapping("/{id}/secciones")
+  @PreAuthorize("hasRole('ADMIN')")
+  @Operation(summary = "Reemplazar la plantilla de secciones (operacion canonica, Σ nota = 100)")
+  @ApiResponse(responseCode = "200", description = "Plantilla reemplazada")
+  @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")
+  @ApiResponse(responseCode = "422", description = "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA / E_SECCIONES_INMUTABLES")
+  public ResponseEntity<List<SeccionEvaluacionResponse>> reemplazarSecciones(
+      @PathVariable UUID id, @Valid @RequestBody ReemplazarSeccionesEvaluacionRequest request) {
+    List<ReemplazarSeccionesEvaluacionCommand.Item> items = request.secciones().stream()
+        .map(item -> new ReemplazarSeccionesEvaluacionCommand.Item(item.nombre(), item.nota()))
+        .toList();
+    List<SeccionEvaluacionResponse> secciones = reemplazarSeccionesEvaluacionUseCase
+        .reemplazar(new ReemplazarSeccionesEvaluacionCommand(tenantActual(), id, items))
+        .stream()
+        .map(this::aSeccionResponse)
+        .toList();
+    return ResponseEntity.ok(secciones);
+  }
+
+  @PostMapping("/{id}/secciones")
+  @PreAuthorize("hasRole('ADMIN')")
+  @Operation(summary = "Agregar una seccion a una Gestion Escolar (la suma resultante debe ser 100)")
+  @ApiResponse(responseCode = "201", description = "Seccion creada")
+  @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")
+  @ApiResponse(responseCode = "422", description = "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA / E_SECCIONES_INMUTABLES")
+  public ResponseEntity<SeccionEvaluacionResponse> crearSeccion(
+      @PathVariable UUID id, @Valid @RequestBody CrearSeccionEvaluacionRequest request) {
+    SeccionEvaluacion seccion = crearSeccionEvaluacionUseCase.crear(new CrearSeccionEvaluacionCommand(
+        tenantActual(), id, request.nombre(), request.orden(), request.nota()));
+    return ResponseEntity.status(HttpStatus.CREATED).body(aSeccionResponse(seccion));
+  }
+
   @PatchMapping("/{id}/estado")
   @PreAuthorize("hasRole('ADMIN')")
   @Operation(
@@ -143,13 +198,17 @@ public class GestionEscolarController {
   @ExceptionHandler(DomainException.class)
   public ResponseEntity<ErrorResponse> alManejarErrorDeDominio(DomainException ex) {
     HttpStatus status = switch (ex.getErrorCode()) {
-      case "E_GESTION_ESCOLAR_NO_ENCONTRADA", "E_PERIODO_NO_ENCONTRADO" -> HttpStatus.NOT_FOUND;
+      case "E_GESTION_ESCOLAR_NO_ENCONTRADA", "E_PERIODO_NO_ENCONTRADO", "E_SECCION_NO_ENCONTRADA" ->
+          HttpStatus.NOT_FOUND;
       case "E_FECHAS_INVALIDAS",
           "E_ESTADO_INVALIDO",
           "E_PERIODOS_SOLAPADOS",
           "E_PERIODO_NO_SECUENCIAL",
           "E_PERIODOS_INMUTABLES",
-          "E_PERIODO_UNICO" -> HttpStatus.UNPROCESSABLE_CONTENT;
+          "E_PERIODO_UNICO",
+          "E_PESO_INVALIDO",
+          "E_SUMA_SECCIONES_INVALIDA",
+          "E_SECCIONES_INMUTABLES" -> HttpStatus.UNPROCESSABLE_CONTENT;
       default -> HttpStatus.CONFLICT;
     };
     return ResponseEntity.status(status).body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));
@@ -177,5 +236,14 @@ public class GestionEscolarController {
         periodo.getFechaFin(),
         periodo.getOrden(),
         periodo.getEstado().name());
+  }
+
+  private SeccionEvaluacionResponse aSeccionResponse(SeccionEvaluacion seccion) {
+    return new SeccionEvaluacionResponse(
+        seccion.getId().valor(),
+        seccion.getGestionEscolarId().valor(),
+        seccion.getNombre(),
+        seccion.getOrden(),
+        seccion.getNota());
   }
 }

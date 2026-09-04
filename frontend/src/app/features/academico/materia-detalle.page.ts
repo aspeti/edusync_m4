@@ -11,6 +11,7 @@ import {
 import { CursoResponse, ParaleloResponse } from './curso.model';
 import { ApiBase } from '../../core/api/api-base';
 import { PageResponse } from '../../core/api/page-response.model';
+import { AuthService } from '../../core/auth/auth.service';
 
 /**
  * Detalle de una Materia: GET /materias/{id} para el título (no query param),
@@ -34,6 +35,11 @@ import { PageResponse } from '../../core/api/page-response.model';
         </div>
       } @else {
         <h2>{{ materia()?.nombre || 'Materia' }}</h2>
+        @if (auth.hasRole('ADMIN')) {
+          <p style="margin-bottom: 1rem;">
+            <a [routerLink]="['/academico/materias', materiaId, 'evaluaciones']">Evaluaciones</a>
+          </p>
+        }
 
         @if (errorMsg()) {
           <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
@@ -172,7 +178,11 @@ export class MateriaDetallePage implements OnInit {
   savingCurso = signal(false);
   savingProfesor = signal(false);
 
-  constructor(private http: HttpClient, private route: ActivatedRoute) {}
+  constructor(
+    private http: HttpClient,
+    private route: ActivatedRoute,
+    protected auth: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.materiaId = this.route.snapshot.paramMap.get('id') ?? '';

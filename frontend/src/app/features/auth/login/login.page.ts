@@ -80,6 +80,8 @@ export class LoginPage implements OnInit {
           this.router.navigate(['/plataforma/tenants']);
         } else if (roles.includes('ADMIN')) {
           this.router.navigate(['/usuarios']);
+        } else if (roles.includes('PROFESOR')) {
+          this.router.navigate(['/academico/mis-materias']);
         } else {
           this.router.navigate(['/home']);
         }

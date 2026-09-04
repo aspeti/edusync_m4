@@ -32,6 +32,9 @@ import { Router } from '@angular/router';
         <a routerLink="/academico/estudiantes" style="color: white; text-decoration: none;">Estudiantes</a>
         <a routerLink="/academico/profesores" style="color: white; text-decoration: none;">Profesores</a>
       }
+      @if (auth.hasRole('PROFESOR')) {
+        <a routerLink="/academico/mis-materias" style="color: white; text-decoration: none;">Mis materias</a>
+      }
       <span style="flex: 1"></span>
       <button (click)="logout()" style="cursor: pointer; padding: 0.25rem 0.75rem;">Cerrar sesión</button>
     </nav>

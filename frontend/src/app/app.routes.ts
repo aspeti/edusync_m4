@@ -125,11 +125,36 @@ export const routes: Routes = [
           import('./features/academico/cursos-list.page').then((m) => m.CursosListPage),
       },
       {
+        path: 'academico/mis-materias',
+        canActivate: [roleGuard],
+        data: { roles: ['PROFESOR'] },
+        loadComponent: () =>
+          import('./features/academico/mis-materias.page').then((m) => m.MisMateriasPage),
+      },
+      {
         path: 'academico/materias/nuevo',
         canActivate: [roleGuard],
         data: { roles: ['ADMIN', 'SECRETARIA'] },
         loadComponent: () =>
           import('./features/academico/materia-create.page').then((m) => m.MateriaCreatePage),
+      },
+      {
+        path: 'academico/materias/:id/evaluaciones/:evaluacionId/calificaciones',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'PROFESOR'] },
+        loadComponent: () =>
+          import('./features/academico/evaluacion-calificaciones.page').then(
+            (m) => m.EvaluacionCalificacionesPage
+          ),
+      },
+      {
+        path: 'academico/materias/:id/evaluaciones',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'PROFESOR'] },
+        loadComponent: () =>
+          import('./features/academico/materia-evaluaciones.page').then(
+            (m) => m.MateriaEvaluacionesPage
+          ),
       },
       {
         path: 'academico/materias/:id',

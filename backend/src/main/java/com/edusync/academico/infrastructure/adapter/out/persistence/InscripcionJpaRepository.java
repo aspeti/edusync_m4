@@ -10,4 +10,7 @@ interface InscripcionJpaRepository extends JpaRepository<InscripcionJpaEntity, U
 
   boolean existsByEstudianteIdAndGestionEscolarIdAndTenantId(
       UUID estudianteId, UUID gestionEscolarId, UUID tenantId);
+
+  List<InscripcionJpaEntity> findByGestionEscolarIdAndTenantIdAndEstado(
+      UUID gestionEscolarId, UUID tenantId, String estado);
 }

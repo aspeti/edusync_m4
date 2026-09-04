@@ -7,6 +7,7 @@ import com.edusync.academico.domain.Estudiante;
 import com.edusync.academico.domain.EstudianteId;
 import com.edusync.shared.PageQuery;
 import com.edusync.shared.PageResult;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +29,17 @@ class EstudianteRepositoryAdapter implements EstudianteRepositoryPort {
     return jpaRepository.findById(id.valor())
         .filter(entity -> entity.getTenantId().equals(tenantId))
         .map(this::aDominio);
+  }
+
+  @Override
+  public List<Estudiante> listarPorIdsYTenant(Collection<EstudianteId> ids, UUID tenantId) {
+    if (ids == null || ids.isEmpty()) {
+      return List.of();
+    }
+    List<UUID> valores = ids.stream().map(EstudianteId::valor).toList();
+    return jpaRepository.findByIdInAndTenantId(valores, tenantId).stream()
+        .map(this::aDominio)
+        .toList();
   }
 
   @Override

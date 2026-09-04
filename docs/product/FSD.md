@@ -24,7 +24,7 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.12 |
+| **Versión del documento** | v2.14 |
 | **Fecha** | 21/08/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
@@ -621,39 +621,52 @@ Escenario: No se editan secciones con un periodo ABIERTO
 
 ### 4.6.5 FSD-UC-015 — Gestión de Evaluaciones
 
-- **Trazabilidad:** `PRD-REQ-025`, `PRD-US-023`, `ADR-0013`
-- **Actor principal:** Profesor (creación de evaluaciones en su materia)
+- **Trazabilidad:** `PRD-REQ-025`, `PRD-US-023`, `ADR-0013`, `DD-UC-017`, `PR-IMPL-017`
+- **Actor principal:** Profesor (creación de evaluaciones en su materia); Admin como override operativo.
 - **Precondiciones:** `SeccionEvaluacion` de la gestión; el Profesor está asignado a la `Materia` (`BR-022`); el periodo está `ABIERTO`.
-- **Disparador:** El Profesor crea una `Evaluacion` en una sección de su materia y periodo.
+- **Disparador:** El Profesor (o el Admin) crea una `Evaluacion` en una sección de su materia y periodo.
 - **Flujo principal:**
-  1. `POST /api/v1/evaluaciones` con `{nombre, materiaId, periodoEvaluacionId, seccionEvaluacionId, fecha, descripcion?}`.
-  2. El sistema asigna `puntajeMaximo = seccion.nota` (no lo envía el cliente).
+  1. `POST /api/v1/evaluaciones` con `{nombre, materiaId, periodoEvaluacionId, seccionEvaluacionId, fecha, descripcion?}` (ADMIN o PROFESOR). El sistema asigna `puntajeMaximo = seccion.nota` (nunca lo envía el cliente).
+  2. `GET /api/v1/materias/{materiaId}/evaluaciones?periodoId=` (ADMIN, SECRETARIA o PROFESOR; lista sin paginar, incluye `ANULADA`; orden: sección, fecha, nombre).
+  3. `GET /api/v1/evaluaciones/{id}` (ADMIN, SECRETARIA o PROFESOR).
+  4. `PATCH /api/v1/evaluaciones/{id}` `{nombre?, fecha?, descripcion?}` y `PATCH /api/v1/evaluaciones/{id}/estado` `{estado: ANULADA}` (ADMIN o PROFESOR; baja lógica, sin `DELETE` físico).
+  5. `GET /api/v1/materias/mias` — materias asignadas al `userId` del JWT (declarado **antes** de `GET /materias/{id}`).
 - **Flujos alternativos / excepciones:**
-  - **A1 — Materia sin profesor asignado:** HTTP 409 `E_MATERIA_SIN_PROFESOR` (`BR-022`).
-  - **A2 — Calificación fuera de `[0, seccion.nota]`:** HTTP 422 `E_RANGO_INVALIDO`.
-- **Postcondiciones:** `Evaluacion` persistida en (`Materia` × `Periodo` × `Seccion`).
+  - **A1 — Materia sin profesor asignado:** HTTP 409 `E_MATERIA_SIN_PROFESOR` (`BR-022`), también si el actor es Admin.
+  - **A2 — Calificación de estudiante fuera de `[0, seccion.nota]`:** HTTP 422 `E_RANGO_INVALIDO` — **diferido** a `FSD-UC-016` (este slice no persiste nota de estudiante; la escala queda demostrada con `puntajeMaximo = seccion.nota`).
+  - Periodo no `ABIERTO` en POST/PATCH/anular: HTTP 422 `E_PERIODO_NO_ABIERTO`.
+  - Sección de otra gestión que el periodo: HTTP 422 `E_SECCION_NO_PERTENECE_A_GESTION`.
+  - Profesor no asignado a la materia: HTTP 404 `E_MATERIA_NO_ENCONTRADA` (nunca 403). Cross-tenant: HTTP 404 `E_EVALUACION_NO_ENCONTRADA`.
+- **Postcondiciones:** `Evaluacion` persistida en (`Materia` × `Periodo` × `Seccion`) con `puntajeMaximo` snapshot de `seccion.nota`.
 - **Reglas de negocio aplicables:** BR-019, BR-022.
 - **Datos de entrada:** `{ "nombre": "string", "materiaId": "uuid", "periodoEvaluacionId": "uuid", "seccionEvaluacionId": "uuid", "fecha": "date", "descripcion": "string?" }`
-- **Fuera de este slice:** catálogo `TipoEvaluacion` (diferido, `ADR-0013` §3.5).
+- **Implementación:** backend + UI fullstack `DD-UC-017`/`PR-IMPL-017` (ejecutado 21/08/2026). Primera consola `PROFESOR` (`/academico/mis-materias`).
+- **Fuera de este slice:** catálogo `TipoEvaluacion` (diferido, `ADR-0013` §3.5); motor `round` / `Calificacion` (`FSD-UC-016`).
 
 ---
 
 ### 4.6.6 FSD-UC-016 — Cálculo de Notas (modelo genérico)
 
-- **Trazabilidad:** `PRD-REQ-026`, `PRD-US-024`, `ADR-0013`
-- **Actor principal:** Sistema (motor de dominio)
-- **Precondiciones:** Existen calificaciones de `Evaluacion` para un estudiante en una materia y periodo.
-- **Disparador:** Persistencia o actualización de una calificación.
+- **Trazabilidad:** `PRD-REQ-026`, `PRD-US-024`, `ADR-0013` — `DD-UC-018` / `PR-IMPL-018` (backend + UI fullstack, 21/08/2026).
+- **Actor principal:** Sistema (motor de dominio) + Profesor / Admin (escritura de calificaciones)
+- **Precondiciones:** Existen `Evaluacion` ACTIVA en periodo `ABIERTO`; el estudiante está en la nómina de la materia (inscripción ACTIVA ∩ curso/paralelo asignado).
+- **Disparador:** Persistencia o actualización de una calificación (`PUT` lote) o consulta de vista provisional.
 - **Flujo principal:**
-  1. Recálculo en la **misma transacción**, solo en dominio (equivalente genérico de `BR-008`).
-  2. `nota_seccion = round_2d( (Σ nota_eval) / n )` en escala `[0, seccion.nota]`. `n` = evaluaciones **con nota**; si `n = 0` la sección queda `INCOMPLETO` (no se inventa 0).
-  3. `nota_periodo = round_HALF_UP_entero( Σ nota_seccion )`.
-  4. `promedio_gestion = round_HALF_UP_entero( (Σ nota_periodo_o_cero) / N )`, **visible** con datos parciales, marcado `PROVISIONAL`. Periodo sin nota = 0. `N` = cantidad de periodos de la gestión.
-  5. **No** se aplica `floor()` (eso queda en `FSD-UC-003` / Perfil Bolivia SIE).
+  1. `PUT /api/v1/evaluaciones/{id}/calificaciones` con `{items:[{estudianteId, valor}]}` (upsert atómico por lote; valor en `[0, puntajeMaximo]`).
+  2. `GET /api/v1/evaluaciones/{id}/calificaciones` — nómina + valor existente o `null`.
+  3. Recálculo on-read en dominio (`CalculoNotas`, misma lógica que si fuera en la TX de escritura; sin `floor()`).
+  4. `nota_seccion = round_2d( (Σ nota_eval) / n )` en escala `[0, seccion.nota]`. `n` = evaluaciones **ACTIVA con nota**; si `n = 0` la sección queda `INCOMPLETO` (no se inventa 0).
+  5. `nota_periodo = round_HALF_UP_entero( Σ nota_seccion_completas )`.
+  6. `promedio_gestion = round_HALF_UP_entero( (Σ nota_periodo_o_cero) / N )`, **visible** con datos parciales, marcado `PROVISIONAL`. Periodo sin nota = 0. `N` = cantidad de periodos de la gestión.
+  7. `GET /api/v1/materias/{materiaId}/estudiantes/{estudianteId}/nota-provisional?periodoId=` — vista `PROVISIONAL`.
 - **Flujos alternativos / excepciones:**
   - **A1 — Sección sin evaluaciones con nota:** se omite del promedio de sección (`INCOMPLETO`); no bloquea mostrar el promedio de gestión.
-- **Postcondiciones:** Vista `PROVISIONAL` de sección, periodo y gestión.
+  - **A2 — Valor fuera de `[0, puntajeMaximo]`:** HTTP 422 `E_RANGO_INVALIDO`.
+  - **A3 — Estudiante no inscrito en la nómina:** HTTP 422 `E_ESTUDIANTE_NO_INSCRITO`.
+  - **A4 — Periodo no ABIERTO / evaluación no ACTIVA (escrituras):** HTTP 422 `E_PERIODO_NO_ABIERTO` / `E_EVALUACION_NO_ACTIVA`.
+- **Postcondiciones:** Calificaciones persistidas; vista `PROVISIONAL` de sección, periodo y gestión.
 - **Reglas de negocio aplicables:** BR-020.
+- **Implementación:** backend + UI Angular `DD-UC-018`/`PR-IMPL-018` (ejecutado 21/08/2026). Aggregate `CalificacionEvaluacion` (no `Calificacion` SIE). Fuera de este slice: `notassie`/`floor()`, `TipoEvaluacion`, `audit_log`, promedios materializados.
 - **Criterios de aceptación:**
 
 ```gherkin
@@ -1455,6 +1468,8 @@ Paso 13 → audit_log entry + notificación
 | v2.10 | 21/08/2026 | Rodrigo Aspeti | `ADR-0013` resuelve `ADR-0009` §3 puntos 1–4: `FSD-UC-012`..`016`, BR-016..020, ER §6.3 y diccionario alineados al modelo genérico (plantilla de secciones por gestión, seed 3+4, suma 100, escala `[0, nota]`, promedio simple, `round` entero HALF_UP, promedio de gestión `/ N` `PROVISIONAL`, apertura secuencial). Punto 5 (gobernanza) sigue pendiente. Sin código en este bump. |
 | v2.11 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-013` (§4.6.3) cierra implementación **completa** (backend + UI fullstack, `DD-UC-015`/`PR-IMPL-015`): se documentan `GET` gestión/`periodos`, `PATCH`/`DELETE`, A3 `E_PERIODOS_INMUTABLES`, A4 `E_PERIODO_UNICO`. Seed de 3 periodos al `POST` de gestión; las 4 secciones siguen en `FSD-UC-014`. |
 | v2.12 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-014` (§4.6.4) cierra implementación **completa** (backend + UI fullstack, `DD-UC-016`/`PR-IMPL-016`): se documentan `GET`/`PUT` secciones, freeze sticky (A3 alineado a `ADR-0013` §3.1.5), A2 también al abrir un periodo sin plantilla Σ=100. Seed de 4 secciones al `POST` de gestión (`FSD-UC-012`). |
+| v2.13 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-015` (§4.6.5) cierra implementación **completa** (backend + UI fullstack, `DD-UC-017`/`PR-IMPL-017`): GET lista/detalle, PATCH datos/`ANULADA`, `GET /materias/mias`, `puntajeMaximo` derivado, A1, periodo `ABIERTO`. A2 `E_RANGO_INVALIDO` **diferido** a calificación de estudiante (`FSD-UC-016`). |
+| v2.14 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-016` (§4.6.6) cierra implementación **completa** (backend + UI fullstack, `DD-UC-018`/`PR-IMPL-018`): `PUT/GET` calificaciones, `GET` nota-provisional, motor `CalculoNotas` (`round` HALF_UP, sin `floor()`), A2 `E_RANGO_INVALIDO` cerrado. |
 
 ---
 

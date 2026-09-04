@@ -85,7 +85,7 @@ public class GestionEscolarController {
   }
 
   @GetMapping
-  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA')")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR')")
   @Operation(
       summary = "Listar Gestiones Escolares del tenant (filtrable y paginado)",
       description =
@@ -101,7 +101,7 @@ public class GestionEscolarController {
   }
 
   @GetMapping("/{id}")
-  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA')")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR')")
   @Operation(summary = "Obtener una Gestion Escolar por id", description = "DD-UC-015: evita query param de nombre.")
   @ApiResponse(responseCode = "200", description = "Gestion Escolar")
   @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")
@@ -112,7 +112,7 @@ public class GestionEscolarController {
   }
 
   @GetMapping("/{id}/periodos")
-  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA')")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR')")
   @Operation(summary = "Listar periodos de una Gestion Escolar", description = "Sin paginar, ordenados por orden.")
   @ApiResponse(responseCode = "200", description = "Lista de periodos")
   @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")
@@ -137,7 +137,7 @@ public class GestionEscolarController {
   }
 
   @GetMapping("/{id}/secciones")
-  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA')")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR')")
   @Operation(summary = "Listar secciones de una Gestion Escolar", description = "Sin paginar, ordenadas por orden.")
   @ApiResponse(responseCode = "200", description = "Lista de secciones")
   @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")

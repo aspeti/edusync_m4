@@ -9,6 +9,7 @@ import com.edusync.academico.domain.Inscripcion;
 import com.edusync.academico.domain.InscripcionId;
 import com.edusync.academico.domain.ParaleloId;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -46,6 +47,26 @@ class InscripcionRepositoryAdapter implements InscripcionRepositoryPort {
       EstudianteId estudianteId, GestionEscolarId gestionEscolarId, UUID tenantId) {
     return jpaRepository.existsByEstudianteIdAndGestionEscolarIdAndTenantId(
         estudianteId.valor(), gestionEscolarId.valor(), tenantId);
+  }
+
+  @Override
+  public List<Inscripcion> listarActivasPorGestionYParesCursoParalelo(
+      GestionEscolarId gestionEscolarId,
+      UUID tenantId,
+      Set<CursoParaleloPar> paresCursoParalelo) {
+    if (paresCursoParalelo == null || paresCursoParalelo.isEmpty()) {
+      return List.of();
+    }
+    return jpaRepository
+        .findByGestionEscolarIdAndTenantIdAndEstado(
+            gestionEscolarId.valor(), tenantId, EstadoInscripcion.ACTIVA.name())
+        .stream()
+        .map(this::aDominio)
+        .filter(
+            i ->
+                paresCursoParalelo.contains(
+                    new CursoParaleloPar(i.getCursoId(), i.getParaleloId())))
+        .toList();
   }
 
   private Inscripcion aDominio(InscripcionJpaEntity entity) {

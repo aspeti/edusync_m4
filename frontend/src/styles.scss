@@ -1,1 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
+
+// ADR-0015: tokens visuales del Design System EduSync (color, tipografía,
+// espaciado, radios, sombra). Único import global nuevo introducido por
+// PR-IMPL-020 (DD-UC-020) — el resto de los estilos siguen embebidos por
+// componente (`styles: [...]`), sin librería de terceros.
+@use './styles/tokens';

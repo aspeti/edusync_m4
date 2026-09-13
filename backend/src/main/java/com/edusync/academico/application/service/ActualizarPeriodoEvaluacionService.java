@@ -27,7 +27,6 @@ public class ActualizarPeriodoEvaluacionService implements ActualizarPeriodoEval
 
     List<PeriodoEvaluacion> hermanos = periodoEvaluacionRepositoryPort.listarPorGestionYTenant(
         periodo.getGestionEscolarId(), command.tenantId());
-    PeriodoEvaluacionPolitica.exigirMutables(hermanos);
 
     String nombre = command.nombre() != null ? command.nombre() : periodo.getNombre();
     LocalDate fechaInicio = command.fechaInicio() != null ? command.fechaInicio() : periodo.getFechaInicio();

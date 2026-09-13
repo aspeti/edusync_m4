@@ -27,7 +27,6 @@ public class EliminarPeriodoEvaluacionService implements EliminarPeriodoEvaluaci
 
     List<PeriodoEvaluacion> hermanos = periodoEvaluacionRepositoryPort.listarPorGestionYTenant(
         periodo.getGestionEscolarId(), tenantId);
-    PeriodoEvaluacionPolitica.exigirMutables(hermanos);
     if (hermanos.size() <= 1) {
       throw new PeriodoUnicoException();
     }

@@ -1,11 +1,11 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.38`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.39`.
 > Cada prompt sigue la estructura de `plantillas/plantillas1/PROMPT_TEMPLATE.md`.
 > Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
-> **Área `IMPL`** (desde `v2.0`): prompts de implementación de la capa viva (`release/3.0.0` en adelante), archivo `docs/prompts/impl/PR-IMPL-NNN.md` (única área que se desvía del directorio raíz `prompts/`, siguiendo `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md`/`MODELO_DOCUMENTAL_IMPLEMENTACION.md`), trazados a un `FSD-UC` y opcionalmente a un `DD-UC-NNN` en `docs/design/`. Ver `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md` y los skills `feature-design-doc` / `dtp-sync`. Primera entrada desde `v2.1`: `PR-IMPL-001` (bootstrap del esqueleto de código, `DD-UC-001`, `ADR-0011`) — **ejecutado** 18/07/2026. Segunda entrada desde `v2.3`: `PR-IMPL-002` (módulo `identidad` — login/JWT, `DD-UC-002`, `ADR-0001`/`ADR-0010`) — **ejecutado** 18-19/07/2026 (+ `ADR-0012` aplicado retroactivamente). Tercera entrada desde `v2.4`: `PR-IMPL-003` (módulo `plataforma` — alta y gestión de Tenants, `DD-UC-003`, `FSD-UC-011`) — **ejecutado** 19/07/2026. Cuarta entrada desde `v2.7`: `PR-IMPL-004` (frontend login + consola SysAdmin, `DD-UC-004`) — **ejecutado** 19/07/2026. Quinta entrada desde `v2.9`: `PR-IMPL-005` (CRUD backend de Usuarios y Roles, `DD-UC-005`, `FSD-UC-021` resto) — **ejecutado** 04/08/2026. Sexta entrada desde `v2.11`: `PR-IMPL-006` (consola Angular de Usuarios y Roles, `DD-UC-006`) — **ejecutado** 04/08/2026. Séptima entrada desde `v2.13`: `PR-IMPL-007` (filtros y paginación reutilizables en `GET /usuarios`/`GET /plataforma/tenants`, `DD-UC-007`) — **ejecutado** 20/08/2026. Octava entrada desde `v2.14`: `PR-IMPL-008` (módulo `academico` — `GestionEscolar`, alta/listado/ciclo de estado, `DD-UC-008`, `FSD-UC-012`) — **ejecutado** 20/08/2026 (119/119 tests backend verde, incluye `ModularityTests` 7/7). Novena entrada desde `v2.16`: `PR-IMPL-009` (consola Angular de Gestión Escolar, `DD-UC-009`, cierre de UI de `FSD-UC-012`) — **ejecutado** 20/08/2026 (`ng build` verde, 2 lazy chunks nuevos). Décima entrada desde `v2.18`: `PR-IMPL-010` (módulo `academico` — `Curso`/`Paralelo`, alta y listado, `DD-UC-010`, `FSD-UC-017`) — **ejecutado** 20/08/2026 (134/134 tests backend verde, incluye `ModularityTests` 7/7). Undécima entrada desde `v2.20` / ejecutada en `v2.21`: `PR-IMPL-011` (consola Angular de Cursos y Paralelos, `DD-UC-011`, cierre de UI de `FSD-UC-017`) — **ejecutado** 21/08/2026 (`ng build` verde, 3 lazy chunks nuevos; `FSD-UC-017` completo backend + UI). Duodécima entrada desde `v2.24` / ejecutada en `v2.25`: `PR-IMPL-012` (módulo `academico` — `Materia` + asignaciones Curso/Profesor, backend + UI fullstack, `DD-UC-012`, `FSD-UC-018`) — **ejecutado** 21/08/2026 (`mvn test` 154/154, `ng build` verde; `FSD-UC-018` completo backend + UI). Decimotercera entrada desde `v2.26` / ejecutada en `v2.27`: `PR-IMPL-013` (módulo `academico` — `Estudiante` + `Inscripcion`, backend + UI fullstack, `DD-UC-013`, `FSD-UC-020`) — **ejecutado** 21/08/2026 (`mvn test` 173/173, `ng build` verde; `FSD-UC-020` completo backend + UI). Decimocuarta entrada desde `v2.28` / ejecutada en `v2.29`: `PR-IMPL-014` (módulo `academico` — consola de Profesores, consulta inversa de asignaciones, backend + UI fullstack, `DD-UC-014`, `FSD-UC-019`) — **ejecutado** 21/08/2026 (`mvn test` 184/184, `ng build` verde; `FSD-UC-019` completo backend + UI). Decimoquinta entrada desde `v2.31` / ejecutada en `v2.32`: `PR-IMPL-015` (módulo `academico` — `PeriodoEvaluacion`, backend + UI fullstack, `DD-UC-015`, `FSD-UC-013`) — **ejecutado** 21/08/2026 (`mvn test` 200/200, `ng build` verde; `FSD-UC-013` completo backend + UI). Decimosexta entrada desde `v2.33` / ejecutada en `v2.34`: `PR-IMPL-016` (módulo `academico` — `SeccionEvaluacion`, backend + UI fullstack, `DD-UC-016`, `FSD-UC-014`) — **ejecutado** 21/08/2026 (`mvn test` 215/215, `ng build` verde; `FSD-UC-014` completo backend + UI). Decimoséptima entrada desde `v2.35` / ejecutada en `v2.36`: `PR-IMPL-017` (módulo `academico` — `Evaluacion`, backend + UI fullstack, `DD-UC-017`, `FSD-UC-015`) — **ejecutado** 21/08/2026 (`mvn test` 228/228, `ng build` verde; `FSD-UC-015` completo backend + UI). Decimoctava entrada desde `v2.37`: `PR-IMPL-018` (módulo `academico` — `CalificacionEvaluacion` + motor `CalculoNotas`, backend + UI fullstack, `DD-UC-018`, `FSD-UC-016`) — **aprobado (prompt)**, ejecución pendiente.
+> **Área `IMPL`** (desde `v2.0`): prompts de implementación de la capa viva (`release/3.0.0` en adelante), archivo `docs/prompts/impl/PR-IMPL-NNN.md` (única área que se desvía del directorio raíz `prompts/`, siguiendo `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md`/`MODELO_DOCUMENTAL_IMPLEMENTACION.md`), trazados a un `FSD-UC` y opcionalmente a un `DD-UC-NNN` en `docs/design/`. Ver `plantillas/plantillas3/MODELO_DOCUMENTAL_IMPLEMENTACION.md` y los skills `feature-design-doc` / `dtp-sync`. Primera entrada desde `v2.1`: `PR-IMPL-001` (bootstrap del esqueleto de código, `DD-UC-001`, `ADR-0011`) — **ejecutado** 18/07/2026. Segunda entrada desde `v2.3`: `PR-IMPL-002` (módulo `identidad` — login/JWT, `DD-UC-002`, `ADR-0001`/`ADR-0010`) — **ejecutado** 18-19/07/2026 (+ `ADR-0012` aplicado retroactivamente). Tercera entrada desde `v2.4`: `PR-IMPL-003` (módulo `plataforma` — alta y gestión de Tenants, `DD-UC-003`, `FSD-UC-011`) — **ejecutado** 19/07/2026. Cuarta entrada desde `v2.7`: `PR-IMPL-004` (frontend login + consola SysAdmin, `DD-UC-004`) — **ejecutado** 19/07/2026. Quinta entrada desde `v2.9`: `PR-IMPL-005` (CRUD backend de Usuarios y Roles, `DD-UC-005`, `FSD-UC-021` resto) — **ejecutado** 04/08/2026. Sexta entrada desde `v2.11`: `PR-IMPL-006` (consola Angular de Usuarios y Roles, `DD-UC-006`) — **ejecutado** 04/08/2026. Séptima entrada desde `v2.13`: `PR-IMPL-007` (filtros y paginación reutilizables en `GET /usuarios`/`GET /plataforma/tenants`, `DD-UC-007`) — **ejecutado** 20/08/2026. Octava entrada desde `v2.14`: `PR-IMPL-008` (módulo `academico` — `GestionEscolar`, alta/listado/ciclo de estado, `DD-UC-008`, `FSD-UC-012`) — **ejecutado** 20/08/2026 (119/119 tests backend verde, incluye `ModularityTests` 7/7). Novena entrada desde `v2.16`: `PR-IMPL-009` (consola Angular de Gestión Escolar, `DD-UC-009`, cierre de UI de `FSD-UC-012`) — **ejecutado** 20/08/2026 (`ng build` verde, 2 lazy chunks nuevos). Décima entrada desde `v2.18`: `PR-IMPL-010` (módulo `academico` — `Curso`/`Paralelo`, alta y listado, `DD-UC-010`, `FSD-UC-017`) — **ejecutado** 20/08/2026 (134/134 tests backend verde, incluye `ModularityTests` 7/7). Undécima entrada desde `v2.20` / ejecutada en `v2.21`: `PR-IMPL-011` (consola Angular de Cursos y Paralelos, `DD-UC-011`, cierre de UI de `FSD-UC-017`) — **ejecutado** 21/08/2026 (`ng build` verde, 3 lazy chunks nuevos; `FSD-UC-017` completo backend + UI). Duodécima entrada desde `v2.24` / ejecutada en `v2.25`: `PR-IMPL-012` (módulo `academico` — `Materia` + asignaciones Curso/Profesor, backend + UI fullstack, `DD-UC-012`, `FSD-UC-018`) — **ejecutado** 21/08/2026 (`mvn test` 154/154, `ng build` verde; `FSD-UC-018` completo backend + UI). Decimotercera entrada desde `v2.26` / ejecutada en `v2.27`: `PR-IMPL-013` (módulo `academico` — `Estudiante` + `Inscripcion`, backend + UI fullstack, `DD-UC-013`, `FSD-UC-020`) — **ejecutado** 21/08/2026 (`mvn test` 173/173, `ng build` verde; `FSD-UC-020` completo backend + UI). Decimocuarta entrada desde `v2.28` / ejecutada en `v2.29`: `PR-IMPL-014` (módulo `academico` — consola de Profesores, consulta inversa de asignaciones, backend + UI fullstack, `DD-UC-014`, `FSD-UC-019`) — **ejecutado** 21/08/2026 (`mvn test` 184/184, `ng build` verde; `FSD-UC-019` completo backend + UI). Decimoquinta entrada desde `v2.31` / ejecutada en `v2.32`: `PR-IMPL-015` (módulo `academico` — `PeriodoEvaluacion`, backend + UI fullstack, `DD-UC-015`, `FSD-UC-013`) — **ejecutado** 21/08/2026 (`mvn test` 200/200, `ng build` verde; `FSD-UC-013` completo backend + UI). Decimosexta entrada desde `v2.33` / ejecutada en `v2.34`: `PR-IMPL-016` (módulo `academico` — `SeccionEvaluacion`, backend + UI fullstack, `DD-UC-016`, `FSD-UC-014`) — **ejecutado** 21/08/2026 (`mvn test` 215/215, `ng build` verde; `FSD-UC-014` completo backend + UI). Decimoséptima entrada desde `v2.35` / ejecutada en `v2.36`: `PR-IMPL-017` (módulo `academico` — `Evaluacion`, backend + UI fullstack, `DD-UC-017`, `FSD-UC-015`) — **ejecutado** 21/08/2026 (`mvn test` 228/228, `ng build` verde; `FSD-UC-015` completo backend + UI). Decimoctava entrada desde `v2.37` / ejecutada en `v2.38`: `PR-IMPL-018` (módulo `academico` — `CalificacionEvaluacion` + motor `CalculoNotas`, backend + UI fullstack, `DD-UC-018`, `FSD-UC-016`) — **ejecutado** 21/08/2026 (`mvn test` 235/235, `ng build` verde; `FSD-UC-016` completo backend + UI). Decimonovena entrada desde `v2.39`: `PR-IMPL-019` (módulo `academico` — relajación de secuencialidad/freeze de Periodos/Secciones + visibilidad `ACTIVA`-only de `GestionEscolar` por rol, backend + UI fullstack, `DD-UC-019`, `FSD-UC-012`/`013`/`014`, crea `ADR-0014`) — **ejecutado** 12/09/2026 (`mvn test` 238/238, `ng build` verde).
 
 ---
 
@@ -69,6 +69,8 @@
 | PR-IMPL-017 | `docs/design/DD-UC-017.md` + `docs/prompts/impl/PR-IMPL-017.md` — módulo `academico`: `Evaluacion` (backend + consola Angular fullstack) | generación | `dev-agent` | Sonnet | 21/08/2026 | Ejecutado | `docs/prompts/impl/PR-IMPL-017.md` | `mvn test` 228/228; `ng build` verde; `FSD-UC-015` completo |
 | PR-IMPL-018 | `docs/design/DD-UC-018.md` + `docs/prompts/impl/PR-IMPL-018.md` — módulo `academico`: `CalificacionEvaluacion` + motor `CalculoNotas` (backend + consola Angular fullstack) | generación | `dev-agent` | Sonnet | 21/08/2026 | Ejecutado | `docs/prompts/impl/PR-IMPL-018.md` | `FSD-UC-016` completo backend+UI; `mvn test` 235/235; `ng build` verde |
 | PR-ADR-006 | `docs/adr/0013-modelo-generico-periodos-secciones-calculo.md` — modelo genérico SaaS de periodos, secciones y cálculo de notas (`ADR-0009` §3 puntos 1–4) | generación | `arch-agent` | Sonnet | 21/08/2026 | Aprobado | `docs/adr/0013-modelo-generico-periodos-secciones-calculo.md` | ADR formal; desbloquea `FSD-UC-013`..`016`; BRD v3.2 / PRD v2.3 / FSD v2.10 / DTP v1.30 |
+| PR-IMPL-019 | `docs/design/DD-UC-019.md` + `docs/prompts/impl/PR-IMPL-019.md` — módulo `academico`: relajación de reglas de flujo (secuencialidad/freeze) de Periodos/Secciones + visibilidad de Gestión Escolar por rol (backend + consola Angular fullstack, crea `ADR-0014`) | generación + refactor | `dev-agent` | Sonnet | 12/09/2026 | Ejecutado | `docs/prompts/impl/PR-IMPL-019.md` | `mvn test` 238/238 (incluye `ModularityTests` 7/7); `ng build` verde \| `FSD-UC-012`/`013`/`014` reglas actualizadas |
+| PR-ADR-007 | `docs/adr/0014-relajacion-restricciones-edicion-periodos-secciones-visibilidad-gestion-por-rol.md` — relaja `ADR-0013` §3.1.4/3.1.5/§3.2.2; visibilidad `ACTIVA`-only de `GestionEscolar` por rol | generación | `arch-agent` | Sonnet | 12/09/2026 | Aprobado | `docs/adr/0014-relajacion-restricciones-edicion-periodos-secciones-visibilidad-gestion-por-rol.md` | ADR formal; conserva invariantes de integridad del motor de cálculo; `DD-UC-019` |
 
 ---
 
@@ -234,6 +236,7 @@ flowchart TD
         IMPL016["PR-IMPL-016\nModulo academico\nSecciones fullstack"]
         IMPL017["PR-IMPL-017\nModulo academico\nEvaluaciones fullstack"]
         IMPL018["PR-IMPL-018\nModulo academico\nCalificaciones + CalculoNotas"]
+        IMPL019["PR-IMPL-019\nModulo academico\nRelajacion reglas + visibilidad por rol"]
     end
     FSD --> IMPL001
     HEX --> IMPL001
@@ -290,6 +293,10 @@ flowchart TD
     IMPL017 --> IMPL018
     ADR --> IMPL018
     FSD --> IMPL018
+    IMPL015 --> IMPL019
+    IMPL016 --> IMPL019
+    ADR --> IMPL019
+    FSD --> IMPL019
 ```
 
 ---
@@ -299,8 +306,8 @@ flowchart TD
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
 | `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-POC-001, PR-POC-002, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills → POCs → roadmap → aportes → aliases vFinal); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel, configuración de agentes, evidencia de pruebas de concepto, hoja de ruta de release, informe de aportes individuales y snapshots congelados de entrega | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md`; POCs en `docs/pocs/`; roadmap canónico en `docs/roadmap.md`; aportes por release en `docs/aportes/release-<x.y.z>.md`; aliases `_vFinal.md` en `docs/brd/`, `docs/mrd/`, `docs/prd/`, `docs/fsd/` |
-| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006, PR-IMPL-007, PR-IMPL-008, PR-IMPL-009, PR-IMPL-010, PR-IMPL-011, PR-IMPL-012, PR-IMPL-013, PR-IMPL-014, PR-IMPL-015, PR-IMPL-016, PR-IMPL-017, PR-IMPL-018 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
-| `arch-agent` | PR-ADR-001..005, PR-ADR-006, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006, PR-IMPL-007, PR-IMPL-008, PR-IMPL-009, PR-IMPL-010, PR-IMPL-011, PR-IMPL-012, PR-IMPL-013, PR-IMPL-014, PR-IMPL-015, PR-IMPL-016, PR-IMPL-017, PR-IMPL-018, PR-IMPL-019 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
+| `arch-agent` | PR-ADR-001..005, PR-ADR-006, PR-ADR-007, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
 
@@ -3703,6 +3710,75 @@ deltas materia-evaluaciones, routes.
 
 ---
 
+### PR-IMPL-019 — Académico: relajación de reglas de flujo + visibilidad de Gestión Escolar por rol
+
+```markdown
+# Role
+Eres un Senior Full-Stack Engineer con experiencia en Java 25 / Spring Boot
+4.1.0 hexagonal (Spring Modulith) y Angular 21 (standalone, signals).
+
+# Task
+Implementa DD-UC-019 (crea ADR-0014) segun docs/design/DD-UC-019.md §2:
+elimina la maquina de estados/freeze/secuencialidad de GestionEscolar,
+PeriodoEvaluacion y SeccionEvaluacion (conservando suma-100, no-solape y
+minimo-1-periodo); añade visibilidad ACTIVA-only de GestionEscolar para
+SECRETARIA/PROFESOR/ASESOR; nuevo PATCH nombre/fechas de GestionEscolar.
+Backend Y frontend en el mismo prompt.
+
+# Context
+- Fuente: docs/design/DD-UC-019.md (decisiones usuario: ACTIVA, admin
+  bypasea reglas, nuevo PATCH; ver §2/§3).
+- FSD: docs/product/FSD.md §4.6.2/§4.6.3/§4.6.4. ADRs 0001/0008..0013;
+  crea ADR-0014 (relaja ADR-0013 §3.1.4/3.1.5/§3.2.2).
+- Precedentes: GestionEscolar/PeriodoEvaluacion/SeccionEvaluacion
+  (DD-UC-008/015/016); patron 404-no-403 de aislamiento cross-tenant.
+- Restricciones: tenantId del contexto; conservar exigirSumaCien/
+  exigirSinSolape/PeriodoUnicoException; no tocar CalculoNotas; no
+  floor/notassie/audit_log; no PII.
+
+# Reasoning
+1. Domain: GestionEscolar/PeriodoEvaluacion sin maquina de estados; borrar
+   5 excepciones de transicion/freeze.
+2. application/service: reducir las 2 Politica a la invariante de
+   integridad; quitar freeze de los 5 servicios de escritura afectados.
+3. Nuevo ActualizarGestionEscolarUseCase/Command/Service (PATCH nombre/
+   fechas); nuevo GestionEscolarVisibilidad + actorVeTodas en 4 interfaces
+   de lectura.
+4. Controller: Authentication + ASESOR + nuevo PATCH; limpiar exception
+   handlers de codigos muertos en los 3 controladores.
+5. Frontend: rutas ampliadas a 4 roles; esAdmin en las 3 paginas; dialogos
+   Editar; quitar gating obsoleto (puedeAbrir/todosPendiente/congelada).
+6. mvn test + ng build + ModularityTests verde.
+
+# Stop condition
+Detente cuando abrir T2 con T1 ABIERTO ya no rechaza, PUT/PATCH de
+secciones/periodos con ABIERTO/CERRADO ya no rechaza, suma!=100 y solape
+siguen en 422, SECRETARIA/PROFESOR/ASESOR solo ven ACTIVA (404 en detalle
+si no lo es), mvn test y ng build verdes. No toques CalculoNotas ni
+CalificacionEvaluacion. No edites docs/baseline/**.
+
+# Output
+backend academico (delta, 5 excepciones eliminadas, 2 nuevos archivos
+application, 1 nuevo DTO) + tests actualizados; frontend 3 paginas +
+routes + shell (delta); docs/adr/0014-*.md.
+
+# Invariants
+- tenantId nunca del cliente.
+- Se conservan exigirSumaCien, exigirSinSolape, PeriodoUnicoException.
+- Actor no-admin sobre gestion no ACTIVA → 404, nunca 403.
+- No se toca CalculoNotas/CalificacionEvaluacion.
+
+# Failure modes
+- E_TENANT_DESDE_CLIENTE: rechazar.
+- E_SUMA_CIEN_ELIMINADA: revertir — invariante de integridad, no de flujo.
+- E_403_EN_VEZ_DE_404: corregir, viola el patron 404-no-403.
+- E_CALCULO_TOCADO: revertir, fuera de alcance.
+- E_ROLE_GUARD_REESCRITO: no tocar role.guard.ts.
+- E_BASELINE_TOCADO: revertir.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
@@ -3805,6 +3881,7 @@ deltas materia-evaluaciones, routes.
 | Design Doc `DD-UC-016` + `ADR-0001` + `ADR-0008` + `ADR-0009` + `ADR-0011` + `ADR-0013` + `docs/product/FSD.md` (`FSD-UC-014`) | `DD-UC-016, ADR-0001, ADR-0008, ADR-0009, ADR-0011, ADR-0013, FSD-UC-014` | PR-IMPL-016 | `dev-agent` | `SeccionEvaluacion` (backend + consola Angular fullstack) — **ejecutado** 21/08/2026 | `backend/.../SeccionEvaluacion*`, `V10__academico_seccion_evaluacion.sql`, `frontend/.../gestion-secciones.page.ts`; prompt en `docs/prompts/impl/PR-IMPL-016.md` |
 | Design Doc `DD-UC-017` + `ADR-0001` + `ADR-0008` + `ADR-0009` + `ADR-0010` + `ADR-0011` + `ADR-0013` + `docs/product/FSD.md` (`FSD-UC-015`) | `DD-UC-017, ADR-0001, ADR-0008, ADR-0009, ADR-0010, ADR-0011, ADR-0013, FSD-UC-015` | PR-IMPL-017 | `dev-agent` | `Evaluacion` (backend + consola Angular fullstack) — **ejecutado** 21/08/2026 | `backend/.../Evaluacion*`, `V11__academico_evaluacion.sql`, `frontend/.../mis-materias.page.ts`, `materia-evaluaciones.page.ts`; prompt en `docs/prompts/impl/PR-IMPL-017.md` |
 | Design Doc `DD-UC-018` + `ADR-0001` + `ADR-0008` + `ADR-0009` + `ADR-0010` + `ADR-0011` + `ADR-0013` + `docs/product/FSD.md` (`FSD-UC-016`) | `DD-UC-018, ADR-0001, ADR-0008, ADR-0009, ADR-0010, ADR-0011, ADR-0013, FSD-UC-016` | PR-IMPL-018 | `dev-agent` | `CalificacionEvaluacion` + motor `CalculoNotas` (backend + consola Angular fullstack) — **ejecutado** 21/08/2026 | `docs/design/DD-UC-018.md`, `docs/prompts/impl/PR-IMPL-018.md`, `V12__academico_calificacion_evaluacion.sql`, `frontend/.../evaluacion-calificaciones.page.ts` |
+| Design Doc `DD-UC-019` + `ADR-0001` + `ADR-0008` + `ADR-0009` + `ADR-0010` + `ADR-0011` + `ADR-0012` + `ADR-0013` + `docs/product/FSD.md` (`FSD-UC-012`/`013`/`014`) | `DD-UC-019, ADR-0001, ADR-0008, ADR-0009, ADR-0010, ADR-0011, ADR-0012, ADR-0013, FSD-UC-012, FSD-UC-013, FSD-UC-014` | PR-IMPL-019 | `dev-agent` | Relajación de secuencialidad/freeze de Periodos/Secciones + visibilidad `ACTIVA`-only de `GestionEscolar` por rol (backend + consola Angular fullstack, crea `ADR-0014`) — **ejecutado** 12/09/2026 | `docs/design/DD-UC-019.md`, `docs/prompts/impl/PR-IMPL-019.md`, `docs/adr/0014-relajacion-restricciones-edicion-periodos-secciones-visibilidad-gestion-por-rol.md` |
 
 ---
 
@@ -3871,3 +3948,4 @@ deltas materia-evaluaciones, routes.
 | v2.36 | 21/08/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-017`**: fila pasa a Ejecutado. `mvn test` 228/228; `ng build` verde. `FSD-UC-015` completo backend+UI. Total prompt-contratos activos: 55 (sin fila nueva). |
 | v2.37 | 21/08/2026 | Rodrigo Aspeti | Decimoctava materialización del área `IMPL` (**diseño aprobado, ejecución pendiente**): `PR-IMPL-018` (módulo `academico`: `CalificacionEvaluacion` + motor `CalculoNotas` — backend hexagonal y consola Angular matriz en el mismo prompt), derivado de `docs/design/DD-UC-018.md` (`FSD-UC-016`) y de `ADR-0013`. Decisiones explícitas del usuario (1A/2A/3A): fullstack; escritura de notas **y** motor; UI matriz por evaluación. Aggregate `CalificacionEvaluacion` (no `Calificacion` SIE); `round` HALF_UP sin `floor()`; promedios on-read `PROVISIONAL`; A2 `E_RANGO_INVALIDO` cerrado. Índice ampliado. Flowchart nodo `IMPL018`. Matriz `dev-agent` ampliada. Contrato inline agregado. Trazabilidad ampliada. Archivo `docs/prompts/impl/PR-IMPL-018.md` materializado. Total prompt-contratos activos: 55 → 56. |
 | v2.38 | 21/08/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-018`**: `FSD-UC-016` completo (backend + UI). `CalificacionEvaluacion`, `CalculoNotas`, `V12`, matriz Angular. Stop condition: `mvn test` 235/235 (incluye `ModularityTests` 7/7); `ng build` verde. Estado fila `PR-IMPL-018` → Ejecutado. Trazabilidad actualizada. Sin filas nuevas (56 contratos). |
+| v2.39 | 12/09/2026 | Rodrigo Aspeti | **Decimonovena materialización y ejecución del área `IMPL` en el mismo turno**: `PR-IMPL-019` (módulo `academico`: relajación de la secuencialidad de apertura y el freeze de Periodos/Secciones — `E_PERIODO_NO_SECUENCIAL`, `E_PERIODOS_INMUTABLES`, `E_SECCIONES_INMUTABLES` eliminados; conserva `E_SUMA_SECCIONES_INVALIDA`/`E_PERIODOS_SOLAPADOS`/`E_PERIODO_UNICO` como invariantes de integridad del motor de cálculo — más visibilidad `ACTIVA`-only de `GestionEscolar` para `SECRETARIA`/`PROFESOR`/`ASESOR`, nuevo `PATCH /gestiones-escolares/{id}` de nombre/fechas), derivado de `docs/design/DD-UC-019.md` (`FSD-UC-012`/`013`/`014`) y de `ADR-0014` (nuevo, relaja `ADR-0013` §3.1.4/3.1.5/§3.2.2, no lo supersede). Índice ampliado con `PR-IMPL-019` (Ejecutado) y `PR-ADR-007` (Aprobado). Flowchart nodo `IMPL019`. Matriz `dev-agent`/`arch-agent` ampliadas. 2 contratos inline agregados. Trazabilidad ampliada. Archivos `docs/prompts/impl/PR-IMPL-019.md` y `docs/adr/0014-*.md` materializados. `mvn test` 238/238 (incluye `ModularityTests` 7/7); `ng build` verde. Total prompt-contratos activos: 56 → 58. |

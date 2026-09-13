@@ -1,16 +1,20 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { GestionEscolarResponse } from './gestion-escolar.model';
-import { PeriodoEvaluacionResponse } from './periodo-evaluacion.model';
 import { SeccionEvaluacionDraft, SeccionEvaluacionResponse } from './seccion-evaluacion.model';
 import { ApiBase } from '../../core/api/api-base';
+import { AuthService } from '../../core/auth/auth.service';
 
 /**
- * Detalle de Secciones de una Gestion Escolar (DD-UC-016 §2): GET gestion,
- * tabla editable, Guardar = PUT de la plantilla. Freeze si algun periodo
- * no esta PENDIENTE.
+ * Detalle de Secciones de una Gestion Escolar (DD-UC-016 §2, DD-UC-019): GET
+ * gestion, tabla editable, Guardar = PUT de la plantilla.
+ *
+ * DD-UC-019: el freeze de la plantilla (bloqueaba la edición una vez que algún
+ * periodo dejaba de estar PENDIENTE) se eliminó — el endpoint es exclusivamente
+ * `ADMIN`, que ahora puede editar en cualquier momento. `SECRETARIA`/`PROFESOR`/
+ * `ASESOR` solo ven esta pantalla en modo lectura.
  */
 @Component({
   selector: 'app-gestion-secciones-page',
@@ -52,19 +56,15 @@ import { ApiBase } from '../../core/api/api-base';
         }
 
         @if (!loading()) {
-          @if (congelada()) {
-            <p style="color: #666; font-size: 0.85rem;">
-              Hay un periodo abierto o cerrado: la plantilla de secciones ya no se puede modificar.
-            </p>
-          }
-
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
             <thead>
               <tr style="background: #f5f5f5;">
                 <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">#</th>
                 <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Nombre</th>
                 <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Nota</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;"></th>
+                @if (esAdmin()) {
+                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;"></th>
+                }
               </tr>
             </thead>
             <tbody>
@@ -76,7 +76,7 @@ import { ApiBase } from '../../core/api/api-base';
                       type="text"
                       [ngModel]="fila.nombre"
                       (ngModelChange)="actualizarFila(i, 'nombre', $event)"
-                      [disabled]="congelada() || saving()"
+                      [disabled]="!esAdmin() || saving()"
                       maxlength="50"
                       style="padding: 0.35rem; width: 100%;"
                     />
@@ -86,20 +86,20 @@ import { ApiBase } from '../../core/api/api-base';
                       type="number"
                       [ngModel]="fila.nota"
                       (ngModelChange)="actualizarFila(i, 'nota', $event)"
-                      [disabled]="congelada() || saving()"
+                      [disabled]="!esAdmin() || saving()"
                       min="0.01"
                       max="100"
                       step="0.01"
                       style="padding: 0.35rem; width: 8rem;"
                     />
                   </td>
-                  <td style="padding: 0.5rem;">
-                    @if (!congelada()) {
+                  @if (esAdmin()) {
+                    <td style="padding: 0.5rem;">
                       <button (click)="quitarFila(i)" [disabled]="saving() || filas().length <= 1" style="cursor: pointer; font-size: 0.85rem; color: #c62828;">
                         Quitar
                       </button>
-                    }
-                  </td>
+                    </td>
+                  }
                 </tr>
               }
             </tbody>
@@ -109,7 +109,7 @@ import { ApiBase } from '../../core/api/api-base';
             Suma: {{ suma().toFixed(2) }} / 100
           </p>
 
-          @if (!congelada()) {
+          @if (esAdmin()) {
             <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
               <button (click)="anadirFila()" [disabled]="saving()" style="padding: 0.5rem 1rem; cursor: pointer;">
                 Añadir fila
@@ -136,13 +136,15 @@ export class GestionSeccionesPage implements OnInit {
   errorMsg = signal<string | null>(null);
   okMsg = signal<string | null>(null);
   saving = signal(false);
-  congelada = signal(false);
+
+  readonly esAdmin = computed(() => this.auth.hasRole('ADMIN'));
 
   private gestionId = '';
 
   constructor(
     private http: HttpClient,
     private route: ActivatedRoute,
+    private auth: AuthService,
   ) {}
 
   ngOnInit(): void {
@@ -207,19 +209,11 @@ export class GestionSeccionesPage implements OnInit {
       next: (gestion) => {
         this.gestion.set(gestion);
         this.http
-          .get<PeriodoEvaluacionResponse[]>(`${ApiBase.BASE}/gestiones-escolares/${this.gestionId}/periodos`)
+          .get<SeccionEvaluacionResponse[]>(`${ApiBase.BASE}/gestiones-escolares/${this.gestionId}/secciones`)
           .subscribe({
-            next: (periodos) => {
-              this.congelada.set(periodos.some((p) => p.estado !== 'PENDIENTE'));
-              this.http
-                .get<SeccionEvaluacionResponse[]>(`${ApiBase.BASE}/gestiones-escolares/${this.gestionId}/secciones`)
-                .subscribe({
-                  next: (secciones) => {
-                    this.filas.set(secciones.map((s) => ({ nombre: s.nombre, nota: Number(s.nota) })));
-                    this.loading.set(false);
-                  },
-                  error: (err: HttpErrorResponse) => this.alErrorCarga(err),
-                });
+            next: (secciones) => {
+              this.filas.set(secciones.map((s) => ({ nombre: s.nombre, nota: Number(s.nota) })));
+              this.loading.set(false);
             },
             error: (err: HttpErrorResponse) => this.alErrorCarga(err),
           });
@@ -239,9 +233,6 @@ export class GestionSeccionesPage implements OnInit {
 
   private mensajeError(err: HttpErrorResponse): string {
     const codigo = err.error?.codigo as string | undefined;
-    if (codigo === 'E_SECCIONES_INMUTABLES') {
-      return 'Hay un periodo abierto o cerrado: no se pueden cambiar las secciones.';
-    }
     if (codigo === 'E_SUMA_SECCIONES_INVALIDA') {
       return 'La suma de nota debe ser exactamente 100.';
     }

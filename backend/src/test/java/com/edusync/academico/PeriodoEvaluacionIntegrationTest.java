@@ -37,8 +37,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
- * Stop condition de {@code PR-IMPL-015} ({@code DD-UC-015} &sect;6): seed, secuencia,
- * freeze, Gherkin N=2 y aislamiento cross-tenant 404.
+ * Stop condition de {@code PR-IMPL-015} ({@code DD-UC-015} &sect;6): seed, Gherkin N=2 y
+ * aislamiento cross-tenant 404. {@code DD-UC-019} elimino la secuencialidad de apertura
+ * ({@code E_PERIODO_NO_SECUENCIAL}) y el freeze de inmutabilidad ({@code E_PERIODOS_INMUTABLES}),
+ * cubierto en {@code seedYAislamientoDeTenantSinSecuenciaNiFreeze}.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
@@ -68,7 +70,7 @@ class PeriodoEvaluacionIntegrationTest {
   private String sysAdminPassword;
 
   @Test
-  void seedSecuenciaFreezeYAislamientoDeTenant() {
+  void seedYAislamientoDeTenantSinSecuenciaNiFreeze() {
     HttpHeaders adminA = crearTenantYAutenticarAdmin("Colegio Periodos A", "admin-periodos-a@colegio.edu.bo");
     HttpHeaders adminB = crearTenantYAutenticarAdmin("Colegio Periodos B", "admin-periodos-b@colegio.edu.bo");
 
@@ -115,36 +117,34 @@ class PeriodoEvaluacionIntegrationTest {
     assertThat(t1Abierto.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(t1Abierto.getBody().estado()).isEqualTo("ABIERTO");
 
-    ResponseEntity<ErrorResponse> t2Prematuro = restTemplate.exchange(
+    // DD-UC-019: abrir T2 con T1 aun ABIERTO ya no exige secuencialidad (E_PERIODO_NO_SECUENCIAL
+    // eliminado; endpoint exclusivamente ADMIN).
+    ResponseEntity<PeriodoEvaluacionResponse> t2AbiertoSinSecuencia = restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + t2 + "/estado",
         HttpMethod.PATCH,
         new HttpEntity<>(new CambiarEstadoPeriodoEvaluacionRequest("ABIERTO"), adminA),
-        ErrorResponse.class);
-    assertThat(t2Prematuro.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
-    assertThat(t2Prematuro.getBody().codigo()).isEqualTo("E_PERIODO_NO_SECUENCIAL");
+        PeriodoEvaluacionResponse.class);
+    assertThat(t2AbiertoSinSecuencia.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(t2AbiertoSinSecuencia.getBody().estado()).isEqualTo("ABIERTO");
 
-    ResponseEntity<ErrorResponse> postConAbierto = restTemplate.exchange(
+    // DD-UC-019: crear un periodo nuevo con T1/T2 ya ABIERTO ya no esta bloqueado
+    // (E_PERIODOS_INMUTABLES eliminado; endpoint exclusivamente ADMIN).
+    ResponseEntity<PeriodoEvaluacionResponse> postConAbierto = restTemplate.exchange(
         "/api/v1/gestiones-escolares/" + gestionId + "/periodos",
         HttpMethod.POST,
         new HttpEntity<>(
             new CrearPeriodoEvaluacionRequest("Extra", LocalDate.of(2027, 12, 1), LocalDate.of(2027, 12, 15)),
             adminA),
-        ErrorResponse.class);
-    assertThat(postConAbierto.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
-    assertThat(postConAbierto.getBody().codigo()).isEqualTo("E_PERIODOS_INMUTABLES");
+        PeriodoEvaluacionResponse.class);
+    assertThat(postConAbierto.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
-    restTemplate.exchange(
+    // DD-UC-019: cerrar T1 mientras T2 sigue ABIERTO tambien esta permitido (sin secuencialidad).
+    ResponseEntity<PeriodoEvaluacionResponse> t1Cerrado = restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + t1 + "/estado",
         HttpMethod.PATCH,
         new HttpEntity<>(new CambiarEstadoPeriodoEvaluacionRequest("CERRADO"), adminA),
         PeriodoEvaluacionResponse.class);
-
-    ResponseEntity<PeriodoEvaluacionResponse> t2Abierto = restTemplate.exchange(
-        "/api/v1/periodos-evaluacion/" + t2 + "/estado",
-        HttpMethod.PATCH,
-        new HttpEntity<>(new CambiarEstadoPeriodoEvaluacionRequest("ABIERTO"), adminA),
-        PeriodoEvaluacionResponse.class);
-    assertThat(t2Abierto.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(t1Cerrado.getStatusCode()).isEqualTo(HttpStatus.OK);
 
     ResponseEntity<ErrorResponse> patchCross = restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + t3 + "/estado",

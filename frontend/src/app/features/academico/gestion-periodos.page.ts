@@ -1,14 +1,21 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { GestionEscolarResponse } from './gestion-escolar.model';
 import { PeriodoEvaluacionResponse } from './periodo-evaluacion.model';
 import { ApiBase } from '../../core/api/api-base';
+import { AuthService } from '../../core/auth/auth.service';
 
 /**
- * Detalle de Periodos de una Gestion Escolar (DD-UC-015 §2): GET gestion por id,
- * lista de periodos, alta inline y abrir/cerrar. Escrituras ADMIN.
+ * Detalle de Periodos de una Gestion Escolar (DD-UC-015 §2, DD-UC-019): GET
+ * gestion por id, lista de periodos, alta/edición/eliminación y abrir/cerrar.
+ *
+ * DD-UC-019: `ADMIN` puede editar nombre/fechas/estado de cualquier periodo en
+ * cualquier momento, sin la secuencialidad de apertura ni el freeze de
+ * inmutabilidad que existían antes (ambos exclusivos de este endpoint,
+ * ADMIN-only). `SECRETARIA`/`PROFESOR`/`ASESOR` solo ven esta pantalla en modo
+ * lectura (la gestión visible ya está acotada a la ACTIVA por el backend).
  */
 @Component({
   selector: 'app-gestion-periodos-page',
@@ -44,7 +51,7 @@ import { ApiBase } from '../../core/api/api-base';
         }
 
         @if (!loading() && periodos().length === 0) {
-          <p>Esta gestión todavía no tiene periodos. Puede agregar el primero abajo.</p>
+          <p>Esta gestión todavía no tiene periodos.</p>
         }
 
         @if (periodos().length > 0) {
@@ -56,7 +63,9 @@ import { ApiBase } from '../../core/api/api-base';
                 <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Inicio</th>
                 <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Fin</th>
                 <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Estado</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Acciones</th>
+                @if (esAdmin()) {
+                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Acciones</th>
+                }
               </tr>
             </thead>
             <tbody>
@@ -69,30 +78,32 @@ import { ApiBase } from '../../core/api/api-base';
                   <td style="padding: 0.5rem;">
                     <span [style.color]="estadoColor(periodo.estado)">{{ periodo.estado }}</span>
                   </td>
-                  <td style="padding: 0.5rem;">
-                    @if (puedeAbrir(periodo)) {
-                      <button (click)="cambiarEstado(periodo, 'ABIERTO')" [disabled]="saving()" style="cursor: pointer; font-size: 0.85rem; margin-right: 0.4rem;">
-                        Abrir
+                  @if (esAdmin()) {
+                    <td style="padding: 0.5rem;">
+                      <button (click)="editar(periodo)" [disabled]="saving()" style="cursor: pointer; font-size: 0.85rem; margin-right: 0.4rem;">
+                        Editar
                       </button>
-                    }
-                    @if (periodo.estado === 'ABIERTO') {
-                      <button (click)="cambiarEstado(periodo, 'CERRADO')" [disabled]="saving()" style="cursor: pointer; font-size: 0.85rem; margin-right: 0.4rem;">
-                        Cerrar
-                      </button>
-                    }
-                    @if (todosPendiente()) {
+                      @if (periodo.estado !== 'ABIERTO') {
+                        <button (click)="cambiarEstado(periodo, 'ABIERTO')" [disabled]="saving()" style="cursor: pointer; font-size: 0.85rem; margin-right: 0.4rem;">
+                          Abrir
+                        </button>
+                      } @else {
+                        <button (click)="cambiarEstado(periodo, 'CERRADO')" [disabled]="saving()" style="cursor: pointer; font-size: 0.85rem; margin-right: 0.4rem;">
+                          Cerrar
+                        </button>
+                      }
                       <button (click)="eliminar(periodo)" [disabled]="saving()" style="cursor: pointer; font-size: 0.85rem; color: #c62828;">
                         Eliminar
                       </button>
-                    }
-                  </td>
+                    </td>
+                  }
                 </tr>
               }
             </tbody>
           </table>
         }
 
-        @if (todosPendiente()) {
+        @if (esAdmin()) {
           <div style="background: #fafafa; padding: 1rem; border-radius: 4px;">
             <h3 style="margin-top: 0;">Nuevo periodo</h3>
             <form (ngSubmit)="onSubmit()" style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: end;">
@@ -113,11 +124,39 @@ import { ApiBase } from '../../core/api/api-base';
               </button>
             </form>
           </div>
-        } @else {
-          <p style="color: #666; font-size: 0.85rem;">
-            Hay un periodo abierto: no se pueden agregar, editar ni eliminar periodos hasta que se cierre.
-          </p>
         }
+      }
+
+      @if (editDialog()) {
+        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">
+          <div style="background:white;padding:2rem;border-radius:8px;min-width:320px;">
+            <h3>Editar "{{ editDialog()!.nombre }}"</h3>
+            <div style="display:flex;flex-direction:column;gap:0.5rem;margin:1rem 0;">
+              <label style="display:flex;flex-direction:column;font-size:0.85rem;">
+                Nombre
+                <input type="text" [(ngModel)]="editNombre" style="padding:0.4rem;" />
+              </label>
+              <label style="display:flex;flex-direction:column;font-size:0.85rem;">
+                Fecha inicio
+                <input type="date" [(ngModel)]="editFechaInicio" style="padding:0.4rem;" />
+              </label>
+              <label style="display:flex;flex-direction:column;font-size:0.85rem;">
+                Fecha fin
+                <input type="date" [(ngModel)]="editFechaFin" style="padding:0.4rem;" />
+              </label>
+            </div>
+            @if (editError()) {
+              <p style="color:#c62828;">{{ editError() }}</p>
+            }
+            <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+              <button (click)="cerrarEditDialog()">Cancelar</button>
+              <button (click)="confirmarEdicion()" [disabled]="editSaving()"
+                      style="background:#1e3a5f;color:white;padding:0.4rem 1rem;cursor:pointer;">
+                {{ editSaving() ? 'Guardando...' : 'Guardar' }}
+              </button>
+            </div>
+          </div>
+        </div>
       }
     </div>
   `,
@@ -134,29 +173,26 @@ export class GestionPeriodosPage implements OnInit {
   nuevaFechaInicio = '';
   nuevaFechaFin = '';
 
+  editDialog = signal<PeriodoEvaluacionResponse | null>(null);
+  editNombre = '';
+  editFechaInicio = '';
+  editFechaFin = '';
+  editError = signal<string | null>(null);
+  editSaving = signal(false);
+
+  readonly esAdmin = computed(() => this.auth.hasRole('ADMIN'));
+
   private gestionId = '';
 
   constructor(
     private http: HttpClient,
     private route: ActivatedRoute,
+    private auth: AuthService,
   ) {}
 
   ngOnInit(): void {
     this.gestionId = this.route.snapshot.paramMap.get('id') ?? '';
     this.cargar();
-  }
-
-  todosPendiente(): boolean {
-    const lista = this.periodos();
-    return lista.length === 0 || lista.every((p) => p.estado === 'PENDIENTE');
-  }
-
-  puedeAbrir(periodo: PeriodoEvaluacionResponse): boolean {
-    if (periodo.estado !== 'PENDIENTE') return false;
-    if (this.periodos().some((p) => p.estado === 'ABIERTO')) return false;
-    if (periodo.orden === 1) return true;
-    const pred = this.periodos().find((p) => p.orden === periodo.orden - 1);
-    return pred?.estado === 'CERRADO';
   }
 
   estadoColor(estado: string): string {
@@ -240,6 +276,42 @@ export class GestionPeriodosPage implements OnInit {
     });
   }
 
+  editar(periodo: PeriodoEvaluacionResponse): void {
+    this.editNombre = periodo.nombre;
+    this.editFechaInicio = periodo.fechaInicio;
+    this.editFechaFin = periodo.fechaFin;
+    this.editError.set(null);
+    this.editDialog.set(periodo);
+  }
+
+  cerrarEditDialog(): void {
+    this.editDialog.set(null);
+  }
+
+  confirmarEdicion(): void {
+    const periodo = this.editDialog();
+    if (!periodo) return;
+    this.editSaving.set(true);
+    this.editError.set(null);
+    this.http
+      .patch<PeriodoEvaluacionResponse>(`${ApiBase.BASE}/periodos-evaluacion/${periodo.id}`, {
+        nombre: this.editNombre,
+        fechaInicio: this.editFechaInicio,
+        fechaFin: this.editFechaFin,
+      })
+      .subscribe({
+        next: () => {
+          this.editSaving.set(false);
+          this.editDialog.set(null);
+          this.cargar();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.editError.set(this.mensajeError(err));
+          this.editSaving.set(false);
+        },
+      });
+  }
+
   private alErrorCarga(err: HttpErrorResponse): void {
     if (err.status === 404) {
       this.notFound.set(true);
@@ -251,14 +323,8 @@ export class GestionPeriodosPage implements OnInit {
 
   private mensajeError(err: HttpErrorResponse): string {
     const codigo = err.error?.codigo as string | undefined;
-    if (codigo === 'E_PERIODO_NO_SECUENCIAL') {
-      return 'No se puede abrir este periodo hasta que el anterior esté cerrado.';
-    }
     if (codigo === 'E_PERIODOS_SOLAPADOS') {
       return 'Las fechas se solapan con otro periodo.';
-    }
-    if (codigo === 'E_PERIODOS_INMUTABLES') {
-      return 'Hay un periodo abierto: no se pueden cambiar los periodos.';
     }
     if (codigo === 'E_PERIODO_UNICO') {
       return 'Debe quedar al menos un periodo.';

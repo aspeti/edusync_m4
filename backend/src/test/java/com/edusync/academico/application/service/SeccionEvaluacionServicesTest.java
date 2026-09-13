@@ -24,7 +24,6 @@ import com.edusync.academico.domain.PeriodoEvaluacionId;
 import com.edusync.academico.domain.SeccionEvaluacion;
 import com.edusync.academico.domain.SeccionEvaluacionId;
 import com.edusync.academico.domain.SeccionNoEncontradaException;
-import com.edusync.academico.domain.SeccionesInmutablesException;
 import com.edusync.academico.domain.SumaSeccionesInvalidaException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -51,8 +50,8 @@ class SeccionEvaluacionServicesTest {
     gestionPort = mock(GestionEscolarRepositoryPort.class);
     periodoPort = mock(PeriodoEvaluacionRepositoryPort.class);
     seccionPort = mock(SeccionEvaluacionRepositoryPort.class);
-    reemplazarService = new ReemplazarSeccionesEvaluacionService(gestionPort, periodoPort, seccionPort);
-    actualizarService = new ActualizarSeccionEvaluacionService(periodoPort, seccionPort);
+    reemplazarService = new ReemplazarSeccionesEvaluacionService(gestionPort, seccionPort);
+    actualizarService = new ActualizarSeccionEvaluacionService(seccionPort);
     cambiarEstadoService = new CambiarEstadoPeriodoEvaluacionService(periodoPort, seccionPort);
   }
 
@@ -113,24 +112,21 @@ class SeccionEvaluacionServicesTest {
     verify(seccionPort, never()).guardar(any());
   }
 
+  /**
+   * {@code DD-UC-019}: el freeze sticky ({@code E_SECCIONES_INMUTABLES}) se elimino
+   * (endpoint exclusivamente {@code ADMIN}); reemplazar la plantilla de secciones ya no
+   * consulta el estado de los periodos hermanos, sin importar si alguno esta
+   * {@code ABIERTO}/{@code CERRADO}.
+   */
   @Test
-  void freezeConPeriodoAbierto() {
+  void putYaNoConsultaElEstadoDeLosPeriodosHermanos() {
     when(gestionPort.buscarPorIdYTenant(gestionId, tenantId)).thenReturn(Optional.of(gestionStub()));
-    when(periodoPort.listarPorGestionYTenant(gestionId, tenantId))
-        .thenReturn(List.of(periodo("T1", 1, EstadoPeriodoEvaluacion.ABIERTO)));
+    when(seccionPort.reemplazarPlantilla(eq(gestionId), eq(tenantId), any())).thenAnswer(inv -> inv.getArgument(2));
 
-    assertThatThrownBy(() -> reemplazarService.reemplazar(put60y40()))
-        .isInstanceOf(SeccionesInmutablesException.class);
-  }
+    List<SeccionEvaluacion> resultado = reemplazarService.reemplazar(put60y40());
 
-  @Test
-  void freezeStickyConPeriodoCerrado() {
-    when(gestionPort.buscarPorIdYTenant(gestionId, tenantId)).thenReturn(Optional.of(gestionStub()));
-    when(periodoPort.listarPorGestionYTenant(gestionId, tenantId))
-        .thenReturn(List.of(periodo("T1", 1, EstadoPeriodoEvaluacion.CERRADO)));
-
-    assertThatThrownBy(() -> reemplazarService.reemplazar(put60y40()))
-        .isInstanceOf(SeccionesInmutablesException.class);
+    assertThat(resultado).hasSize(2);
+    verify(periodoPort, never()).listarPorGestionYTenant(any(), any());
   }
 
   @Test

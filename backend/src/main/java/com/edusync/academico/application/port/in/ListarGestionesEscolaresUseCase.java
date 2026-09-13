@@ -8,8 +8,12 @@ import java.util.UUID;
 /**
  * Puerto de entrada: listado paginado y filtrable de Gestiones Escolares de un tenant
  * (DD-UC-008, filtros/paginacion DD-UC-007).
+ *
+ * @see com.edusync.academico.application.service.GestionEscolarVisibilidad
  */
 public interface ListarGestionesEscolaresUseCase {
 
-  PageResult<GestionEscolar> listar(UUID tenantId, GestionEscolarFiltro filtro, PageQuery pageQuery);
+  /** @param actorVeTodas ver {@link com.edusync.academico.application.port.in.ObtenerGestionEscolarUseCase} */
+  PageResult<GestionEscolar> listar(
+      UUID tenantId, GestionEscolarFiltro filtro, PageQuery pageQuery, boolean actorVeTodas);
 }

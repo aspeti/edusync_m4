@@ -30,7 +30,6 @@ public class CrearPeriodoEvaluacionService implements CrearPeriodoEvaluacionUseC
 
     List<PeriodoEvaluacion> existentes =
         periodoEvaluacionRepositoryPort.listarPorGestionYTenant(gestionId, command.tenantId());
-    PeriodoEvaluacionPolitica.exigirMutables(existentes);
 
     int orden = existentes.size() + 1;
     PeriodoEvaluacion periodo = PeriodoEvaluacion.crear(

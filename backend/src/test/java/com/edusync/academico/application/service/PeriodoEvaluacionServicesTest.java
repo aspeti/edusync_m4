@@ -5,8 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.edusync.academico.application.port.in.CrearPeriodoEvaluacionCommand;
@@ -20,9 +18,7 @@ import com.edusync.academico.domain.GestionEscolarNoEncontradaException;
 import com.edusync.academico.domain.PeriodoEvaluacion;
 import com.edusync.academico.domain.PeriodoEvaluacionId;
 import com.edusync.academico.domain.PeriodoNoEncontradoException;
-import com.edusync.academico.domain.PeriodoNoSecuencialException;
 import com.edusync.academico.domain.PeriodoUnicoException;
-import com.edusync.academico.domain.PeriodosInmutablesException;
 import com.edusync.academico.domain.PeriodosSolapadosException;
 import java.time.LocalDate;
 import java.util.List;
@@ -73,29 +69,40 @@ class PeriodoEvaluacionServicesTest {
         .isInstanceOf(PeriodosSolapadosException.class);
   }
 
+  /**
+   * {@code DD-UC-019}: crear un nuevo periodo con un hermano ya {@code ABIERTO} ya no esta
+   * bloqueado (endpoint exclusivamente {@code ADMIN}); solo el solape de fechas sigue
+   * validado (integridad del motor de calculo, {@code ADR-0013}).
+   */
   @Test
-  void crearRechazaSiHayAbierto() {
+  void crearPermiteAunConHermanoAbierto() {
     when(gestionPort.buscarPorIdYTenant(any(), eq(tenantId))).thenReturn(Optional.of(gestionStub()));
     PeriodoEvaluacion t1 = periodo("T1", LocalDate.of(2027, 2, 1), LocalDate.of(2027, 5, 31), 1, EstadoPeriodoEvaluacion.ABIERTO);
     when(periodoPort.listarPorGestionYTenant(gestionId, tenantId)).thenReturn(List.of(t1));
+    when(periodoPort.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
 
-    assertThatThrownBy(() -> crearService.crear(new CrearPeriodoEvaluacionCommand(
-            tenantId, gestionId.valor(), "T2", LocalDate.of(2027, 6, 1), LocalDate.of(2027, 8, 31))))
-        .isInstanceOf(PeriodosInmutablesException.class);
+    PeriodoEvaluacion creado = crearService.crear(new CrearPeriodoEvaluacionCommand(
+        tenantId, gestionId.valor(), "T2", LocalDate.of(2027, 6, 1), LocalDate.of(2027, 8, 31)));
+
+    assertThat(creado.getNombre()).isEqualTo("T2");
   }
 
+  /**
+   * {@code DD-UC-019}: abrir un periodo con otro hermano ya {@code ABIERTO} ya no exige
+   * secuencialidad (endpoint exclusivamente {@code ADMIN}).
+   */
   @Test
-  void abrirK2ConK1AbiertoEsNoSecuencial() {
+  void abrirK2ConK1AbiertoYaNoEsSecuencialYPermite() {
     PeriodoEvaluacion t1 = periodo("T1", LocalDate.of(2027, 2, 1), LocalDate.of(2027, 5, 31), 1, EstadoPeriodoEvaluacion.ABIERTO);
     PeriodoEvaluacion t2 = periodo("T2", LocalDate.of(2027, 6, 1), LocalDate.of(2027, 8, 31), 2, EstadoPeriodoEvaluacion.PENDIENTE);
     when(periodoPort.buscarPorIdYTenant(t2.getId(), tenantId)).thenReturn(Optional.of(t2));
     when(seccionPort.listarPorGestionYTenant(t2.getGestionEscolarId(), tenantId)).thenReturn(seccionesValidas());
-    when(periodoPort.listarPorGestionYTenant(t2.getGestionEscolarId(), tenantId)).thenReturn(List.of(t1, t2));
+    when(periodoPort.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
 
-    assertThatThrownBy(() ->
-            cambiarEstadoService.cambiarEstado(tenantId, t2.getId().valor(), EstadoPeriodoEvaluacion.ABIERTO))
-        .isInstanceOf(PeriodoNoSecuencialException.class);
-    verify(periodoPort, never()).guardar(any());
+    PeriodoEvaluacion actualizado =
+        cambiarEstadoService.cambiarEstado(tenantId, t2.getId().valor(), EstadoPeriodoEvaluacion.ABIERTO);
+
+    assertThat(actualizado.getEstado()).isEqualTo(EstadoPeriodoEvaluacion.ABIERTO);
   }
 
   @Test

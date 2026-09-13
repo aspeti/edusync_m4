@@ -38,8 +38,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
- * Stop condition de {@code PR-IMPL-016} ({@code DD-UC-016} &sect;6): seed Gherkin,
- * PUT rebalance, freeze sticky ABIERTO y CERRADO, aislamiento cross-tenant 404.
+ * Stop condition de {@code PR-IMPL-016} ({@code DD-UC-016} &sect;6): seed Gherkin, PUT
+ * rebalance, aislamiento cross-tenant 404. {@code DD-UC-019} elimino el freeze sticky
+ * ({@code E_SECCIONES_INMUTABLES}): PUT/PATCH ya permiten editar con periodos
+ * {@code ABIERTO}/{@code CERRADO}, cubierto en {@code seedYAislamientoDeTenantSinFreeze}.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
@@ -69,7 +71,7 @@ class SeccionEvaluacionIntegrationTest {
   private String sysAdminPassword;
 
   @Test
-  void seedPutFreezeStickyYAislamientoDeTenant() {
+  void seedYAislamientoDeTenantSinFreeze() {
     HttpHeaders adminA = crearTenantYAutenticarAdmin("Colegio Secciones A", "admin-secciones-a@colegio.edu.bo");
     HttpHeaders adminB = crearTenantYAutenticarAdmin("Colegio Secciones B", "admin-secciones-b@colegio.edu.bo");
 
@@ -131,13 +133,14 @@ class SeccionEvaluacionIntegrationTest {
         new HttpEntity<>(new CambiarEstadoPeriodoEvaluacionRequest("ABIERTO"), adminA),
         PeriodoEvaluacionResponse.class);
 
-    ResponseEntity<ErrorResponse> putAbierto = restTemplate.exchange(
+    // DD-UC-019: el freeze sticky se elimino (endpoint exclusivamente ADMIN); PUT con un
+    // periodo ABIERTO ya no se bloquea (antes E_SECCIONES_INMUTABLES).
+    ResponseEntity<List<SeccionEvaluacionResponse>> putConAbierto = restTemplate.exchange(
         "/api/v1/gestiones-escolares/" + gestionId + "/secciones",
         HttpMethod.PUT,
         new HttpEntity<>(putDe(item("A", "70"), item("B", "30")), adminA),
-        ErrorResponse.class);
-    assertThat(putAbierto.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
-    assertThat(putAbierto.getBody().codigo()).isEqualTo("E_SECCIONES_INMUTABLES");
+        new ParameterizedTypeReference<List<SeccionEvaluacionResponse>>() {});
+    assertThat(putConAbierto.getStatusCode()).isEqualTo(HttpStatus.OK);
 
     restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + t1 + "/estado",
@@ -145,13 +148,13 @@ class SeccionEvaluacionIntegrationTest {
         new HttpEntity<>(new CambiarEstadoPeriodoEvaluacionRequest("CERRADO"), adminA),
         PeriodoEvaluacionResponse.class);
 
-    ResponseEntity<ErrorResponse> putCerrado = restTemplate.exchange(
+    // DD-UC-019: idem con un periodo CERRADO (antes bloqueado para siempre, "freeze sticky").
+    ResponseEntity<List<SeccionEvaluacionResponse>> putConCerrado = restTemplate.exchange(
         "/api/v1/gestiones-escolares/" + gestionId + "/secciones",
         HttpMethod.PUT,
-        new HttpEntity<>(putDe(item("A", "70"), item("B", "30")), adminA),
-        ErrorResponse.class);
-    assertThat(putCerrado.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
-    assertThat(putCerrado.getBody().codigo()).isEqualTo("E_SECCIONES_INMUTABLES");
+        new HttpEntity<>(putDe(item("X", "70"), item("Y", "30")), adminA),
+        new ParameterizedTypeReference<List<SeccionEvaluacionResponse>>() {});
+    assertThat(putConCerrado.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
 
   @Test

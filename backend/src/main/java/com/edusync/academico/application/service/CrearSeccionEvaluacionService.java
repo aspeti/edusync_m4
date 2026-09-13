@@ -3,7 +3,6 @@ package com.edusync.academico.application.service;
 import com.edusync.academico.application.port.in.CrearSeccionEvaluacionCommand;
 import com.edusync.academico.application.port.in.CrearSeccionEvaluacionUseCase;
 import com.edusync.academico.application.port.out.GestionEscolarRepositoryPort;
-import com.edusync.academico.application.port.out.PeriodoEvaluacionRepositoryPort;
 import com.edusync.academico.application.port.out.SeccionEvaluacionRepositoryPort;
 import com.edusync.academico.domain.GestionEscolarId;
 import com.edusync.academico.domain.GestionEscolarNoEncontradaException;
@@ -20,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class CrearSeccionEvaluacionService implements CrearSeccionEvaluacionUseCase {
 
   private final GestionEscolarRepositoryPort gestionEscolarRepositoryPort;
-  private final PeriodoEvaluacionRepositoryPort periodoEvaluacionRepositoryPort;
   private final SeccionEvaluacionRepositoryPort seccionEvaluacionRepositoryPort;
 
   @Override
@@ -30,9 +28,6 @@ public class CrearSeccionEvaluacionService implements CrearSeccionEvaluacionUseC
     gestionEscolarRepositoryPort
         .buscarPorIdYTenant(gestionId, command.tenantId())
         .orElseThrow(GestionEscolarNoEncontradaException::new);
-
-    SeccionEvaluacionPolitica.exigirMutables(
-        periodoEvaluacionRepositoryPort.listarPorGestionYTenant(gestionId, command.tenantId()));
 
     List<SeccionEvaluacion> existentes =
         seccionEvaluacionRepositoryPort.listarPorGestionYTenant(gestionId, command.tenantId());

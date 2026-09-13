@@ -3,6 +3,7 @@ package com.edusync.academico.application.service;
 import com.edusync.academico.application.port.in.ListarSeccionesEvaluacionUseCase;
 import com.edusync.academico.application.port.out.GestionEscolarRepositoryPort;
 import com.edusync.academico.application.port.out.SeccionEvaluacionRepositoryPort;
+import com.edusync.academico.domain.GestionEscolar;
 import com.edusync.academico.domain.GestionEscolarId;
 import com.edusync.academico.domain.GestionEscolarNoEncontradaException;
 import com.edusync.academico.domain.SeccionEvaluacion;
@@ -21,10 +22,11 @@ public class ListarSeccionesEvaluacionService implements ListarSeccionesEvaluaci
 
   @Override
   @Transactional(readOnly = true)
-  public List<SeccionEvaluacion> listar(UUID tenantId, UUID gestionEscolarId) {
+  public List<SeccionEvaluacion> listar(UUID tenantId, UUID gestionEscolarId, boolean actorVeTodas) {
     GestionEscolarId id = GestionEscolarId.de(gestionEscolarId);
-    gestionEscolarRepositoryPort.buscarPorIdYTenant(id, tenantId)
+    GestionEscolar gestionEscolar = gestionEscolarRepositoryPort.buscarPorIdYTenant(id, tenantId)
         .orElseThrow(GestionEscolarNoEncontradaException::new);
+    GestionEscolarVisibilidad.exigirVisible(gestionEscolar, actorVeTodas);
     return seccionEvaluacionRepositoryPort.listarPorGestionYTenant(id, tenantId);
   }
 }

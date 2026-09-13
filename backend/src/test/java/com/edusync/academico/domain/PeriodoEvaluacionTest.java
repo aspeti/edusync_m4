@@ -41,8 +41,13 @@ class PeriodoEvaluacionTest {
     assertThat(periodo.getEstado()).isEqualTo(EstadoPeriodoEvaluacion.CERRADO);
   }
 
+  /**
+   * {@code DD-UC-019}: el endpoint que invoca {@code cambiarEstado} es exclusivamente
+   * {@code ADMIN}; el requisito de negocio es que pueda reabrir/cerrar cualquier periodo en
+   * cualquier orden, incluida la reapertura de un periodo {@code CERRADO} (antes terminal).
+   */
   @Test
-  void rechazaReabrirCerrado() {
+  void permiteReabrirCerrado() {
     PeriodoEvaluacion periodo = PeriodoEvaluacion.reconstruir(
         PeriodoEvaluacionId.nueva(),
         UUID.randomUUID(),
@@ -53,10 +58,9 @@ class PeriodoEvaluacionTest {
         1,
         EstadoPeriodoEvaluacion.CERRADO);
 
-    assertThatThrownBy(() -> periodo.cambiarEstado(EstadoPeriodoEvaluacion.ABIERTO))
-        .isInstanceOf(EstadoPeriodoEvaluacionInvalidoException.class)
-        .satisfies(ex -> assertThat(((EstadoPeriodoEvaluacionInvalidoException) ex).getErrorCode())
-            .isEqualTo("E_ESTADO_INVALIDO"));
+    periodo.cambiarEstado(EstadoPeriodoEvaluacion.ABIERTO);
+
+    assertThat(periodo.getEstado()).isEqualTo(EstadoPeriodoEvaluacion.ABIERTO);
   }
 
   @Test

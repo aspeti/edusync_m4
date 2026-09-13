@@ -24,8 +24,8 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.14 |
-| **Fecha** | 21/08/2026 |
+| **Versión del documento** | v2.15 |
+| **Fecha** | 12/09/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
 | **Estado** | En revisión |
@@ -530,78 +530,88 @@ Escenario: Bloqueo de acceso por tenant vencido
 
 ### 4.6.2 FSD-UC-012 — Gestión Escolar
 
-- **Trazabilidad:** `PRD-REQ-022`, `PRD-US-020`
+- **Trazabilidad:** `PRD-REQ-022`, `PRD-US-020`, `ADR-0014`, `DD-UC-019`, `PR-IMPL-019`
 - **Actor principal:** Admin
+- **Actores secundarios (solo lectura):** Secretaria, Profesor, Asesor
 - **Precondiciones:** El Admin tiene sesión activa con `tenant_id` propio; el `Tenant` está `ACTIVO`.
 - **Disparador:** El Admin crea una `GestionEscolar` para su tenant.
 - **Flujo principal:**
   1. `POST /api/v1/gestiones-escolares` con `{nombre, fechaInicio, fechaFin}`.
   2. El sistema crea `GestionEscolar` con `estado = PLANIFICACION` y **siembra** 3 `PeriodoEvaluacion` (`Trimestre 1`..`3`, `PENDIENTE`) y 4 `SeccionEvaluacion` (Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10; Σ `nota` = 100) (`ADR-0013`, `PR-IMPL-015`/`016`).
-  3. El Admin puede ajustar periodos y secciones mientras ningún periodo esté `ABIERTO`.
-  4. El Admin transiciona a `estado = ACTIVA`.
-  5. Al finalizar el ciclo, el Admin transiciona a `estado = CERRADA`.
+  3. El Admin puede ajustar periodos y secciones **en cualquier momento**, sin restricción de estado de los hermanos (`ADR-0014`, revierte el freeze descrito en `FSD-UC-013`/`014` original).
+  4. El Admin cambia `estado` libremente entre `PLANIFICACION`/`ACTIVA`/`CERRADA` (`PATCH .../estado`, cualquier transición es válida desde `PR-IMPL-019`; ya no es una máquina de estados dirigida).
+  5. El Admin edita `nombre`/`fechaInicio`/`fechaFin` con `PATCH /api/v1/gestiones-escolares/{id}` (nuevo en `PR-IMPL-019`), en cualquier estado.
 - **Flujos alternativos / excepciones:**
-  - **A1 — Fechas inválidas (`fechaFin` ≤ `fechaInicio`):** HTTP 422 `E_FECHAS_INVALIDAS`.
+  - **A1 — Fechas inválidas (`fechaFin` ≤ `fechaInicio`):** HTTP 422 `E_FECHAS_INVALIDAS` (aplica a `POST` y al nuevo `PATCH`).
+  - **A2 — Visibilidad restringida (`ADR-0014`):** Secretaria/Profesor/Asesor que consultan `GET /api/v1/gestiones-escolares` solo ven las gestiones con `estado = ACTIVA` (filtro forzado server-side, ignora cualquier `estado` solicitado en el query); `GET /api/v1/gestiones-escolares/{id}` de una gestión no `ACTIVA` responde HTTP 404 `E_GESTION_ESCOLAR_NO_ENCONTRADA` para estos roles (patrón 404-no-403, no se revela su existencia).
 - **Postcondiciones:** `GestionEscolar` disponible como contenedor de `PeriodoEvaluacion`, plantilla de `SeccionEvaluacion`, `Curso` e `Inscripcion`.
-- **Reglas de negocio aplicables:** BR-016, `ADR-0013`.
-- **Datos de entrada:** `{ "nombre": "string", "fechaInicio": "date", "fechaFin": "date" }`
-- **Nota de implementación:** el `POST` de `PR-IMPL-015`/`016` siembra 3 periodos **y** 4 secciones. `GET /api/v1/gestiones-escolares/{id}` queda expuesto para las consolas de periodos y secciones.
+- **Reglas de negocio aplicables:** BR-016, `ADR-0013`, `ADR-0014`.
+- **Datos de entrada (`POST`):** `{ "nombre": "string", "fechaInicio": "date", "fechaFin": "date" }`
+- **Datos de entrada (`PATCH .../{id}`, nuevo):** `{ "nombre"?: "string", "fechaInicio"?: "date", "fechaFin"?: "date" }` — solo `ADMIN`.
+- **Nota de implementación:** el `POST` de `PR-IMPL-015`/`016` siembra 3 periodos **y** 4 secciones. `GET /api/v1/gestiones-escolares/{id}` queda expuesto para las consolas de periodos y secciones. `PR-IMPL-019` (`ADR-0014`) elimina la máquina de estados dirigida de `GestionEscolar`/`PeriodoEvaluacion` y el freeze de `SeccionEvaluacion`, y añade la visibilidad `ACTIVA`-only para roles no-`ADMIN` vía `GestionEscolarVisibilidad`.
 
 ---
 
 ### 4.6.3 FSD-UC-013 — Configuración de Periodos de Evaluación
 
-- **Trazabilidad:** `PRD-REQ-023`, `PRD-US-021`, `ADR-0013`, `DD-UC-015`, `PR-IMPL-015`
+- **Trazabilidad:** `PRD-REQ-023`, `PRD-US-021`, `ADR-0013`, `ADR-0014`, `DD-UC-015`, `DD-UC-019`, `PR-IMPL-015`, `PR-IMPL-019`
 - **Actor principal:** Admin
+- **Actores secundarios (solo lectura, vía `FSD-UC-012` A2):** Secretaria, Profesor, Asesor — solo si la `GestionEscolar` padre está `ACTIVA`.
 - **Precondiciones:** `GestionEscolar` existente (seed de 3 periodos al crear, `FSD-UC-012`).
 - **Disparador:** El Admin ajusta los periodos de su `GestionEscolar`.
 - **Flujo principal:**
-  1. `GET /api/v1/gestiones-escolares/{id}` y `GET /api/v1/gestiones-escolares/{id}/periodos` (ADMIN o SECRETARIA; lista ordenada por `orden`, sin paginar).
-  2. `POST /api/v1/gestiones-escolares/{id}/periodos` con `{nombre, fechaInicio, fechaFin}` (N ≥ 1; `orden` = max+1). Cada periodo nace `PENDIENTE`.
-  3. `PATCH /api/v1/periodos-evaluacion/{id}` `{nombre?, fechaInicio?, fechaFin?}` y `DELETE` — solo si **ningún** periodo de la gestión está `ABIERTO`.
-  4. `PATCH /api/v1/periodos-evaluacion/{id}/estado` con `{estado: ABIERTO|CERRADO}`: el periodo *k* solo pasa a `ABIERTO` si *k−1* está `CERRADO`.
+  1. `GET /api/v1/gestiones-escolares/{id}` y `GET /api/v1/gestiones-escolares/{id}/periodos` (ADMIN, o SECRETARIA/PROFESOR/ASESOR si la gestión es `ACTIVA`; lista ordenada por `orden`, sin paginar).
+  2. `POST /api/v1/gestiones-escolares/{id}/periodos` con `{nombre, fechaInicio, fechaFin}` (N ≥ 1; `orden` = max+1). Cada periodo nace `PENDIENTE`. **Sin restricción de N/datos congelados** (`ADR-0014`, revierte A3).
+  3. `PATCH /api/v1/periodos-evaluacion/{id}` `{nombre?, fechaInicio?, fechaFin?}` y `DELETE` — sin restricción de estado de los periodos hermanos (`ADR-0014`).
+  4. `PATCH /api/v1/periodos-evaluacion/{id}/estado` con `{estado: PENDIENTE|ABIERTO|CERRADO}`: **cualquier transición es válida desde cualquier estado** (`ADR-0014`, revierte A2 y la secuencialidad); el Admin puede abrir/cerrar/reabrir periodos en cualquier orden.
 - **Flujos alternativos / excepciones:**
-  - **A1 — Periodos con fechas solapadas:** HTTP 422 `E_PERIODOS_SOLAPADOS`.
-  - **A2 — Apertura no secuencial:** HTTP 422 `E_PERIODO_NO_SECUENCIAL`.
-  - **A3 — N/datos congelados:** HTTP 422 `E_PERIODOS_INMUTABLES` (POST/DELETE/PATCH datos con un periodo `ABIERTO`).
-  - **A4 — Último periodo:** HTTP 422 `E_PERIODO_UNICO` al `DELETE` del último.
-  - **A5 — Plantilla de secciones inválida:** HTTP 422 `E_SUMA_SECCIONES_INVALIDA` al pasar a `ABIERTO` si no hay secciones o Σ `nota` ≠ 100 (`FSD-UC-014`).
-  - Gestión o periodo inexistente / otro tenant: HTTP 404 `E_GESTION_ESCOLAR_NO_ENCONTRADA` / `E_PERIODO_NO_ENCONTRADO`.
+  - **A1 — Periodos con fechas solapadas:** HTTP 422 `E_PERIODOS_SOLAPADOS` (invariante de integridad, **conservada** por `ADR-0014`).
+  - **A2 — Último periodo:** HTTP 422 `E_PERIODO_UNICO` al `DELETE` del último (invariante de integridad, **conservada**).
+  - **A3 — Plantilla de secciones inválida:** HTTP 422 `E_SUMA_SECCIONES_INVALIDA` al pasar a `ABIERTO` si no hay secciones o Σ `nota` ≠ 100 (`FSD-UC-014`; invariante de integridad, **conservada**).
+  - Gestión o periodo inexistente / otro tenant / gestión no visible para el rol (`FSD-UC-012` A2): HTTP 404 `E_GESTION_ESCOLAR_NO_ENCONTRADA` / `E_PERIODO_NO_ENCONTRADO`.
+  - ⚠️ **Eliminados por `ADR-0014`** (ya no existen en el sistema): `E_PERIODO_NO_SECUENCIAL` (apertura no secuencial) y `E_PERIODOS_INMUTABLES` (N/datos congelados con un periodo `ABIERTO`).
 - **Postcondiciones:** `GestionEscolar` con N `PeriodoEvaluacion` ordenados.
-- **Reglas de negocio aplicables:** BR-017.
+- **Reglas de negocio aplicables:** BR-017, `ADR-0014`.
 - **Criterios de aceptación:**
 
 ```gherkin
 Escenario: Institución define 2 bimestres en lugar de 3 trimestres
-  Dado una GestionEscolar en PLANIFICACION sin periodos ABIERTO
+  Dado una GestionEscolar en PLANIFICACION
   Cuando el Admin deja solo "Bimestre 1" y "Bimestre 2"
   Entonces el sistema opera con N=2
 
-Escenario: No se abre el periodo 2 si el 1 sigue abierto
+Escenario: El Admin abre el periodo 2 aunque el 1 siga abierto (ADR-0014)
   Dado Trimestre 1 ABIERTO
-  Cuando el Admin intenta abrir Trimestre 2
-  Entonces el sistema responde 422 E_PERIODO_NO_SECUENCIAL
+  Cuando el Admin abre Trimestre 2
+  Entonces el sistema responde 200 y Trimestre 2 queda ABIERTO
+    Y Trimestre 1 permanece ABIERTO sin cambios
+
+Escenario: Secretaria no ve una gestión en PLANIFICACION
+  Dado una GestionEscolar en estado PLANIFICACION
+  Cuando la Secretaria consulta GET /gestiones-escolares/{id}/periodos
+  Entonces el sistema responde 404 E_GESTION_ESCOLAR_NO_ENCONTRADA
 ```
 
 ---
 
 ### 4.6.4 FSD-UC-014 — Configuración de Secciones de Evaluación
 
-- **Trazabilidad:** `PRD-REQ-024`, `PRD-US-022`, `ADR-0013`, `DD-UC-016`, `PR-IMPL-016`
+- **Trazabilidad:** `PRD-REQ-024`, `PRD-US-022`, `ADR-0013`, `ADR-0014`, `DD-UC-016`, `DD-UC-019`, `PR-IMPL-016`, `PR-IMPL-019`
 - **Actor principal:** Admin
+- **Actores secundarios (solo lectura, vía `FSD-UC-012` A2):** Secretaria, Profesor, Asesor — solo si la `GestionEscolar` padre está `ACTIVA`.
 - **Precondiciones:** `GestionEscolar` existente (seed de 4 secciones al crear, `FSD-UC-012`).
 - **Disparador:** El Admin ajusta la plantilla de secciones **de la gestión** (no de cada periodo).
 - **Flujo principal:**
-  1. `GET /api/v1/gestiones-escolares/{id}/secciones` (ADMIN o SECRETARIA; lista ordenada por `orden`, sin paginar).
-  2. `PUT /api/v1/gestiones-escolares/{id}/secciones` con `{secciones:[{nombre, nota}]}` — **reemplazo atómico** de la plantilla (`orden` = índice 1-based; M ≥ 1; Σ `nota` = 100.00). Operación canónica de rebalanceo.
-  3. `POST /api/v1/gestiones-escolares/{id}/secciones` con `{nombre, orden, nota}` y `PATCH /api/v1/secciones-evaluacion/{id}` `{nombre?, nota?}` — tras la mutación la suma **debe** seguir = 100.
+  1. `GET /api/v1/gestiones-escolares/{id}/secciones` (ADMIN, o SECRETARIA/PROFESOR/ASESOR si la gestión es `ACTIVA`; lista ordenada por `orden`, sin paginar).
+  2. `PUT /api/v1/gestiones-escolares/{id}/secciones` con `{secciones:[{nombre, nota}]}` — **reemplazo atómico** de la plantilla (`orden` = índice 1-based; M ≥ 1; Σ `nota` = 100.00), **sin restricción de estado de los periodos** (`ADR-0014`, revierte el freeze sticky de A3). Operación canónica de rebalanceo.
+  3. `POST /api/v1/gestiones-escolares/{id}/secciones` con `{nombre, orden, nota}` y `PATCH /api/v1/secciones-evaluacion/{id}` `{nombre?, nota?}` — tras la mutación la suma **debe** seguir = 100; sin restricción de estado de los periodos (`ADR-0014`).
 - **Flujos alternativos / excepciones:**
-  - **A1 — `nota` fuera de (0, 100]:** HTTP 422 `E_PESO_INVALIDO`.
-  - **A2 — Suma de `nota` ≠ 100 (o plantilla vacía):** HTTP 422 `E_SUMA_SECCIONES_INVALIDA`. También al abrir un periodo si la plantilla está vacía o no suma 100.
-  - **A3 — Freeze sticky:** HTTP 422 `E_SECCIONES_INMUTABLES` si **algún** periodo de la gestión está `ABIERTO` **o** `CERRADO` (no todos `PENDIENTE`). El freeze **no se levanta** al cerrar el periodo (`ADR-0013` §3.1.5; más estricto que un freeze solo-mientras-ABIERTO).
-  - Gestión o sección inexistente / otro tenant: HTTP 404 `E_GESTION_ESCOLAR_NO_ENCONTRADA` / `E_SECCION_NO_ENCONTRADA`.
+  - **A1 — `nota` fuera de (0, 100]:** HTTP 422 `E_PESO_INVALIDO` (invariante de integridad, **conservada**).
+  - **A2 — Suma de `nota` ≠ 100 (o plantilla vacía):** HTTP 422 `E_SUMA_SECCIONES_INVALIDA` (invariante de integridad, **conservada**). También al abrir un periodo si la plantilla está vacía o no suma 100.
+  - Gestión o sección inexistente / otro tenant / gestión no visible para el rol (`FSD-UC-012` A2): HTTP 404 `E_GESTION_ESCOLAR_NO_ENCONTRADA` / `E_SECCION_NO_ENCONTRADA`.
+  - ⚠️ **Eliminado por `ADR-0014`** (ya no existe en el sistema): `E_SECCIONES_INMUTABLES` (freeze sticky con algún periodo `ABIERTO`/`CERRADO`).
 - **Postcondiciones:** Plantilla de secciones compartida por todos los periodos de la gestión.
-- **Reglas de negocio aplicables:** BR-018.
+- **Reglas de negocio aplicables:** BR-018, `ADR-0014`.
 - **Datos de entrada (POST item):** `{ "nombre": "string", "orden": "integer", "nota": "decimal" }`
 - **Criterios de aceptación:**
 
@@ -611,10 +621,15 @@ Escenario: Seed Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10
   Entonces existen 4 secciones cuya suma de nota es 100
     Y aplican a todos los periodos de esa gestión
 
-Escenario: No se editan secciones con un periodo ABIERTO
+Escenario: El Admin edita secciones con un periodo ABIERTO (ADR-0014)
   Dado Trimestre 1 ABIERTO
-  Cuando el Admin intenta cambiar la nota de Saber de 45 a 40
-  Entonces el sistema responde 422 E_SECCIONES_INMUTABLES
+  Cuando el Admin cambia la nota de Saber de 45 a 40 y Hacer de 40 a 45
+  Entonces el sistema responde 200 y la plantilla queda actualizada
+
+Escenario: La suma de secciones sigue siendo obligatoria
+  Dado la plantilla vigente suma 100
+  Cuando el Admin intenta guardar una plantilla que suma 95
+  Entonces el sistema responde 422 E_SUMA_SECCIONES_INVALIDA
 ```
 
 ---
@@ -861,8 +876,8 @@ Escenario: Rechazo de SYSADMIN combinado con rol de tenant
 | BR-014 | Ningún usuario de un `Tenant` en estado `SUSPENDIDO` o `VENCIDO` puede autenticarse; sus datos académicos no se eliminan. | política + validación | BRD BR-014 | FSD-UC-011 |
 | BR-015 | El SysAdmin administra usuarios `ADMIN` de cada tenant sin acceso a los datos académicos del tenant. | política de aislamiento | BRD BR-015 | FSD-UC-011 |
 | BR-016 | Toda `GestionEscolar` requiere nombre, fecha de inicio, fecha de fin y estado (`PLANIFICACION`/`ACTIVA`/`CERRADA`). Al crearla se siembran 3 periodos y 4 secciones (`ADR-0013`). | validación | BRD BR-016 | FSD-UC-012 |
-| BR-017 | El número de `PeriodoEvaluacion` es configurable (N ≥ 1, seed = 3). Apertura secuencial: el periodo *k* no abre si *k−1* no está `CERRADO`. | arquitectura | BRD BR-017, `ADR-0013` | FSD-UC-013 |
-| BR-018 | Plantilla de `SeccionEvaluacion` **por gestión** (nombre, orden, `nota`); Σ `nota` = 100; inmutable desde que algún periodo deja de estar `PENDIENTE` (freeze sticky: `ABIERTO` o `CERRADO`). Defaults Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10. | arquitectura | BRD BR-018, `ADR-0013` | FSD-UC-014 |
+| BR-017 | El número de `PeriodoEvaluacion` es configurable (N ≥ 1, seed = 3). Apertura **no secuencial** desde `ADR-0014` (el Admin puede abrir/cerrar cualquier periodo en cualquier orden); solo se conserva la invariante de no-solape de fechas. | arquitectura | BRD BR-017, `ADR-0013`, `ADR-0014` | FSD-UC-013 |
+| BR-018 | Plantilla de `SeccionEvaluacion` **por gestión** (nombre, orden, `nota`); Σ `nota` = 100 (invariante de integridad conservada). Editable **en cualquier momento** desde `ADR-0014` (freeze sticky eliminado). Defaults Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10. | arquitectura | BRD BR-018, `ADR-0013`, `ADR-0014` | FSD-UC-014 |
 | BR-019 | Toda `Evaluacion` de una materia usa una sección de la plantilla y se califica en `[0, seccion.nota]`. | arquitectura | BRD BR-019, `ADR-0013` | FSD-UC-015 |
 | BR-020 | `nota_seccion = (Σ / n)` a 2 decimales; `nota_periodo = round(Σ secciones)` a entero HALF_UP; `promedio_gestion = round((Σ periodos_o_cero) / N)` visible `PROVISIONAL`. Sin `floor()` en el genérico. | cálculo | BRD BR-020, `ADR-0013` | FSD-UC-016 |
 | BR-021 | Un `Curso` puede tener uno o más `Paralelo`; `Materia` e `Inscripcion` referencian siempre un `Curso` y, cuando aplica, un `Paralelo` válidos. | validación | BRD BR-021 | FSD-UC-017 |
@@ -1470,6 +1485,7 @@ Paso 13 → audit_log entry + notificación
 | v2.12 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-014` (§4.6.4) cierra implementación **completa** (backend + UI fullstack, `DD-UC-016`/`PR-IMPL-016`): se documentan `GET`/`PUT` secciones, freeze sticky (A3 alineado a `ADR-0013` §3.1.5), A2 también al abrir un periodo sin plantilla Σ=100. Seed de 4 secciones al `POST` de gestión (`FSD-UC-012`). |
 | v2.13 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-015` (§4.6.5) cierra implementación **completa** (backend + UI fullstack, `DD-UC-017`/`PR-IMPL-017`): GET lista/detalle, PATCH datos/`ANULADA`, `GET /materias/mias`, `puntajeMaximo` derivado, A1, periodo `ABIERTO`. A2 `E_RANGO_INVALIDO` **diferido** a calificación de estudiante (`FSD-UC-016`). |
 | v2.14 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-016` (§4.6.6) cierra implementación **completa** (backend + UI fullstack, `DD-UC-018`/`PR-IMPL-018`): `PUT/GET` calificaciones, `GET` nota-provisional, motor `CalculoNotas` (`round` HALF_UP, sin `floor()`), A2 `E_RANGO_INVALIDO` cerrado. |
+| v2.15 | 12/09/2026 | Rodrigo Aspeti | **`ADR-0014`** (relaja `ADR-0013` §3.1.4/3.1.5/§3.2.2): `FSD-UC-012` (§4.6.2) gana actor secundario de solo lectura (Secretaria/Profesor/Asesor), nuevo `PATCH /gestiones-escolares/{id}` (nombre/fechas) y A2 de visibilidad `ACTIVA`-only (404 para roles no-`ADMIN` sobre una gestión no activa). `FSD-UC-013` (§4.6.3) elimina A2/A3 (`E_PERIODO_NO_SECUENCIAL`/`E_PERIODOS_INMUTABLES`): apertura ya no es secuencial, sin freeze de N/datos; se conserva A1 `E_PERIODOS_SOLAPADOS` y A4→A2 `E_PERIODO_UNICO`. `FSD-UC-014` (§4.6.4) elimina A3 (`E_SECCIONES_INMUTABLES`, freeze sticky); se conservan A1 `E_PESO_INVALIDO` y A2 `E_SUMA_SECCIONES_INVALIDA`. `BR-017`/`BR-018` (§5.1) reescritas para reflejar la relajación, conservando explícitamente las invariantes de integridad del motor de cálculo. Trazado a `DD-UC-019`/`PR-IMPL-019` (backend + UI fullstack, ejecutado). Sin cambios en `FSD-UC-015`/`016` (`CalculoNotas`/`CalificacionEvaluacion` intactos). |
 
 ---
 

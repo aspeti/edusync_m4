@@ -7,13 +7,19 @@ import com.edusync.academico.domain.EstadoPeriodoEvaluacion;
 import com.edusync.academico.domain.PeriodoEvaluacion;
 import com.edusync.academico.domain.PeriodoEvaluacionId;
 import com.edusync.academico.domain.PeriodoNoEncontradoException;
-import com.edusync.academico.domain.PeriodoNoSecuencialException;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * {@code DD-UC-019}: la secuencialidad de apertura ({@code E_PERIODO_NO_SECUENCIAL} —
+ * predecesor cerrado, un solo periodo {@code ABIERTO} a la vez) se elimino: este endpoint es
+ * exclusivamente {@code ADMIN} y el requisito de negocio es que pueda abrir/cerrar cualquier
+ * periodo en cualquier orden. Se conserva la exigencia de secciones sumando 100
+ * ({@code E_SUMA_SECCIONES_INVALIDA}) al abrir un periodo: es un requisito de integridad del
+ * motor de calculo ({@code ADR-0013}), no una restriccion de flujo/edicion.
+ */
 @Service
 @RequiredArgsConstructor
 public class CambiarEstadoPeriodoEvaluacionService implements CambiarEstadoPeriodoEvaluacionUseCase {
@@ -31,22 +37,6 @@ public class CambiarEstadoPeriodoEvaluacionService implements CambiarEstadoPerio
     if (nuevoEstado == EstadoPeriodoEvaluacion.ABIERTO) {
       SeccionEvaluacionPolitica.exigirSumaCien(
           seccionEvaluacionRepositoryPort.listarPorGestionYTenant(periodo.getGestionEscolarId(), tenantId));
-      List<PeriodoEvaluacion> hermanos = periodoEvaluacionRepositoryPort.listarPorGestionYTenant(
-          periodo.getGestionEscolarId(), tenantId);
-      if (periodo.getOrden() > 1) {
-        PeriodoEvaluacion predecesor = hermanos.stream()
-            .filter(p -> p.getOrden() == periodo.getOrden() - 1)
-            .findFirst()
-            .orElseThrow(PeriodoNoSecuencialException::new);
-        if (predecesor.getEstado() != EstadoPeriodoEvaluacion.CERRADO) {
-          throw new PeriodoNoSecuencialException();
-        }
-      }
-      boolean otroAbierto = hermanos.stream()
-          .anyMatch(p -> p.getEstado() == EstadoPeriodoEvaluacion.ABIERTO && !p.getId().equals(periodo.getId()));
-      if (otroAbierto) {
-        throw new PeriodoNoSecuencialException();
-      }
     }
 
     periodo.cambiarEstado(nuevoEstado);

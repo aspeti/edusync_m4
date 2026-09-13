@@ -3,7 +3,6 @@ package com.edusync.academico.application.service;
 import com.edusync.academico.application.port.in.ReemplazarSeccionesEvaluacionCommand;
 import com.edusync.academico.application.port.in.ReemplazarSeccionesEvaluacionUseCase;
 import com.edusync.academico.application.port.out.GestionEscolarRepositoryPort;
-import com.edusync.academico.application.port.out.PeriodoEvaluacionRepositoryPort;
 import com.edusync.academico.application.port.out.SeccionEvaluacionRepositoryPort;
 import com.edusync.academico.domain.GestionEscolarId;
 import com.edusync.academico.domain.GestionEscolarNoEncontradaException;
@@ -20,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReemplazarSeccionesEvaluacionService implements ReemplazarSeccionesEvaluacionUseCase {
 
   private final GestionEscolarRepositoryPort gestionEscolarRepositoryPort;
-  private final PeriodoEvaluacionRepositoryPort periodoEvaluacionRepositoryPort;
   private final SeccionEvaluacionRepositoryPort seccionEvaluacionRepositoryPort;
 
   @Override
@@ -30,9 +28,6 @@ public class ReemplazarSeccionesEvaluacionService implements ReemplazarSecciones
     gestionEscolarRepositoryPort
         .buscarPorIdYTenant(gestionId, command.tenantId())
         .orElseThrow(GestionEscolarNoEncontradaException::new);
-
-    SeccionEvaluacionPolitica.exigirMutables(
-        periodoEvaluacionRepositoryPort.listarPorGestionYTenant(gestionId, command.tenantId()));
 
     List<ReemplazarSeccionesEvaluacionCommand.Item> items =
         command.secciones() == null ? List.of() : command.secciones();

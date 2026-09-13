@@ -29,6 +29,11 @@
     <testcontainers.version>2.0.5</testcontainers.version>
     <lombok.version>1.18.46</lombok.version>
     <springdoc.version>3.0.3</springdoc.version>
+    <!-- Auditoría de tests: NFR-013 / AGENTS.md §8.2 — umbral en domain/ + application/ -->
+    <jacoco.version>0.8.15</jacoco.version>
+    <jacoco.coverage.minimum>0.80</jacoco.coverage.minimum>
+    <pitest.version>1.25.9</pitest.version>
+    <pitest.junit5.version>1.2.3</pitest.junit5.version>
   </properties>
 
   <dependencyManagement>
@@ -199,6 +204,145 @@
           </annotationProcessorPaths>
         </configuration>
       </plugin>
+
+      <!-- Cobertura de líneas: report siempre; check en verify (NFR-013) -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <configuration>
+          <!-- Solo domain + application cuentan para el umbral (AGENTS.md §8.2 / NFR-013).
+               infrastructure/, shared.web DTOs y bootstrap quedan fuera del gate. -->
+          <includes>
+            <include>**/domain/**</include>
+            <include>**/application/**</include>
+          </includes>
+          <excludes>
+            <exclude>**/package-info.class</exclude>
+            <exclude>**/domain/*Exception.class</exclude>
+            <exclude>**/domain/*Id.class</exclude>
+          </excludes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>jacoco-prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>jacoco-report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>jacoco-check</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <rule>
+                  <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>${jacoco.coverage.minimum}</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Mutation testing (perfil `mutation`): no bloquea verify por defecto.
+           Clases críticas de dominio: CalculoNotas, Usuario, GestionEscolar. -->
+      <plugin>
+        <groupId>org.pitest</groupId>
+        <artifactId>pitest-maven</artifactId>
+        <version>${pitest.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.pitest</groupId>
+            <artifactId>pitest-junit5-plugin</artifactId>
+            <version>${pitest.junit5.version}</version>
+          </dependency>
+        </dependencies>
+        <configuration>
+          <targetClasses>
+            <param>com.edusync.academico.domain.CalculoNotas*</param>
+            <param>com.edusync.identidad.domain.Usuario</param>
+            <param>com.edusync.academico.domain.GestionEscolar</param>
+          </targetClasses>
+          <targetTests>
+            <param>com.edusync.academico.domain.CalculoNotasTest</param>
+            <param>com.edusync.identidad.domain.UsuarioTest</param>
+            <param>com.edusync.academico.domain.GestionEscolarTest</param>
+          </targetTests>
+          <mutators>
+            <mutator>DEFAULTS</mutator>
+          </mutators>
+          <outputFormats>
+            <outputFormat>HTML</outputFormat>
+            <outputFormat>XML</outputFormat>
+          </outputFormats>
+          <timestampedReports>false</timestampedReports>
+          <failWhenNoMutations>true</failWhenNoMutations>
+          <!-- Soft gate: subir cuando la suite de dominio sea más agresiva -->
+          <mutationThreshold>60</mutationThreshold>
+          <coverageThreshold>80</coverageThreshold>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- Suite rápida sin Docker/Testcontainers (cobertura domain/application vía unit tests).
+         El umbral baja a 70 % porque muchos application services solo se cubren en *IntegrationTest. -->
+    <profile>
+      <id>unit</id>
+      <properties>
+        <jacoco.coverage.minimum>0.70</jacoco.coverage.minimum>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <excludes>
+                <exclude>**/*IntegrationTest.java</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>mutation</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.pitest</groupId>
+            <artifactId>pitest-maven</artifactId>
+            <executions>
+              <execution>
+                <id>pitest-mutation</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>mutationCoverage</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

@@ -1,21 +1,21 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { GestionEscolarResponse } from './gestion-escolar.model';
 import { ApiBase } from '../../core/api/api-base';
 import { PageResponse } from '../../core/api/page-response.model';
+import { AuthService } from '../../core/auth/auth.service';
 
 /**
- * Página de lista de Gestiones Escolares — consola Admin de tenant.
+ * Página de lista de Gestiones Escolares.
  * GET /api/v1/gestiones-escolares (DD-UC-008 §2), con filtros y paginación
  * (DD-UC-007, patron reutilizable): `q` busca por nombre, `estado` es un filtro exacto.
  *
- * A diferencia del dialogo de cambio de estado de Tenant (que ofrece las 3
- * opciones siempre porque cualquier transicion es valida alli), aqui el
- * dialogo solo ofrece las transiciones validas del estado actual
- * (transicionesValidas), reflejando la maquina de estados de
- * GestionEscolar.cambiarEstado() (DD-UC-009 §2/§3).
+ * DD-UC-019: `ADMIN` ve y edita cualquier gestión (nombre/fechas/estado, sin
+ * restricción de transición); `SECRETARIA`/`PROFESOR`/`ASESOR` solo ven la
+ * gestión "actual" (backend fuerza `estado=ACTIVA`) y no tienen acciones de
+ * escritura — ni el botón "+ Nueva Gestión", ni "Editar", ni "Cambiar estado".
  */
 @Component({
   selector: 'app-gestiones-escolares-list-page',
@@ -25,9 +25,11 @@ import { PageResponse } from '../../core/api/page-response.model';
     <div style="max-width: 1000px; margin: 0 auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h2>Gestión Escolar</h2>
-        <a routerLink="/academico/gestiones-escolares/nuevo" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; text-decoration: none; border-radius: 4px;">
-          + Nueva Gestión Escolar
-        </a>
+        @if (esAdmin()) {
+          <a routerLink="/academico/gestiones-escolares/nuevo" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; text-decoration: none; border-radius: 4px;">
+            + Nueva Gestión Escolar
+          </a>
+        }
       </div>
 
       <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; background: #fafafa; padding: 0.75rem; border-radius: 4px;">
@@ -38,15 +40,23 @@ import { PageResponse } from '../../core/api/page-response.model';
           (keyup.enter)="aplicarFiltros()"
           style="padding: 0.4rem; flex: 1; min-width: 200px;"
         />
-        <select [(ngModel)]="filtroEstado" style="padding: 0.4rem;">
-          <option value="">Todos los estados</option>
-          @for (op of estadoOpciones; track op) {
-            <option [value]="op">{{ op }}</option>
-          }
-        </select>
+        @if (esAdmin()) {
+          <select [(ngModel)]="filtroEstado" style="padding: 0.4rem;">
+            <option value="">Todos los estados</option>
+            @for (op of estadoOpciones; track op) {
+              <option [value]="op">{{ op }}</option>
+            }
+          </select>
+        }
         <button (click)="aplicarFiltros()" style="padding: 0.4rem 1rem; cursor: pointer;">Buscar</button>
         <button (click)="limpiarFiltros()" style="padding: 0.4rem 1rem; cursor: pointer;">Limpiar</button>
       </div>
+
+      @if (!esAdmin()) {
+        <p style="color: #666; font-size: 0.85rem; margin-top: -0.5rem;">
+          Solo se muestra la gestión escolar actual (estado ACTIVA).
+        </p>
+      }
 
       @if (loading()) {
         <p>Cargando gestiones escolares...</p>
@@ -89,12 +99,13 @@ import { PageResponse } from '../../core/api/page-response.model';
                   <a [routerLink]="['/academico/gestiones-escolares', gestion.id, 'secciones']" style="margin-right: 0.5rem; font-size: 0.85rem;">
                     Secciones
                   </a>
-                  @if (transicionesValidas(gestion.estado).length > 0) {
+                  @if (esAdmin()) {
+                    <button (click)="editar(gestion)" style="cursor: pointer; font-size: 0.85rem; margin-right: 0.5rem;">
+                      Editar
+                    </button>
                     <button (click)="cambiarEstado(gestion)" style="cursor: pointer; font-size: 0.85rem;">
                       Cambiar estado
                     </button>
-                  } @else {
-                    <span style="color: #999; font-size: 0.85rem;">Sin transiciones</span>
                   }
                 </td>
               </tr>
@@ -142,6 +153,38 @@ import { PageResponse } from '../../core/api/page-response.model';
           </div>
         </div>
       }
+
+      @if (editDialog()) {
+        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">
+          <div style="background:white;padding:2rem;border-radius:8px;min-width:320px;">
+            <h3>Editar "{{ editDialog()!.nombre }}"</h3>
+            <div style="display:flex;flex-direction:column;gap:0.5rem;margin:1rem 0;">
+              <label style="display:flex;flex-direction:column;font-size:0.85rem;">
+                Nombre
+                <input type="text" [(ngModel)]="editNombre" style="padding:0.4rem;" />
+              </label>
+              <label style="display:flex;flex-direction:column;font-size:0.85rem;">
+                Fecha inicio
+                <input type="date" [(ngModel)]="editFechaInicio" style="padding:0.4rem;" />
+              </label>
+              <label style="display:flex;flex-direction:column;font-size:0.85rem;">
+                Fecha fin
+                <input type="date" [(ngModel)]="editFechaFin" style="padding:0.4rem;" />
+              </label>
+            </div>
+            @if (editError()) {
+              <p style="color:#c62828;">{{ editError() }}</p>
+            }
+            <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+              <button (click)="cerrarEditDialog()">Cancelar</button>
+              <button (click)="confirmarEdicion()" [disabled]="editSaving()"
+                      style="background:#1e3a5f;color:white;padding:0.4rem 1rem;cursor:pointer;">
+                {{ editSaving() ? 'Guardando...' : 'Guardar' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
 })
@@ -155,7 +198,15 @@ export class GestionesEscolaresListPage implements OnInit {
   estadoError = signal<string | null>(null);
   estadoSaving = signal(false);
 
-  // Filtros (DD-UC-007): `q` busca por nombre; `estado` es un filtro exacto.
+  editDialog = signal<GestionEscolarResponse | null>(null);
+  editNombre = '';
+  editFechaInicio = '';
+  editFechaFin = '';
+  editError = signal<string | null>(null);
+  editSaving = signal(false);
+
+  // Filtros (DD-UC-007): `q` busca por nombre; `estado` es un filtro exacto (solo ADMIN,
+  // DD-UC-019: para el resto de roles el backend fuerza estado=ACTIVA sin importar el filtro).
   filtroQ = '';
   filtroEstado = '';
 
@@ -167,7 +218,9 @@ export class GestionesEscolaresListPage implements OnInit {
 
   readonly estadoOpciones = ['PLANIFICACION', 'ACTIVA', 'CERRADA'];
 
-  constructor(private http: HttpClient) {}
+  readonly esAdmin = computed(() => this.auth.hasRole('ADMIN'));
+
+  constructor(private http: HttpClient, private auth: AuthService) {}
 
   ngOnInit(): void {
     this.cargarGestiones();
@@ -218,19 +271,12 @@ export class GestionesEscolaresListPage implements OnInit {
   }
 
   /**
-   * Refleja la maquina de estados de GestionEscolar.cambiarEstado() (backend,
-   * DD-UC-008): solo estas transiciones son validas. CERRADA no tiene salida
-   * en este slice.
+   * DD-UC-019: el endpoint `PATCH /estado` es exclusivamente ADMIN y ya no tiene
+   * una máquina de estados restringida — se puede transicionar a cualquier
+   * estado desde cualquier estado (incluida una gestión CERRADA, antes terminal).
    */
   transicionesValidas(estadoActual: string): string[] {
-    switch (estadoActual) {
-      case 'PLANIFICACION':
-        return ['ACTIVA'];
-      case 'ACTIVA':
-        return ['CERRADA', 'PLANIFICACION'];
-      default:
-        return [];
-    }
+    return this.estadoOpciones.filter((op) => op !== estadoActual);
   }
 
   cambiarEstado(gestion: GestionEscolarResponse): void {
@@ -264,6 +310,48 @@ export class GestionesEscolaresListPage implements OnInit {
         error: () => {
           this.estadoError.set('Error al cambiar el estado.');
           this.estadoSaving.set(false);
+        },
+      });
+  }
+
+  editar(gestion: GestionEscolarResponse): void {
+    this.editNombre = gestion.nombre;
+    this.editFechaInicio = gestion.fechaInicio;
+    this.editFechaFin = gestion.fechaFin;
+    this.editError.set(null);
+    this.editDialog.set(gestion);
+  }
+
+  cerrarEditDialog(): void {
+    this.editDialog.set(null);
+  }
+
+  confirmarEdicion(): void {
+    const gestion = this.editDialog();
+    if (!gestion) return;
+    this.editSaving.set(true);
+    this.editError.set(null);
+
+    this.http
+      .patch<GestionEscolarResponse>(`${ApiBase.BASE}/gestiones-escolares/${gestion.id}`, {
+        nombre: this.editNombre,
+        fechaInicio: this.editFechaInicio,
+        fechaFin: this.editFechaFin,
+      })
+      .subscribe({
+        next: (updated) => {
+          this.gestiones.update((list) => list.map((g) => (g.id === updated.id ? updated : g)));
+          this.editSaving.set(false);
+          this.cerrarEditDialog();
+        },
+        error: (err) => {
+          const codigo = err?.error?.codigo as string | undefined;
+          this.editError.set(
+            codigo === 'E_FECHAS_INVALIDAS'
+              ? 'La fecha de fin debe ser posterior a la de inicio.'
+              : 'Error al guardar los cambios.'
+          );
+          this.editSaving.set(false);
         },
       });
   }

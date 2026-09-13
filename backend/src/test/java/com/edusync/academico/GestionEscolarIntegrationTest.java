@@ -136,9 +136,15 @@ class GestionEscolarIntegrationTest {
     assertThat(response.getBody().codigo()).isEqualTo("E_FECHAS_INVALIDAS");
   }
 
+  /**
+   * {@code DD-UC-019}: el endpoint es exclusivamente {@code ADMIN} y ya no tiene una
+   * maquina de estados restringida; una transicion directa {@code PLANIFICACION}
+   * &rarr; {@code CERRADA} (antes rechazada con 422 {@code E_ESTADO_INVALIDO}) ahora se
+   * acepta.
+   */
   @Test
-  void rechazaTransicionDeEstadoInvalidaCon422() {
-    HttpHeaders adminHeaders = crearTenantYAutenticarAdmin("Colegio Transicion Invalida", "admin-transicion@colegio.edu.bo");
+  void permiteTransicionDirectaDePlanificacionACerrada() {
+    HttpHeaders adminHeaders = crearTenantYAutenticarAdmin("Colegio Transicion Directa", "admin-transicion@colegio.edu.bo");
     var gestionId = restTemplate.exchange(
             "/api/v1/gestiones-escolares",
             HttpMethod.POST,
@@ -149,15 +155,15 @@ class GestionEscolarIntegrationTest {
         .getBody()
         .id();
 
-    ResponseEntity<ErrorResponse> response = restTemplate.exchange(
+    ResponseEntity<GestionEscolarResponse> response = restTemplate.exchange(
         "/api/v1/gestiones-escolares/" + gestionId + "/estado",
         HttpMethod.PATCH,
         new HttpEntity<>(new CambiarEstadoGestionEscolarRequest("CERRADA"), adminHeaders),
-        ErrorResponse.class);
+        GestionEscolarResponse.class);
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().codigo()).isEqualTo("E_ESTADO_INVALIDO");
+    assertThat(response.getBody().estado()).isEqualTo("CERRADA");
   }
 
   @Test

@@ -40,22 +40,41 @@ class ListarGestionesEscolaresServiceTest {
     when(gestionEscolarRepositoryPort.listarPorTenant(tenantId, filtro, pageQuery))
         .thenReturn(PageResult.of(List.of(gestionEscolar), pageQuery, 1));
 
-    PageResult<GestionEscolar> resultado = service.listar(tenantId, filtro, pageQuery);
+    PageResult<GestionEscolar> resultado = service.listar(tenantId, filtro, pageQuery, true);
 
     assertThat(resultado.content()).containsExactly(gestionEscolar);
     assertThat(resultado.totalElements()).isEqualTo(1);
   }
 
   @Test
-  void delegaFiltroYPaginacionSinModificarlos() {
+  void delegaFiltroYPaginacionSinModificarlosCuandoActorVeTodas() {
     UUID tenantId = UUID.randomUUID();
     GestionEscolarFiltro filtro = new GestionEscolarFiltro("2027", EstadoGestionEscolar.ACTIVA);
     PageQuery pageQuery = new PageQuery(1, 5);
     when(gestionEscolarRepositoryPort.listarPorTenant(any(), any(), any()))
         .thenReturn(PageResult.of(List.of(), pageQuery, 0));
 
-    service.listar(tenantId, filtro, pageQuery);
+    service.listar(tenantId, filtro, pageQuery, true);
 
     verify(gestionEscolarRepositoryPort).listarPorTenant(tenantId, filtro, pageQuery);
+  }
+
+  /**
+   * {@code DD-UC-019}: {@code SECRETARIA}/{@code PROFESOR}/{@code ASESOR}
+   * ({@code actorVeTodas=false}) solo ven la gestion {@code ACTIVA} ("gestion actual"),
+   * sin importar el filtro de estado que hayan enviado.
+   */
+  @Test
+  void fuerzaFiltroActivaCuandoActorNoVeTodas() {
+    UUID tenantId = UUID.randomUUID();
+    GestionEscolarFiltro filtroSolicitado = new GestionEscolarFiltro("2027", EstadoGestionEscolar.CERRADA);
+    PageQuery pageQuery = PageQuery.of(null, null);
+    GestionEscolarFiltro filtroEsperado = new GestionEscolarFiltro("2027", EstadoGestionEscolar.ACTIVA);
+    when(gestionEscolarRepositoryPort.listarPorTenant(tenantId, filtroEsperado, pageQuery))
+        .thenReturn(PageResult.of(List.of(), pageQuery, 0));
+
+    service.listar(tenantId, filtroSolicitado, pageQuery, false);
+
+    verify(gestionEscolarRepositoryPort).listarPorTenant(tenantId, filtroEsperado, pageQuery);
   }
 }

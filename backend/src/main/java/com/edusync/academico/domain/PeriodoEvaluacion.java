@@ -101,19 +101,15 @@ public final class PeriodoEvaluacion {
   }
 
   /**
-   * {@code PENDIENTE -> ABIERTO} y {@code ABIERTO -> CERRADO}. La secuencialidad se enforcea
-   * en {@code CambiarEstadoPeriodoService}.
+   * Cambia el estado del periodo ({@code PATCH .../estado}, exclusivamente {@code ADMIN}).
+   * Acepta cualquier {@link EstadoPeriodoEvaluacion} destino ({@code DD-UC-019}): la
+   * secuencialidad {@code PENDIENTE -> ABIERTO -> CERRADO} dejo de enforcearse en
+   * {@code CambiarEstadoPeriodoEvaluacionService} porque el unico actor autorizado a llamar
+   * este endpoint es {@code ADMIN}, y el requisito de negocio es que pueda reabrir/cerrar
+   * cualquier periodo en cualquier orden.
    */
   public void cambiarEstado(EstadoPeriodoEvaluacion nuevoEstado) {
     Objects.requireNonNull(nuevoEstado, "nuevoEstado no puede ser nulo");
-    boolean transicionValida = switch (estado) {
-      case PENDIENTE -> nuevoEstado == EstadoPeriodoEvaluacion.ABIERTO;
-      case ABIERTO -> nuevoEstado == EstadoPeriodoEvaluacion.CERRADO;
-      case CERRADO -> false;
-    };
-    if (!transicionValida) {
-      throw new EstadoPeriodoEvaluacionInvalidoException(estado, nuevoEstado);
-    }
     this.estado = nuevoEstado;
   }
 

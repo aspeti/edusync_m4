@@ -1,5 +1,7 @@
 package com.edusync.academico.infrastructure.adapter.in.rest;
 
+import com.edusync.academico.application.port.in.ActualizarGestionEscolarCommand;
+import com.edusync.academico.application.port.in.ActualizarGestionEscolarUseCase;
 import com.edusync.academico.application.port.in.CambiarEstadoGestionEscolarUseCase;
 import com.edusync.academico.application.port.in.CrearGestionEscolarCommand;
 import com.edusync.academico.application.port.in.CrearGestionEscolarUseCase;
@@ -35,6 +37,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -47,22 +50,33 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Adaptador REST publico de {@code FSD-UC-012} (Gestion Escolar, {@code DD-UC-008}).
- * {@code POST} y {@code PATCH .../estado} requieren {@code ADMIN}. El {@code GET} de
- * listado y detalle admite tambien {@code SECRETARIA} ({@code DD-UC-013}/{@code DD-UC-015}).
- * Operan exclusivamente sobre el tenant del actor autenticado
- * ({@link TenantContextProvider}): nunca se confia en un {@code tenantId}
- * provisto por el cliente. Seed de 3 periodos y 4 secciones al crear
+ * {@code POST}, {@code PATCH /{id}} y {@code PATCH .../estado} requieren {@code ADMIN}
+ * ({@code DD-UC-019}: sin restriccion de estado ni de datos — {@code ADMIN} puede editar
+ * nombre/fechas y transicionar a cualquier estado en cualquier momento). El {@code GET} de
+ * listado y detalle admite tambien {@code SECRETARIA}, {@code PROFESOR} y {@code ASESOR}
+ * ({@code DD-UC-013}/{@code DD-UC-015}/{@code DD-UC-019}), pero scoped a la gestion
+ * {@code ACTIVA}: para estos tres roles, {@code GestionEscolarVisibilidad} fuerza el filtro
+ * de listado a {@code estado=ACTIVA} y devuelve {@code 404} sobre cualquier gestion que no
+ * este {@code ACTIVA} (oculta su existencia, mismo patron 404-no-403 del resto del proyecto).
+ * {@code ADMIN} ve y edita todas las gestiones sin restriccion. Operan exclusivamente sobre
+ * el tenant del actor autenticado ({@link TenantContextProvider}): nunca se confia en un
+ * {@code tenantId} provisto por el cliente. Seed de 3 periodos y 4 secciones al crear
  * ({@code DD-UC-015}/{@code DD-UC-016}).
  */
 @RestController
 @RequestMapping("/api/v1/gestiones-escolares")
 @RequiredArgsConstructor
-@Tag(name = "Academico", description = "Gestion Escolar + Periodos/Secciones anidados (DD-UC-008/015/016; GET tambien SECRETARIA)")
+@Tag(
+    name = "Academico",
+    description =
+        "Gestion Escolar + Periodos/Secciones anidados (DD-UC-008/015/016/019; GET tambien "
+            + "SECRETARIA/PROFESOR/ASESOR, scoped a la gestion ACTIVA)")
 public class GestionEscolarController {
 
   private final CrearGestionEscolarUseCase crearGestionEscolarUseCase;
   private final ListarGestionesEscolaresUseCase listarGestionesEscolaresUseCase;
   private final ObtenerGestionEscolarUseCase obtenerGestionEscolarUseCase;
+  private final ActualizarGestionEscolarUseCase actualizarGestionEscolarUseCase;
   private final CambiarEstadoGestionEscolarUseCase cambiarEstadoGestionEscolarUseCase;
   private final CrearPeriodoEvaluacionUseCase crearPeriodoEvaluacionUseCase;
   private final ListarPeriodosEvaluacionUseCase listarPeriodosEvaluacionUseCase;
@@ -85,39 +99,53 @@ public class GestionEscolarController {
   }
 
   @GetMapping
-  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR','ASESOR')")
   @Operation(
       summary = "Listar Gestiones Escolares del tenant (filtrable y paginado)",
       description =
-          "Scoped al tenant del actor autenticado (DD-UC-008 §2). Lectura tambien SECRETARIA "
-              + "(DD-UC-013). Filtros y paginacion opcionales (DD-UC-007): sin query params, "
-              + "page=0 y size=20 por defecto.")
+          "Scoped al tenant del actor autenticado (DD-UC-008 §2). Lectura tambien SECRETARIA, "
+              + "PROFESOR y ASESOR (DD-UC-013/DD-UC-019): para estos tres roles el filtro "
+              + "estado se fuerza a ACTIVA, sin importar el query param recibido (solo ven la "
+              + "gestion actual). Filtros y paginacion opcionales (DD-UC-007): sin query "
+              + "params, page=0 y size=20 por defecto.")
   @ApiResponse(responseCode = "200", description = "Pagina de Gestiones Escolares")
   public ResponseEntity<PageResponse<GestionEscolarResponse>> listar(
-      @ParameterObject GestionEscolarFiltro filtro, @ParameterObject PaginacionParams paginacion) {
+      @ParameterObject GestionEscolarFiltro filtro,
+      @ParameterObject PaginacionParams paginacion,
+      Authentication authentication) {
     var resultado = listarGestionesEscolaresUseCase.listar(
-        tenantActual(), filtro, PageQuery.of(paginacion.page(), paginacion.size()));
+        tenantActual(),
+        filtro,
+        PageQuery.of(paginacion.page(), paginacion.size()),
+        ActorSeguridad.esAdmin(authentication));
     return ResponseEntity.ok(PageResponse.from(resultado, this::aResponse));
   }
 
   @GetMapping("/{id}")
-  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR')")
-  @Operation(summary = "Obtener una Gestion Escolar por id", description = "DD-UC-015: evita query param de nombre.")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR','ASESOR')")
+  @Operation(
+      summary = "Obtener una Gestion Escolar por id",
+      description =
+          "DD-UC-015: evita query param de nombre. SECRETARIA/PROFESOR/ASESOR reciben "
+              + "404 si la gestion no esta ACTIVA (DD-UC-019, oculta su existencia).")
   @ApiResponse(responseCode = "200", description = "Gestion Escolar")
   @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")
-  public ResponseEntity<GestionEscolarResponse> obtener(@PathVariable UUID id) {
-    GestionEscolar gestionEscolar =
-        obtenerGestionEscolarUseCase.obtener(GestionEscolarId.de(id), tenantActual());
+  public ResponseEntity<GestionEscolarResponse> obtener(@PathVariable UUID id, Authentication authentication) {
+    GestionEscolar gestionEscolar = obtenerGestionEscolarUseCase.obtener(
+        GestionEscolarId.de(id), tenantActual(), ActorSeguridad.esAdmin(authentication));
     return ResponseEntity.ok(aResponse(gestionEscolar));
   }
 
   @GetMapping("/{id}/periodos")
-  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR','ASESOR')")
   @Operation(summary = "Listar periodos de una Gestion Escolar", description = "Sin paginar, ordenados por orden.")
   @ApiResponse(responseCode = "200", description = "Lista de periodos")
   @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")
-  public ResponseEntity<List<PeriodoEvaluacionResponse>> listarPeriodos(@PathVariable UUID id) {
-    List<PeriodoEvaluacionResponse> periodos = listarPeriodosEvaluacionUseCase.listar(tenantActual(), id).stream()
+  public ResponseEntity<List<PeriodoEvaluacionResponse>> listarPeriodos(
+      @PathVariable UUID id, Authentication authentication) {
+    List<PeriodoEvaluacionResponse> periodos = listarPeriodosEvaluacionUseCase
+        .listar(tenantActual(), id, ActorSeguridad.esAdmin(authentication))
+        .stream()
         .map(this::aPeriodoResponse)
         .toList();
     return ResponseEntity.ok(periodos);
@@ -128,7 +156,7 @@ public class GestionEscolarController {
   @Operation(summary = "Agregar un periodo a una Gestion Escolar")
   @ApiResponse(responseCode = "201", description = "Periodo creado")
   @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")
-  @ApiResponse(responseCode = "422", description = "E_FECHAS_INVALIDAS / E_PERIODOS_SOLAPADOS / E_PERIODOS_INMUTABLES")
+  @ApiResponse(responseCode = "422", description = "E_FECHAS_INVALIDAS / E_PERIODOS_SOLAPADOS")
   public ResponseEntity<PeriodoEvaluacionResponse> crearPeriodo(
       @PathVariable UUID id, @Valid @RequestBody CrearPeriodoEvaluacionRequest request) {
     PeriodoEvaluacion periodo = crearPeriodoEvaluacionUseCase.crear(new CrearPeriodoEvaluacionCommand(
@@ -137,12 +165,15 @@ public class GestionEscolarController {
   }
 
   @GetMapping("/{id}/secciones")
-  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR','ASESOR')")
   @Operation(summary = "Listar secciones de una Gestion Escolar", description = "Sin paginar, ordenadas por orden.")
   @ApiResponse(responseCode = "200", description = "Lista de secciones")
   @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")
-  public ResponseEntity<List<SeccionEvaluacionResponse>> listarSecciones(@PathVariable UUID id) {
-    List<SeccionEvaluacionResponse> secciones = listarSeccionesEvaluacionUseCase.listar(tenantActual(), id).stream()
+  public ResponseEntity<List<SeccionEvaluacionResponse>> listarSecciones(
+      @PathVariable UUID id, Authentication authentication) {
+    List<SeccionEvaluacionResponse> secciones = listarSeccionesEvaluacionUseCase
+        .listar(tenantActual(), id, ActorSeguridad.esAdmin(authentication))
+        .stream()
         .map(this::aSeccionResponse)
         .toList();
     return ResponseEntity.ok(secciones);
@@ -153,7 +184,7 @@ public class GestionEscolarController {
   @Operation(summary = "Reemplazar la plantilla de secciones (operacion canonica, Σ nota = 100)")
   @ApiResponse(responseCode = "200", description = "Plantilla reemplazada")
   @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")
-  @ApiResponse(responseCode = "422", description = "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA / E_SECCIONES_INMUTABLES")
+  @ApiResponse(responseCode = "422", description = "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA")
   public ResponseEntity<List<SeccionEvaluacionResponse>> reemplazarSecciones(
       @PathVariable UUID id, @Valid @RequestBody ReemplazarSeccionesEvaluacionRequest request) {
     List<ReemplazarSeccionesEvaluacionCommand.Item> items = request.secciones().stream()
@@ -172,7 +203,7 @@ public class GestionEscolarController {
   @Operation(summary = "Agregar una seccion a una Gestion Escolar (la suma resultante debe ser 100)")
   @ApiResponse(responseCode = "201", description = "Seccion creada")
   @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")
-  @ApiResponse(responseCode = "422", description = "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA / E_SECCIONES_INMUTABLES")
+  @ApiResponse(responseCode = "422", description = "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA")
   public ResponseEntity<SeccionEvaluacionResponse> crearSeccion(
       @PathVariable UUID id, @Valid @RequestBody CrearSeccionEvaluacionRequest request) {
     SeccionEvaluacion seccion = crearSeccionEvaluacionUseCase.crear(new CrearSeccionEvaluacionCommand(
@@ -180,14 +211,33 @@ public class GestionEscolarController {
     return ResponseEntity.status(HttpStatus.CREATED).body(aSeccionResponse(seccion));
   }
 
+  @PatchMapping("/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
+  @Operation(
+      summary = "Actualizar nombre y/o fechas de una Gestion Escolar",
+      description =
+          "DD-UC-019: campos nulos conservan el valor actual. Sin restriccion de estado "
+              + "(ADMIN puede editar en cualquier momento, PLANIFICACION/ACTIVA/CERRADA).")
+  @ApiResponse(responseCode = "200", description = "Gestion Escolar actualizada")
+  @ApiResponse(responseCode = "404", description = "E_GESTION_ESCOLAR_NO_ENCONTRADA")
+  @ApiResponse(responseCode = "422", description = "fechaFin no posterior a fechaInicio (E_FECHAS_INVALIDAS)")
+  public ResponseEntity<GestionEscolarResponse> actualizar(
+      @PathVariable UUID id, @RequestBody ActualizarGestionEscolarRequest request) {
+    GestionEscolar gestionEscolar = actualizarGestionEscolarUseCase.actualizar(new ActualizarGestionEscolarCommand(
+        tenantActual(), id, request.nombre(), request.fechaInicio(), request.fechaFin()));
+    return ResponseEntity.ok(aResponse(gestionEscolar));
+  }
+
   @PatchMapping("/{id}/estado")
   @PreAuthorize("hasRole('ADMIN')")
   @Operation(
       summary = "Cambiar el estado de una Gestion Escolar",
-      description = "PLANIFICACION/ACTIVA/CERRADA (FSD-UC-012, pasos 3-4).")
+      description =
+          "PLANIFICACION/ACTIVA/CERRADA (FSD-UC-012, pasos 3-4). DD-UC-019: ADMIN puede "
+              + "transicionar a cualquier estado desde cualquier estado, sin maquina de "
+              + "estados restringida.")
   @ApiResponse(responseCode = "200", description = "Estado actualizado")
   @ApiResponse(responseCode = "404", description = "Gestion Escolar inexistente o de otro tenant (E_GESTION_ESCOLAR_NO_ENCONTRADA)")
-  @ApiResponse(responseCode = "422", description = "Transicion de estado invalida (E_ESTADO_INVALIDO)")
   public ResponseEntity<GestionEscolarResponse> cambiarEstado(
       @PathVariable UUID id, @Valid @RequestBody CambiarEstadoGestionEscolarRequest request) {
     GestionEscolar gestionEscolar = cambiarEstadoGestionEscolarUseCase.cambiarEstado(
@@ -201,14 +251,10 @@ public class GestionEscolarController {
       case "E_GESTION_ESCOLAR_NO_ENCONTRADA", "E_PERIODO_NO_ENCONTRADO", "E_SECCION_NO_ENCONTRADA" ->
           HttpStatus.NOT_FOUND;
       case "E_FECHAS_INVALIDAS",
-          "E_ESTADO_INVALIDO",
           "E_PERIODOS_SOLAPADOS",
-          "E_PERIODO_NO_SECUENCIAL",
-          "E_PERIODOS_INMUTABLES",
           "E_PERIODO_UNICO",
           "E_PESO_INVALIDO",
-          "E_SUMA_SECCIONES_INVALIDA",
-          "E_SECCIONES_INMUTABLES" -> HttpStatus.UNPROCESSABLE_CONTENT;
+          "E_SUMA_SECCIONES_INVALIDA" -> HttpStatus.UNPROCESSABLE_CONTENT;
       default -> HttpStatus.CONFLICT;
     };
     return ResponseEntity.status(status).body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));

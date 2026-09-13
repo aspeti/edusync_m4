@@ -23,7 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Recurso propio de {@link SeccionEvaluacion} ({@code FSD-UC-014}, {@code DD-UC-016}):
  * PATCH de nombre/nota. El alta, listado y reemplazo viven anidados en
- * {@link GestionEscolarController}.
+ * {@link GestionEscolarController}. {@code DD-UC-019}: exclusivamente {@code ADMIN}, sin
+ * freeze sticky (ver Javadoc de {@code SeccionEvaluacionPolitica}).
  */
 @RestController
 @RequestMapping("/api/v1/secciones-evaluacion")
@@ -39,7 +40,7 @@ public class SeccionEvaluacionController {
   @Operation(summary = "Actualizar nombre y/o nota de una seccion")
   @ApiResponse(responseCode = "200", description = "Seccion actualizada")
   @ApiResponse(responseCode = "404", description = "E_SECCION_NO_ENCONTRADA")
-  @ApiResponse(responseCode = "422", description = "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA / E_SECCIONES_INMUTABLES")
+  @ApiResponse(responseCode = "422", description = "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA")
   public ResponseEntity<SeccionEvaluacionResponse> actualizar(
       @PathVariable UUID id, @RequestBody ActualizarSeccionEvaluacionRequest request) {
     SeccionEvaluacion seccion = actualizarSeccionEvaluacionUseCase.actualizar(
@@ -52,8 +53,7 @@ public class SeccionEvaluacionController {
   public ResponseEntity<ErrorResponse> alManejarErrorDeDominio(DomainException ex) {
     HttpStatus status = switch (ex.getErrorCode()) {
       case "E_SECCION_NO_ENCONTRADA", "E_GESTION_ESCOLAR_NO_ENCONTRADA" -> HttpStatus.NOT_FOUND;
-      case "E_PESO_INVALIDO", "E_SUMA_SECCIONES_INVALIDA", "E_SECCIONES_INMUTABLES" ->
-          HttpStatus.UNPROCESSABLE_CONTENT;
+      case "E_PESO_INVALIDO", "E_SUMA_SECCIONES_INVALIDA" -> HttpStatus.UNPROCESSABLE_CONTENT;
       default -> HttpStatus.CONFLICT;
     };
     return ResponseEntity.status(status).body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));

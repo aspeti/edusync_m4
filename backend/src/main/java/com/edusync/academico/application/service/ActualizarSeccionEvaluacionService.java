@@ -2,7 +2,6 @@ package com.edusync.academico.application.service;
 
 import com.edusync.academico.application.port.in.ActualizarSeccionEvaluacionCommand;
 import com.edusync.academico.application.port.in.ActualizarSeccionEvaluacionUseCase;
-import com.edusync.academico.application.port.out.PeriodoEvaluacionRepositoryPort;
 import com.edusync.academico.application.port.out.SeccionEvaluacionRepositoryPort;
 import com.edusync.academico.domain.SeccionEvaluacion;
 import com.edusync.academico.domain.SeccionEvaluacionId;
@@ -17,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ActualizarSeccionEvaluacionService implements ActualizarSeccionEvaluacionUseCase {
 
-  private final PeriodoEvaluacionRepositoryPort periodoEvaluacionRepositoryPort;
   private final SeccionEvaluacionRepositoryPort seccionEvaluacionRepositoryPort;
 
   @Override
@@ -26,10 +24,6 @@ public class ActualizarSeccionEvaluacionService implements ActualizarSeccionEval
     SeccionEvaluacion seccion = seccionEvaluacionRepositoryPort
         .buscarPorIdYTenant(SeccionEvaluacionId.de(command.seccionId()), command.tenantId())
         .orElseThrow(SeccionNoEncontradaException::new);
-
-    SeccionEvaluacionPolitica.exigirMutables(
-        periodoEvaluacionRepositoryPort.listarPorGestionYTenant(
-            seccion.getGestionEscolarId(), command.tenantId()));
 
     String nombre = command.nombre() != null ? command.nombre() : seccion.getNombre();
     BigDecimal nota = command.nota() != null ? command.nota() : seccion.getNota();

@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 
 import com.edusync.academico.application.port.out.GestionEscolarRepositoryPort;
 import com.edusync.academico.domain.EstadoGestionEscolar;
-import com.edusync.academico.domain.EstadoGestionEscolarInvalidoException;
 import com.edusync.academico.domain.GestionEscolar;
 import com.edusync.academico.domain.GestionEscolarId;
 import com.edusync.academico.domain.GestionEscolarNoEncontradaException;
@@ -54,15 +53,22 @@ class CambiarEstadoGestionEscolarServiceTest {
         .isInstanceOf(GestionEscolarNoEncontradaException.class);
   }
 
+  /**
+   * {@code DD-UC-019}: este endpoint es exclusivamente {@code ADMIN}; permite transicionar
+   * a cualquier estado desde cualquier estado, incluida una gestion {@code CERRADA} (antes
+   * terminal).
+   */
   @Test
-  void rechazaTransicionInvalida() {
+  void permiteCualquierTransicionIncluidaDesdeCerrada() {
     UUID tenantId = UUID.randomUUID();
     GestionEscolarId id = GestionEscolarId.nueva();
     GestionEscolar gestionEscolar = GestionEscolar.reconstruir(
         id, tenantId, "2027", LocalDate.of(2027, 2, 1), LocalDate.of(2027, 11, 30), EstadoGestionEscolar.CERRADA);
     when(gestionEscolarRepositoryPort.buscarPorIdYTenant(id, tenantId)).thenReturn(Optional.of(gestionEscolar));
+    when(gestionEscolarRepositoryPort.guardar(any(GestionEscolar.class))).thenAnswer(inv -> inv.getArgument(0));
 
-    assertThatThrownBy(() -> service.cambiarEstado(id, tenantId, EstadoGestionEscolar.ACTIVA))
-        .isInstanceOf(EstadoGestionEscolarInvalidoException.class);
+    GestionEscolar actualizada = service.cambiarEstado(id, tenantId, EstadoGestionEscolar.ACTIVA);
+
+    assertThat(actualizada.getEstado()).isEqualTo(EstadoGestionEscolar.ACTIVA);
   }
 }

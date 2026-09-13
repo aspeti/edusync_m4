@@ -28,7 +28,9 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Recurso propio de {@link PeriodoEvaluacion} ({@code FSD-UC-013}, {@code DD-UC-015}):
  * PATCH datos, DELETE y PATCH estado. El alta y el listado viven anidados en
- * {@link GestionEscolarController}.
+ * {@link GestionEscolarController}. {@code DD-UC-019}: exclusivamente {@code ADMIN}, sin
+ * freeze de inmutabilidad ni secuencialidad de apertura (ver Javadoc de
+ * {@code PeriodoEvaluacionPolitica}/{@code CambiarEstadoPeriodoEvaluacionService}).
  */
 @RestController
 @RequestMapping("/api/v1/periodos-evaluacion")
@@ -46,7 +48,7 @@ public class PeriodoEvaluacionController {
   @Operation(summary = "Actualizar nombre y fechas de un periodo")
   @ApiResponse(responseCode = "200", description = "Periodo actualizado")
   @ApiResponse(responseCode = "404", description = "E_PERIODO_NO_ENCONTRADO")
-  @ApiResponse(responseCode = "422", description = "E_FECHAS_INVALIDAS / E_PERIODOS_SOLAPADOS / E_PERIODOS_INMUTABLES")
+  @ApiResponse(responseCode = "422", description = "E_FECHAS_INVALIDAS / E_PERIODOS_SOLAPADOS")
   public ResponseEntity<PeriodoEvaluacionResponse> actualizar(
       @PathVariable UUID id, @RequestBody ActualizarPeriodoEvaluacionRequest request) {
     PeriodoEvaluacion periodo = actualizarPeriodoEvaluacionUseCase.actualizar(
@@ -60,7 +62,7 @@ public class PeriodoEvaluacionController {
   @Operation(summary = "Eliminar un periodo (solo si todos estan PENDIENTE y N>1)")
   @ApiResponse(responseCode = "204", description = "Eliminado")
   @ApiResponse(responseCode = "404", description = "E_PERIODO_NO_ENCONTRADO")
-  @ApiResponse(responseCode = "422", description = "E_PERIODOS_INMUTABLES / E_PERIODO_UNICO")
+  @ApiResponse(responseCode = "422", description = "E_PERIODO_UNICO")
   public ResponseEntity<Void> eliminar(@PathVariable UUID id) {
     eliminarPeriodoEvaluacionUseCase.eliminar(tenantActual(), id);
     return ResponseEntity.noContent().build();
@@ -68,10 +70,12 @@ public class PeriodoEvaluacionController {
 
   @PatchMapping("/{id}/estado")
   @PreAuthorize("hasRole('ADMIN')")
-  @Operation(summary = "Abrir o cerrar un periodo (apertura secuencial)")
+  @Operation(
+      summary = "Cambiar el estado de un periodo",
+      description = "DD-UC-019: ADMIN puede abrir/cerrar cualquier periodo en cualquier orden.")
   @ApiResponse(responseCode = "200", description = "Estado actualizado")
   @ApiResponse(responseCode = "404", description = "E_PERIODO_NO_ENCONTRADO")
-  @ApiResponse(responseCode = "422", description = "E_PERIODO_NO_SECUENCIAL / E_ESTADO_INVALIDO")
+  @ApiResponse(responseCode = "422", description = "E_SUMA_SECCIONES_INVALIDA (al abrir)")
   public ResponseEntity<PeriodoEvaluacionResponse> cambiarEstado(
       @PathVariable UUID id, @Valid @RequestBody CambiarEstadoPeriodoEvaluacionRequest request) {
     PeriodoEvaluacion periodo = cambiarEstadoPeriodoEvaluacionUseCase.cambiarEstado(
@@ -84,10 +88,7 @@ public class PeriodoEvaluacionController {
     HttpStatus status = switch (ex.getErrorCode()) {
       case "E_PERIODO_NO_ENCONTRADO", "E_GESTION_ESCOLAR_NO_ENCONTRADA" -> HttpStatus.NOT_FOUND;
       case "E_FECHAS_INVALIDAS",
-          "E_ESTADO_INVALIDO",
           "E_PERIODOS_SOLAPADOS",
-          "E_PERIODO_NO_SECUENCIAL",
-          "E_PERIODOS_INMUTABLES",
           "E_PERIODO_UNICO",
           "E_SUMA_SECCIONES_INVALIDA" -> HttpStatus.UNPROCESSABLE_CONTENT;
       default -> HttpStatus.CONFLICT;

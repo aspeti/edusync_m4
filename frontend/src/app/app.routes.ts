@@ -9,8 +9,10 @@ import { roleGuard } from './core/auth/role.guard';
  * - /restablecer-password         → pública (sin sesión, DD-UC-006)
  * - /plataforma/**                → authGuard + roleGuard(SYSADMIN)
  * - /usuarios/**                  → authGuard + roleGuard(ADMIN)
- * - /academico/gestiones-escolares/**       → authGuard + roleGuard(ADMIN|SECRETARIA|PROFESOR|ASESOR)
- *   (DD-UC-009/DD-UC-019; solo /nuevo sigue exclusivo de ADMIN)
+ * - /academico/gestiones-escolares/**       → authGuard + roleGuard(ADMIN)
+ *   (DD-UC-009/DD-UC-021: exclusivo ADMIN — listar/elegir una Gestión Escolar por id ya no
+ *   es visible para SECRETARIA/PROFESOR/ASESOR, que consumen "la gestión actual" de forma
+ *   implícita vía backend, sin ruta ni selector propios)
  * - /academico/cursos/**          → authGuard + roleGuard(ADMIN) (DD-UC-011)
  * - /academico/materias/**        → authGuard + roleGuard(ADMIN|SECRETARIA) (DD-UC-012)
  * - /academico/estudiantes/**     → authGuard + roleGuard(ADMIN|SECRETARIA) (DD-UC-013)
@@ -84,21 +86,21 @@ export const routes: Routes = [
       {
         path: 'academico/gestiones-escolares/:id/periodos',
         canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'SECRETARIA', 'PROFESOR', 'ASESOR'] },
+        data: { role: 'ADMIN' },
         loadComponent: () =>
           import('./features/academico/gestion-periodos.page').then((m) => m.GestionPeriodosPage),
       },
       {
         path: 'academico/gestiones-escolares/:id/secciones',
         canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'SECRETARIA', 'PROFESOR', 'ASESOR'] },
+        data: { role: 'ADMIN' },
         loadComponent: () =>
           import('./features/academico/gestion-secciones.page').then((m) => m.GestionSeccionesPage),
       },
       {
         path: 'academico/gestiones-escolares',
         canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'SECRETARIA', 'PROFESOR', 'ASESOR'] },
+        data: { role: 'ADMIN' },
         loadComponent: () =>
           import('./features/academico/gestiones-escolares-list.page').then(
             (m) => m.GestionesEscolaresListPage

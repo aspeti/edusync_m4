@@ -10,8 +10,10 @@ import { Router } from '@angular/router';
  * el enlace "Gestión Escolar"; DD-UC-011 §2 añade el enlace "Cursos" (ADMIN);
  * DD-UC-012 §2 añade "Materias" si ADMIN o SECRETARIA; DD-UC-013 §2 añade
  * "Estudiantes" con el mismo condicional; DD-UC-014 §2 añade "Profesores" con el
- * mismo condicional. DD-UC-019 amplía "Gestión Escolar" a SECRETARIA/PROFESOR/ASESOR
- * (visibilidad de solo lectura sobre la gestión ACTIVA).
+ * mismo condicional. DD-UC-019 amplió "Gestión Escolar" a SECRETARIA/PROFESOR/ASESOR
+ * (visibilidad de solo lectura); DD-UC-021 revierte esa ampliación — el enlace vuelve a
+ * ser exclusivo ADMIN, porque esos roles ya no listan ni eligen una Gestión Escolar
+ * (consumen "la gestión actual" de forma implícita, sin pantalla propia).
  */
 @Component({
   selector: 'app-shell',
@@ -26,8 +28,6 @@ import { Router } from '@angular/router';
       @if (auth.hasRole('ADMIN')) {
         <a routerLink="/usuarios" style="color: white; text-decoration: none;">Usuarios</a>
         <a routerLink="/academico/cursos" style="color: white; text-decoration: none;">Cursos</a>
-      }
-      @if (auth.hasRole('ADMIN') || auth.hasRole('SECRETARIA') || auth.hasRole('PROFESOR') || auth.hasRole('ASESOR')) {
         <a routerLink="/academico/gestiones-escolares" style="color: white; text-decoration: none;">Gestión Escolar</a>
       }
       @if (auth.hasRole('ADMIN') || auth.hasRole('SECRETARIA')) {

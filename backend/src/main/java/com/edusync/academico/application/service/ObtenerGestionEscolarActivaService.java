@@ -1,25 +1,25 @@
 package com.edusync.academico.application.service;
 
-import com.edusync.academico.application.port.in.GestionEscolarFiltro;
-import com.edusync.academico.application.port.in.ListarGestionesEscolaresUseCase;
+import com.edusync.academico.application.port.in.ObtenerGestionEscolarActivaUseCase;
 import com.edusync.academico.application.port.out.GestionEscolarRepositoryPort;
 import com.edusync.academico.domain.GestionEscolar;
-import com.edusync.shared.PageQuery;
-import com.edusync.shared.PageResult;
+import com.edusync.academico.domain.GestionEscolarNoEncontradaException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** {@code DD-UC-021}: resuelve "la gestion actual" sin listar ni elegir. */
 @Service
 @RequiredArgsConstructor
-public class ListarGestionesEscolaresService implements ListarGestionesEscolaresUseCase {
+public class ObtenerGestionEscolarActivaService implements ObtenerGestionEscolarActivaUseCase {
 
   private final GestionEscolarRepositoryPort gestionEscolarRepositoryPort;
 
   @Override
   @Transactional(readOnly = true)
-  public PageResult<GestionEscolar> listar(UUID tenantId, GestionEscolarFiltro filtro, PageQuery pageQuery) {
-    return gestionEscolarRepositoryPort.listarPorTenant(tenantId, filtro, pageQuery);
+  public GestionEscolar obtener(UUID tenantId) {
+    return gestionEscolarRepositoryPort.buscarActivaPorTenant(tenantId)
+        .orElseThrow(GestionEscolarNoEncontradaException::new);
   }
 }

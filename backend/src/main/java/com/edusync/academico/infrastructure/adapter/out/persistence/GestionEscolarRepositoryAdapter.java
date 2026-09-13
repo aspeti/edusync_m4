@@ -58,6 +58,12 @@ class GestionEscolarRepositoryAdapter implements GestionEscolarRepositoryPort {
     return PageResult.of(contenido, pageQuery, pagina.getTotalElements());
   }
 
+  @Override
+  public Optional<GestionEscolar> buscarActivaPorTenant(UUID tenantId) {
+    return jpaRepository.findFirstByTenantIdAndEstado(tenantId, EstadoGestionEscolar.ACTIVA.name())
+        .map(this::aDominio);
+  }
+
   private GestionEscolar aDominio(GestionEscolarJpaEntity entity) {
     return GestionEscolar.reconstruir(
         GestionEscolarId.de(entity.getId()),

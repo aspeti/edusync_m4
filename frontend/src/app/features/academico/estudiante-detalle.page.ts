@@ -7,10 +7,17 @@ import { CursoResponse, ParaleloResponse } from './curso.model';
 import { GestionEscolarResponse } from './gestion-escolar.model';
 import { ApiBase } from '../../core/api/api-base';
 import { PageResponse } from '../../core/api/page-response.model';
+import { AuthService } from '../../core/auth/auth.service';
 
 /**
  * Detalle de un Estudiante: GET /estudiantes/{id} para título (no query param),
  * historial de inscripciones y alta inline POST /inscripciones (DD-UC-013 §2).
+ *
+ * <p><strong>DD-UC-021:</strong> ADMIN sigue eligiendo cualquier Gestión Escolar
+ * ({@code GET /gestiones-escolares}, exclusivo ADMIN) al inscribir. SECRETARIA ya no
+ * elige gestión (403 en el listado): la gestión de la nueva inscripción se resuelve
+ * implícitamente contra {@code GET /gestiones-escolares/activa} (404 si el tenant no
+ * tiene ninguna ACTIVA, deshabilitando el alta).
  */
 @Component({
   selector: 'app-estudiante-detalle-page',
@@ -69,42 +76,55 @@ import { PageResponse } from '../../core/api/page-response.model';
 
           <div style="background: #fafafa; padding: 1rem; border-radius: 4px;">
             <h4 style="margin-top: 0;">Nueva inscripción</h4>
-            <form (ngSubmit)="crearInscripcion()" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: end;">
-              <label>
-                Gestión escolar<br />
-                <select [(ngModel)]="gestionSeleccionadaId" name="gestionSeleccionadaId" required style="padding: 0.4rem; min-width: 160px;">
-                  <option value="">Seleccione...</option>
-                  @for (gestion of gestiones(); track gestion.id) {
-                    <option [value]="gestion.id">{{ gestion.nombre }}</option>
-                  }
-                </select>
-              </label>
-              <label>
-                Curso<br />
-                <select [(ngModel)]="cursoSeleccionadoId" name="cursoSeleccionadoId" (ngModelChange)="onCursoSeleccionado($event)" required style="padding: 0.4rem; min-width: 180px;">
-                  <option value="">Seleccione...</option>
-                  @for (curso of cursos(); track curso.id) {
-                    <option [value]="curso.id">{{ curso.nombre }}</option>
-                  }
-                </select>
-              </label>
-              <label>
-                Paralelo<br />
-                <select [(ngModel)]="paraleloSeleccionadoId" name="paraleloSeleccionadoId" required style="padding: 0.4rem; min-width: 120px;">
-                  <option value="">Seleccione...</option>
-                  @for (paralelo of paralelosDelCurso(); track paralelo.id) {
-                    <option [value]="paralelo.id">{{ paralelo.nombre }}</option>
-                  }
-                </select>
-              </label>
-              <label>
-                Fecha<br />
-                <input type="date" [(ngModel)]="fechaInscripcion" name="fechaInscripcion" required style="padding: 0.4rem;" />
-              </label>
-              <button type="submit" [disabled]="saving()" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                {{ saving() ? 'Inscribiendo...' : 'Inscribir' }}
-              </button>
-            </form>
+            @if (!esAdmin() && gestionActivaNoEncontrada()) {
+              <p style="color: #7a5b00; background: #fff3cd; padding: 0.5rem; border-radius: 4px;">
+                No hay una gestión escolar activa en este momento. Contacta al administrador para inscribir estudiantes.
+              </p>
+            } @else {
+              <form (ngSubmit)="crearInscripcion()" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: end;">
+                @if (esAdmin()) {
+                  <label>
+                    Gestión escolar<br />
+                    <select [(ngModel)]="gestionSeleccionadaId" name="gestionSeleccionadaId" required style="padding: 0.4rem; min-width: 160px;">
+                      <option value="">Seleccione...</option>
+                      @for (gestion of gestiones(); track gestion.id) {
+                        <option [value]="gestion.id">{{ gestion.nombre }}</option>
+                      }
+                    </select>
+                  </label>
+                } @else {
+                  <div>
+                    Gestión escolar actual<br />
+                    <strong>{{ nombreGestion(gestionSeleccionadaId) }}</strong>
+                  </div>
+                }
+                <label>
+                  Curso<br />
+                  <select [(ngModel)]="cursoSeleccionadoId" name="cursoSeleccionadoId" (ngModelChange)="onCursoSeleccionado($event)" required style="padding: 0.4rem; min-width: 180px;">
+                    <option value="">Seleccione...</option>
+                    @for (curso of cursos(); track curso.id) {
+                      <option [value]="curso.id">{{ curso.nombre }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  Paralelo<br />
+                  <select [(ngModel)]="paraleloSeleccionadoId" name="paraleloSeleccionadoId" required style="padding: 0.4rem; min-width: 120px;">
+                    <option value="">Seleccione...</option>
+                    @for (paralelo of paralelosDelCurso(); track paralelo.id) {
+                      <option [value]="paralelo.id">{{ paralelo.nombre }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  Fecha<br />
+                  <input type="date" [(ngModel)]="fechaInscripcion" name="fechaInscripcion" required style="padding: 0.4rem;" />
+                </label>
+                <button type="submit" [disabled]="saving()" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                  {{ saving() ? 'Inscribiendo...' : 'Inscribir' }}
+                </button>
+              </form>
+            }
           </div>
         </section>
       }
@@ -122,6 +142,7 @@ export class EstudianteDetallePage implements OnInit {
   cursos = signal<CursoResponse[]>([]);
   paralelosDelCurso = signal<ParaleloResponse[]>([]);
   paralelosPorId = signal<Record<string, ParaleloResponse>>({});
+  gestionActivaNoEncontrada = signal(false);
 
   gestionSeleccionadaId = '';
   cursoSeleccionadoId = '';
@@ -129,12 +150,16 @@ export class EstudianteDetallePage implements OnInit {
   fechaInscripcion = '';
   saving = signal(false);
 
-  constructor(private http: HttpClient, private route: ActivatedRoute) {}
+  constructor(private http: HttpClient, private route: ActivatedRoute, protected auth: AuthService) {}
 
   ngOnInit(): void {
     this.estudianteId = this.route.snapshot.paramMap.get('id') ?? '';
     this.cargarDetalle();
     this.cargarCatalogos();
+  }
+
+  esAdmin(): boolean {
+    return this.auth.hasRole('ADMIN');
   }
 
   nombreGestion(gestionId: string): string {
@@ -212,9 +237,22 @@ export class EstudianteDetallePage implements OnInit {
 
   private cargarCatalogos(): void {
     const params = new HttpParams().set('page', 0).set('size', 100);
-    this.http.get<PageResponse<GestionEscolarResponse>>(`${ApiBase.BASE}/gestiones-escolares`, { params }).subscribe({
-      next: (respuesta) => this.gestiones.set(respuesta.content),
-    });
+    if (this.esAdmin()) {
+      this.http.get<PageResponse<GestionEscolarResponse>>(`${ApiBase.BASE}/gestiones-escolares`, { params }).subscribe({
+        next: (respuesta) => this.gestiones.set(respuesta.content),
+      });
+    } else {
+      this.http.get<GestionEscolarResponse>(`${ApiBase.BASE}/gestiones-escolares/activa`).subscribe({
+        next: (activa) => {
+          this.gestiones.set([activa]);
+          this.gestionSeleccionadaId = activa.id;
+        },
+        error: (err) => {
+          if (err.status === 404) this.gestionActivaNoEncontrada.set(true);
+          else this.errorMsg.set('Error al cargar la gestión escolar activa.');
+        },
+      });
+    }
     this.http.get<PageResponse<CursoResponse>>(`${ApiBase.BASE}/cursos`, { params }).subscribe({
       next: (respuesta) => this.cursos.set(respuesta.content),
     });

@@ -4,9 +4,12 @@ import com.edusync.academico.domain.SeccionEvaluacion;
 import java.util.List;
 import java.util.UUID;
 
-/** @see com.edusync.academico.application.service.GestionEscolarVisibilidad */
+/**
+ * Lista las secciones de una Gestion Escolar por id. Exclusivo {@code ADMIN}
+ * ({@code DD-UC-021}); el resto de roles resuelve la gestion actual con
+ * {@code GET /gestiones-escolares/activa/secciones} (mismo puerto, id resuelto server-side).
+ */
 public interface ListarSeccionesEvaluacionUseCase {
 
-  /** @param actorVeTodas ver {@link com.edusync.academico.application.port.in.ObtenerGestionEscolarUseCase} */
-  List<SeccionEvaluacion> listar(UUID tenantId, UUID gestionEscolarId, boolean actorVeTodas);
+  List<SeccionEvaluacion> listar(UUID tenantId, UUID gestionEscolarId);
 }

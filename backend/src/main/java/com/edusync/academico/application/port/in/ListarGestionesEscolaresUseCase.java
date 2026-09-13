@@ -7,13 +7,11 @@ import java.util.UUID;
 
 /**
  * Puerto de entrada: listado paginado y filtrable de Gestiones Escolares de un tenant
- * (DD-UC-008, filtros/paginacion DD-UC-007).
- *
- * @see com.edusync.academico.application.service.GestionEscolarVisibilidad
+ * (DD-UC-008, filtros/paginacion DD-UC-007). Exclusivo {@code ADMIN} ({@code DD-UC-021});
+ * el resto de roles usa {@link ObtenerGestionEscolarActivaUseCase} y nunca "listan y
+ * eligen" una Gestion Escolar.
  */
 public interface ListarGestionesEscolaresUseCase {
 
-  /** @param actorVeTodas ver {@link com.edusync.academico.application.port.in.ObtenerGestionEscolarUseCase} */
-  PageResult<GestionEscolar> listar(
-      UUID tenantId, GestionEscolarFiltro filtro, PageQuery pageQuery, boolean actorVeTodas);
+  PageResult<GestionEscolar> listar(UUID tenantId, GestionEscolarFiltro filtro, PageQuery pageQuery);
 }

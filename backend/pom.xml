@@ -29,6 +29,9 @@
     <testcontainers.version>2.0.5</testcontainers.version>
     <lombok.version>1.18.46</lombok.version>
     <springdoc.version>3.0.3</springdoc.version>
+    <!-- Spring AI 2.0.x: docs oficiales declaran Boot 4.0.x y 4.1.x (ADR-0017 / PR-IMPL-022).
+         2.0.0 publica starters alineados a Boot 4.1.0 — mismo parent que este modulo. -->
+    <spring-ai.version>2.0.0</spring-ai.version>
     <!-- Auditoría de tests: NFR-013 / AGENTS.md §8.2 — umbral en domain/ + application/ -->
     <jacoco.version>0.8.15</jacoco.version>
     <jacoco.coverage.minimum>0.80</jacoco.coverage.minimum>
@@ -49,6 +52,13 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers-bom</artifactId>
         <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-bom</artifactId>
+        <version>${spring-ai.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -123,6 +133,18 @@
       <groupId>org.springframework.modulith</groupId>
       <artifactId>spring-modulith-starter-test</artifactId>
       <scope>test</scope>
+    </dependency>
+
+    <!-- Cliente LLM (solo infrastructure, detras de LlmPort) - ADR-0017 / PR-IMPL-022.
+         Auto-config de modelos se desactiva (spring.ai.model.chat=none); AiConfig construye
+         ChatClient desde edusync.ai.* para no exigir spring.ai.openai.api-key al usar Ollama. -->
+    <dependency>
+      <groupId>org.springframework.ai</groupId>
+      <artifactId>spring-ai-starter-model-ollama</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.ai</groupId>
+      <artifactId>spring-ai-starter-model-openai</artifactId>
     </dependency>
 
     <!-- JWT (login stateless HS256) - DD-UC-002 -->

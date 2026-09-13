@@ -1,4 +1,4 @@
-package com.edusync.shared.ai.infrastructure.adapter.out.openwebui;
+package com.edusync.shared.ai.infrastructure.adapter.out.ollama;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -10,6 +10,7 @@ import com.edusync.shared.ai.domain.LlmNoDisponibleException;
 import com.edusync.shared.ai.domain.RespuestaLlm;
 import com.edusync.shared.ai.infrastructure.config.AiProperties;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -20,41 +21,34 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 
-class OpenWebUiLlmAdapterTest {
+class OllamaLlmAdapterTest {
 
-  @Test
-  void fallaSiNoHayApiKey() {
+  private ChatModel chatModel;
+  private OllamaLlmAdapter adapter;
+
+  @BeforeEach
+  void setUp() {
+    chatModel = mock(ChatModel.class);
+    when(chatModel.getOptions())
+        .thenReturn(ChatOptions.builder().model("llama3.1:latest").build());
     AiProperties props = new AiProperties();
-    props.getOpenWebui().setApiKey("  ");
-    OpenWebUiLlmAdapter adapter =
-        new OpenWebUiLlmAdapter(ChatClient.create(mock(ChatModel.class)), props);
-
-    assertThatThrownBy(() -> adapter.completar("hola"))
-        .isInstanceOf(LlmNoDisponibleException.class)
-        .hasMessageContaining("OPEN_WEBUI_API_KEY");
+    props.getOllama().setModel("llama3.1:latest");
+    adapter = new OllamaLlmAdapter(ChatClient.create(chatModel), props);
   }
 
   @Test
   void happyPathDevuelveTextoYModelo() {
-    ChatModel chatModel = chatModelStub();
-    when(chatModel.call(any(Prompt.class))).thenReturn(respuesta("ok", "llama3.1:latest"));
-    AiProperties props = new AiProperties();
-    props.getOpenWebui().setApiKey("test-key");
-    OpenWebUiLlmAdapter adapter = new OpenWebUiLlmAdapter(ChatClient.create(chatModel), props);
+    when(chatModel.call(any(Prompt.class))).thenReturn(respuesta("mundo", "llama3.1:latest"));
 
     RespuestaLlm result = adapter.completar("hola");
 
-    assertThat(result.texto()).isEqualTo("ok");
+    assertThat(result.texto()).isEqualTo("mundo");
     assertThat(result.modelo()).isEqualTo("llama3.1:latest");
   }
 
   @Test
   void respuestaVaciaLanzaLlmNoDisponible() {
-    ChatModel chatModel = chatModelStub();
-    when(chatModel.call(any(Prompt.class))).thenReturn(respuesta("  ", "llama3.1:latest"));
-    AiProperties props = new AiProperties();
-    props.getOpenWebui().setApiKey("test-key");
-    OpenWebUiLlmAdapter adapter = new OpenWebUiLlmAdapter(ChatClient.create(chatModel), props);
+    when(chatModel.call(any(Prompt.class))).thenReturn(respuesta("   ", "llama3.1:latest"));
 
     assertThatThrownBy(() -> adapter.completar("hola"))
         .isInstanceOf(LlmNoDisponibleException.class)
@@ -63,22 +57,11 @@ class OpenWebUiLlmAdapterTest {
 
   @Test
   void errorDeRedLanzaLlmNoDisponible() {
-    ChatModel chatModel = chatModelStub();
     when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("boom"));
-    AiProperties props = new AiProperties();
-    props.getOpenWebui().setApiKey("test-key");
-    OpenWebUiLlmAdapter adapter = new OpenWebUiLlmAdapter(ChatClient.create(chatModel), props);
 
     assertThatThrownBy(() -> adapter.completar("hola"))
         .isInstanceOf(LlmNoDisponibleException.class)
         .hasMessageContaining("error de red");
-  }
-
-  private static ChatModel chatModelStub() {
-    ChatModel chatModel = mock(ChatModel.class);
-    when(chatModel.getOptions())
-        .thenReturn(ChatOptions.builder().model("llama3.1:latest").build());
-    return chatModel;
   }
 
   private static ChatResponse respuesta(String texto, String modelo) {

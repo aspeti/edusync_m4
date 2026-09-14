@@ -3,7 +3,6 @@ package com.edusync.academico.application.service;
 import com.edusync.academico.application.port.in.ListarPeriodosEvaluacionUseCase;
 import com.edusync.academico.application.port.out.GestionEscolarRepositoryPort;
 import com.edusync.academico.application.port.out.PeriodoEvaluacionRepositoryPort;
-import com.edusync.academico.domain.GestionEscolar;
 import com.edusync.academico.domain.GestionEscolarId;
 import com.edusync.academico.domain.GestionEscolarNoEncontradaException;
 import com.edusync.academico.domain.PeriodoEvaluacion;
@@ -22,11 +21,10 @@ public class ListarPeriodosEvaluacionService implements ListarPeriodosEvaluacion
 
   @Override
   @Transactional(readOnly = true)
-  public List<PeriodoEvaluacion> listar(UUID tenantId, UUID gestionEscolarId, boolean actorVeTodas) {
+  public List<PeriodoEvaluacion> listar(UUID tenantId, UUID gestionEscolarId) {
     GestionEscolarId id = GestionEscolarId.de(gestionEscolarId);
-    GestionEscolar gestionEscolar = gestionEscolarRepositoryPort.buscarPorIdYTenant(id, tenantId)
+    gestionEscolarRepositoryPort.buscarPorIdYTenant(id, tenantId)
         .orElseThrow(GestionEscolarNoEncontradaException::new);
-    GestionEscolarVisibilidad.exigirVisible(gestionEscolar, actorVeTodas);
     return periodoEvaluacionRepositoryPort.listarPorGestionYTenant(id, tenantId);
   }
 }

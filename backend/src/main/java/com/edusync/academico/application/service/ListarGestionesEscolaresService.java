@@ -19,9 +19,7 @@ public class ListarGestionesEscolaresService implements ListarGestionesEscolares
 
   @Override
   @Transactional(readOnly = true)
-  public PageResult<GestionEscolar> listar(
-      UUID tenantId, GestionEscolarFiltro filtro, PageQuery pageQuery, boolean actorVeTodas) {
-    GestionEscolarFiltro filtroEfectivo = GestionEscolarVisibilidad.filtroEfectivo(filtro, actorVeTodas);
-    return gestionEscolarRepositoryPort.listarPorTenant(tenantId, filtroEfectivo, pageQuery);
+  public PageResult<GestionEscolar> listar(UUID tenantId, GestionEscolarFiltro filtro, PageQuery pageQuery) {
+    return gestionEscolarRepositoryPort.listarPorTenant(tenantId, filtro, pageQuery);
   }
 }

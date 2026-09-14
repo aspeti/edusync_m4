@@ -6,14 +6,20 @@ import com.edusync.academico.infrastructure.adapter.in.rest.CambiarEstadoGestion
 import com.edusync.academico.infrastructure.adapter.in.rest.CrearGestionEscolarRequest;
 import com.edusync.academico.infrastructure.adapter.in.rest.ErrorResponse;
 import com.edusync.academico.infrastructure.adapter.in.rest.GestionEscolarResponse;
+import com.edusync.academico.infrastructure.adapter.in.rest.PeriodoEvaluacionResponse;
+import com.edusync.identidad.infrastructure.adapter.in.rest.CrearUsuarioRequest;
 import com.edusync.identidad.infrastructure.adapter.in.rest.LoginRequest;
 import com.edusync.identidad.infrastructure.adapter.in.rest.LoginResponse;
+import com.edusync.identidad.infrastructure.adapter.in.rest.UsuarioResponse;
 import com.edusync.plataforma.infrastructure.adapter.in.rest.AdminCreadoResponse;
 import com.edusync.plataforma.infrastructure.adapter.in.rest.CrearAdminTenantRequest;
 import com.edusync.plataforma.infrastructure.adapter.in.rest.RegistrarTenantRequest;
 import com.edusync.plataforma.infrastructure.adapter.in.rest.TenantResponse;
 import com.edusync.shared.web.PageResponse;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -242,6 +248,118 @@ class GestionEscolarIntegrationTest {
         String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+  }
+
+  /**
+   * {@code DD-UC-021}: invariante "una sola gestion ACTIVA por tenant" a nivel HTTP. Al
+   * activar una segunda gestion del mismo tenant, la primera se cierra automaticamente en
+   * la misma transaccion (sin que el actor tenga que cerrarla explicitamente).
+   */
+  @Test
+  void activarSegundaGestionCierraAutomaticamenteLaPrimeraDelTenant() {
+    HttpHeaders adminHeaders = crearTenantYAutenticarAdmin("Colegio Auto Cierre", "admin-auto-cierre@colegio.edu.bo");
+
+    UUID gestion1 = crearGestion(adminHeaders, "2027", LocalDate.of(2027, 2, 1), LocalDate.of(2027, 11, 30));
+    activarGestion(adminHeaders, gestion1);
+
+    UUID gestion2 = crearGestion(adminHeaders, "2028", LocalDate.of(2028, 2, 1), LocalDate.of(2028, 11, 30));
+    activarGestion(adminHeaders, gestion2);
+
+    ResponseEntity<GestionEscolarResponse> detalleGestion1 = restTemplate.exchange(
+        "/api/v1/gestiones-escolares/" + gestion1,
+        HttpMethod.GET,
+        new HttpEntity<>(adminHeaders),
+        GestionEscolarResponse.class);
+    assertThat(detalleGestion1.getBody()).isNotNull();
+    assertThat(detalleGestion1.getBody().estado()).isEqualTo("CERRADA");
+
+    ResponseEntity<GestionEscolarResponse> detalleGestion2 = restTemplate.exchange(
+        "/api/v1/gestiones-escolares/" + gestion2,
+        HttpMethod.GET,
+        new HttpEntity<>(adminHeaders),
+        GestionEscolarResponse.class);
+    assertThat(detalleGestion2.getBody()).isNotNull();
+    assertThat(detalleGestion2.getBody().estado()).isEqualTo("ACTIVA");
+  }
+
+  /**
+   * {@code DD-UC-021}: {@code PROFESOR} nunca lista ni elige una Gestion Escolar
+   * ({@code GET /gestiones-escolares} y {@code GET /{id}} son exclusivos {@code ADMIN}, 403
+   * para el resto de roles); en su lugar consume "la gestion actual" de forma implicita via
+   * {@code GET /gestiones-escolares/activa} (404 si el tenant aun no tiene ninguna
+   * {@code ACTIVA}, 200 con la misma gestion que activo el {@code ADMIN} en caso contrario).
+   */
+  @Test
+  void profesorNoListaNiEligeYSoloVeLaGestionActivaViaEndpointActiva() {
+    HttpHeaders adminHeaders = crearTenantYAutenticarAdmin("Colegio Rol Profesor", "admin-rol-profesor@colegio.edu.bo");
+    restTemplate.exchange(
+        "/api/v1/usuarios",
+        HttpMethod.POST,
+        new HttpEntity<>(
+            new CrearUsuarioRequest("Profesor Rol", "profesor-rol-gestion@colegio.edu.bo", "secreto123", Set.of("PROFESOR")),
+            adminHeaders),
+        UsuarioResponse.class);
+    HttpHeaders profesorHeaders = autenticarComo("profesor-rol-gestion@colegio.edu.bo", "secreto123");
+
+    ResponseEntity<String> listaProhibida = restTemplate.exchange(
+        "/api/v1/gestiones-escolares", HttpMethod.GET, new HttpEntity<>(profesorHeaders), String.class);
+    assertThat(listaProhibida.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+    ResponseEntity<ErrorResponse> sinActiva = restTemplate.exchange(
+        "/api/v1/gestiones-escolares/activa",
+        HttpMethod.GET,
+        new HttpEntity<>(profesorHeaders),
+        ErrorResponse.class);
+    assertThat(sinActiva.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(sinActiva.getBody()).isNotNull();
+    assertThat(sinActiva.getBody().codigo()).isEqualTo("E_GESTION_ESCOLAR_NO_ENCONTRADA");
+
+    UUID gestionId = crearGestion(adminHeaders, "2027", LocalDate.of(2027, 2, 1), LocalDate.of(2027, 11, 30));
+
+    ResponseEntity<String> detalleProhibido = restTemplate.exchange(
+        "/api/v1/gestiones-escolares/" + gestionId,
+        HttpMethod.GET,
+        new HttpEntity<>(profesorHeaders),
+        String.class);
+    assertThat(detalleProhibido.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+    activarGestion(adminHeaders, gestionId);
+
+    ResponseEntity<GestionEscolarResponse> activa = restTemplate.exchange(
+        "/api/v1/gestiones-escolares/activa",
+        HttpMethod.GET,
+        new HttpEntity<>(profesorHeaders),
+        GestionEscolarResponse.class);
+    assertThat(activa.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(activa.getBody()).isNotNull();
+    assertThat(activa.getBody().id()).isEqualTo(gestionId);
+    assertThat(activa.getBody().estado()).isEqualTo("ACTIVA");
+
+    ResponseEntity<List<PeriodoEvaluacionResponse>> periodosDeActiva = restTemplate.exchange(
+        "/api/v1/gestiones-escolares/activa/periodos",
+        HttpMethod.GET,
+        new HttpEntity<>(profesorHeaders),
+        new ParameterizedTypeReference<List<PeriodoEvaluacionResponse>>() {});
+    assertThat(periodosDeActiva.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(periodosDeActiva.getBody()).isNotNull().hasSize(3);
+  }
+
+  private UUID crearGestion(HttpHeaders admin, String nombre, LocalDate inicio, LocalDate fin) {
+    return restTemplate.exchange(
+            "/api/v1/gestiones-escolares",
+            HttpMethod.POST,
+            new HttpEntity<>(new CrearGestionEscolarRequest(nombre, inicio, fin), admin),
+            GestionEscolarResponse.class)
+        .getBody()
+        .id();
+  }
+
+  private void activarGestion(HttpHeaders admin, UUID gestionId) {
+    restTemplate.exchange(
+        "/api/v1/gestiones-escolares/" + gestionId + "/estado",
+        HttpMethod.PATCH,
+        new HttpEntity<>(new CambiarEstadoGestionEscolarRequest("ACTIVA"), admin),
+        GestionEscolarResponse.class);
   }
 
   private HttpHeaders crearTenantYAutenticarAdmin(String nombreTenant, String adminEmail) {

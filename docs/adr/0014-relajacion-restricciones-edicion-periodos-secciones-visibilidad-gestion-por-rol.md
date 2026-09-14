@@ -89,7 +89,7 @@ Fuerzas: precisión editorial estricta para preservar la integridad del motor de
 
 - **Señal:** un incidente real donde un `ADMIN` reabre un periodo `CERRADO` o cambia secciones después de que ya se generaron notas oficiales, produciendo confusión sobre qué promedio es válido.
 - **Costo:** medio — reintroducir la máquina de estados y el freeze exige restaurar las 5 excepciones eliminadas y las validaciones en los 3 servicios de escritura (revertible desde el historial de Git; este ADR documenta exactamente qué se quitó, §3.1).
-- **Plan B:** si se necesita reabrir con salvaguardas (en vez de sin restricción), diseñar un flujo de "reapertura autorizada" con ventana de tiempo — análogo a `AutorizacionCorreccion` del Perfil Bolivia SIE (`BR-009`) — en un `ADR-0015` futuro, sin volver a la secuencialidad estricta de `ADR-0013`.
+- **Plan B:** si se necesita reabrir con salvaguardas (en vez de sin restricción), diseñar un flujo de "reapertura autorizada" con ventana de tiempo — análogo a `AutorizacionCorreccion` del Perfil Bolivia SIE (`BR-009`) — en un ADR futuro (nota `v2` §9: ese ADR ocupó el número `0016`, no `0015` — ese número lo tomó, en paralelo, un ADR no relacionado de Design System visual), sin volver a la secuencialidad estricta de `ADR-0013`.
 
 ### 7. Validación
 
@@ -111,3 +111,4 @@ Fuerzas: precisión editorial estricta para preservar la integridad del motor de
 | Versión | Fecha | Autor | Cambio |
 |---------|-------|-------|--------|
 | 1 | 12/09/2026 | Rodrigo Aspeti | ADR formal a partir del pedido de negocio: eliminación de la secuencialidad de apertura y el freeze de periodos/secciones (`ADR-0013` §3.1.4/3.1.5/§3.2.2), manteniendo las invariantes de integridad del motor de cálculo (suma 100, sin solape, ≥1 periodo); nueva regla de visibilidad `ACTIVA`-only de `GestionEscolar` para `SECRETARIA`/`PROFESOR`/`ASESOR`; estado Aceptada; no supersede `ADR-0009`/`ADR-0013` |
+| 2 | 13/09/2026 | Rodrigo Aspeti | Nota de redirección (sin cambio normativo): `ADR-0016` (no `ADR-0015`, ya tomado por un ADR no relacionado de Design System visual) reemplaza por completo la visibilidad `ACTIVA`-only definida en §3.3 — el negocio aclaró que `SECRETARIA`/`PROFESOR`/`ASESOR` no deben *listar ni elegir* ninguna `GestionEscolar` (ni siquiera en modo lectura, como permitía §3.3 punto 2-4), sino consumir "la gestión actual" de forma enteramente implícita. §3.3 de este ADR queda documentado como el estado intermedio real (12/09/2026), superado por `ADR-0016` (13/09/2026) — no se reescribe retroactivamente. |

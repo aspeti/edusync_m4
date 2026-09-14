@@ -18,11 +18,9 @@ public class ObtenerGestionEscolarService implements ObtenerGestionEscolarUseCas
 
   @Override
   @Transactional(readOnly = true)
-  public GestionEscolar obtener(GestionEscolarId id, UUID tenantId, boolean actorVeTodas) {
-    GestionEscolar gestionEscolar = gestionEscolarRepositoryPort
+  public GestionEscolar obtener(GestionEscolarId id, UUID tenantId) {
+    return gestionEscolarRepositoryPort
         .buscarPorIdYTenant(id, tenantId)
         .orElseThrow(GestionEscolarNoEncontradaException::new);
-    GestionEscolarVisibilidad.exigirVisible(gestionEscolar, actorVeTodas);
-    return gestionEscolar;
   }
 }

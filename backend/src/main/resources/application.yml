@@ -3,6 +3,18 @@ spring:
     name: edusync-backend
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  # ADR-0017 / PR-IMPL-022: los starters de Spring AI no auto-configuran ChatModel.
+  # AiConfig construye ChatClient desde edusync.ai.* (OLLAMA_BASE_URL, OPEN_WEBUI_API_KEY).
+  # Sin esto, el starter OpenAI exige API key aunque el proveedor activo sea Ollama.
+  ai:
+    model:
+      chat: none
+      embedding: none
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
   jpa:
     open-in-view: false
     hibernate:

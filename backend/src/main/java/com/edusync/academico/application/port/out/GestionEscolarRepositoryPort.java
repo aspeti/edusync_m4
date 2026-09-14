@@ -27,4 +27,11 @@ public interface GestionEscolarRepositoryPort {
 
   /** Version paginada y filtrable, scoped al tenant (DD-UC-007), usada por {@code GET /api/v1/gestiones-escolares}. */
   PageResult<GestionEscolar> listarPorTenant(UUID tenantId, GestionEscolarFiltro filtro, PageQuery pageQuery);
+
+  /**
+   * Devuelve la unica {@link GestionEscolar} en estado {@code ACTIVA} del tenant, si existe
+   * ({@code DD-UC-021}: invariante "una sola gestion ACTIVA por tenant", ver
+   * {@code CambiarEstadoGestionEscolarService}). Vacio si ninguna gestion esta {@code ACTIVA}.
+   */
+  Optional<GestionEscolar> buscarActivaPorTenant(UUID tenantId);
 }

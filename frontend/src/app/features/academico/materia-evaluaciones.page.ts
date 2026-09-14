@@ -12,9 +12,16 @@ import { PageResponse } from '../../core/api/page-response.model';
 import { AuthService } from '../../core/auth/auth.service';
 
 /**
- * Evaluaciones de una Materia (DD-UC-017 / FSD-UC-015): selector de gestión y
- * periodo, lista (incluye ANULADA) y alta inline si el periodo está ABIERTO.
- * ADMIN y PROFESOR. puntajeMaximo es de solo lectura.
+ * Evaluaciones de una Materia (DD-UC-017 / FSD-UC-015): lista (incluye ANULADA) y alta
+ * inline si el periodo está ABIERTO. ADMIN y PROFESOR. puntajeMaximo es de solo lectura.
+ *
+ * <p><strong>DD-UC-021:</strong> ADMIN sigue eligiendo cualquier Gestión Escolar
+ * ({@code GET /gestiones-escolares}, exclusivo ADMIN) y su periodo. PROFESOR ya no elige
+ * gestión: nunca lista ni ve por id (403), consume "la gestión actual" de forma implícita
+ * via {@code GET /gestiones-escolares/activa[/periodos,/secciones]} (404 si el tenant no
+ * tiene ninguna ACTIVA). Dentro de esa gestión, si existe exactamente un periodo ABIERTO
+ * se autoselecciona sin selector visible; en cualquier otro caso (0 o &gt;1 ABIERTO) se
+ * muestra un selector de periodo (nunca de gestión) para que el PROFESOR elija.
  */
 @Component({
   selector: 'app-materia-evaluaciones-page',
@@ -23,7 +30,7 @@ import { AuthService } from '../../core/auth/auth.service';
   template: `
     <div style="max-width: 960px; margin: 0 auto;">
       <div style="margin-bottom: 1rem;">
-        @if (auth.hasRole('ADMIN')) {
+        @if (esAdmin()) {
           <a [routerLink]="['/academico/materias', materiaId]" style="font-size: 0.85rem;">← Volver a la materia</a>
         } @else {
           <a routerLink="/academico/mis-materias" style="font-size: 0.85rem;">← Volver a Mis materias</a>
@@ -43,102 +50,122 @@ import { AuthService } from '../../core/auth/auth.service';
           </div>
         }
 
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
-          <label>
-            Gestión escolar<br />
-            <select [(ngModel)]="gestionId" (ngModelChange)="onGestionChange()" style="padding: 0.4rem; min-width: 220px;">
-              <option value="">— Seleccione —</option>
-              @for (gestion of gestiones(); track gestion.id) {
-                <option [value]="gestion.id">{{ gestion.nombre }} ({{ gestion.estado }})</option>
-              }
-            </select>
-          </label>
-          <label>
-            Periodo<br />
-            <select [(ngModel)]="periodoId" (ngModelChange)="cargarEvaluaciones()" style="padding: 0.4rem; min-width: 220px;" [disabled]="!gestionId">
-              <option value="">— Seleccione —</option>
-              @for (periodo of periodos(); track periodo.id) {
-                <option [value]="periodo.id">{{ periodo.nombre }} ({{ periodo.estado }})</option>
-              }
-            </select>
-          </label>
-        </div>
-
-        @if (periodoSeleccionado()?.estado === 'ABIERTO') {
-          <section style="margin-bottom: 1.5rem; background: #fafafa; padding: 1rem; border-radius: 4px;">
-            <h3>Nueva evaluación</h3>
-            <form (ngSubmit)="crear()" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-end;">
+        @if (!esAdmin() && gestionActivaNoEncontrada()) {
+          <div style="background: #fff3cd; color: #7a5b00; padding: 0.75rem; border-radius: 4px;">
+            No hay una gestión escolar activa en este momento. Contacta al administrador.
+          </div>
+        } @else {
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; align-items: flex-end;">
+            @if (esAdmin()) {
               <label>
-                Nombre<br />
-                <input [(ngModel)]="nuevoNombre" name="nombre" required maxlength="100" style="padding: 0.4rem;" />
-              </label>
-              <label>
-                Sección<br />
-                <select [(ngModel)]="nuevaSeccionId" name="seccion" required style="padding: 0.4rem;">
-                  <option value="">—</option>
-                  @for (seccion of secciones(); track seccion.id) {
-                    <option [value]="seccion.id">{{ seccion.nombre }} (máx. {{ seccion.nota }})</option>
+                Gestión escolar<br />
+                <select [(ngModel)]="gestionId" (ngModelChange)="onGestionChange()" style="padding: 0.4rem; min-width: 220px;">
+                  <option value="">— Seleccione —</option>
+                  @for (gestion of gestiones(); track gestion.id) {
+                    <option [value]="gestion.id">{{ gestion.nombre }} ({{ gestion.estado }})</option>
                   }
                 </select>
               </label>
+            }
+            @if (esAdmin() || !periodoAutoSeleccionado()) {
               <label>
-                Fecha<br />
-                <input type="date" [(ngModel)]="nuevaFecha" name="fecha" required style="padding: 0.4rem;" />
+                Periodo<br />
+                <select
+                  [(ngModel)]="periodoId"
+                  (ngModelChange)="cargarEvaluaciones()"
+                  style="padding: 0.4rem; min-width: 220px;"
+                  [disabled]="esAdmin() && !gestionId"
+                >
+                  <option value="">— Seleccione —</option>
+                  @for (periodo of periodos(); track periodo.id) {
+                    <option [value]="periodo.id">{{ periodo.nombre }} ({{ periodo.estado }})</option>
+                  }
+                </select>
               </label>
-              <label>
-                Descripción (opcional)<br />
-                <input [(ngModel)]="nuevaDescripcion" name="descripcion" style="padding: 0.4rem;" />
-              </label>
-              <button type="submit" [disabled]="saving()" style="padding: 0.45rem 1rem; cursor: pointer;">
-                {{ saving() ? 'Guardando…' : 'Crear' }}
-              </button>
-            </form>
-          </section>
-        } @else if (periodoId) {
-          <p style="color: #666; font-size: 0.9rem;">
-            Solo se pueden crear o anular evaluaciones cuando el periodo está ABIERTO.
-          </p>
-        }
+            } @else {
+              <div>
+                Periodo actual<br />
+                <strong>{{ periodoSeleccionado()?.nombre }} ({{ periodoSeleccionado()?.estado }})</strong>
+              </div>
+            }
+          </div>
 
-        @if (evaluaciones().length === 0 && periodoId) {
-          <p>No hay evaluaciones en este periodo.</p>
-        }
+          @if (periodoSeleccionado()?.estado === 'ABIERTO') {
+            <section style="margin-bottom: 1.5rem; background: #fafafa; padding: 1rem; border-radius: 4px;">
+              <h3>Nueva evaluación</h3>
+              <form (ngSubmit)="crear()" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-end;">
+                <label>
+                  Nombre<br />
+                  <input [(ngModel)]="nuevoNombre" name="nombre" required maxlength="100" style="padding: 0.4rem;" />
+                </label>
+                <label>
+                  Sección<br />
+                  <select [(ngModel)]="nuevaSeccionId" name="seccion" required style="padding: 0.4rem;">
+                    <option value="">—</option>
+                    @for (seccion of secciones(); track seccion.id) {
+                      <option [value]="seccion.id">{{ seccion.nombre }} (máx. {{ seccion.nota }})</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  Fecha<br />
+                  <input type="date" [(ngModel)]="nuevaFecha" name="fecha" required style="padding: 0.4rem;" />
+                </label>
+                <label>
+                  Descripción (opcional)<br />
+                  <input [(ngModel)]="nuevaDescripcion" name="descripcion" style="padding: 0.4rem;" />
+                </label>
+                <button type="submit" [disabled]="saving()" style="padding: 0.45rem 1rem; cursor: pointer;">
+                  {{ saving() ? 'Guardando…' : 'Crear' }}
+                </button>
+              </form>
+            </section>
+          } @else if (periodoId) {
+            <p style="color: #666; font-size: 0.9rem;">
+              Solo se pueden crear o anular evaluaciones cuando el periodo está ABIERTO.
+            </p>
+          }
 
-        @if (evaluaciones().length > 0) {
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="background: #f5f5f5;">
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Nombre</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Sección</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Fecha</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Puntaje máx.</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Estado</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;"></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (evaluacion of evaluaciones(); track evaluacion.id) {
-                <tr style="border-bottom: 1px solid #eee;" [style.opacity]="evaluacion.estado === 'ANULADA' ? '0.6' : '1'">
-                  <td style="padding: 0.5rem;">{{ evaluacion.nombre }}</td>
-                  <td style="padding: 0.5rem;">{{ nombreSeccion(evaluacion.seccionEvaluacionId) }}</td>
-                  <td style="padding: 0.5rem;">{{ evaluacion.fecha }}</td>
-                  <td style="padding: 0.5rem;">{{ evaluacion.puntajeMaximo }}</td>
-                  <td style="padding: 0.5rem;">{{ evaluacion.estado }}</td>
-                  <td style="padding: 0.5rem; display: flex; gap: 0.75rem; align-items: center;">
-                    @if (evaluacion.estado === 'ACTIVA') {
-                      <a
-                        [routerLink]="['/academico/materias', materiaId, 'evaluaciones', evaluacion.id, 'calificaciones']"
-                        style="font-size: 0.85rem;"
-                      >Calificaciones</a>
-                    }
-                    @if (evaluacion.estado === 'ACTIVA' && periodoSeleccionado()?.estado === 'ABIERTO') {
-                      <button (click)="anular(evaluacion)" style="cursor: pointer; font-size: 0.85rem;">Anular</button>
-                    }
-                  </td>
+          @if (evaluaciones().length === 0 && periodoId) {
+            <p>No hay evaluaciones en este periodo.</p>
+          }
+
+          @if (evaluaciones().length > 0) {
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #f5f5f5;">
+                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Nombre</th>
+                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Sección</th>
+                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Fecha</th>
+                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Puntaje máx.</th>
+                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Estado</th>
+                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;"></th>
                 </tr>
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @for (evaluacion of evaluaciones(); track evaluacion.id) {
+                  <tr style="border-bottom: 1px solid #eee;" [style.opacity]="evaluacion.estado === 'ANULADA' ? '0.6' : '1'">
+                    <td style="padding: 0.5rem;">{{ evaluacion.nombre }}</td>
+                    <td style="padding: 0.5rem;">{{ nombreSeccion(evaluacion.seccionEvaluacionId) }}</td>
+                    <td style="padding: 0.5rem;">{{ evaluacion.fecha }}</td>
+                    <td style="padding: 0.5rem;">{{ evaluacion.puntajeMaximo }}</td>
+                    <td style="padding: 0.5rem;">{{ evaluacion.estado }}</td>
+                    <td style="padding: 0.5rem; display: flex; gap: 0.75rem; align-items: center;">
+                      @if (evaluacion.estado === 'ACTIVA') {
+                        <a
+                          [routerLink]="['/academico/materias', materiaId, 'evaluaciones', evaluacion.id, 'calificaciones']"
+                          style="font-size: 0.85rem;"
+                        >Calificaciones</a>
+                      }
+                      @if (evaluacion.estado === 'ACTIVA' && periodoSeleccionado()?.estado === 'ABIERTO') {
+                        <button (click)="anular(evaluacion)" style="cursor: pointer; font-size: 0.85rem;">Anular</button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
         }
       }
     </div>
@@ -154,6 +181,8 @@ export class MateriaEvaluacionesPage implements OnInit {
   notFound = signal(false);
   errorMsg = signal<string | null>(null);
   saving = signal(false);
+  gestionActivaNoEncontrada = signal(false);
+  periodoAutoSeleccionado = signal(false);
 
   gestionId = '';
   periodoId = '';
@@ -177,10 +206,19 @@ export class MateriaEvaluacionesPage implements OnInit {
         else this.errorMsg.set('Error al cargar la materia.');
       },
     });
-    const params = new HttpParams().set('page', 0).set('size', 100);
-    this.http.get<PageResponse<GestionEscolarResponse>>(`${ApiBase.BASE}/gestiones-escolares`, { params }).subscribe({
-      next: (respuesta) => this.gestiones.set(respuesta.content),
-    });
+
+    if (this.esAdmin()) {
+      const params = new HttpParams().set('page', 0).set('size', 100);
+      this.http.get<PageResponse<GestionEscolarResponse>>(`${ApiBase.BASE}/gestiones-escolares`, { params }).subscribe({
+        next: (respuesta) => this.gestiones.set(respuesta.content),
+      });
+    } else {
+      this.cargarGestionActiva();
+    }
+  }
+
+  esAdmin(): boolean {
+    return this.auth.hasRole('ADMIN');
   }
 
   periodoSeleccionado(): PeriodoEvaluacionResponse | undefined {
@@ -191,6 +229,7 @@ export class MateriaEvaluacionesPage implements OnInit {
     return this.secciones().find((s) => s.id === seccionId)?.nombre ?? seccionId;
   }
 
+  /** Selector manual de gestión (exclusivo ADMIN, DD-UC-021). */
   onGestionChange(): void {
     this.periodoId = '';
     this.periodos.set([]);
@@ -210,6 +249,46 @@ export class MateriaEvaluacionesPage implements OnInit {
     this.http
       .get<SeccionEvaluacionResponse[]>(`${ApiBase.BASE}/gestiones-escolares/${this.gestionId}/secciones`)
       .subscribe({ next: (lista) => this.secciones.set(lista) });
+  }
+
+  /**
+   * PROFESOR (DD-UC-021): resuelve la gestión ACTIVA del tenant de forma implícita, sin
+   * selector. 404 se traduce en {@code gestionActivaNoEncontrada}.
+   */
+  private cargarGestionActiva(): void {
+    this.http.get<GestionEscolarResponse>(`${ApiBase.BASE}/gestiones-escolares/activa`).subscribe({
+      next: (gestion) => {
+        this.gestionId = gestion.id;
+        this.http
+          .get<PeriodoEvaluacionResponse[]>(`${ApiBase.BASE}/gestiones-escolares/activa/periodos`)
+          .subscribe({ next: (lista) => this.resolverPeriodoAutomatico(lista) });
+        this.http
+          .get<SeccionEvaluacionResponse[]>(`${ApiBase.BASE}/gestiones-escolares/activa/secciones`)
+          .subscribe({ next: (lista) => this.secciones.set(lista) });
+      },
+      error: (err: HttpErrorResponse) => {
+        if (err.status === 404) this.gestionActivaNoEncontrada.set(true);
+        else this.errorMsg.set('Error al cargar la gestión escolar activa.');
+      },
+    });
+  }
+
+  /**
+   * DD-UC-021 (decisión "abierto_o_selector_periodo"): si hay exactamente un periodo
+   * ABIERTO se autoselecciona sin mostrar selector; en cualquier otro caso se deja que el
+   * PROFESOR elija manualmente entre los periodos de la gestión activa.
+   */
+  private resolverPeriodoAutomatico(lista: PeriodoEvaluacionResponse[]): void {
+    this.periodos.set(lista);
+    const abiertos = lista.filter((p) => p.estado === 'ABIERTO');
+    if (abiertos.length === 1) {
+      this.periodoAutoSeleccionado.set(true);
+      this.periodoId = abiertos[0].id;
+    } else {
+      this.periodoAutoSeleccionado.set(false);
+      this.periodoId = '';
+    }
+    this.cargarEvaluaciones();
   }
 
   cargarEvaluaciones(): void {

@@ -1,0 +1,52 @@
+// Design tokens visuales de EduSync (ADR-0015).
+//
+// Extraídos del prototipo Figma "Prototipo Administrativo"
+// (https://www.figma.com/design/PdeTWx28MJYxcQ0hrXhhRZ/EduSync,
+// nodo de referencia 399:20447, "Iniciar Sesión"). Único lugar donde se
+// declaran color, tipografía, espaciado, radios y sombra del frontend;
+// cualquier componente que necesite estos valores debe leerlos vía
+// `var(--token)`, nunca hardcodearlos de nuevo (DD-UC-020 §2, invariante
+// de PR-IMPL-020: "ningún color/tamaño se hardcodea fuera de _tokens.scss").
+//
+// Primer consumidor: frontend/src/app/shared/ui/{card,form-field,button}
+// y frontend/src/app/features/auth/login/login.page.ts (DD-UC-020).
+//
+// Se declaran como CSS custom properties en :root (no variables Sass) para
+// que estén disponibles en los estilos embebidos (`styles: [...]`) de
+// cualquier componente standalone sin necesidad de `@use` por archivo.
+
+:root {
+  // Color
+  --color-primary: #0f2a5c;
+  --color-primary-hover: #0b1f45;
+  --color-bg: #f5f6fa;
+  --color-surface: #ffffff;
+  --color-text: #1a1f36;
+  --color-text-secondary: #6b7280;
+  --color-border: #e2e5ec;
+  --color-accent: rgba(15, 42, 92, 0.08);
+  --color-danger-bg: #fdecea;
+  --color-danger-text: #c62828;
+
+  // Tipografía
+  --font-family-base: -apple-system, 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-size-h1: 1.5rem;
+  --font-size-body: 0.9375rem;
+  --font-size-small: 0.8125rem;
+  --font-size-label: 0.75rem;
+  --font-weight-label: 600;
+  --letter-spacing-label: 0.05em;
+
+  // Espaciado
+  --space-xs: 0.375rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+
+  // Radios y sombra
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-card: 0 10px 30px rgba(15, 42, 92, 0.08);
+}

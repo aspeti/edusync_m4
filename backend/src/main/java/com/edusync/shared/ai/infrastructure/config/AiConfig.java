@@ -12,6 +12,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -29,6 +30,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class AiConfig {
 
   @Bean
+  @Primary
   @ConditionalOnProperty(name = "edusync.ai.provider", havingValue = "ollama", matchIfMissing = true)
   ChatClient ollamaChatClient(AiProperties aiProperties) {
     AiProperties.Ollama ollama = aiProperties.getOllama();
@@ -47,6 +49,7 @@ public class AiConfig {
   }
 
   @Bean
+  @Primary
   @ConditionalOnProperty(name = "edusync.ai.provider", havingValue = "open-webui")
   ChatClient openWebUiChatClient(AiProperties aiProperties) {
     AiProperties.OpenWebUi openWebUi = aiProperties.getOpenWebui();

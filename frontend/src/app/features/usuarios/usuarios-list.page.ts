@@ -18,7 +18,7 @@ import { PageResponse } from '../../core/api/page-response.model';
   template: `
     <div style="max-width: 1000px; margin: 0 auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2>Usuarios</h2>
+        <h2 data-testid="usuarios-heading">Usuarios</h2>
         <a routerLink="/usuarios/nuevo" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; text-decoration: none; border-radius: 4px;">
           + Nuevo Usuario
         </a>

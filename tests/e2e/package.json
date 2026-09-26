@@ -1,0 +1,20 @@
+{
+  "name": "edusync-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Suite E2E Playwright de EduSync (M7: tradicional + Planner/Generator)",
+  "scripts": {
+    "test": "playwright test",
+    "test:tradicional": "playwright test tests/tradicional",
+    "test:agente": "playwright test tests/agente",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "reporte": "playwright show-report",
+    "codegen": "playwright codegen http://127.0.0.1:4200/login",
+    "agente:plan": "python agente_e2e.py plan",
+    "agente:generar": "python agente_e2e.py generar"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

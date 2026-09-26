@@ -44,7 +44,7 @@ import { ButtonComponent } from '../../../shared/ui/button/button.component';
           </p>
 
           @if (errorMsg()) {
-            <div class="login-page__error">{{ errorMsg() }}</div>
+            <div class="login-page__error" role="alert" data-testid="login-error">{{ errorMsg() }}</div>
           }
 
           <form (ngSubmit)="onSubmit()" autocomplete="on">

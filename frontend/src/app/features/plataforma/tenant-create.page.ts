@@ -27,8 +27,9 @@ import { ApiBase } from '../../core/api/api-base';
 
       <form (ngSubmit)="onSubmit()">
         <div style="margin-bottom: 1rem;">
-          <label>Nombre del tenant</label><br />
+          <label for="tenant-nombre">Nombre del tenant</label><br />
           <input
+            id="tenant-nombre"
             type="text"
             [(ngModel)]="nombre"
             name="nombre"
@@ -37,8 +38,9 @@ import { ApiBase } from '../../core/api/api-base';
           />
         </div>
         <div style="margin-bottom: 1rem;">
-          <label>Fecha inicio suscripción</label><br />
+          <label for="tenant-inicio">Fecha inicio suscripción</label><br />
           <input
+            id="tenant-inicio"
             type="date"
             [(ngModel)]="fechaInicio"
             name="fechaInicio"
@@ -47,8 +49,9 @@ import { ApiBase } from '../../core/api/api-base';
           />
         </div>
         <div style="margin-bottom: 1.5rem;">
-          <label>Fecha vencimiento suscripción</label><br />
+          <label for="tenant-fin">Fecha vencimiento suscripción</label><br />
           <input
+            id="tenant-fin"
             type="date"
             [(ngModel)]="fechaVencimiento"
             name="fechaVencimiento"

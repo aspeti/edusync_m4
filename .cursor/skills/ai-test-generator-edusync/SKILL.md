@@ -80,12 +80,11 @@ generar tests con el agente — sin eso no hay contexto de qué NO duplicar."*
 3. **Detección de duplicados.** Pedir al agente que liste, dentro del archivo de test
    existente, casos con misma función + mismo input + misma aserción; auditar cada
    hallazgo a mano y descartar falsos positivos (se parecen pero prueban lógica distinta).
-4. **Propuesta HITL (obligatoria antes de escribir).** Correr el CLI en modo dry-run
-   (`java GenerarTest.java --proponer ...` o sin `--generar`): revisar Target, escenarios
-   propuestos y archivo de salida. Solo tras revisión humana: `--generar --aprobar-alcance
-   --sesion <id>` (`temperature = 0`). Anatomía de `AGENTS.md §10`; el prompt **MUST NOT**
-   pedir nada de `AGENTS.md §11`. Sesión en `docs/qa/ai-test-sessions/`. La IA **MUST NOT**
-   auto-aprobar (usar `--decidir --veredicto APPROVE|REJECT|MODIFIED` después de ejecutar).
+4. **CLI simple.** `java GenerarTest.java --clase <src/main/.../Foo.java>` analiza tests
+   existentes (espejo `FooTest`, dominio hermano, menciones en el paquete) y lista huecos.
+   Con `--escribir` llama al LLM (`temperature=0`) y **fusiona solo métodos `@Test` nuevos**
+   (omite duplicados por nombre). Anatomía de `AGENTS.md §10`; el prompt **MUST NOT** pedir
+   nada de `AGENTS.md §11`. PASSED ≠ aprobado — revisar el diff a mano.
 5. **Auditoría de 3 preguntas**, por cada test nuevo, antes de aceptarlo:
    - ¿Se pone en rojo si rompo la función (`return` fijo, lógica invertida)?
    - ¿El `assert` dice lo que el código **debe** hacer, o es una foto de lo que hizo hoy
@@ -174,5 +173,5 @@ generar tests con el agente — sin eso no hay contexto de qué NO duplicar."*
 
 | Versión | Fecha | Autor | Cambio | Documentos base |
 |---------|-------|-------|--------|-----------------|
-| 0.1.0 | 14/09/2026 | Rodrigo Aspeti (vía Claude) | Versión inicial; piloto planeado sobre `CalculoNotas`/`CalificacionEvaluacion` (`FSD-UC-016`) | `AGENTS.md` v0.50, `docs/product/DTP.md` v1.42, `docs/qa/README.md` (baseline 2026-09-10), `docs/qa/matriz-fsd-uc-tests.md` (13/09/2026), laboratorio `LabX_M7_unit` (README + `PROMPT_AGENTE.md`), documento de proyecto "El objetivo central de este laboratorio" |
-| 0.2.0 | 14/09/2026 | Rodrigo Aspeti (vía Auto) | Fase 1 HITL en CLI: `--proponer` (default), `--generar --aprobar-alcance`, `--ejecutar-tests`, `--decidir`; sesiones en `docs/qa/ai-test-sessions/` | `tools/ai-test-generator-edusync/GenerarTest.java`, `docs/qa/README.md` |
+| 0.2.0 | 14/09/2026 | Rodrigo Aspeti (vía Auto) | Fase 1 HITL en CLI (sesión / proponer / decidir) | `tools/ai-test-generator-edusync/GenerarTest.java` |
+| 0.3.0 | 15/09/2026 | Rodrigo Aspeti (vía Auto) | CLI simple: `--clase` analiza tests existentes; `--escribir` fusiona solo `@Test` no duplicados; `--run` | README + `docs/qa/README.md` |

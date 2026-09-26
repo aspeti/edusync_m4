@@ -24,6 +24,15 @@ Thumbs.db
 secrets/
 **/secrets/
 
+# Playwright E2E (tests/e2e)
+tests/e2e/node_modules/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+tests/e2e/blob-report/
+tests/e2e/playwright/.cache/
+tests/e2e/.env.e2e
+tests/e2e/specs/plan_agente.md
+
 # Perfiles Spring locales con secretos (usar application-local.yml.example como plantilla)
 **/application-local.yml
 **/application-local.yaml

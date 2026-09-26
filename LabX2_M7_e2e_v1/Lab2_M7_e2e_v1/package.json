@@ -1,0 +1,20 @@
+{
+  "name": "lab2-m7-e2e",
+  "version": "1.0.0",
+  "description": "Lab2 M7 - E2E web con Playwright: tradicional vs agentes (Planner, Generator)",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "reporte": "playwright show-report",
+    "codegen": "playwright codegen http://127.0.0.1:8017",
+    "app": "python -m uvicorn app.servidor:app --port 8017 --reload"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  },
+  "private": true
+}

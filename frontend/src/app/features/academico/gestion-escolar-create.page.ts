@@ -26,8 +26,9 @@ import { ApiBase } from '../../core/api/api-base';
 
       <form (ngSubmit)="onSubmit()">
         <div style="margin-bottom: 1rem;">
-          <label>Nombre</label><br />
+          <label for="ges-nombre">Nombre</label><br />
           <input
+            id="ges-nombre"
             type="text"
             [(ngModel)]="nombre"
             name="nombre"
@@ -37,8 +38,9 @@ import { ApiBase } from '../../core/api/api-base';
           />
         </div>
         <div style="margin-bottom: 1rem;">
-          <label>Fecha de inicio</label><br />
+          <label for="ges-inicio">Fecha de inicio</label><br />
           <input
+            id="ges-inicio"
             type="date"
             [(ngModel)]="fechaInicio"
             name="fechaInicio"
@@ -47,8 +49,9 @@ import { ApiBase } from '../../core/api/api-base';
           />
         </div>
         <div style="margin-bottom: 1.5rem;">
-          <label>Fecha de fin</label><br />
+          <label for="ges-fin">Fecha de fin</label><br />
           <input
+            id="ges-fin"
             type="date"
             [(ngModel)]="fechaFin"
             name="fechaFin"

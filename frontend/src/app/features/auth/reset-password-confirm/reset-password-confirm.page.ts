@@ -37,8 +37,9 @@ import { ApiBase } from '../../../core/api/api-base';
 
         <form (ngSubmit)="onSubmit()">
           <div style="margin-bottom: 1rem;">
-            <label>Token</label><br />
+            <label for="reset-token">Token</label><br />
             <input
+              id="reset-token"
               type="text"
               [(ngModel)]="token"
               name="token"
@@ -47,8 +48,9 @@ import { ApiBase } from '../../../core/api/api-base';
             />
           </div>
           <div style="margin-bottom: 1.5rem;">
-            <label>Nueva contraseña</label><br />
+            <label for="reset-password">Nueva contraseña</label><br />
             <input
+              id="reset-password"
               type="password"
               [(ngModel)]="passwordNuevo"
               name="passwordNuevo"

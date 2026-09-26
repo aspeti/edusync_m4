@@ -1,0 +1,16 @@
+fecha,pareja,ronda,modelo,tokens_entrada,tokens_salida,segundos,tests_generados,tests_aceptados,tests_corregidos,nota
+2026-09-16,G-EduSync,planner-openwebui-timeout,open-webui/llama3.1:latest,0,0,365,0,0,0,APITimeout 120s — no se genero plan_agente.md por LLM
+2026-09-16,G-EduSync,planner-auth,humano+patron-lab,0,0,0,0,5,0,specs/plan_auth.md — 6 propuestos; 5 aceptados; 1 descartado
+2026-09-16,G-EduSync,planner-plataforma,humano+patron-lab,0,0,0,0,2,0,specs/plan_plataforma.md — 4 propuestos; 2 aceptados; 2 descartados
+2026-09-16,G-EduSync,planner-admin,humano+patron-lab,0,0,0,0,7,0,specs/plan_edusync_admin.md — 8 propuestos; 7 aceptados; 1 descartado
+2026-09-16,G-EduSync,planner-gestion,humano+patron-lab,0,0,0,0,3,1,specs/plan_gestion.md — 4 propuestos; 3 aceptados; 1 corregido
+2026-09-16,G-EduSync,planner-cursos-materias,humano+patron-lab,0,0,0,0,3,0,specs/plan_cursos_materias.md — 4 propuestos; 3 aceptados; 1 descartado
+2026-09-16,G-EduSync,generator-1.1,ollama/llama3.1:latest,1235,147,509,1,0,1,caso_1_1.spec.ts — faltaba import sysadminCreds; corregido en auditoria
+2026-09-16,G-EduSync,generator-1.2,ollama/llama3.1:latest,1235,182,55,1,1,0,caso_1_2.spec.ts — aceptado sin cambios
+2026-09-16,G-EduSync,generator-admin-1.1-auditado,patron-Generator+auditoria-5Q,0,0,0,1,1,0,caso_admin_1_1.auditado.spec.ts — sin LLM (mismo patron Lab)
+2026-09-16,G-EduSync,generator-admin-3.1-auditado,patron-Generator+auditoria-5Q,0,0,0,1,1,0,caso_admin_3_1.auditado.spec.ts — alta Curso
+2026-09-16,G-EduSync,generator-auth-2.1-auditado,patron-Generator+auditoria-5Q,0,0,0,1,1,0,caso_auth_2_1.auditado.spec.ts — restablecer password UI
+2026-09-16,G-EduSync,generator-plat-1.1-1.2-auditado,patron-Generator+auditoria-5Q,0,0,0,2,2,0,caso_plat_1_1.auditado.spec.ts — form + crear Tenant
+2026-09-16,G-EduSync,generator-ges-1.1-1.3-auditado,patron-Generator+auditoria-5Q,0,0,0,3,3,0,caso_ges_1_1.auditado.spec.ts — alta + Periodos + Secciones
+2026-09-16,G-EduSync,generator-cur-mat-auditado,patron-Generator+auditoria-5Q,0,0,0,2,2,0,caso_cur_mat.auditado.spec.ts — paralelos + alta Materia
+2026-09-16,G-EduSync,RESUMEN-promedio-generator-LLM,ollama/llama3.1:latest,1235,165,282,2,1,1,Promedio solo rondas con LLM real (generator-1.1 y 1.2): entrada=1235 salida=164.5≈165

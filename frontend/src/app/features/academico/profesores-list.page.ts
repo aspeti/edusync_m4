@@ -19,7 +19,7 @@ import { AuthService } from '../../core/auth/auth.service';
   template: `
     <div style="max-width: 1000px; margin: 0 auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2>Profesores</h2>
+        <h2 data-testid="profesores-heading">Profesores</h2>
       </div>
 
       @if (auth.hasRole('ADMIN')) {

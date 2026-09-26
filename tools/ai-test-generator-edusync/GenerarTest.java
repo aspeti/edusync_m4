@@ -9,9 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -21,61 +18,44 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
- * GenerarTest.java -- agente generador de tests UNIT para EduSync (JUnit 5).
+ * Generador simple de tests UNIT para EduSync.
  *
- * Fase 1 (HITL): AI generates, human audits.
+ * Uso:
+ *   java GenerarTest.java --clase backend/src/main/java/.../FooService.java
+ *   java GenerarTest.java --clase ... --tarea "..." --escribir
+ *   java GenerarTest.java --clase ... --escribir --run
  *
- *   1) --proponer   analiza alcance y escribe sesion PROPOSED (sin LLM, sin escribir tests)
- *   2) --generar --aprobar-alcance [--sesion id]
- *                   llama al LLM (temperature=0) y escribe *Test.java con @Tag("agente")
- *   3) --ejecutar-tests --sesion id
- *                   corre mvn -Dtest=... y actualiza PASSED/FAILED (la IA NO aprueba)
- *   4) --decidir --sesion id --veredicto APPROVE|REJECT|MODIFIED [--nota ...]
- *                   decision humana obligatoria
- *
- * Reutiliza .env / OLLAMA_* / OPEN_WEBUI_* (misma config que shared.ai / ADR-0017).
- * JDK puro (JEP 330): {@code java GenerarTest.java ...} desde tools/ai-test-generator-edusync/.
+ * Por defecto solo analiza (lista tests existentes y huecos).
+ * --escribir llama al LLM (temperature=0) y agrega SOLO metodos @Test que no existan.
+ * Nunca toca src/main. La IA no aprueba: el humano revisa el diff.
  */
 public class GenerarTest {
 
-    private static final String LAYER = "UNIT";
-    private static final String SESSIONS_REL = "docs/qa/ai-test-sessions";
-
     private static final String SYSTEM_PROMPT = """
             Eres un generador de tests JUnit 5 para EduSync (Java 25, Spring Boot 4.1.0,
-            arquitectura hexagonal). Reglas OBLIGATORIAS (AGENTS.md):
-            - Estilo Google Java Style; nombres de test en camelCase describiendo el
-              comportamiento esperado (ej. dividirEntreCeroLanzaExcepcionConMensaje),
-              nunca test1/testCasoTres.
-            - No dupliques ningun test ya presente en el archivo de test manual entregado
-              como contexto.
-            - Prioriza: casos limite, negativos, cero, nulos, y las reglas de negocio
-              explicitas en la clase de dominio entregada (invariantes, excepciones de
-              negocio propias del dominio).
-            - MUST NOT calcular promedios/redondeo dentro del propio test: el test siempre
-              invoca al motor de dominio real, nunca reimplementa la formula.
-            - MUST NOT usar floor() en el motor generico (ADR-0013) ni introducir PII real
-              (rude/nombre/fecha de nacimiento reales) - usa valores sinteticos de prueba.
-            - Si el metodo bajo prueba depende de un puerto de salida (repositorio, reloj,
-              LlmPort), usa un doble de prueba (Mockito) en vez de una implementacion real.
-            - Primera linea despues de los imports: @Tag("agente")
-            - Devuelve SOLO un bloque de codigo Java completo (package, imports y la clase
-              de test entera), sin explicaciones ni texto fuera del bloque de codigo.
+            arquitectura hexagonal, Mockito + AssertJ).
+            REGLAS:
+            - Devuelve SOLO codigo Java (clase de test completa), sin markdown ni explicaciones.
+            - Nombres de metodo en camelCase descriptivo; nunca test1/testCaso.
+            - NO dupliques ningun metodo de la lista EXISTENTES (mismo nombre = prohibido).
+            - Solo genera escenarios de la lista FALTANTES (o equivalentes claros).
+            - Maximo 5 metodos @Test nuevos.
+            - Usa Mockito en puertos/repos; no inventes error codes que no esten en el codigo.
+            - MUST NOT floor() en motor generico; MUST NOT PII real; MUST NOT reimplementar formulas.
+            - Incluye @Tag("agente") en la clase.
             """;
-
-    private static final String TAREA_DEFECTO =
-            "Lee las clases de contexto y el/los test(s) manual(es) entregados. Genera SOLO "
-            + "los tests que falten (sin duplicar el test manual) para los casos limite, "
-            + "negativos y de regla de negocio de la clase principal. Maximo 8 tests nuevos.";
 
     private static final Pattern TEST_METHOD =
             Pattern.compile("@Test\\b[\\s\\S]*?\\bvoid\\s+(\\w+)\\s*\\(", Pattern.MULTILINE);
     private static final Pattern PUBLIC_METHOD =
             Pattern.compile("\\bpublic\\s+[\\w.<>,\\[\\]\\s]+\\s+(\\w+)\\s*\\(", Pattern.MULTILINE);
-    private static final Pattern THROWS_EX =
-            Pattern.compile("\\bthrows\\s+([\\w\\s,]+)");
+    private static final Pattern BLOQUE_CODIGO =
+            Pattern.compile("```(?:java)?\\r?\\n(.*?)```", Pattern.DOTALL);
+    private static final Pattern LINEA_PACKAGE =
+            Pattern.compile("^\\s*package\\s+[\\w.]+\\s*;\\s*$", Pattern.MULTILINE);
 
     public static void main(String[] args) {
         try {
@@ -93,413 +73,419 @@ public class GenerarTest {
     private static void run(String[] args) throws Exception {
         Args a = Args.parse(args);
         Path raiz = raizRepo();
+        if (a.clase == null || a.clase.isBlank()) {
+            throw new Fallo("falta --clase <ruta-a-*.java>\n"
+                    + "ejemplo: java GenerarTest.java --clase "
+                    + "backend/src/main/java/com/edusync/.../CrearEstudianteService.java");
+        }
 
-        if (a.decidir) {
-            decidir(raiz, a);
+        Path clase = resolver(raiz, a.clase, "--clase");
+        Path salida = a.salida != null
+                ? dentroDeRaiz(raiz, a.salida, "--salida")
+                : testPathPara(clase);
+
+        if (a.runOnly) {
+            if (!Files.exists(salida)) {
+                throw new Fallo("no existe " + rel(raiz, salida) + " — genera antes con --escribir");
+            }
+            ejecutarMaven(raiz, nombreSinExtension(salida));
             return;
         }
-        if (a.ejecutarTests) {
-            ejecutarTests(raiz, a);
+
+        List<Path> testsExistentes = descubrirTests(raiz, clase, salida);
+        List<Path> contexto = new ArrayList<>();
+        for (String c : a.contexto) {
+            contexto.add(resolver(raiz, c, "--contexto"));
+        }
+        String tarea = resolverTarea(raiz, a.tarea);
+
+        String claseSrc = Files.readString(clase, StandardCharsets.UTF_8);
+        Set<String> metodosExistentes = new LinkedHashSet<>();
+        for (Path t : testsExistentes) {
+            metodosExistentes.addAll(extraerTestMethods(Files.readString(t, StandardCharsets.UTF_8)));
+        }
+        List<String> publicMethods = extraerPublicMethods(claseSrc);
+        List<String> faltantes = inferirFaltantes(tarea, claseSrc, publicMethods, metodosExistentes);
+
+        imprimirAnalisis(raiz, clase, salida, testsExistentes, metodosExistentes, faltantes);
+
+        if (faltantes.isEmpty()) {
+            System.out.println("Nada que generar: los escenarios basicos ya estan cubiertos "
+                    + "o no hay huecos claros. Ajusta --tarea si quieres otro foco.");
             return;
         }
-        if (a.generar) {
-            generar(raiz, a);
+        if (!a.escribir) {
+            System.out.println();
+            System.out.println("Modo analisis (no se escribio nada). Para generar:");
+            System.out.println("  java GenerarTest.java --clase " + rel(raiz, clase)
+                    + " --escribir");
             return;
         }
-        // Default seguro: proponer (nunca escribir tests sin --aprobar-alcance).
-        proponer(raiz, a);
-    }
 
-    // ============================================================ HITL flows
-
-    private static void proponer(Path raiz, Args a) throws Exception {
-        Scope scope = Scope.desdeArgs(raiz, a);
-        Proposal proposal = construirPropuesta(raiz, scope);
-
-        String sessionId = a.sesion != null && !a.sesion.isBlank()
-                ? a.sesion
-                : nuevoSessionId(scope.nombreClaseObjetivo());
-        Path sessionPath = sessionFile(raiz, sessionId);
-
-        Map<String, Object> session = new LinkedHashMap<>();
-        session.put("id", sessionId);
-        session.put("layer", LAYER);
-        session.put("status", "PROPOSED");
-        session.put("createdAt", ahoraIso());
-        session.put("updatedAt", ahoraIso());
-        session.put("target", proposal.target);
-        session.put("clase", rel(raiz, scope.clase));
-        session.put("salida", rel(raiz, scope.salida));
-        session.put("contexto", relAll(raiz, scope.contexto));
-        session.put("testManual", relAll(raiz, scope.testManual));
-        session.put("tarea", scope.tarea);
-        session.put("existingTestMethods", proposal.existingTestMethods);
-        session.put("existingTestCount", proposal.existingTestCount);
-        session.put("salidaExists", proposal.salidaExists);
-        session.put("proposedScenarios", proposal.scenarios);
-        session.put("publicMethods", proposal.publicMethods);
-        session.put("human", mapaHumanoVacio());
-        session.put("generation", null);
-        session.put("execution", null);
-        session.put("note", "La IA NUNCA aprueba. Tras --generar, auditar (skill §4.5) y "
-                + "usar --decidir --veredicto APPROVE|REJECT|MODIFIED.");
-
-        escribirSession(sessionPath, session);
-        imprimirPropuesta(proposal, sessionId, sessionPath, raiz);
-        System.out.println();
-        System.out.println("Siguiente paso (si apruebas el alcance):");
-        System.out.println("  java GenerarTest.java --generar --aprobar-alcance --sesion " + sessionId);
-    }
-
-    private static void generar(Path raiz, Args a) throws Exception {
-        if (!a.aprobarAlcance) {
-            throw new Fallo("HITL: para escribir tests hace falta --aprobar-alcance. "
-                    + "Primero corre sin flags o con --proponer; revisa la propuesta; "
-                    + "luego: --generar --aprobar-alcance --sesion <id>");
-        }
-
-        Map<String, Object> session;
-        Path sessionPath;
-        Scope scope;
-
-        if (a.sesion != null && !a.sesion.isBlank()) {
-            sessionPath = sessionFile(raiz, a.sesion);
-            session = leerSession(sessionPath);
-            scope = Scope.desdeSession(raiz, session, a);
-        } else {
-            scope = Scope.desdeArgs(raiz, a);
-            String sessionId = nuevoSessionId(scope.nombreClaseObjetivo());
-            sessionPath = sessionFile(raiz, sessionId);
-            Proposal proposal = construirPropuesta(raiz, scope);
-            session = new LinkedHashMap<>();
-            session.put("id", sessionId);
-            session.put("layer", LAYER);
-            session.put("status", "PROPOSED");
-            session.put("createdAt", ahoraIso());
-            session.put("target", proposal.target);
-            session.put("clase", rel(raiz, scope.clase));
-            session.put("salida", rel(raiz, scope.salida));
-            session.put("contexto", relAll(raiz, scope.contexto));
-            session.put("testManual", relAll(raiz, scope.testManual));
-            session.put("tarea", scope.tarea);
-            session.put("existingTestMethods", proposal.existingTestMethods);
-            session.put("existingTestCount", proposal.existingTestCount);
-            session.put("salidaExists", proposal.salidaExists);
-            session.put("proposedScenarios", proposal.scenarios);
-            session.put("publicMethods", proposal.publicMethods);
-            session.put("human", mapaHumanoVacio());
-            System.out.println("aviso: generacion sin --sesion previa; se creo sesion "
-                    + sessionId + " (mejor: --proponer primero).");
-        }
-
-        if (Boolean.TRUE.equals(session.get("salidaExists"))
-                && Files.exists(scope.salida)
-                && !a.forzar) {
-            throw new Fallo("la salida ya existe (" + rel(raiz, scope.salida)
-                    + "). HITL: no se sobrescribe en silencio. Usa --forzar solo si "
-                    + "confirmaste reemplazar un borrador @Tag(\"agente\"), o cambia --salida.");
-        }
-
-        StringBuilder contexto = new StringBuilder();
-        contexto.append(bloque("CLASE PRINCIPAL", scope.clase));
-        for (Path p : scope.contexto) {
-            contexto.append("\n\n").append(bloque("CONTEXTO", p));
-        }
-        for (Path p : scope.testManual) {
-            contexto.append("\n\n").append(bloque("TEST MANUAL (no duplicar)", p));
-        }
-        @SuppressWarnings("unchecked")
-        List<String> escenarios = (List<String>) session.get("proposedScenarios");
-        if (escenarios != null && !escenarios.isEmpty()) {
-            contexto.append("\n\n### ESCENARIOS PROPUESTOS (priorizar, sin inventar fuera de alcance)\n");
-            for (int i = 0; i < escenarios.size(); i++) {
-                contexto.append((i + 1)).append(". ").append(escenarios.get(i)).append('\n');
+        String codigoNuevo = llamarYExtraer(raiz, clase, contexto, testsExistentes, salida,
+                tarea, metodosExistentes, faltantes);
+        List<String> generados = extraerTestMethods(codigoNuevo);
+        List<String> duplicados = new ArrayList<>();
+        List<String> nuevos = new ArrayList<>();
+        for (String m : generados) {
+            if (metodosExistentes.contains(m)) {
+                duplicados.add(m);
+            } else {
+                nuevos.add(m);
             }
         }
+        if (!duplicados.isEmpty()) {
+            System.out.println("aviso: el modelo propuso duplicados (se omiten): "
+                    + String.join(", ", duplicados));
+        }
+        if (nuevos.isEmpty()) {
+            System.out.println("el modelo no aporto metodos nuevos utiles; no se modifica nada.");
+            return;
+        }
 
-        String paquete = paqueteDesdeRuta(scope.salida);
-        String nombreClase = nombreSinExtension(scope.salida);
-        String userContent = "PACKAGE de salida: " + paquete + "\n"
-                + "NOMBRE de la clase de test: " + nombreClase + "\n\n"
-                + "ARCHIVOS DEL PROYECTO:\n\n" + contexto + "\n\nTAREA:\n" + scope.tarea;
+        if (Files.exists(salida)) {
+            String actual = Files.readString(salida, StandardCharsets.UTF_8);
+            String fusion = fusionarMetodos(actual, codigoNuevo, new LinkedHashSet<>(metodosExistentes));
+            Files.writeString(salida, fusion, StandardCharsets.UTF_8);
+            System.out.println("actualizado (solo metodos nuevos): " + rel(raiz, salida));
+        } else {
+            Files.createDirectories(salida.getParent());
+            // Filtrar del codigo completo los metodos duplicados por si acaso
+            String limpio = quitarMetodos(codigoNuevo, new LinkedHashSet<>(duplicados));
+            if (!limpio.contains("@Tag")) {
+                limpio = insertarTrasImports(limpio, "@Tag(\"agente\")\n");
+                if (!limpio.contains("import org.junit.jupiter.api.Tag;")) {
+                    limpio = insertarImports(limpio, List.of("import org.junit.jupiter.api.Tag;"));
+                }
+            }
+            Files.writeString(salida, limpio, StandardCharsets.UTF_8);
+            System.out.println("creado: " + rel(raiz, salida));
+        }
+        System.out.println("metodos agregados: " + String.join(", ", nuevos));
+        System.out.println("HITL: revisa el archivo. Verde != correcto. La IA no aprueba.");
 
-        Config cfg = Config.leer(raiz);
-        System.out.println("agente -> " + cfg.resumen());
-        long aproxTokens = (SYSTEM_PROMPT.length() + userContent.length()) / 4L;
-        System.out.printf("contexto: %s + %d archivo(s) + %d test(s) manual(es)  "
-                        + "(~%,d tokens estimados)%n",
-                scope.clase.getFileName(), scope.contexto.size(), scope.testManual.size(),
-                aproxTokens);
-
-        long t0 = System.currentTimeMillis();
-        LlmRespuesta resp = llamarModelo(cfg, SYSTEM_PROMPT, userContent);
-        double segundos = (System.currentTimeMillis() - t0) / 1000.0;
-
-        String codigo = extraerCodigo(resp.contenido);
-        Files.createDirectories(scope.salida.getParent());
-        Files.writeString(scope.salida, codigo, StandardCharsets.UTF_8);
-
-        Map<String, Object> generation = new LinkedHashMap<>();
-        generation.put("at", ahoraIso());
-        generation.put("promptTokens", resp.promptTokens);
-        generation.put("completionTokens", resp.completionTokens);
-        generation.put("seconds", segundos);
-        generation.put("model", cfg.modelo);
-        generation.put("provider", cfg.proveedor);
-        generation.put("tag", "agente");
-
-        session.put("status", "GENERATED");
-        session.put("updatedAt", ahoraIso());
-        session.put("generation", generation);
-        session.put("salidaExists", true);
-        escribirSession(sessionPath, session);
-
-        System.out.println("escrito: " + rel(raiz, scope.salida));
-        System.out.printf("tokens: entrada=%s salida=%s  tiempo=%.1fs%n",
-                resp.promptTokens == null ? "?" : resp.promptTokens,
-                resp.completionTokens == null ? "?" : resp.completionTokens,
-                segundos);
-        System.out.println("estado sesion: GENERATED (NO aprobado). Auditoria humana obligatoria.");
-        System.out.println("Siguiente:");
-        System.out.println("  java GenerarTest.java --ejecutar-tests --sesion " + session.get("id"));
-        System.out.println("  java GenerarTest.java --decidir --sesion " + session.get("id")
-                + " --veredicto APPROVE|REJECT|MODIFIED");
+        if (a.run) {
+            ejecutarMaven(raiz, nombreSinExtension(salida));
+        } else {
+            System.out.println("para ejecutar: java GenerarTest.java --clase "
+                    + rel(raiz, clase) + " --run-only");
+            System.out.println("  o: cd backend && mvn.cmd -Dtest="
+                    + nombreSinExtension(salida) + " test");
+        }
     }
 
-    private static void ejecutarTests(Path raiz, Args a) throws Exception {
-        if (a.sesion == null || a.sesion.isBlank()) {
-            throw new Fallo("--ejecutar-tests requiere --sesion <id>");
+    // ----------------------------------------------------------- analisis
+
+    private static void imprimirAnalisis(Path raiz, Path clase, Path salida,
+                                         List<Path> tests, Set<String> metodos,
+                                         List<String> faltantes) {
+        System.out.println("========== ANALISIS ==========");
+        System.out.println("Clase:     " + rel(raiz, clase));
+        System.out.println("Salida:    " + rel(raiz, salida)
+                + (Files.exists(salida) ? " (existe)" : " (nuevo)"));
+        System.out.println("Tests leidos (" + tests.size() + "):");
+        if (tests.isEmpty()) {
+            System.out.println("  (ninguno — se creara el archivo de salida)");
+        } else {
+            for (Path t : tests) {
+                System.out.println("  - " + rel(raiz, t));
+            }
         }
-        Path sessionPath = sessionFile(raiz, a.sesion);
-        Map<String, Object> session = leerSession(sessionPath);
-        String salidaRel = str(session.get("salida"));
-        if (salidaRel == null) {
-            throw new Fallo("sesion sin 'salida'");
+        System.out.println("Metodos @Test existentes (" + metodos.size() + "):");
+        if (metodos.isEmpty()) {
+            System.out.println("  (ninguno)");
+        } else {
+            for (String m : metodos) {
+                System.out.println("  - " + m);
+            }
         }
-        Path salida = resolver(raiz, salidaRel, "salida");
-        if (!Files.exists(salida)) {
-            throw new Fallo("no existe el test generado: " + salida
-                    + " (corre --generar --aprobar-alcance primero)");
+        System.out.println("Escenarios faltantes propuestos (" + faltantes.size() + "):");
+        for (int i = 0; i < faltantes.size(); i++) {
+            System.out.println("  " + (i + 1) + ". " + faltantes.get(i));
         }
-        String nombreClase = nombreSinExtension(salida);
-        ProcessBuilder pb = new ProcessBuilder(
-                "mvn", "-q", "-Dtest=" + nombreClase, "test");
+        System.out.println("==============================");
+    }
+
+    /**
+     * Busca tests del proyecto relacionados a la clase:
+     * 1) espejo ClassNameTest.java
+     * 2) mismo paquete de test: *Test.java que mencionen el nombre simple
+     * 3) si es *Service, intenta domain/<Tipo>Test.java basico
+     */
+    private static List<Path> descubrirTests(Path raiz, Path clase, Path salida)
+            throws IOException {
+        Set<Path> out = new LinkedHashSet<>();
+        if (Files.exists(salida)) {
+            out.add(salida);
+        }
+        Path testJavaRoot = raiz.resolve("backend/src/test/java");
+        if (!Files.isDirectory(testJavaRoot)) {
+            return new ArrayList<>(out);
+        }
+        String simple = nombreSinExtension(clase);
+        try (Stream<Path> walk = Files.walk(testJavaRoot)) {
+            walk.filter(p -> p.toString().endsWith("Test.java"))
+                    .filter(p -> !p.getFileName().toString().contains("Integration"))
+                    .forEach(p -> {
+                        String name = p.getFileName().toString();
+                        if (name.equals(simple + "Test.java")
+                                || name.equals(simple + "AgenteTest.java")) {
+                            out.add(p);
+                            return;
+                        }
+                        try {
+                            String src = Files.readString(p, StandardCharsets.UTF_8);
+                            if (src.contains(simple)
+                                    && (name.startsWith(simple)
+                                    || src.contains("new " + simple)
+                                    || src.contains(simple + "("))) {
+                                out.add(p);
+                            }
+                        } catch (IOException ignored) {
+                            // skip unreadable
+                        }
+                    });
+        }
+        // Dominio hermano tipico: .../application/service/FooService -> .../domain/FooTest
+        String path = clase.toString().replace('\\', '/');
+        if (path.contains("/application/service/") && simple.endsWith("Service")) {
+            String stem = simple.replaceFirst("^(Crear|Listar|Obtener|Actualizar|Cambiar|Upsert)", "")
+                    .replaceFirst("Service$", "");
+            if (!stem.isBlank()) {
+                Path domainGuess = guessDomainTest(testJavaRoot, clase, stem);
+                if (domainGuess != null && Files.exists(domainGuess)) {
+                    out.add(domainGuess);
+                }
+            }
+        }
+        return new ArrayList<>(out);
+    }
+
+    private static Path guessDomainTest(Path testJavaRoot, Path clase, String stem) {
+        // .../com/edusync/academico/application/service/X.java
+        // -> .../com/edusync/academico/domain/StemTest.java
+        Path pkg = clase.getParent(); // service
+        if (pkg == null || pkg.getParent() == null || pkg.getParent().getParent() == null) {
+            return null;
+        }
+        Path module = pkg.getParent().getParent(); // academico
+        String moduleName = module.getFileName().toString();
+        return testJavaRoot.resolve("com/edusync/" + moduleName + "/domain/" + stem + "Test.java");
+    }
+
+    private static Path testPathPara(Path claseMain) throws Fallo {
+        String s = claseMain.toAbsolutePath().normalize().toString().replace('\\', '/');
+        String marker = "/src/main/java/";
+        int idx = s.indexOf(marker);
+        if (idx < 0) {
+            throw new Fallo("--clase debe estar bajo backend/src/main/java/...");
+        }
+        String prefix = s.substring(0, idx);
+        String rest = s.substring(idx + marker.length());
+        if (!rest.endsWith(".java")) {
+            throw new Fallo("--clase debe ser un .java");
+        }
+        String testRel = rest.substring(0, rest.length() - 5) + "Test.java";
+        return Path.of(prefix + "/src/test/java/" + testRel);
+    }
+
+    private static List<String> inferirFaltantes(String tarea, String claseSrc,
+                                                   List<String> methods,
+                                                   Set<String> existing) {
+        Set<String> out = new LinkedHashSet<>();
+        for (String line : tarea.split("\\R")) {
+            String t = line.strip();
+            if (t.startsWith("-") || t.startsWith("*") || t.matches("^\\d+[.)].*")) {
+                t = t.replaceFirst("^[-*\\d.)]+\\s*", "").strip();
+                if (t.length() > 3 && !cubre(existing, t)) {
+                    out.add(t);
+                }
+            }
+        }
+        String lowerAll = (tarea + "\n" + String.join(" ", existing)).toLowerCase(Locale.ROOT);
+        String lowerSrc = claseSrc.toLowerCase(Locale.ROOT);
+
+        if ((lowerSrc.contains("duplic") || lowerSrc.contains("existepor") || lowerSrc.contains("unique"))
+                && !cubre(existing, "duplic") && !cubre(existing, "yaexiste")
+                && !cubre(existing, "409")) {
+            out.add("rechazo por duplicado / ya existe");
+        }
+        if (!cubre(existing, "null") && !cubre(existing, "nulo")) {
+            out.add("entrada nula en dependencia critica (si aplica al codigo real)");
+        }
+        if ((lowerSrc.contains("repository") || lowerSrc.contains("port"))
+                && !cubre(existing, "falla") && !cubre(existing, "failure")
+                && !cubre(existing, "guardar") && !cubre(existing, "repositor")) {
+            out.add("fallo del puerto/repositorio al persistir");
+        }
+        for (String m : methods) {
+            if (Set.of("equals", "hashCode", "toString", "main").contains(m)) {
+                continue;
+            }
+            if (!cubre(existing, m) && !cubre(existing, "crear") && m.equals("crear")) {
+                // happy path often named differently
+                if (!cubre(existing, "cuando") && !cubre(existing, "exito")
+                        && !cubre(existing, "unico") && existing.stream().noneMatch(
+                        e -> e.toLowerCase(Locale.ROOT).contains("crea"))) {
+                    out.add("happy path del metodo " + m);
+                }
+            }
+        }
+        // Filtrar items de la tarea genérica que ya estan cubiertos por nombre
+        out.removeIf(s -> cubre(existing, s));
+        List<String> list = new ArrayList<>(out);
+        if (list.size() > 5) {
+            return list.subList(0, 5);
+        }
+        return list;
+    }
+
+    private static boolean cubre(Set<String> existing, String hint) {
+        String h = hint.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        if (h.isBlank()) {
+            return false;
+        }
+        for (String e : existing) {
+            String n = e.toLowerCase(Locale.ROOT);
+            if (n.contains(h) || h.contains(n.replaceAll("[^a-z0-9]", ""))) {
+                return true;
+            }
+            // tokens
+            for (String tok : hint.toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
+                if (tok.length() >= 4 && n.contains(tok)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // ----------------------------------------------------------- LLM + merge
+
+    private static String llamarYExtraer(Path raiz, Path clase, List<Path> contexto,
+                                         List<Path> tests, Path salida, String tarea,
+                                         Set<String> existentes, List<String> faltantes)
+            throws Exception {
+        StringBuilder ctx = new StringBuilder();
+        ctx.append(bloque("CLASE", clase));
+        for (Path p : contexto) {
+            ctx.append("\n\n").append(bloque("CONTEXTO", p));
+        }
+        for (Path p : tests) {
+            ctx.append("\n\n").append(bloque("TEST EXISTENTE (no duplicar metodos)", p));
+        }
+        ctx.append("\n\nEXISTENTES:\n");
+        for (String m : existentes) {
+            ctx.append("- ").append(m).append('\n');
+        }
+        ctx.append("\nFALTANTES (generar solo estos, sin inventar error codes):\n");
+        for (String f : faltantes) {
+            ctx.append("- ").append(f).append('\n');
+        }
+
+        String paquete = paqueteDesdeRuta(salida);
+        String nombre = nombreSinExtension(salida);
+        String user = "PACKAGE: " + paquete + "\nCLASE TEST: " + nombre + "\n\n"
+                + ctx + "\n\nTAREA:\n" + tarea
+                + "\n\nSi el archivo de test ya existe, igual devuelve una clase COMPLETA "
+                + "con SOLO los metodos nuevos (pueden incluir setUp/@BeforeEach si hace falta).";
+
+        Config cfg = Config.leer(raiz);
+        System.out.println("LLM -> " + cfg.resumen());
+        long t0 = System.currentTimeMillis();
+        LlmRespuesta resp = llamarModelo(cfg, SYSTEM_PROMPT, user);
+        System.out.printf("ok en %.1fs (tokens in=%s out=%s)%n",
+                (System.currentTimeMillis() - t0) / 1000.0,
+                resp.promptTokens == null ? "?" : resp.promptTokens,
+                resp.completionTokens == null ? "?" : resp.completionTokens);
+        return extraerCodigo(resp.contenido);
+    }
+
+    /**
+     * Inserta en el test existente solo metodos @Test cuyo nombre no exista.
+     */
+    private static String fusionarMetodos(String actual, String generado, Set<String> ya)
+            throws Fallo {
+        List<String> blocks = extraerBloquesTest(generado);
+        StringBuilder inject = new StringBuilder();
+        for (String block : blocks) {
+            Matcher m = Pattern.compile("\\bvoid\\s+(\\w+)\\s*\\(").matcher(block);
+            if (!m.find()) {
+                continue;
+            }
+            String name = m.group(1);
+            if (ya.contains(name)) {
+                continue;
+            }
+            inject.append("\n").append(block.strip()).append("\n");
+            ya.add(name);
+        }
+        if (inject.isEmpty()) {
+            throw new Fallo("no quedaron metodos nuevos tras filtrar duplicados");
+        }
+        if (!actual.contains("@Tag(\"agente\")") && !actual.contains("@Tag(\"auditado\")")) {
+            // mark file touched by agent once
+            actual = insertarTrasImports(actual, "@Tag(\"agente\")\n");
+            if (!actual.contains("import org.junit.jupiter.api.Tag;")) {
+                actual = insertarImports(actual, List.of("import org.junit.jupiter.api.Tag;"));
+            }
+        }
+        int brace = actual.lastIndexOf('}');
+        if (brace < 0) {
+            throw new Fallo("archivo de test sin '}' de cierre");
+        }
+        return actual.substring(0, brace) + inject + "}\n";
+    }
+
+    private static List<String> extraerBloquesTest(String src) {
+        List<String> out = new ArrayList<>();
+        Matcher m = Pattern.compile(
+                "((?:@[\\w.(,)=\\s\"]+\\s*)*@Test\\b[\\s\\S]*?\\n\\s*\\})",
+                Pattern.MULTILINE).matcher(src);
+        while (m.find()) {
+            out.add(m.group(1));
+        }
+        return out;
+    }
+
+    private static String quitarMetodos(String src, Set<String> names) {
+        if (names.isEmpty()) {
+            return src;
+        }
+        String result = src;
+        for (String name : names) {
+            result = result.replaceAll(
+                    "(?:@[\\w.(,)=\\s\"]+\\s*)*@Test\\b[\\s\\S]*?\\bvoid\\s+"
+                            + Pattern.quote(name) + "\\s*\\([\\s\\S]*?\\n\\s*\\}\\s*",
+                    "");
+        }
+        return result;
+    }
+
+    private static void ejecutarMaven(Path raiz, String testClass) throws Exception {
+        String mvn = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win")
+                ? "mvn.cmd" : "mvn";
+        ProcessBuilder pb = new ProcessBuilder(mvn, "-q", "-Dtest=" + testClass, "test");
         pb.directory(raiz.resolve("backend").toFile());
         pb.redirectErrorStream(true);
-        System.out.println("ejecutando: cd backend && mvn -Dtest=" + nombreClase + " test");
+        System.out.println("ejecutando: " + mvn + " -Dtest=" + testClass + " test");
         Process p = pb.start();
-        StringBuilder out = new StringBuilder();
         try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = br.readLine()) != null) {
                 System.out.println(line);
-                if (out.length() < 20_000) {
-                    out.append(line).append('\n');
-                }
             }
         }
         int code = p.waitFor();
-        boolean passed = code == 0;
-
-        Map<String, Object> execution = new LinkedHashMap<>();
-        execution.put("at", ahoraIso());
-        execution.put("command", "mvn -Dtest=" + nombreClase + " test");
-        execution.put("exitCode", code);
-        execution.put("passed", passed);
-        execution.put("logTail", out.length() > 4000
-                ? out.substring(out.length() - 4000)
-                : out.toString());
-
-        session.put("execution", execution);
-        session.put("status", passed ? "PASSED" : "FAILED");
-        session.put("updatedAt", ahoraIso());
-        escribirSession(sessionPath, session);
-
-        System.out.println();
-        System.out.println("Resultado ejecucion: " + (passed ? "PASSED" : "FAILED")
-                + " (exit=" + code + ")");
-        System.out.println("HITL: un test en verde NO implica aprobado. Corre --decidir.");
-        System.out.println("  java GenerarTest.java --decidir --sesion " + a.sesion
-                + " --veredicto APPROVE|REJECT|MODIFIED");
-    }
-
-    private static void decidir(Path raiz, Args a) throws Exception {
-        if (a.sesion == null || a.sesion.isBlank()) {
-            throw new Fallo("--decidir requiere --sesion <id>");
-        }
-        if (a.veredicto == null || a.veredicto.isBlank()) {
-            throw new Fallo("--decidir requiere --veredicto APPROVE|REJECT|MODIFIED");
-        }
-        String v = a.veredicto.trim().toUpperCase(Locale.ROOT);
-        if (!Set.of("APPROVE", "REJECT", "MODIFIED").contains(v)) {
-            throw new Fallo("--veredicto invalido: " + a.veredicto
-                    + " (usa APPROVE, REJECT o MODIFIED)");
-        }
-
-        Path sessionPath = sessionFile(raiz, a.sesion);
-        Map<String, Object> session = leerSession(sessionPath);
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> human = session.get("human") instanceof Map<?, ?>
-                ? new LinkedHashMap<>((Map<String, Object>) session.get("human"))
-                : mapaHumanoVacio();
-        human.put("verdict", v);
-        human.put("decidedAt", ahoraIso());
-        if (a.nota != null) {
-            human.put("note", a.nota);
-        }
-        human.put("checklistReminder", List.of(
-                "¿Se pone en rojo si rompo la función?",
-                "¿El assert describe el comportamiento esperado (no una foto)?",
-                "¿El nombre del método describe el comportamiento?"
-        ));
-
-        String status = switch (v) {
-            case "APPROVE" -> "APPROVED";
-            case "REJECT" -> "REJECTED";
-            default -> "MODIFIED";
-        };
-        session.put("human", human);
-        session.put("status", status);
-        session.put("updatedAt", ahoraIso());
-        escribirSession(sessionPath, session);
-
-        System.out.println("Decision humana registrada: " + status);
-        System.out.println("sesion: " + rel(raiz, sessionPath));
-        if ("APPROVED".equals(status)) {
-            System.out.println("Siguiente: cambia @Tag(\"agente\") → @Tag(\"auditado\") en el "
-                    + "archivo de test tras confirmar el checklist de 3 preguntas.");
+        System.out.println(code == 0 ? "mvn: OK" : "mvn: FALLO (exit=" + code + ")");
+        System.out.println("Recuerda: PASSED != aprobado por humano.");
+        if (code != 0) {
+            System.exit(code);
         }
     }
 
-    // ============================================================ propuesta
-
-    private static Proposal construirPropuesta(Path raiz, Scope scope) throws IOException {
-        String claseSrc = Files.readString(scope.clase, StandardCharsets.UTF_8);
-        List<String> publicMethods = extraerPublicMethods(claseSrc);
-        List<String> existing = new ArrayList<>();
-        for (Path p : scope.testManual) {
-            existing.addAll(extraerTestMethods(Files.readString(p, StandardCharsets.UTF_8)));
-        }
-        boolean salidaExists = Files.exists(scope.salida);
-        if (salidaExists) {
-            existing.addAll(extraerTestMethods(
-                    Files.readString(scope.salida, StandardCharsets.UTF_8)));
-        }
-        // dedupe preservando orden
-        existing = new ArrayList<>(new LinkedHashSet<>(existing));
-
-        List<String> scenarios = inferirEscenarios(scope.tarea, claseSrc, publicMethods, existing);
-        String target = nombreSinExtension(scope.clase);
-        if (!publicMethods.isEmpty()) {
-            target = target + " (" + String.join(", ",
-                    publicMethods.subList(0, Math.min(4, publicMethods.size()))) + ")";
-        }
-
-        Proposal p = new Proposal();
-        p.target = target;
-        p.existingTestMethods = existing;
-        p.existingTestCount = existing.size();
-        p.salidaExists = salidaExists;
-        p.scenarios = scenarios;
-        p.publicMethods = publicMethods;
-        p.salidaRel = rel(raiz, scope.salida);
-        p.claseRel = rel(raiz, scope.clase);
-        return p;
-    }
-
-    private static void imprimirPropuesta(Proposal p, String sessionId, Path sessionPath,
-                                          Path raiz) {
-        System.out.println("========== PROPUESTA (dry-run) ==========");
-        System.out.println("Target:              " + p.target);
-        System.out.println("Test type:           Unit Test (JUnit 5 + Mockito + AssertJ)");
-        System.out.println("Existing tests:      " + p.existingTestCount);
-        if (!p.existingTestMethods.isEmpty()) {
-            System.out.println("Existing methods:    "
-                    + String.join(", ", p.existingTestMethods.subList(
-                    0, Math.min(12, p.existingTestMethods.size())))
-                    + (p.existingTestMethods.size() > 12 ? ", ..." : ""));
-        }
-        System.out.println("Existing coverage:   (no leido automaticamente en Fase 1; "
-                + "baseline en docs/qa/README.md / JaCoCo)");
-        System.out.println("Salida existe:       " + p.salidaExists);
-        System.out.println("Proposed scenarios:  " + p.scenarios.size());
-        for (int i = 0; i < p.scenarios.size(); i++) {
-            System.out.println("  " + (i + 1) + ". " + p.scenarios.get(i));
-        }
-        System.out.println("New tests (estimado): ~" + p.scenarios.size());
-        System.out.println("Files that will be modified:");
-        System.out.println("  - " + p.salidaRel + (p.salidaExists ? " (EXISTE)" : " (nuevo)"));
-        System.out.println("Session:             " + sessionId);
-        System.out.println("Session file:        " + rel(raiz, sessionPath));
-        System.out.println("Status:              PROPOSED — esperando revision humana");
-        System.out.println("=========================================");
-    }
-
-    private static List<String> inferirEscenarios(String tarea, String claseSrc,
-                                                    List<String> methods,
-                                                    List<String> existingTests) {
-        Set<String> out = new LinkedHashSet<>();
-        // Del prompt del desarrollador
-        for (String line : tarea.split("\\R")) {
-            String t = line.strip();
-            if (t.startsWith("-") || t.startsWith("*") || t.matches("^\\d+[.)].*")) {
-                t = t.replaceFirst("^[-*\\d.)]+\\s*", "").strip();
-                if (t.length() > 3) {
-                    out.add(t);
-                }
-            }
-        }
-        String lower = (tarea + "\n" + claseSrc).toLowerCase(Locale.ROOT);
-        if (lower.contains("null") || lower.contains("nulo")) {
-            out.add("null / valores nulos en entradas obligatorias");
-        }
-        if (lower.contains("duplic") || lower.contains("unique") || lower.contains("ya existe")) {
-            out.add("conflicto por duplicado (unique / ya existe)");
-        }
-        if (lower.contains("valid") || lower.contains("blank") || lower.contains("vacío")
-                || lower.contains("vacio")) {
-            out.add("validacion: blank / vacio / fuera de rango");
-        }
-        if (lower.contains("repository") || lower.contains("port") || lower.contains("falla")
-                || lower.contains("failure")) {
-            out.add("fallo de dependencia (repositorio / puerto de salida)");
-        }
-        if (lower.contains("autoriz") || lower.contains("rol") || lower.contains("forbidden")
-                || lower.contains("403")) {
-            out.add("fallo de autorizacion / rol insuficiente");
-        }
-        Matcher th = THROWS_EX.matcher(claseSrc);
-        while (th.find() && out.size() < 10) {
-            String exs = th.group(1).replace('\n', ' ').strip();
-            out.add("excepcion de dominio: " + exs);
-        }
-        for (String m : methods) {
-            if (m.equals("equals") || m.equals("hashCode") || m.equals("toString")
-                    || m.equals("builder") || m.equals("main")) {
-                continue;
-            }
-            boolean covered = existingTests.stream()
-                    .anyMatch(t -> t.toLowerCase(Locale.ROOT).contains(m.toLowerCase(Locale.ROOT)));
-            if (!covered) {
-                out.add("happy path / invariante de metodo: " + m);
-            }
-            if (out.size() >= 8) {
-                break;
-            }
-        }
-        if (out.isEmpty()) {
-            out.add("happy path del caso de uso principal");
-            out.add("entrada invalida / validacion de negocio");
-            out.add("fallo de dependencia mockeada");
-        }
-        List<String> list = new ArrayList<>(out);
-        if (list.size() > 8) {
-            return list.subList(0, 8);
-        }
-        return list;
-    }
+    // ----------------------------------------------------------- helpers
 
     private static List<String> extraerTestMethods(String src) {
         List<String> names = new ArrayList<>();
@@ -513,221 +499,86 @@ public class GenerarTest {
     private static List<String> extraerPublicMethods(String src) {
         List<String> names = new ArrayList<>();
         Matcher m = PUBLIC_METHOD.matcher(src);
+        String className = "";
+        Matcher cm = Pattern.compile("\\b(?:class|record)\\s+(\\w+)").matcher(src);
+        if (cm.find()) {
+            className = cm.group(1);
+        }
         while (m.find()) {
             String name = m.group(1);
-            if (name.equals(nombreClaseSimple(src))) {
-                continue; // constructor
+            if (!name.equals(className)) {
+                names.add(name);
             }
-            names.add(name);
         }
         return new ArrayList<>(new LinkedHashSet<>(names));
     }
 
-    private static String nombreClaseSimple(String src) {
-        Matcher m = Pattern.compile("\\b(?:class|record|interface|enum)\\s+(\\w+)").matcher(src);
-        return m.find() ? m.group(1) : "";
-    }
-
-    // ============================================================ sessions
-
-    private static Path sessionsDir(Path raiz) throws IOException {
-        Path dir = raiz.resolve(SESSIONS_REL);
-        Files.createDirectories(dir);
-        return dir;
-    }
-
-    private static Path sessionFile(Path raiz, String id) throws IOException, Fallo {
-        if (!id.matches("[A-Za-z0-9._-]+")) {
-            throw new Fallo("id de sesion invalido: " + id);
-        }
-        return sessionsDir(raiz).resolve(id + ".json");
-    }
-
-    private static String nuevoSessionId(String targetSimple) {
-        String stamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
-                .withZone(ZoneOffset.UTC)
-                .format(Instant.now());
-        String safe = targetSimple.replaceAll("[^A-Za-z0-9_-]", "");
-        if (safe.length() > 40) {
-            safe = safe.substring(0, 40);
-        }
-        return stamp + "-" + safe;
-    }
-
-    private static void escribirSession(Path path, Map<String, Object> session)
-            throws IOException {
-        Files.createDirectories(path.getParent());
-        Files.writeString(path, Json.escribirPretty(session) + "\n", StandardCharsets.UTF_8);
-        System.out.println("sesion escrita: " + path.getFileName());
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> leerSession(Path path) throws IOException, Fallo {
-        if (!Files.exists(path)) {
-            throw new Fallo("sesion no encontrada: " + path
-                    + " (lista docs/qa/ai-test-sessions/)");
-        }
-        Object o = Json.leer(Files.readString(path, StandardCharsets.UTF_8));
-        if (!(o instanceof Map<?, ?> m)) {
-            throw new Fallo("sesion JSON invalida: " + path);
-        }
-        return new LinkedHashMap<>((Map<String, Object>) m);
-    }
-
-    private static Map<String, Object> mapaHumanoVacio() {
-        Map<String, Object> h = new LinkedHashMap<>();
-        h.put("verdict", null);
-        h.put("note", null);
-        h.put("decidedAt", null);
-        return h;
-    }
-
-    // ============================================================ scope
-
-    private static final class Scope {
-        final Path clase;
-        final Path salida;
-        final List<Path> contexto;
-        final List<Path> testManual;
-        final String tarea;
-
-        Scope(Path clase, Path salida, List<Path> contexto, List<Path> testManual, String tarea) {
-            this.clase = clase;
-            this.salida = salida;
-            this.contexto = contexto;
-            this.testManual = testManual;
-            this.tarea = tarea;
-        }
-
-        String nombreClaseObjetivo() {
-            return nombreSinExtension(clase);
-        }
-
-        static Scope desdeArgs(Path raiz, Args a) throws Exception {
-            if (a.clase == null) {
-                throw new Fallo("falta --clase (o usa --sesion de una propuesta previa)");
-            }
-            if (a.salida == null) {
-                throw new Fallo("falta --salida");
-            }
-            Path claseP = resolver(raiz, a.clase, "--clase");
-            List<Path> contextoP = resolverTodas(raiz, a.contexto, "--contexto");
-            List<Path> manualP = resolverTodas(raiz, a.testManual, "--test-manual");
-            Path salidaP = resolverSalida(raiz, a.salida);
-            if (manualP.isEmpty()) {
-                throw new Fallo("falta al menos un --test-manual de referencia (modo de fallo "
-                        + "E_SIN_TEST_MANUAL del skill ai-test-generator-edusync).");
-            }
-            return new Scope(claseP, salidaP, contextoP, manualP, resolverTarea(raiz, a.tarea));
-        }
-
-        @SuppressWarnings("unchecked")
-        static Scope desdeSession(Path raiz, Map<String, Object> session, Args a)
-                throws Exception {
-            String clase = a.clase != null ? a.clase : str(session.get("clase"));
-            String salida = a.salida != null ? a.salida : str(session.get("salida"));
-            List<String> contexto = a.contexto.isEmpty()
-                    ? (List<String>) session.getOrDefault("contexto", List.of())
-                    : a.contexto;
-            List<String> manual = a.testManual.isEmpty()
-                    ? (List<String>) session.getOrDefault("testManual", List.of())
-                    : a.testManual;
-            String tarea = a.tarea != null ? a.tarea : str(session.get("tarea"));
-            Args merged = new Args();
-            merged.clase = clase;
-            merged.salida = salida;
-            merged.contexto = contexto != null ? new ArrayList<>(contexto) : new ArrayList<>();
-            merged.testManual = manual != null ? new ArrayList<>(manual) : new ArrayList<>();
-            merged.tarea = tarea;
-            return desdeArgs(raiz, merged);
-        }
-    }
-
-    private static final class Proposal {
-        String target;
-        List<String> existingTestMethods = List.of();
-        int existingTestCount;
-        boolean salidaExists;
-        List<String> scenarios = List.of();
-        List<String> publicMethods = List.of();
-        String salidaRel;
-        String claseRel;
+    private static String bloque(String etiqueta, Path ruta) throws IOException {
+        return "### " + etiqueta + ": " + ruta.getFileName()
+                + "\n```java\n" + Files.readString(ruta, StandardCharsets.UTF_8) + "\n```";
     }
 
     private static String resolverTarea(Path raiz, String tarea) throws IOException {
         if (tarea == null || tarea.isBlank()) {
-            return TAREA_DEFECTO;
+            return "Genera solo tests unitarios faltantes (negativos / borde). "
+                    + "No dupliques metodos existentes. No inventes excepciones ni codes.";
         }
-        // Solo intentar leer archivo si parece ruta (evita InvalidPathException en Windows
-        // cuando el prompt contiene ':' o saltos de linea).
         boolean pareceRuta = !tarea.contains("\n") && !tarea.contains("\r")
                 && (tarea.endsWith(".md") || tarea.endsWith(".txt")
                 || tarea.contains("/") || tarea.contains("\\"));
         if (pareceRuta) {
             try {
-                Path tareaP = raiz.resolve(tarea).normalize();
-                if (tareaP.startsWith(raiz) && Files.exists(tareaP) && Files.isRegularFile(tareaP)) {
-                    return Files.readString(tareaP, StandardCharsets.UTF_8);
+                Path p = raiz.resolve(tarea).normalize();
+                if (p.startsWith(raiz) && Files.isRegularFile(p)) {
+                    return Files.readString(p, StandardCharsets.UTF_8);
                 }
             } catch (java.nio.file.InvalidPathException ignored) {
-                // texto literal del desarrollador
+                // literal
             }
         }
         return tarea;
     }
 
-    // ---------------------------------------------------------------- rutas
-
     private static Path raizRepo() {
         Path cwd = Path.of("").toAbsolutePath();
-        Path candidato = cwd;
-        for (int i = 0; i < 6 && candidato != null; i++) {
-            if (Files.exists(candidato.resolve("AGENTS.md"))) {
-                return candidato;
+        Path c = cwd;
+        for (int i = 0; i < 6 && c != null; i++) {
+            if (Files.exists(c.resolve("AGENTS.md"))) {
+                return c;
             }
-            candidato = candidato.getParent();
+            c = c.getParent();
         }
-        Path porConvencion = cwd.getParent() != null ? cwd.getParent().getParent() : null;
-        if (porConvencion != null && Files.exists(porConvencion.resolve("AGENTS.md"))) {
-            return porConvencion;
+        Path conv = cwd.getParent() != null ? cwd.getParent().getParent() : null;
+        if (conv != null && Files.exists(conv.resolve("AGENTS.md"))) {
+            return conv;
         }
-        System.err.println("aviso: no se encontro AGENTS.md; se usa cwd como raiz.");
         return cwd;
     }
 
     private static Path dentroDeRaiz(Path raiz, String dado, String flag) throws Fallo {
-        Path resuelto = raiz.resolve(dado).normalize();
-        if (!resuelto.startsWith(raiz)) {
-            throw new Fallo(flag + " ('" + dado + "') sale de la raiz del repo.");
+        Path r = raiz.resolve(dado).normalize();
+        if (!r.startsWith(raiz)) {
+            throw new Fallo(flag + " sale de la raiz del repo");
         }
-        return resuelto;
+        return r;
     }
 
     private static Path resolver(Path raiz, String dado, String flag) throws Fallo {
-        Path resuelto = dentroDeRaiz(raiz, dado, flag);
-        if (!Files.exists(resuelto)) {
-            throw new Fallo(flag + " no encontrado: " + resuelto);
+        Path r = dentroDeRaiz(raiz, dado, flag);
+        if (!Files.exists(r)) {
+            throw new Fallo(flag + " no encontrado: " + r);
         }
-        return resuelto;
+        return r;
     }
 
-    private static List<Path> resolverTodas(Path raiz, List<String> dados, String flag)
-            throws Fallo {
-        List<Path> out = new ArrayList<>();
-        for (String d : dados) {
-            out.add(resolver(raiz, d, flag));
-        }
-        return out;
+    private static String rel(Path raiz, Path p) {
+        return raiz.relativize(p.toAbsolutePath().normalize()).toString().replace('\\', '/');
     }
 
-    private static Path resolverSalida(Path raiz, String dado) throws Fallo {
-        return dentroDeRaiz(raiz, dado, "--salida");
-    }
-
-    private static String bloque(String etiqueta, Path ruta) throws IOException {
-        String contenido = Files.readString(ruta, StandardCharsets.UTF_8);
-        return "### " + etiqueta + ": " + ruta.getFileName()
-                + "\n```java\n" + contenido + "\n```";
+    private static String nombreSinExtension(Path p) {
+        String n = p.getFileName().toString();
+        int i = n.lastIndexOf('.');
+        return i < 0 ? n : n.substring(0, i);
     }
 
     private static String paqueteDesdeRuta(Path salida) {
@@ -742,40 +593,6 @@ public class GenerarTest {
         return String.join(".", partes.subList(idx + 1, partes.size()));
     }
 
-    private static String nombreSinExtension(Path salida) {
-        String nombre = salida.getFileName().toString();
-        int punto = nombre.lastIndexOf('.');
-        return punto < 0 ? nombre : nombre.substring(0, punto);
-    }
-
-    private static String rel(Path raiz, Path p) {
-        return raiz.relativize(p).toString().replace('\\', '/');
-    }
-
-    private static List<String> relAll(Path raiz, List<Path> paths) {
-        List<String> out = new ArrayList<>();
-        for (Path p : paths) {
-            out.add(rel(raiz, p));
-        }
-        return out;
-    }
-
-    private static String str(Object o) {
-        return o == null ? null : String.valueOf(o);
-    }
-
-    private static String ahoraIso() {
-        return DateTimeFormatter.ISO_INSTANT.format(Instant.now());
-    }
-
-    // ------------------------------------------------------------- codigo
-
-    private static final Pattern BLOQUE_CODIGO =
-            Pattern.compile("```(?:java)?\\r?\\n(.*?)```", Pattern.DOTALL);
-
-    private static final Pattern LINEA_PACKAGE =
-            Pattern.compile("^\\s*package\\s+[\\w.]+\\s*;\\s*$", Pattern.MULTILINE);
-
     private static String extraerCodigo(String respuesta) {
         Matcher m = BLOQUE_CODIGO.matcher(respuesta);
         String codigo = (m.find() ? m.group(1) : respuesta).strip() + "\n";
@@ -786,14 +603,13 @@ public class GenerarTest {
         if (codigo.contains("@Tag(") && !codigo.contains("import org.junit.jupiter.api.Tag;")) {
             imports.add("import org.junit.jupiter.api.Tag;");
         }
-        if (codigo.contains("Mockito.") && !codigo.contains("import org.mockito")) {
+        if ((codigo.contains("Mockito.") || codigo.contains("when(") || codigo.contains("mock("))
+                && !codigo.contains("import org.mockito")
+                && !codigo.contains("import static org.mockito")) {
             imports.add("import static org.mockito.Mockito.*;");
         }
         if (!imports.isEmpty()) {
             codigo = insertarImports(codigo, imports);
-            System.out.println("aviso: se agregaron imports faltantes ("
-                    + String.join(", ", imports)
-                    + "); leer siempre lo que devuelve el modelo antes de correr mvn test");
         }
         return codigo;
     }
@@ -808,7 +624,61 @@ public class GenerarTest {
         return bloque + codigo;
     }
 
-    // -------------------------------------------------------------- config
+    private static String insertarTrasImports(String codigo, String anotacion) {
+        // insert before "class " or "public class"
+        Matcher m = Pattern.compile("(?m)^((?:public\\s+)?(?:final\\s+)?class\\s+)").matcher(codigo);
+        if (m.find()) {
+            return codigo.substring(0, m.start()) + anotacion + codigo.substring(m.start());
+        }
+        return anotacion + codigo;
+    }
+
+    // -------------------------------------------------------------- config / LLM / JSON
+
+    private record LlmRespuesta(String contenido, Long promptTokens, Long completionTokens) {
+    }
+
+    private static LlmRespuesta llamarModelo(Config cfg, String systemMsg, String userMsg)
+            throws IOException, InterruptedException, Fallo {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("model", cfg.modelo);
+        body.put("temperature", 0);
+        body.put("messages", List.of(
+                Map.of("role", "system", "content", systemMsg),
+                Map.of("role", "user", "content", userMsg)));
+        HttpClient client = HttpClient.newBuilder().connectTimeout(cfg.timeout).build();
+        HttpRequest.Builder reqB = HttpRequest.newBuilder()
+                .uri(URI.create(cfg.baseUrl + "/chat/completions"))
+                .timeout(cfg.timeout)
+                .header("Content-Type", "application/json; charset=utf-8");
+        if (cfg.apiKey != null && !cfg.apiKey.isBlank() && !cfg.apiKey.equals("ollama")) {
+            reqB.header("Authorization", "Bearer " + cfg.apiKey);
+        }
+        HttpResponse<String> resp = client.send(
+                reqB.POST(HttpRequest.BodyPublishers.ofString(Json.escribir(body),
+                        StandardCharsets.UTF_8)).build(),
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (resp.statusCode() / 100 != 2) {
+            throw new Fallo("HTTP " + resp.statusCode() + ": " + resp.body());
+        }
+        Map<?, ?> raiz = (Map<?, ?>) Json.leer(resp.body());
+        List<?> choices = (List<?>) raiz.get("choices");
+        if (choices == null || choices.isEmpty()) {
+            throw new Fallo("respuesta sin choices");
+        }
+        Map<?, ?> msg = (Map<?, ?>) ((Map<?, ?>) choices.get(0)).get("message");
+        Long pin = null;
+        Long pout = null;
+        if (raiz.get("usage") instanceof Map<?, ?> u) {
+            if (u.get("prompt_tokens") instanceof Number n) {
+                pin = n.longValue();
+            }
+            if (u.get("completion_tokens") instanceof Number n) {
+                pout = n.longValue();
+            }
+        }
+        return new LlmRespuesta(String.valueOf(msg.get("content")), pin, pout);
+    }
 
     private static final class Config {
         final String proveedor;
@@ -817,8 +687,7 @@ public class GenerarTest {
         final String modelo;
         final Duration timeout;
 
-        private Config(String proveedor, String baseUrl, String apiKey, String modelo,
-                       Duration timeout) {
+        Config(String proveedor, String baseUrl, String apiKey, String modelo, Duration timeout) {
             this.proveedor = proveedor;
             this.baseUrl = baseUrl;
             this.apiKey = apiKey;
@@ -831,33 +700,34 @@ public class GenerarTest {
             String proveedor = valor(env, "EDUSYNC_AI_PROVIDER", "ollama").toLowerCase(Locale.ROOT);
             if (proveedor.equals("open-webui")) {
                 String base = valor(env, "OPEN_WEBUI_BASE_URL", "http://localhost:3000");
-                String apiKey = valor(env, "OPEN_WEBUI_API_KEY", "sk-local");
-                String modelo = valor(env, "OPEN_WEBUI_MODEL", "llama3.1:latest");
-                long tSeg = Long.parseLong(valor(env, "OPEN_WEBUI_TIMEOUT_SECONDS", "120"));
-                return new Config(proveedor, quitarSlashFinal(base) + "/api", apiKey, modelo,
-                        Duration.ofSeconds(tSeg));
+                return new Config(proveedor, trimSlash(base) + "/api",
+                        valor(env, "OPEN_WEBUI_API_KEY", "sk-local"),
+                        valor(env, "OPEN_WEBUI_MODEL", "llama3.1:latest"),
+                        Duration.ofSeconds(Long.parseLong(
+                                valor(env, "OPEN_WEBUI_TIMEOUT_SECONDS", "300"))));
             }
-            String base = valor(env, "OLLAMA_BASE_URL", "http://localhost:11434");
-            String modelo = valor(env, "OLLAMA_MODEL", "llama3.1:latest");
-            long tSeg = Long.parseLong(valor(env, "OLLAMA_TIMEOUT_SECONDS", "120"));
-            return new Config(proveedor, quitarSlashFinal(base) + "/v1", "ollama", modelo,
-                    Duration.ofSeconds(tSeg));
+            return new Config(proveedor,
+                    trimSlash(valor(env, "OLLAMA_BASE_URL", "http://localhost:11434")) + "/v1",
+                    "ollama",
+                    valor(env, "OLLAMA_MODEL", "llama3.1:latest"),
+                    Duration.ofSeconds(Long.parseLong(
+                            valor(env, "OLLAMA_TIMEOUT_SECONDS", "300"))));
         }
 
         String resumen() {
-            return "proveedor=" + proveedor + " modelo=" + modelo + " via " + baseUrl;
+            return proveedor + " / " + modelo + " @ " + baseUrl;
         }
 
-        private static String quitarSlashFinal(String s) {
+        private static String trimSlash(String s) {
             return s.endsWith("/") ? s.substring(0, s.length() - 1) : s;
         }
 
-        private static String valor(Map<String, String> env, String clave, String porDefecto) {
-            String v = System.getenv(clave);
+        private static String valor(Map<String, String> env, String k, String d) {
+            String v = System.getenv(k);
             if (v != null && !v.isBlank()) {
                 return v;
             }
-            return env.getOrDefault(clave, porDefecto);
+            return env.getOrDefault(k, d);
         }
 
         private static Map<String, String> leerDotenv(Path archivo) throws IOException {
@@ -874,153 +744,79 @@ public class GenerarTest {
                 if (eq < 0) {
                     continue;
                 }
-                String clave = l.substring(0, eq).strip();
                 String val = l.substring(eq + 1).strip();
                 if (val.length() >= 2 && ((val.startsWith("\"") && val.endsWith("\""))
                         || (val.startsWith("'") && val.endsWith("'")))) {
                     val = val.substring(1, val.length() - 1);
                 }
-                out.put(clave, val);
+                out.put(l.substring(0, eq).strip(), val);
             }
             return out;
         }
     }
 
-    // ------------------------------------------------------------ llamada
-
-    private record LlmRespuesta(String contenido, Long promptTokens, Long completionTokens) {
-    }
-
-    private static LlmRespuesta llamarModelo(Config cfg, String systemMsg, String userMsg)
-            throws IOException, InterruptedException, Fallo {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", cfg.modelo);
-        body.put("temperature", 0);
-        List<Object> mensajes = new ArrayList<>();
-        mensajes.add(Map.of("role", "system", "content", systemMsg));
-        mensajes.add(Map.of("role", "user", "content", userMsg));
-        body.put("messages", mensajes);
-
-        String json = Json.escribir(body);
-
-        HttpClient client = HttpClient.newBuilder().connectTimeout(cfg.timeout).build();
-        HttpRequest.Builder reqB = HttpRequest.newBuilder()
-                .uri(URI.create(cfg.baseUrl + "/chat/completions"))
-                .timeout(cfg.timeout)
-                .header("Content-Type", "application/json; charset=utf-8");
-        if (cfg.apiKey != null && !cfg.apiKey.isBlank() && !cfg.apiKey.equals("ollama")) {
-            reqB.header("Authorization", "Bearer " + cfg.apiKey);
-        }
-        HttpRequest req = reqB.POST(HttpRequest.BodyPublishers.ofString(json,
-                StandardCharsets.UTF_8)).build();
-
-        HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString(
-                StandardCharsets.UTF_8));
-        if (resp.statusCode() / 100 != 2) {
-            throw new Fallo("el modelo respondio HTTP " + resp.statusCode() + ": "
-                    + resp.body());
-        }
-
-        Object parsed = Json.leer(resp.body());
-        Map<?, ?> raiz = (Map<?, ?>) parsed;
-        List<?> choices = (List<?>) raiz.get("choices");
-        if (choices == null || choices.isEmpty()) {
-            throw new Fallo("respuesta sin 'choices': " + resp.body());
-        }
-        Map<?, ?> primera = (Map<?, ?>) choices.get(0);
-        Map<?, ?> mensaje = (Map<?, ?>) primera.get("message");
-        String contenido = String.valueOf(mensaje.get("content"));
-
-        Long promptTokens = null;
-        Long completionTokens = null;
-        Object usage = raiz.get("usage");
-        if (usage instanceof Map<?, ?> u) {
-            promptTokens = numeroLong(u.get("prompt_tokens"));
-            completionTokens = numeroLong(u.get("completion_tokens"));
-        }
-        return new LlmRespuesta(contenido, promptTokens, completionTokens);
-    }
-
-    private static Long numeroLong(Object o) {
-        if (o instanceof Number n) {
-            return n.longValue();
-        }
-        return null;
-    }
-
-    // --------------------------------------------------------------- args
-
     private static final class Args {
         String clase;
-        List<String> contexto = new ArrayList<>();
-        List<String> testManual = new ArrayList<>();
         String salida;
         String tarea;
-        String sesion;
-        String veredicto;
-        String nota;
-        boolean proponer;
-        boolean generar;
-        boolean aprobarAlcance;
-        boolean ejecutarTests;
-        boolean decidir;
-        boolean forzar;
+        List<String> contexto = new ArrayList<>();
+        boolean escribir;
+        boolean run;
+        boolean runOnly;
 
         static Args parse(String[] argv) throws Fallo {
             Args a = new Args();
             for (int i = 0; i < argv.length; i++) {
-                String flag = argv[i];
-                switch (flag) {
-                    case "--proponer" -> {
-                        a.proponer = true;
+                String f = argv[i];
+                switch (f) {
+                    case "--escribir", "--write" -> {
+                        a.escribir = true;
                         continue;
                     }
-                    case "--generar" -> {
-                        a.generar = true;
+                    case "--run" -> {
+                        a.run = true;
                         continue;
                     }
-                    case "--aprobar-alcance" -> {
-                        a.aprobarAlcance = true;
+                    case "--run-only" -> {
+                        a.runOnly = true;
                         continue;
                     }
-                    case "--ejecutar-tests" -> {
-                        a.ejecutarTests = true;
-                        continue;
-                    }
-                    case "--decidir" -> {
-                        a.decidir = true;
-                        continue;
-                    }
-                    case "--forzar" -> {
-                        a.forzar = true;
-                        continue;
+                    case "--help", "-h" -> {
+                        System.out.println("""
+                                Uso:
+                                  java GenerarTest.java --clase <src/main/.../Foo.java>
+                                  java GenerarTest.java --clase ... --escribir
+                                  java GenerarTest.java --clase ... --escribir --run
+
+                                Flags:
+                                  --clase       clase bajo prueba (obligatorio)
+                                  --tarea       prompt opcional
+                                  --contexto    archivo extra (repetible)
+                                  --salida      override del *Test.java espejo
+                                  --escribir    llama LLM y agrega tests no duplicados
+                                  --run         tras escribir, corre mvn -Dtest=...
+                                """);
+                        System.exit(0);
                     }
                     default -> {
-                        // flags con valor
                     }
                 }
-                String val = (i + 1 < argv.length) ? argv[++i] : null;
-                if (val == null) {
-                    throw new Fallo("falta el valor de " + flag);
+                if (i + 1 >= argv.length) {
+                    throw new Fallo("falta valor de " + f);
                 }
-                switch (flag) {
-                    case "--clase" -> a.clase = val;
-                    case "--contexto" -> a.contexto.add(val);
-                    case "--test-manual" -> a.testManual.add(val);
-                    case "--salida" -> a.salida = val;
-                    case "--tarea" -> a.tarea = val;
-                    case "--sesion" -> a.sesion = val;
-                    case "--veredicto" -> a.veredicto = val;
-                    case "--nota" -> a.nota = val;
-                    default -> throw new Fallo("flag desconocido: " + flag
-                            + " (usa --proponer|--generar|--ejecutar-tests|--decidir)");
+                String v = argv[++i];
+                switch (f) {
+                    case "--clase" -> a.clase = v;
+                    case "--salida" -> a.salida = v;
+                    case "--tarea" -> a.tarea = v;
+                    case "--contexto" -> a.contexto.add(v);
+                    default -> throw new Fallo("flag desconocido: " + f + " (usa --help)");
                 }
             }
-            int modos = (a.generar ? 1 : 0) + (a.ejecutarTests ? 1 : 0) + (a.decidir ? 1 : 0);
-            // --proponer es el default si no hay otro modo
-            if (modos > 1) {
-                throw new Fallo("elige un solo modo: --proponer | --generar | "
-                        + "--ejecutar-tests | --decidir");
+            if (a.runOnly) {
+                // permitir --clase --run-only sin escribir
+                a.run = true;
+                a.escribir = false;
             }
             return a;
         }
@@ -1032,23 +828,15 @@ public class GenerarTest {
         }
     }
 
-    // ---------------------------------------------------- JSON (sin libs)
-
     private static final class Json {
-
         static String escribir(Object o) {
             StringBuilder sb = new StringBuilder();
-            escribirValor(o, sb, 0, false);
+            escribirValor(o, sb);
             return sb.toString();
         }
 
-        static String escribirPretty(Object o) {
-            StringBuilder sb = new StringBuilder();
-            escribirValor(o, sb, 0, true);
-            return sb.toString();
-        }
-
-        private static void escribirValor(Object o, StringBuilder sb, int indent, boolean pretty) {
+        @SuppressWarnings("unchecked")
+        private static void escribirValor(Object o, StringBuilder sb) {
             if (o == null) {
                 sb.append("null");
             } else if (o instanceof String s) {
@@ -1057,53 +845,29 @@ public class GenerarTest {
                 sb.append(o);
             } else if (o instanceof Map<?, ?> m) {
                 sb.append('{');
-                if (pretty && !m.isEmpty()) {
-                    sb.append('\n');
-                }
-                boolean primero = true;
+                boolean first = true;
                 for (Map.Entry<?, ?> e : m.entrySet()) {
-                    if (!primero) {
-                        sb.append(pretty ? ",\n" : ",");
+                    if (!first) {
+                        sb.append(',');
                     }
-                    primero = false;
-                    if (pretty) {
-                        indent(sb, indent + 1);
-                    }
+                    first = false;
                     escribirString(String.valueOf(e.getKey()), sb);
-                    sb.append(pretty ? ": " : ":");
-                    escribirValor(e.getValue(), sb, indent + 1, pretty);
-                }
-                if (pretty && !m.isEmpty()) {
-                    sb.append('\n');
-                    indent(sb, indent);
+                    sb.append(':');
+                    escribirValor(e.getValue(), sb);
                 }
                 sb.append('}');
             } else if (o instanceof List<?> l) {
                 sb.append('[');
-                if (pretty && !l.isEmpty()) {
-                    sb.append('\n');
-                }
                 for (int i = 0; i < l.size(); i++) {
                     if (i > 0) {
-                        sb.append(pretty ? ",\n" : ",");
+                        sb.append(',');
                     }
-                    if (pretty) {
-                        indent(sb, indent + 1);
-                    }
-                    escribirValor(l.get(i), sb, indent + 1, pretty);
-                }
-                if (pretty && !l.isEmpty()) {
-                    sb.append('\n');
-                    indent(sb, indent);
+                    escribirValor(l.get(i), sb);
                 }
                 sb.append(']');
             } else {
                 escribirString(String.valueOf(o), sb);
             }
-        }
-
-        private static void indent(StringBuilder sb, int n) {
-            sb.append("  ".repeat(Math.max(0, n)));
         }
 
         private static void escribirString(String s, StringBuilder sb) {
@@ -1116,8 +880,6 @@ public class GenerarTest {
                     case '\n' -> sb.append("\\n");
                     case '\r' -> sb.append("\\r");
                     case '\t' -> sb.append("\\t");
-                    case '\b' -> sb.append("\\b");
-                    case '\f' -> sb.append("\\f");
                     default -> {
                         if (c < 0x20) {
                             sb.append(String.format("\\u%04x", (int) c));
@@ -1131,10 +893,7 @@ public class GenerarTest {
         }
 
         static Object leer(String texto) throws Fallo {
-            Parser p = new Parser(texto);
-            Object v = p.valor();
-            p.saltarEspacios();
-            return v;
+            return new Parser(texto).valor();
         }
 
         private static final class Parser {
@@ -1143,21 +902,23 @@ public class GenerarTest {
 
             Parser(String s) {
                 this.s = s;
-                this.i = 0;
             }
 
             Object valor() throws Fallo {
-                saltarEspacios();
-                if (i >= s.length()) {
-                    throw new Fallo("JSON invalido: fin inesperado");
-                }
+                saltar();
                 char c = s.charAt(i);
                 return switch (c) {
                     case '{' -> objeto();
                     case '[' -> arreglo();
                     case '"' -> string();
-                    case 't', 'f' -> booleano();
-                    case 'n' -> nulo();
+                    case 't', 'f' -> bool();
+                    case 'n' -> {
+                        if (!s.startsWith("null", i)) {
+                            throw new Fallo("JSON null");
+                        }
+                        i += 4;
+                        yield null;
+                    }
                     default -> numero();
                 };
             }
@@ -1165,27 +926,24 @@ public class GenerarTest {
             Map<String, Object> objeto() throws Fallo {
                 Map<String, Object> m = new LinkedHashMap<>();
                 esperar('{');
-                saltarEspacios();
+                saltar();
                 if (mirar() == '}') {
                     i++;
                     return m;
                 }
                 while (true) {
-                    saltarEspacios();
-                    String clave = string();
-                    saltarEspacios();
+                    String k = string();
+                    saltar();
                     esperar(':');
-                    Object val = valor();
-                    m.put(clave, val);
-                    saltarEspacios();
-                    char c = mirar();
-                    if (c == ',') {
+                    m.put(k, valor());
+                    saltar();
+                    if (mirar() == ',') {
                         i++;
-                    } else if (c == '}') {
+                    } else if (mirar() == '}') {
                         i++;
                         break;
                     } else {
-                        throw new Fallo("JSON invalido en objeto, posicion " + i);
+                        throw new Fallo("JSON objeto");
                     }
                 }
                 return m;
@@ -1194,22 +952,21 @@ public class GenerarTest {
             List<Object> arreglo() throws Fallo {
                 List<Object> l = new ArrayList<>();
                 esperar('[');
-                saltarEspacios();
+                saltar();
                 if (mirar() == ']') {
                     i++;
                     return l;
                 }
                 while (true) {
                     l.add(valor());
-                    saltarEspacios();
-                    char c = mirar();
-                    if (c == ',') {
+                    saltar();
+                    if (mirar() == ',') {
                         i++;
-                    } else if (c == ']') {
+                    } else if (mirar() == ']') {
                         i++;
                         break;
                     } else {
-                        throw new Fallo("JSON invalido en arreglo, posicion " + i);
+                        throw new Fallo("JSON array");
                     }
                 }
                 return l;
@@ -1218,94 +975,74 @@ public class GenerarTest {
             String string() throws Fallo {
                 esperar('"');
                 StringBuilder sb = new StringBuilder();
-                while (true) {
-                    if (i >= s.length()) {
-                        throw new Fallo("JSON invalido: string sin cerrar");
-                    }
+                while (i < s.length()) {
                     char c = s.charAt(i++);
                     if (c == '"') {
-                        break;
+                        return sb.toString();
                     }
                     if (c == '\\') {
                         char e = s.charAt(i++);
-                        switch (e) {
-                            case '"' -> sb.append('"');
-                            case '\\' -> sb.append('\\');
-                            case '/' -> sb.append('/');
-                            case 'n' -> sb.append('\n');
-                            case 'r' -> sb.append('\r');
-                            case 't' -> sb.append('\t');
-                            case 'b' -> sb.append('\b');
-                            case 'f' -> sb.append('\f');
+                        sb.append(switch (e) {
+                            case '"', '\\', '/' -> e;
+                            case 'n' -> '\n';
+                            case 'r' -> '\r';
+                            case 't' -> '\t';
+                            case 'b' -> '\b';
+                            case 'f' -> '\f';
                             case 'u' -> {
                                 String hex = s.substring(i, i + 4);
-                                sb.append((char) Integer.parseInt(hex, 16));
                                 i += 4;
+                                yield (char) Integer.parseInt(hex, 16);
                             }
-                            default -> throw new Fallo("escape JSON invalido: \\" + e);
-                        }
+                            default -> throw new Fallo("escape");
+                        });
                     } else {
                         sb.append(c);
                     }
                 }
-                return sb.toString();
+                throw new Fallo("string abierto");
             }
 
-            Boolean booleano() throws Fallo {
+            Boolean bool() throws Fallo {
                 if (s.startsWith("true", i)) {
                     i += 4;
-                    return Boolean.TRUE;
+                    return true;
                 }
                 if (s.startsWith("false", i)) {
                     i += 5;
-                    return Boolean.FALSE;
+                    return false;
                 }
-                throw new Fallo("JSON invalido: se esperaba true/false en posicion " + i);
-            }
-
-            Object nulo() throws Fallo {
-                if (s.startsWith("null", i)) {
-                    i += 4;
-                    return null;
-                }
-                throw new Fallo("JSON invalido: se esperaba null en posicion " + i);
+                throw new Fallo("bool");
             }
 
             Number numero() throws Fallo {
-                int inicio = i;
+                int start = i;
                 while (i < s.length() && "-+.eE0123456789".indexOf(s.charAt(i)) >= 0) {
                     i++;
                 }
-                String num = s.substring(inicio, i);
-                if (num.isEmpty()) {
-                    throw new Fallo("JSON invalido: numero vacio en posicion " + i);
+                String n = s.substring(start, i);
+                if (n.contains(".") || n.contains("e") || n.contains("E")) {
+                    return Double.parseDouble(n);
                 }
-                if (num.contains(".") || num.contains("e") || num.contains("E")) {
-                    return Double.parseDouble(num);
-                }
-                try {
-                    return Long.parseLong(num);
-                } catch (NumberFormatException ex) {
-                    return Double.parseDouble(num);
-                }
+                return Long.parseLong(n);
             }
 
             void esperar(char c) throws Fallo {
                 if (i >= s.length() || s.charAt(i) != c) {
-                    throw new Fallo("JSON invalido: se esperaba '" + c + "' en posicion " + i);
+                    throw new Fallo("se esperaba " + c);
                 }
                 i++;
             }
 
             char mirar() throws Fallo {
-                saltarEspacios();
+                saltar();
                 if (i >= s.length()) {
-                    throw new Fallo("JSON invalido: fin inesperado");
+                    throw new Fallo("EOF");
                 }
                 return s.charAt(i);
             }
 
-            void saltarEspacios() {
+            void saltar() {
                 while (i < s.length() && Character.isWhitespace(s.charAt(i))) {
                     i++;
                 }

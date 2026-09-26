@@ -1,82 +1,56 @@
-# Generador de Pruebas Unitarias con IA — EduSync (Fase 1 HITL)
+# Generador de tests unitarios con IA — EduSync
 
-CLI en Java puro (`GenerarTest.java`) para generar **unit tests** del backend con el LLM
-ya configurado en el repo (Ollama / Open WebUI, mismas vars que `shared.ai` / ADR-0017).
+Herramienta simple: **lee los tests del proyecto**, lista lo que ya existe y **solo agrega escenarios faltantes** (sin duplicar métodos `@Test`).
 
-Principio: **AI generates, human audits.** La herramienta no aprueba tests.
+## Uso (3 modos)
 
-## Flujo Human-in-the-Loop
+```powershell
+cd tools\ai-test-generator-edusync
 
-```text
---proponer  →  revisión humana del alcance  →  --generar --aprobar-alcance
-        →  --ejecutar-tests  →  auditoría 3 preguntas  →  --decidir APPROVE|REJECT|MODIFIED
+# 1) Solo analizar (default) — no llama LLM, no escribe
+java GenerarTest.java --clase backend/src/main/java/com/edusync/academico/application/service/CrearEstudianteService.java
+
+# 2) Generar solo lo que falta (fusiona en *Test.java existente)
+java GenerarTest.java --clase backend/src/main/java/com/edusync/academico/application/service/CrearEstudianteService.java --escribir
+
+# 3) Generar + ejecutar Maven
+java GenerarTest.java --clase ...\CrearEstudianteService.java --escribir --run
 ```
 
-| Paso | Comando | ¿Llama LLM? | ¿Escribe `*Test.java`? |
-|------|---------|-------------|-------------------------|
-| 1. Proponer | default / `--proponer` | No | No (solo sesión JSON) |
-| 2. Generar | `--generar --aprobar-alcance --sesion <id>` | Sí (`temperature=0`) | Sí (`@Tag("agente")`) |
-| 3. Ejecutar | `--ejecutar-tests --sesion <id>` | No | No |
-| 4. Decidir | `--decidir --sesion <id> --veredicto ...` | No | No |
+Opcional: `--tarea "..."`, `--contexto <archivo>`, `--salida <ruta>`.
 
-Sesiones: `docs/qa/ai-test-sessions/<id>.json`.
+## Qué hace automáticamente
+
+| Paso | Comportamiento |
+|------|----------------|
+| Localiza salida | `src/main/java/Foo.java` → `src/test/java/FooTest.java` |
+| Lee tests existentes | `FooTest`, `FooAgenteTest`, tests del paquete que usan `Foo`, y heurística de dominio (`CrearEstudianteService` → `EstudianteTest`) |
+| Anti-duplicado | Lista métodos `@Test` existentes; el LLM recibe esa lista; al fusionar se omiten nombres repetidos |
+| Escritura | Si el test existe → **agrega** métodos nuevos. Si no → crea el archivo |
+| HITL | `--escribir` es la confirmación humana. La IA **no aprueba**; revisa el diff |
 
 ## Requisitos
 
-- JDK 25 (o al menos el JDK del backend).
-- Ejecución directa: `java GenerarTest.java` (JEP 330).
-- `.env` en la raíz del repo (`EDUSYNC_AI_PROVIDER`, `OLLAMA_*` o `OPEN_WEBUI_*`) solo para `--generar`.
-- Maven en PATH para `--ejecutar-tests`.
-- Al menos un `--test-manual` de referencia (`E_SIN_TEST_MANUAL`).
+- JDK del backend
+- Para `--escribir`: Ollama/Open WebUI vía `.env` (`EDUSYNC_AI_PROVIDER`, `OLLAMA_*` o `OPEN_WEBUI_*`)
+- Para `--run`: `mvn` / `mvn.cmd` en PATH
 
-## Argumentos
+## Ejemplo de salida (análisis)
 
-| Flag | Descripción |
-|------|-------------|
-| `--clase` | Clase bajo prueba (ruta desde la raíz del repo) |
-| `--salida` | Destino del `*Test.java` |
-| `--contexto` | Archivos de soporte (repetible) |
-| `--test-manual` | Tests existentes a no duplicar (repetible, ≥1) |
-| `--tarea` | Prompt del desarrollador (texto o ruta `.md`) |
-| `--proponer` | Dry-run (default si no hay otro modo) |
-| `--generar` | Generar código (exige `--aprobar-alcance`) |
-| `--aprobar-alcance` | Confirmación humana del alcance propuesto |
-| `--sesion` | Id de sesión HITL |
-| `--ejecutar-tests` | `mvn -Dtest=<clase> test` en `backend/` |
-| `--decidir` | Registrar veredicto humano |
-| `--veredicto` | `APPROVE` \| `REJECT` \| `MODIFIED` |
-| `--nota` | Nota libre de auditoría |
-| `--forzar` | Permitir sobrescribir salida existente (solo borradores agente) |
-
-## Ejemplo
-
-```bash
-cd tools/ai-test-generator-edusync
-
-# 1) Propuesta (sin LLM)
-java GenerarTest.java \
-  --clase backend/src/main/java/com/edusync/academico/application/service/CrearEstudianteService.java \
-  --contexto backend/src/main/java/com/edusync/academico/domain/Estudiante.java \
-  --test-manual backend/src/test/java/com/edusync/academico/domain/EstudianteTest.java \
-  --salida backend/src/test/java/com/edusync/academico/application/service/CrearEstudianteServiceTest.java \
-  --tarea "Focus on duplicate RUDE, null tenant, repository failures. Do not duplicate existing tests."
-
-# 2) Generar (tras revisar la propuesta; sustituye SESSION_ID)
-java GenerarTest.java --generar --aprobar-alcance --sesion SESSION_ID
-
-# 3) Ejecutar
-java GenerarTest.java --ejecutar-tests --sesion SESSION_ID
-
-# 4) Decisión humana (obligatoria; PASSED ≠ APPROVED)
-java GenerarTest.java --decidir --sesion SESSION_ID --veredicto APPROVE \
-  --nota "Checklist 3 preguntas OK"
+```text
+========== ANALISIS ==========
+Clase:     backend/src/main/java/.../CrearEstudianteService.java
+Salida:    backend/src/test/java/.../CrearEstudianteServiceTest.java (existe)
+Tests leidos (2):
+  - .../CrearEstudianteServiceTest.java
+  - .../EstudianteTest.java
+Metodos @Test existentes (6):
+  - creaUnEstudianteCuandoElRudeEsUnicoEnElTenant
+  - rechazaCon409CuandoElRudeYaExisteEnElTenant
+  - ...
+Escenarios faltantes propuestos (1):
+  1. fallo del puerto/repositorio al persistir
+==============================
 ```
 
-## Qué no hace (aún — fases siguientes)
-
-- Integration / Contract / E2E
-- Lectura automática de % JaCoCo en la propuesta
-- Aprobación automática
-- Modificación de código productivo (`src/main`)
-
-Ver skill `ai-test-generator-edusync` y `docs/qa/README.md`.
+Si no hay faltantes → termina sin llamar al LLM.

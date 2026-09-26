@@ -6,6 +6,7 @@ import com.edusync.shared.ai.domain.ParametroHerramienta;
 import com.edusync.shared.ai.domain.ParametroHerramienta.Ubicacion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -40,10 +41,20 @@ public class DescubridorHerramientasOpenApiAdapter implements DescubridorHerrami
     private final String openApiPath;
     private final AtomicReference<List<HerramientaLlm>> cache = new AtomicReference<>();
 
+    /**
+     * Constructor de Spring. No inyecta {@link RestClient.Builder}: AiConfig
+     * deliberadamente no registra uno global (evitaria pisar otros clientes HTTP).
+     */
+    @Autowired
     public DescubridorHerramientasOpenApiAdapter(
-            RestClient.Builder restClientBuilder,
             @Value("${server.port:8080}") int puertoServidor,
             @Value("${edusync.ai.agente.openapi-path:/v3/api-docs}") String openApiPath) {
+        this(RestClient.builder(), puertoServidor, openApiPath);
+    }
+
+    /** Visible para tests con {@code MockRestServiceServer.bindTo(builder)}. */
+    DescubridorHerramientasOpenApiAdapter(
+            RestClient.Builder restClientBuilder, int puertoServidor, String openApiPath) {
         this.restClient = restClientBuilder.baseUrl("http://localhost:" + puertoServidor).build();
         this.openApiPath = openApiPath;
     }

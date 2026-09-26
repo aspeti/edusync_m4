@@ -1,0 +1,47 @@
+{
+  "id": "20260915-035414-CrearEstudianteService",
+  "layer": "UNIT",
+  "status": "REJECTED",
+  "createdAt": "2026-09-15T03:54:14.330203800Z",
+  "updatedAt": "2026-09-15T03:54:28.910295200Z",
+  "target": "CrearEstudianteService (crear)",
+  "clase": "backend/src/main/java/com/edusync/academico/application/service/CrearEstudianteService.java",
+  "salida": "backend/src/test/java/com/edusync/academico/application/service/CrearEstudianteServiceAiDraftTest.java",
+  "contexto": [
+    "backend/src/main/java/com/edusync/academico/domain/Estudiante.java"
+  ],
+  "testManual": [
+    "backend/src/test/java/com/edusync/academico/domain/EstudianteTest.java"
+  ],
+  "tarea": "Focus on duplicate RUDE, null values, repository failures. Do not duplicate existing tests.",
+  "existingTestMethods": [
+    "creaUnEstudianteActivoPorDefectoCuandoEstadoEsNulo",
+    "rechazaRudeNulo",
+    "rechazaNombreCompletoNulo",
+    "datosPersonalesQuedanInmutables"
+  ],
+  "existingTestCount": 4,
+  "salidaExists": false,
+  "proposedScenarios": [
+    "null / valores nulos en entradas obligatorias",
+    "conflicto por duplicado (unique / ya existe)",
+    "fallo de dependencia (repositorio / puerto de salida)",
+    "happy path / invariante de metodo: crear"
+  ],
+  "publicMethods": [
+    "crear"
+  ],
+  "human": {
+    "verdict": "REJECT",
+    "note": "Smoke test Fase 1: rechazo deliberado sin generar codigo",
+    "decidedAt": "2026-09-15T03:54:28.909295Z",
+    "checklistReminder": [
+      "¿Se pone en rojo si rompo la función?",
+      "¿El assert describe el comportamiento esperado (no una foto)?",
+      "¿El nombre del método describe el comportamiento?"
+    ]
+  },
+  "generation": null,
+  "execution": null,
+  "note": "La IA NUNCA aprueba. Tras --generar, auditar (skill §4.5) y usar --decidir --veredicto APPROVE|REJECT|MODIFIED."
+}

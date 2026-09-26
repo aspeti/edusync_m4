@@ -74,3 +74,10 @@ edusync:
       api-key: ${OPEN_WEBUI_API_KEY:}
       model: ${OPEN_WEBUI_MODEL:llama3.1:latest}
       timeout-seconds: ${OPEN_WEBUI_TIMEOUT_SECONDS:120}
+    # Agente ReAct (ADR-0018 / PR-IMPL-023). Modelo fijo (nunca "latest").
+    agente:
+      model: ${EDUSYNC_AI_AGENTE_MODEL:llama3.1:latest}
+      max-turnos: ${EDUSYNC_AI_AGENTE_MAX_TURNOS:6}
+      openapi-path: ${EDUSYNC_AI_AGENTE_OPENAPI_PATH:/v3/api-docs}
+      ollama-base-url: ${EDUSYNC_AI_AGENTE_OLLAMA_BASE_URL:${OLLAMA_BASE_URL:http://localhost:11434}}
+      timeout-seconds: ${EDUSYNC_AI_AGENTE_TIMEOUT_SECONDS:${OLLAMA_TIMEOUT_SECONDS:120}}

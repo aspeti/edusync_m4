@@ -7,6 +7,7 @@ import com.edusync.shared.ai.domain.LlamadaHerramienta;
 import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
@@ -37,11 +38,24 @@ public class EjecutorHerramientaHttpAdapter implements EjecutorHerramientaPort {
     private final ObjectMapper objectMapper;
     private final DescubridorHerramientasPort descubridorHerramientasPort;
 
+    /**
+     * Constructor de Spring. Crea su propio {@link RestClient.Builder} porque
+     * AiConfig no registra uno global (ADR-0017 / PR-IMPL-022).
+     */
+    @Autowired
     public EjecutorHerramientaHttpAdapter(
-            RestClient.Builder restClientBuilder,
             ObjectMapper objectMapper,
             DescubridorHerramientasPort descubridorHerramientasPort,
             @Value("${server.port:8080}") int puertoServidor) {
+        this(RestClient.builder(), objectMapper, descubridorHerramientasPort, puertoServidor);
+    }
+
+    /** Visible para tests con {@code MockRestServiceServer.bindTo(builder)}. */
+    EjecutorHerramientaHttpAdapter(
+            RestClient.Builder restClientBuilder,
+            ObjectMapper objectMapper,
+            DescubridorHerramientasPort descubridorHerramientasPort,
+            int puertoServidor) {
         this.restClient = restClientBuilder.baseUrl("http://localhost:" + puertoServidor).build();
         this.objectMapper = objectMapper;
         this.descubridorHerramientasPort = descubridorHerramientasPort;

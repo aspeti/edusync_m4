@@ -14,6 +14,9 @@ import com.edusync.shared.ai.domain.LlamadaHerramienta;
 import com.edusync.shared.ai.domain.MensajeAgente;
 import com.edusync.shared.ai.domain.PasoTrazaAgente;
 import com.edusync.shared.ai.domain.RespuestaAgente;
+import com.edusync.shared.ai.domain.ResultadoGuardrailEntrada;
+import com.edusync.shared.ai.domain.ResultadoGuardrailSalida;
+import com.edusync.shared.ai.domain.ResultadoRecuperacionProceso;
 import com.edusync.shared.ai.domain.TurnoHistorialAgente;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,12 +31,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Orquesta KEYWORD, CONSULTA (analizador) y ReAct. ADR-0018 / 0019 / 0020.
+ * Orquesta el grafo de oleada 1 (ADR-0021): guardrails + KEYWORD / CONSULTA / ReAct.
  */
 @Service
 public class EjecutarConsultaAgenteService implements EjecutarConsultaAgenteUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(EjecutarConsultaAgenteService.class);
+
+    static final String RESPUESTA_SALUDO =
+            "Hola. Puedo ayudarte con cursos, materias, estudiantes, notas y promedios "
+                    + "de tu institucion. Prueba «lista los cursos» o «notas de Juan del primer trimestre».";
 
     private final AgenteLlmPort agenteLlmPort;
     private final EjecutorHerramientaPort ejecutorHerramientaPort;
@@ -42,6 +49,9 @@ public class EjecutarConsultaAgenteService implements EjecutarConsultaAgenteUseC
     private final CatalogoHerramientasAgente catalogoHerramientas;
     private final AnalizadorIntencionConsultaAcademica analizadorIntencion;
     private final OrquestadorConsultaAcademica orquestadorConsulta;
+    private final GuardrailEntradaAgente guardrailEntrada;
+    private final GuardrailSalidaAgente guardrailSalida;
+    private final RecuperadorProcesosEdusync recuperadorProcesos;
     private final int maxTurnos;
     private final String modeloAgente;
     private final boolean aiEnabled;
@@ -56,6 +66,9 @@ public class EjecutarConsultaAgenteService implements EjecutarConsultaAgenteUseC
             CatalogoHerramientasAgente catalogoHerramientas,
             AnalizadorIntencionConsultaAcademica analizadorIntencion,
             OrquestadorConsultaAcademica orquestadorConsulta,
+            GuardrailEntradaAgente guardrailEntrada,
+            GuardrailSalidaAgente guardrailSalida,
+            RecuperadorProcesosEdusync recuperadorProcesos,
             @Value("${edusync.ai.agente.max-turnos:6}") int maxTurnos,
             @Value("${edusync.ai.agente.model:llama3.1:8b}") String modeloAgente,
             @Value("${edusync.ai.enabled:true}") boolean aiEnabled,
@@ -68,6 +81,9 @@ public class EjecutarConsultaAgenteService implements EjecutarConsultaAgenteUseC
         this.catalogoHerramientas = catalogoHerramientas;
         this.analizadorIntencion = analizadorIntencion;
         this.orquestadorConsulta = orquestadorConsulta;
+        this.guardrailEntrada = guardrailEntrada;
+        this.guardrailSalida = guardrailSalida;
+        this.recuperadorProcesos = recuperadorProcesos;
         this.maxTurnos = maxTurnos;
         this.modeloAgente = modeloAgente;
         this.aiEnabled = aiEnabled;
@@ -91,25 +107,116 @@ public class EjecutarConsultaAgenteService implements EjecutarConsultaAgenteUseC
             throw new AiDeshabilitadoException();
         }
 
-        Optional<EnrutadorPalabrasClaveAgente.Match> keyword = enrutadorPalabrasClave.resolverConArgumentos(pregunta);
-        if (keyword.isPresent()) {
-            return resolverPorKeyword(keyword.get(), jwtUsuario, confirmed);
-        }
-        Optional<IntencionConsultaAcademica> intencion = analizadorIntencion.analizar(pregunta, contexto);
-        if (intencion.isPresent()) {
-            return orquestadorConsulta.ejecutar(intencion.get(), contexto, jwtUsuario);
-        }
-        if (!llmHabilitado) {
-            log.debug("Sin match KEYWORD/CONSULTA y LLM apagado");
-            return new RespuestaAgente(
-                    "No reconozco esa consulta en el catalogo y el modelo esta apagado. "
-                            + "Prueba una frase como «lista los cursos» o «notas de Juan del primer trimestre».",
+        ResultadoGuardrailEntrada entrada = guardrailEntrada.revisar(pregunta);
+        if (!entrada.ok()) {
+            log.debug("Camino BLOQUEADO nodo={}", RutasGrafoAsistente.NODO_GUARDRAIL_ENTRADA);
+            RespuestaAgente bloqueada = new RespuestaAgente(
+                    entrada.motivo(),
                     List.of(),
                     0,
-                    RespuestaAgente.CAMINO_NINGUNO,
-                    RespuestaAgente.FUENTE_NINGUNO);
+                    RespuestaAgente.CAMINO_BLOQUEADO,
+                    RespuestaAgente.FUENTE_GUARDRAIL,
+                    RespuestaAgente.AGENTE_GENERAL,
+                    List.of(),
+                    false);
+            return aplicarGrafo(bloqueada, entrada, guardrailSalida.revisar(entrada.motivo()));
         }
-        return resolverPorLlm(pregunta, jwtUsuario, history == null ? List.of() : history);
+
+        String preguntaLimpia = entrada.preguntaLimpia();
+        Optional<EnrutadorPalabrasClaveAgente.Match> keyword =
+                enrutadorPalabrasClave.resolverConArgumentos(preguntaLimpia);
+        Optional<IntencionConsultaAcademica> intencion = keyword.isPresent()
+                ? Optional.empty()
+                : analizadorIntencion.analizar(preguntaLimpia, contexto);
+        ResultadoRecuperacionProceso recuperado = new ResultadoRecuperacionProceso(List.of(), 0);
+        boolean hayProceso = false;
+        if (keyword.isEmpty() && intencion.isEmpty() && recuperadorProcesos.esPreguntaDeProceso(preguntaLimpia)) {
+            recuperado = recuperadorProcesos.recuperar(preguntaLimpia, 2);
+            hayProceso = recuperado.hayMatch();
+        }
+        RutasGrafoAsistente.Nodo nodo = RutasGrafoAsistente.siguiente(
+                true,
+                keyword.isPresent(),
+                intencion.isPresent(),
+                hayProceso,
+                RutasGrafoAsistente.esSaludo(preguntaLimpia),
+                llmHabilitado);
+        log.debug("Grafo clasificar nodo={}", nodo);
+
+        final ResultadoRecuperacionProceso corpus = recuperado;
+        RespuestaAgente inner = switch (nodo) {
+            case BLOQUEAR -> throw new IllegalStateException("BLOQUEAR ya se resolvio en guardrail de entrada");
+            case KEYWORD -> resolverPorKeyword(keyword.orElseThrow(), jwtUsuario, confirmed);
+            case CONSULTA -> orquestadorConsulta.ejecutar(intencion.orElseThrow(), contexto, jwtUsuario);
+            case PROCESO -> respuestaProceso(corpus);
+            case SALUDO -> respuestaSaludo();
+            case REACT -> resolverPorLlm(
+                    preguntaLimpia, jwtUsuario, history == null ? List.of() : history);
+            case NINGUNO -> respuestaNinguno();
+        };
+        return aplicarGrafo(inner, entrada, guardrailSalida.revisar(inner.respuesta()));
+    }
+
+    private RespuestaAgente respuestaProceso(ResultadoRecuperacionProceso recuperado) {
+        String texto = recuperadorProcesos.formatear(recuperado);
+        List<String> fuentes = recuperado.fragmentos().stream()
+                .map(ResultadoRecuperacionProceso.FragmentoProceso::fuente)
+                .distinct()
+                .toList();
+        return new RespuestaAgente(
+                texto,
+                List.of(),
+                0,
+                RespuestaAgente.CAMINO_PROCESO,
+                RespuestaAgente.FUENTE_CORPUS,
+                RespuestaAgente.AGENTE_GENERAL,
+                List.of(new PasoTrazaAgente(1, RutasGrafoAsistente.NODO_RECUPERAR, fuentes, true)),
+                false);
+    }
+
+    private static RespuestaAgente respuestaSaludo() {
+        return new RespuestaAgente(
+                RESPUESTA_SALUDO,
+                List.of(),
+                0,
+                RespuestaAgente.CAMINO_SALUDO,
+                RespuestaAgente.FUENTE_CATALOGO,
+                RespuestaAgente.AGENTE_GENERAL,
+                List.of(new PasoTrazaAgente(1, RutasGrafoAsistente.NODO_SALUDO, List.of(), true)),
+                false);
+    }
+
+    private static RespuestaAgente respuestaNinguno() {
+        return new RespuestaAgente(
+                "No reconozco esa consulta en el catalogo y el modelo esta apagado. "
+                        + "Prueba una frase como «lista los cursos» o «notas de Juan del primer trimestre».",
+                List.of(),
+                0,
+                RespuestaAgente.CAMINO_NINGUNO,
+                RespuestaAgente.FUENTE_NINGUNO);
+    }
+
+    private static RespuestaAgente aplicarGrafo(
+            RespuestaAgente inner,
+            ResultadoGuardrailEntrada entrada,
+            ResultadoGuardrailSalida salida) {
+        List<PasoTrazaAgente> steps = new ArrayList<>();
+        steps.add(new PasoTrazaAgente(1, RutasGrafoAsistente.NODO_GUARDRAIL_ENTRADA, List.of(), entrada.ok()));
+        for (PasoTrazaAgente p : inner.steps()) {
+            steps.add(new PasoTrazaAgente(steps.size() + 1, p.toolId(), p.tablasFuente(), p.exito()));
+        }
+        steps.add(new PasoTrazaAgente(
+                steps.size() + 1, RutasGrafoAsistente.NODO_GUARDRAIL_SALIDA, List.of(), salida.ok()));
+        return new RespuestaAgente(
+                salida.textoEntregable(),
+                inner.herramientasUsadas(),
+                inner.turnos(),
+                inner.camino(),
+                inner.fuente(),
+                inner.agente(),
+                steps,
+                inner.confirmacionRequerida(),
+                inner.contexto());
     }
 
     private RespuestaAgente resolverPorKeyword(

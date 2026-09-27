@@ -1,7 +1,7 @@
 ﻿# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.48`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.50`.
 > Cada prompt sigue la estructura de `plantillas/plantillas1/PROMPT_TEMPLATE.md`.
 > Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
@@ -79,6 +79,8 @@
 | PR-IMPL-024 | `docs/design/DD-UC-024.md` + `docs/prompts/impl/PR-IMPL-024.md` — frontend: consola Asistente sobre `POST /api/v1/ai/agente` | generación | `dev-agent` | Sonnet | 26/09/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-024.md` | Ruta `/asistente`; roles ADMIN/SECRETARIA/PROFESOR |
 | PR-IMPL-025 | `docs/design/DD-UC-025.md` + `docs/prompts/impl/PR-IMPL-025.md` — asistente v1.1: catálogo, KEYWORD, formatter, writes, Open WebUI, historial, traza (`ADR-0019`) | generación | `dev-agent` | Sonnet | 26/09/2026 | **Ejecutado (parcial)** | `docs/prompts/impl/PR-IMPL-025.md` | Oleada KEYWORD (catálogo + router + formatter + chips/traza); writes/Open WebUI/historial pendientes |
 | PR-IMPL-026 | `docs/design/DD-UC-026.md` + `docs/prompts/impl/PR-IMPL-026.md` — consultas académicas dinámicas (`find_*`, `consultar_academico`, camino CONSULTA, contexto, `ADR-0020`) | generación | `dev-agent` | Sonnet | 27/09/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-026.md` | Resolver + query parametrizable + UI history/contexto; sin Playbook por combinación |
+| PR-IMPL-027 | `docs/design/DD-UC-027.md` + `docs/prompts/impl/PR-IMPL-027.md` — grafo de producción oleada 1 (guardrails + rutas Java + saludo + temperatura 0, `ADR-0021`) | generación | `dev-agent` | Sonnet | 27/09/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-027.md` | Patrones Lab 6 en Java; sin LangGraph/RAG/checkpoint |
+| PR-IMPL-028 | `docs/design/DD-UC-028.md` + `docs/prompts/impl/PR-IMPL-028.md` — RAG léxico de procesos EduSync (camino PROCESO) | generación | `dev-agent` | Sonnet | 27/09/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-028.md` | Corpus académico; 0 LLM si hay match; sin Chroma |
 
 ---
 
@@ -251,6 +253,8 @@ flowchart TD
         IMPL024["PR-IMPL-024\nConsola Angular\nAsistente IA"]
         IMPL025["PR-IMPL-025\nAsistente v1.1\nKEYWORD + catálogo"]
         IMPL026["PR-IMPL-026\nConsultas académicas\ndinámicas"]
+        IMPL027["PR-IMPL-027\nGrafo producción\nguardrails Lab 6"]
+        IMPL028["PR-IMPL-028\nRAG procesos\nEduSync"]
     end
     FSD --> IMPL001
     HEX --> IMPL001
@@ -323,6 +327,10 @@ flowchart TD
     ADR --> IMPL025
     IMPL025 --> IMPL026
     ADR --> IMPL026
+    IMPL026 --> IMPL027
+    ADR --> IMPL027
+    IMPL027 --> IMPL028
+    ADR --> IMPL028
 ```
 
 ---
@@ -332,7 +340,7 @@ flowchart TD
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
 | `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-POC-001, PR-POC-002, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills → POCs → roadmap → aportes → aliases vFinal); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel, configuración de agentes, evidencia de pruebas de concepto, hoja de ruta de release, informe de aportes individuales y snapshots congelados de entrega | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md`; POCs en `docs/pocs/`; roadmap canónico en `docs/roadmap.md`; aportes por release en `docs/aportes/release-<x.y.z>.md`; aliases `_vFinal.md` en `docs/brd/`, `docs/mrd/`, `docs/prd/`, `docs/fsd/` |
-| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006, PR-IMPL-007, PR-IMPL-008, PR-IMPL-009, PR-IMPL-010, PR-IMPL-011, PR-IMPL-012, PR-IMPL-013, PR-IMPL-014, PR-IMPL-015, PR-IMPL-016, PR-IMPL-017, PR-IMPL-018, PR-IMPL-019, PR-IMPL-020, PR-IMPL-022, PR-IMPL-023, PR-IMPL-024, PR-IMPL-025, PR-IMPL-026 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006, PR-IMPL-007, PR-IMPL-008, PR-IMPL-009, PR-IMPL-010, PR-IMPL-011, PR-IMPL-012, PR-IMPL-013, PR-IMPL-014, PR-IMPL-015, PR-IMPL-016, PR-IMPL-017, PR-IMPL-018, PR-IMPL-019, PR-IMPL-020, PR-IMPL-022, PR-IMPL-023, PR-IMPL-024, PR-IMPL-025, PR-IMPL-026, PR-IMPL-027, PR-IMPL-028 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
 | `arch-agent` | PR-ADR-001..005, PR-ADR-006, PR-ADR-007, PR-ADR-008, PR-ADR-010, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
@@ -4209,6 +4217,8 @@ Archivo docs/adr/0017-adopcion-spring-ai-cliente-llm.md, estado Aceptada.
 | Design Doc `DD-UC-024` + `ADR-0018` + `NFR-007` | `DD-UC-024, ADR-0018, NFR-007` | PR-IMPL-024 | `dev-agent` | Consola Angular `/asistente` sobre `/ai/agente` — **ejecutado** 26/09/2026 | `docs/design/DD-UC-024.md`, `docs/prompts/impl/PR-IMPL-024.md`, `frontend/src/app/features/asistente/**` |
 | Design Doc `DD-UC-025` + `ADR-0019` + `NFR-007` | `DD-UC-025, ADR-0019, NFR-007` | PR-IMPL-025 | `dev-agent` | Asistente v1.1 — **ejecutado (parcial)** 26/09/2026 (KEYWORD + catálogo + formatter; writes/Open WebUI/historial pendientes) | `docs/design/DD-UC-025.md`, `docs/design/assistant/TOOL-CATALOG.md`, `docs/adr/0019-catalogo-keyword-formatter-writes-openwebui-agente.md`, `docs/prompts/impl/PR-IMPL-025.md` |
 | Design Doc `DD-UC-026` + `ADR-0020` + `NFR-007` + `FSD-UC-016` | `DD-UC-026, ADR-0020, NFR-007, FSD-UC-016` | PR-IMPL-026 | `dev-agent` | Consultas académicas dinámicas — **ejecutado** 27/09/2026 | `docs/design/DD-UC-026.md`, `docs/ai/conversational-assistant-design.md`, `docs/adr/0020-consultas-academicas-dinamicas-asistente.md`, `docs/prompts/impl/PR-IMPL-026.md` |
+| Design Doc `DD-UC-027` + `ADR-0021` + `NFR-007` | `DD-UC-027, ADR-0021, NFR-007` | PR-IMPL-027 | `dev-agent` | Grafo de producción oleada 1 (guardrails + rutas Java) — **ejecutado** 27/09/2026 | `docs/design/DD-UC-027.md`, `docs/adr/0021-grafo-produccion-guardrails-asistente.md`, `docs/prompts/impl/PR-IMPL-027.md` |
+| Design Doc `DD-UC-028` + `ADR-0021` + `NFR-007` | `DD-UC-028, ADR-0021, NFR-007` | PR-IMPL-028 | `dev-agent` | RAG léxico procesos EduSync (camino PROCESO) — **ejecutado** 27/09/2026 | `docs/design/DD-UC-028.md`, `docs/ai/base_conocimiento/`, `docs/prompts/impl/PR-IMPL-028.md` |
 
 ---
 
@@ -4285,3 +4295,5 @@ Archivo docs/adr/0017-adopcion-spring-ai-cliente-llm.md, estado Aceptada.
 | v2.46 | 26/09/2026 | Rodrigo Aspeti | `PR-IMPL-025` + `ADR-0019` (`DD-UC-025`): diseño del asistente v1.1 (catálogo tipado, KEYWORD, formatter, writes con confirmación, Open WebUI, historial, traza; RAG diferido). Prompt aprobado, no ejecutado. Total 64 → 65. |
 | v2.47 | 26/09/2026 | Rodrigo Aspeti | **Ejecución parcial de `PR-IMPL-025`**: catálogo tipado de lecturas, camino KEYWORD (`turnos=0`), formatter en Java, traza `camino`/`steps`/tablas, chips en `/asistente`. Writes, Open WebUI del agente e historial pendientes. Sin filas nuevas (65 contratos). |
 | v2.48 | 27/09/2026 | Rodrigo Aspeti | `PR-IMPL-026` + `ADR-0020` (`DD-UC-026`): consultas académicas dinámicas (`find_*`, `consultar_academico`, camino CONSULTA, contexto). Índice, flowchart, matriz `dev-agent` y trazabilidad ampliados. Total 65 → 66. |
+| v2.49 | 27/09/2026 | Rodrigo Aspeti | `PR-IMPL-027` + `ADR-0021` (`DD-UC-027`): grafo Java + guardrails (oleada 1 Lab 6, sin LangGraph). Índice, flowchart, matriz `dev-agent` y trazabilidad ampliados. Total 66 → 67. |
+| v2.50 | 27/09/2026 | Rodrigo Aspeti | `PR-IMPL-028` (`DD-UC-028`): RAG léxico sobre procesos EduSync (camino PROCESO). Total 67 → 68. |

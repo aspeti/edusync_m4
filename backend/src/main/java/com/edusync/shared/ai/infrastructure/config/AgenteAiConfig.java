@@ -28,6 +28,9 @@ public class AgenteAiConfig {
   @Value("${edusync.ai.agente.timeout-seconds:${edusync.ai.ollama.timeout-seconds:120}}")
   private int timeoutSeconds;
 
+  @Value("${edusync.ai.agente.temperature:0}")
+  private Double temperature;
+
   @Bean(name = "agenteChatClient")
   public ChatClient agenteChatClient() {
     OllamaApi ollamaApi =
@@ -39,7 +42,10 @@ public class AgenteAiConfig {
     OllamaChatModel chatModel =
         OllamaChatModel.builder()
             .ollamaApi(ollamaApi)
-            .options(OllamaChatOptions.builder().model(modeloAgente).build())
+            .options(OllamaChatOptions.builder()
+                    .model(modeloAgente)
+                    .temperature(temperature)
+                    .build())
             .build();
     return ChatClient.builder(chatModel).build();
   }

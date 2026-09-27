@@ -14,7 +14,7 @@ import {
 } from './asistente.model';
 
 /**
- * Consola del asistente (DD-UC-024/025/026): KEYWORD, CONSULTA o ReAct, con hilo y contexto.
+ * Consola del asistente (DD-UC-024/025/026/027): KEYWORD, CONSULTA, ReAct, SALUDO o BLOQUEADO.
  */
 @Component({
   selector: 'app-asistente-chat-page',
@@ -56,7 +56,8 @@ import {
                 <p style="margin: 0 0 0.4rem;">
                   <span
                     data-testid="asistente-camino"
-                    style="display: inline-block; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 4px; background: #e8eaf6;"
+                    [style.background]="m.camino === 'BLOQUEADO' ? '#fdecea' : (m.camino === 'SALUDO' ? '#e8f5e9' : (m.camino === 'PROCESO' ? '#e3f2fd' : '#e8eaf6'))"
+                    style="display: inline-block; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 4px;"
                   >{{ m.camino }}</span>
                 </p>
               }

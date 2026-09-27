@@ -83,3 +83,4 @@ edusync:
       openapi-path: ${EDUSYNC_AI_AGENTE_OPENAPI_PATH:/v3/api-docs}
       ollama-base-url: ${EDUSYNC_AI_AGENTE_OLLAMA_BASE_URL:${OLLAMA_BASE_URL:http://localhost:11434}}
       timeout-seconds: ${EDUSYNC_AI_AGENTE_TIMEOUT_SECONDS:${OLLAMA_TIMEOUT_SECONDS:120}}
+      temperature: ${EDUSYNC_AI_AGENTE_TEMPERATURE:0}

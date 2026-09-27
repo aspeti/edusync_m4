@@ -2,7 +2,7 @@
 producto: "EduSync"
 grupo: "G-EduSync"
 documento: DTP                 # Documento Técnico del Producto (continuación VIVA del DTI)
-version: v1.48                 # versiona la implementación, no el diseño de M4
+version: v1.50                 # versiona la implementación, no el diseño de M4
 fecha: "27/09/2026"
 status: vivo                   # vivo | en_revision | publicado-release   (NUNCA "congelado")
 audiencia: dual                # humanos + agentes IA
@@ -112,6 +112,8 @@ flowchart LR
 | 26/09/2026 | Oleada C (`DD-UC-025` §2.6): `create_curso`/`create_materia` KEYWORD con preview; POST loopback solo si `confirmed=true`. UI Confirmar/Cancelar. | Escrituras del asistente con confirmación humana | `ADR-0019` | `shared.ai` tests; `ng build`. `pendiente de commit formal` | Rodrigo Aspeti |
 | 27/09/2026 | Enriquecimiento de DTOs de lectura: `InscripcionResponse` (`gestionNombre`/`cursoNombre`/`paraleloNombre`), `AsignacionCursoResponse` y `AsignacionProfesorResponse` (`cursoNombre`/`paraleloNombre`). Sin grafos de agregados; mismo patrón que `AsignacionProfesorVista`. UI de detalle usa las etiquetas. | Preparar cruces de entidades para el asistente y reducir N+1 en consola (`FSD-UC-018`/`020`) | — | tests de `academico` + `ng build`. `pendiente de commit formal` | Rodrigo Aspeti |
 | 27/09/2026 | **Ejecución de `PR-IMPL-026`** (`DD-UC-026`, `ADR-0020`): consultas académicas dinámicas del asistente — `find_*` (resolución de nombres a UUID del tenant), `POST /consultas-academicas/consultar` (notas/promedio/reprobados/nómina/materias), camino `CONSULTA` (0 turnos LLM), ReAct sobre catálogo tipado, history+contexto en `/asistente`. Sin Playbook por combinación. Chat v0 intacto. Baseline intacto. | Preguntas NL combinando alumno/curso/materia/periodo sin IDs (`NFR-007`, `FSD-UC-016`) | `ADR-0020` | `mvn test` **299/299**; `ng build` verde. `pendiente de commit formal` | Rodrigo Aspeti |
+| 27/09/2026 | **`ADR-0021`** + `DD-UC-027` + **ejecución de `PR-IMPL-027`** (oleada 1 Lab 6): grafo Java (no LangGraph) con `GUARDRAIL_ENTRADA`/`CLASIFICAR`/`BLOQUEADO`/`SALUDO`/`KEYWORD`/`CONSULTA`/`REACT`/`GUARDRAIL_SALIDA`; temperatura del agente `0`; badge UI. RAG/checkpoint/caché semántico diferidos. Chat v0 intacto. Baseline intacto. | Patrones de producción del Lab 6 sobre el stack vivo (`NFR-007`) | `ADR-0021` | `mvn test` **315/315**; `ng build` verde. `pendiente de commit formal` | Rodrigo Aspeti |
+| 27/09/2026 | **`DD-UC-028` + `PR-IMPL-028`**: camino `PROCESO` (RAG léxico) con corpus de procesos EduSync (`docs/ai/base_conocimiento/`). | Preguntas de «cómo funciona» citando FSD-UC (`NFR-007`) | `ADR-0021` (oleada 2) | `mvn test` **321/321**; `ng build` verde. `pendiente de commit formal` | Rodrigo Aspeti |
 
 ### A.2 Deltas respecto al DTI vFinal
 
@@ -129,6 +131,7 @@ flowchart LR
 | 9 | `§9 Capa de IA / agentes` (`docs/baseline/DTI.md`) | Sin agente de producto ni tool calling | `POST /api/v1/ai/agente` (ReAct, tools de solo lectura descubiertas desde OpenAPI con allowlist académica + JWT del usuario) + consola Angular `/asistente`. Modelo del agente `llama3.1:8b`. No muta el chat v0 | Traer el mecanismo de `edusync-agente-llm` (Python) al monolito Java (`ADR-0018` Alternativa C); `DD-UC-024` cura el catálogo para consultas de **sistema**, no solo usuarios | `ADR-0018` |
 | 10 | `§9 Capa de IA / agentes` (`docs/baseline/DTI.md`) | (tras delta 9) OpenAPI como catálogo del LLM; siempre `camino=AGENTE`; el modelo redacta | Catálogo tipado (`TOOL-CATALOG.md` + `CatalogoHerramientasAgente`) + camino `KEYWORD` (0 turnos, formatter en Java) + `LLM`/`NINGUNO`. Loopback HTTP + JWT se conservan (`ADR-0018`). Writes, Open WebUI del agente, RAG e historial **aún no** en código | Gobernar tools y evitar alucinación/latencia en frases frecuentes (`ADR-0019` Alternativa C, oleada KEYWORD de `DD-UC-025`) | `ADR-0019` |
 | 11 | `§9 Capa de IA / agentes` (`docs/baseline/DTI.md`) | (tras delta 10) KEYWORD de listado; notas fuera del catálogo; el modelo inventaría IDs | Camino `CONSULTA` + `find_*` + `consultar_academico` (IDs solo del backend; agregados en `CalculoNotas`). Playbooks no se usan para combinaciones de lectura. Contexto conversacional en el request. | Preguntas dinámicas sin un Playbook por frase (`ADR-0020`) | `ADR-0020` |
+| 12 | `§9 Capa de IA / agentes` (`docs/baseline/DTI.md`) | (tras delta 11) ruteo KEYWORD→CONSULTA→ReAct sin grafo ni guardrails de inyección/PII | Grafo Java explícito + guardrails entrada/salida + caminos `BLOQUEADO`/`SALUDO` + temperatura 0. **Sin** LangGraph/Chroma/SqliteSaver (oleadas 2+) | Patrones Lab 6 en el stack vivo (`ADR-0021`) | `ADR-0021` |
 
 > **Pendiente de definición (`ADR-0009` §3 punto 5 / `ADR-0013` §3.5):** gobernanza (auditoría/inmutabilidad/ventana 1–72 h) de los módulos nuevos. Los puntos 1–4 están resueltos en `ADR-0013`. Ningún módulo nuevo asume `audit_log` hasta ese ADR de seguimiento. `ADR-0014` no resuelve este punto — documenta el riesgo heredado de reabrir un periodo/plantilla sin rastro de auditoría.
 >
@@ -201,12 +204,12 @@ Estado actual: la cadena existe completa hasta `Design Doc` para `FSD-UC-011`/`F
 | §6 Distribuida (si aplica) | no | `docs/baseline/DTI.md` §6 (Seams, sin activar — `ADR-0007` Strangler Fig sigue *gated*) |
 | §7 Asíncrona / event-driven | no | `docs/baseline/DTI.md` §7 (Spring Events; migración a SQS FIFO prevista en `ADR-0004`, no ejecutada aún) |
 | §8 Despliegue cloud | no | `docs/baseline/DTI.md` §8 / `docs/diagrams/deployment_aws.mmd` (imagen Docker deberá basarse en OpenJDK 25 al implementarse, ver `ADR-0008` §5) |
-| §9 Capa de IA / agentes | **sí** | Este DTP §A.2 (filas 8–11) + `ADR-0017`/`0018`/`0019`/`0020` — Spring AI 2.0.0 detrás de `LlmPort`; ReAct + KEYWORD + CONSULTA (`PR-IMPL-023`..`026`). El DTI §9 queda como foto histórica (“sin IA en runtime”) |
-| §10 Prompt mapping | sí (crece con `PR-IMPL-*`) | `docs/PROMPT_MAPPING.md` v2.48 (área `IMPL`, filas `PR-IMPL-001`..`020` + `PR-IMPL-022`..`026`; `PR-IMPL-021`/`PR-ADR-009` reservados por `DD-UC-021`) |
+| §9 Capa de IA / agentes | **sí** | Este DTP §A.2 (filas 8–12) + `ADR-0017`/`0018`/`0019`/`0020`/`0021` — Spring AI 2.0.0 detrás de `LlmPort`; ReAct + KEYWORD + CONSULTA + grafo/guardrails + camino PROCESO (`PR-IMPL-023`..`028`). El DTI §9 queda como foto histórica (“sin IA en runtime”) |
+| §10 Prompt mapping | sí (crece con `PR-IMPL-*`) | `docs/PROMPT_MAPPING.md` v2.50 (área `IMPL`, filas `PR-IMPL-001`..`020` + `PR-IMPL-022`..`028`; `PR-IMPL-021`/`PR-ADR-009` reservados por `DD-UC-021`) |
 | §11 NFRs | no | `docs/baseline/DTI.md` §11 |
 | §12 POCs | no | `docs/baseline/DTI.md` §12 / `docs/pocs/POC-01-rls-multitenancy/`, `docs/pocs/POC-02-circuit-breaker-sie/` (ejecución con evidencia real sigue pendiente) |
 | §13–§16 Seguridad / Observabilidad / DevOps / Antipatrones | no | `docs/baseline/DTI.md` §13–§16 |
-| §21 ADRs | sí (crece) | `docs/adr/` — 19 ADRs vigentes (`0001`–`0006`, `0008`–`0020`; `0007` gated) |
+| §21 ADRs | sí (crece) | `docs/adr/` — 20 ADRs vigentes (`0001`–`0006`, `0008`–`0021`; `0007` gated) |
 | §22–§23 Auditoría IA / Evals | no todavía | `docs/baseline/DTI.md` §22–§23 |
 
 > **Solo escribir aquí las secciones que cambiaron.** Las que no cambiaron se mantienen por referencia al DTI vFinal, preservando un único punto de verdad por release.
@@ -278,3 +281,5 @@ Estado actual: la cadena existe completa hasta `Design Doc` para `FSD-UC-011`/`F
 | v1.46 | 26/09/2026 | Rodrigo Aspeti | Oleada C: writes KEYWORD `create_curso`/`create_materia` + confirmación. §A.1 nueva fila. Baseline intacto. |
 | v1.47 | 27/09/2026 | Rodrigo Aspeti | DTOs de inscripción y asignaciones con nombres de curso/paralelo/gestión. §A.1 nueva fila. Sin ADR. Baseline intacto. |
 | v1.48 | 27/09/2026 | Rodrigo Aspeti | **`ADR-0020`** + `DD-UC-026` + `PR-IMPL-026`: consultas académicas dinámicas (`find_*`, `consultar_academico`, camino `CONSULTA`, contexto). §A.1 nueva fila. §A.2 delta 11. §B §9/§10/§21 → `PROMPT_MAPPING` v2.48. Baseline intacto. |
+| v1.49 | 27/09/2026 | Rodrigo Aspeti | **`ADR-0021`** + `DD-UC-027` + `PR-IMPL-027`: grafo Java + guardrails (oleada 1 Lab 6, sin LangGraph). §A.1 nueva fila. §A.2 delta 12. §B §9/§10 → `PROMPT_MAPPING` v2.49. Baseline intacto. |
+| v1.50 | 27/09/2026 | Rodrigo Aspeti | **`DD-UC-028` + `PR-IMPL-028`**: RAG léxico de procesos EduSync (camino `PROCESO`). §A.1 nueva fila. §B §9/§10 → `PROMPT_MAPPING` v2.50. Baseline intacto. |

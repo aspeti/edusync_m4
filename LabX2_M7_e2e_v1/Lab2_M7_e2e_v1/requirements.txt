@@ -1,6 +1,0 @@
-# La app de demo (SoporteIA-web). Los tests son TypeScript: ver package.json.
-fastapi>=0.110
-uvicorn>=0.30
-# Para agente_e2e.py (el agente-script, opcional): la misma conexion al modelo del LabX
-openai>=1.40
-python-dotenv>=1.0

@@ -129,6 +129,8 @@ public class AiProperties {
     private String ollamaBaseUrl = "http://localhost:11434";
     private int timeoutSeconds = 120;
     private boolean llmHabilitado = true;
+    /** 0 = determinista (ADR-0021). */
+    private Double temperature = 0.0;
 
     public String getModel() {
       return model;
@@ -184,6 +186,14 @@ public class AiProperties {
 
     public void setLlmHabilitado(boolean llmHabilitado) {
       this.llmHabilitado = llmHabilitado;
+    }
+
+    public Double getTemperature() {
+      return temperature;
+    }
+
+    public void setTemperature(Double temperature) {
+      this.temperature = temperature;
     }
   }
 }

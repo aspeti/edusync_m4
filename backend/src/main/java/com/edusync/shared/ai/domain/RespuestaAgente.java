@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Contrato de salida de POST /api/v1/ai/agente.
- * {@code camino}: KEYWORD | CONSULTA | LLM | NINGUNO.
+ * {@code camino}: KEYWORD | CONSULTA | LLM | NINGUNO | BLOQUEADO | SALUDO | PROCESO.
  */
 public record RespuestaAgente(
         String respuesta,
@@ -29,9 +29,14 @@ public record RespuestaAgente(
     public static final String CAMINO_CONSULTA = "CONSULTA";
     public static final String CAMINO_LLM = "LLM";
     public static final String CAMINO_NINGUNO = "NINGUNO";
+    public static final String CAMINO_BLOQUEADO = "BLOQUEADO";
+    public static final String CAMINO_SALUDO = "SALUDO";
+    public static final String CAMINO_PROCESO = "PROCESO";
     public static final String AGENTE_GENERAL = "general";
     public static final String FUENTE_CATALOGO = "catalogo";
     public static final String FUENTE_NINGUNO = "ninguno";
+    public static final String FUENTE_GUARDRAIL = "guardrail";
+    public static final String FUENTE_CORPUS = "corpus";
 
     public RespuestaAgente(
             String respuesta,

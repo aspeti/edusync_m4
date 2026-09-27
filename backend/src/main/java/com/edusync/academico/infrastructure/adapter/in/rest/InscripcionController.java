@@ -2,6 +2,7 @@ package com.edusync.academico.infrastructure.adapter.in.rest;
 
 import com.edusync.academico.application.port.in.CrearInscripcionCommand;
 import com.edusync.academico.application.port.in.CrearInscripcionUseCase;
+import com.edusync.academico.application.service.EtiquetasAcademicas;
 import com.edusync.academico.domain.Inscripcion;
 import com.edusync.shared.exception.DomainException;
 import com.edusync.shared.tenant.TenantContextProvider;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class InscripcionController {
 
   private final CrearInscripcionUseCase crearInscripcionUseCase;
+  private final EtiquetasAcademicas etiquetasAcademicas;
   private final TenantContextProvider tenantContextProvider;
 
   @PostMapping
@@ -73,12 +75,16 @@ public class InscripcionController {
   }
 
   private InscripcionResponse aResponse(Inscripcion inscripcion) {
+    UUID tenantId = inscripcion.getTenantId();
     return new InscripcionResponse(
         inscripcion.getId().valor(),
         inscripcion.getEstudianteId().valor(),
         inscripcion.getGestionEscolarId().valor(),
+        etiquetasAcademicas.nombreGestion(tenantId, inscripcion.getGestionEscolarId().valor()),
         inscripcion.getCursoId().valor(),
+        etiquetasAcademicas.nombreCurso(tenantId, inscripcion.getCursoId().valor()),
         inscripcion.getParaleloId().valor(),
+        etiquetasAcademicas.nombreParalelo(tenantId, inscripcion.getParaleloId().valor()),
         inscripcion.getFechaInscripcion(),
         inscripcion.getEstado().name());
   }

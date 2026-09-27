@@ -118,7 +118,7 @@ frontend/src/app/
   | `GET` | `/estudiantes/{id}/inscripciones` | `200 List<InscripcionResponse>` | `404` estudiante |
   | `POST` | `/inscripciones` `{estudianteId, gestionEscolarId, cursoId, paraleloId, fechaInscripcion}` | `201 InscripcionResponse` | `404` estudiante/gestión/curso/paralelo; **`409 E_INSCRIPCION_DUPLICADA`** |
 
-  `EstudianteResponse`: `{id, rude, nombreCompleto, estado, datosPersonales}`. `InscripcionResponse`: `{id, estudianteId, gestionEscolarId, cursoId, paraleloId, fechaInscripcion, estado}`.
+  `EstudianteResponse`: `{id, rude, nombreCompleto, estado, datosPersonales}`. `InscripcionResponse`: `{id, estudianteId, gestionEscolarId, gestionNombre, cursoId, cursoNombre, paraleloId, paraleloNombre, fechaInscripcion, estado}` (nombres de lectura; no es un grafo de agregados).
 
 - **UI**:
   - Lista: caja `q` + `<select>` estado (`ACTIVO`/`INACTIVO`) + paginación. Cada fila enlaza al detalle.
@@ -238,3 +238,4 @@ flowchart LR
 |---------|-------|-------|--------|
 | v1.0 | 21/08/2026 | Rodrigo Aspeti | Creación del decimotercer Design Doc (`DD-UC-013`): *vertical slice* fullstack de `academico` (backend + UI en el mismo DD) para `FSD-UC-020`. Dos Aggregates independientes (`Estudiante`, `Inscripcion`); `rude` obligatorio único por tenant (`BR-004`); A1 `409 E_INSCRIPCION_DUPLICADA`; `GET /estudiantes/{id}` desde el día 1; RBAC `ADMIN`+`SECRETARIA`; delta GET de Gestiones Escolares para `SECRETARIA`; consola Angular lista/alta/detalle con inscripciones inline. Estado `aprobado`; ejecución de `PR-IMPL-013` pendiente. |
 | v1.1 | 21/08/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-013`**: DoD 100% (tests + `dtp-sync`). Estado `ejecutado`. `FSD-UC-020` completo backend+UI. `mvn test` 173/173; `ng build` verde. |
+| v1.2 | 27/09/2026 | Rodrigo Aspeti | DTOs de inscripción enriquecidos con `gestionNombre`/`cursoNombre`/`paraleloNombre` (etiquetas, sin anidar agregados). |

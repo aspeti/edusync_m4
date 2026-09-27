@@ -2,6 +2,7 @@ package com.edusync.shared.ai.infrastructure.adapter.out.ejecucion;
 
 import com.edusync.shared.ai.application.port.out.DescubridorHerramientasPort;
 import com.edusync.shared.ai.application.port.out.EjecutorHerramientaPort;
+import com.edusync.shared.ai.application.service.CatalogoHerramientasAgente;
 import com.edusync.shared.ai.domain.HerramientaLlm;
 import com.edusync.shared.ai.domain.LlamadaHerramienta;
 import tools.jackson.databind.ObjectMapper;
@@ -37,6 +38,7 @@ public class EjecutorHerramientaHttpAdapter implements EjecutorHerramientaPort {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final DescubridorHerramientasPort descubridorHerramientasPort;
+    private final CatalogoHerramientasAgente catalogoHerramientas;
 
     /**
      * Constructor de Spring. Crea su propio {@link RestClient.Builder} porque
@@ -46,8 +48,9 @@ public class EjecutorHerramientaHttpAdapter implements EjecutorHerramientaPort {
     public EjecutorHerramientaHttpAdapter(
             ObjectMapper objectMapper,
             DescubridorHerramientasPort descubridorHerramientasPort,
+            CatalogoHerramientasAgente catalogoHerramientas,
             @Value("${server.port:8080}") int puertoServidor) {
-        this(RestClient.builder(), objectMapper, descubridorHerramientasPort, puertoServidor);
+        this(RestClient.builder(), objectMapper, descubridorHerramientasPort, catalogoHerramientas, puertoServidor);
     }
 
     /** Visible para tests con {@code MockRestServiceServer.bindTo(builder)}. */
@@ -55,21 +58,23 @@ public class EjecutorHerramientaHttpAdapter implements EjecutorHerramientaPort {
             RestClient.Builder restClientBuilder,
             ObjectMapper objectMapper,
             DescubridorHerramientasPort descubridorHerramientasPort,
+            CatalogoHerramientasAgente catalogoHerramientas,
             int puertoServidor) {
         this.restClient = restClientBuilder.baseUrl("http://localhost:" + puertoServidor).build();
         this.objectMapper = objectMapper;
         this.descubridorHerramientasPort = descubridorHerramientasPort;
+        this.catalogoHerramientas = catalogoHerramientas;
     }
 
     @Override
     public String ejecutar(LlamadaHerramienta llamada, String jwtUsuario) {
         try {
-            HerramientaLlm herramienta = descubridorHerramientasPort.descubrir().stream()
-                    .filter(h -> h.nombre().equals(llamada.nombreHerramienta()))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Herramienta desaparecio del catalogo entre el descubrimiento y la ejecucion: "
-                                    + llamada.nombreHerramienta()));
+            if (escrituraSinConfirmar(llamada)) {
+                return objectMapper.writeValueAsString(Map.of(
+                        "confirmationRequired", true,
+                        "action", llamada.nombreHerramienta()));
+            }
+            HerramientaLlm herramienta = resolverHerramienta(llamada.nombreHerramienta());
 
             String pathResuelto = herramienta.path();
             Map<String, Object> argumentosRestantes = new HashMap<>(llamada.argumentos());
@@ -100,7 +105,10 @@ public class EjecutorHerramientaHttpAdapter implements EjecutorHerramientaPort {
                     .header("Authorization", "Bearer " + jwtUsuario);
 
             String resultado;
-            if ("POST".equalsIgnoreCase(herramienta.metodoHttp()) && !bodyParams.isEmpty()) {
+            if (("POST".equalsIgnoreCase(herramienta.metodoHttp())
+                    || "PATCH".equalsIgnoreCase(herramienta.metodoHttp())
+                    || "PUT".equalsIgnoreCase(herramienta.metodoHttp()))
+                    && !bodyParams.isEmpty()) {
                 resultado = request.body(bodyParams).retrieve().body(String.class);
             } else {
                 resultado = request.retrieve().body(String.class);
@@ -114,6 +122,27 @@ public class EjecutorHerramientaHttpAdapter implements EjecutorHerramientaPort {
                     llamada.nombreHerramienta(), e.getClass().getSimpleName());
             return errorJson(e);
         }
+    }
+
+    private boolean escrituraSinConfirmar(LlamadaHerramienta llamada) {
+        boolean escritura = catalogoHerramientas.porId(llamada.nombreHerramienta())
+                .map(com.edusync.shared.ai.domain.DefinicionHerramientaAgente::escritura)
+                .orElse(false);
+        if (!escritura) {
+            return false;
+        }
+        Object flag = llamada.argumentos().get("confirmed");
+        return !Boolean.TRUE.equals(flag) && !"true".equalsIgnoreCase(String.valueOf(flag));
+    }
+
+    private HerramientaLlm resolverHerramienta(String nombre) {
+        return catalogoHerramientas.aHerramientaLlm(nombre)
+                .or(() -> descubridorHerramientasPort.descubrir().stream()
+                        .filter(h -> h.nombre().equals(nombre))
+                        .findFirst())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Herramienta desaparecio del catalogo entre el descubrimiento y la ejecucion: "
+                                + nombre));
     }
 
     private String errorJson(Exception e) {

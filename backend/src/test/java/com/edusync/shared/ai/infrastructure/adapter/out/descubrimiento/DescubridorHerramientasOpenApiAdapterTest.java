@@ -13,16 +13,9 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
- * Test de regresion de seguridad OBLIGATORIO (ADR-0018 §4.2, PR-IMPL-023
- * failure mode E_TOOL_DE_ESCRITURA_DETECTADA): recorre el catalogo
- * descubierto contra un fixture de /v3/api-docs y verifica que ninguna
- * herramienta apunta a un prefijo excluido ni a un metodo de escritura
- * sin palabra de consulta explicita en el path.
- *
- * El fixture incluye deliberadamente: 1 GET de lectura valido bajo
- * /api/v1/**, 1 bajo /api/v1/auth/**, 1 bajo /api/v1/plataforma/**,
- * 1 bajo /api/v1/ai/**, y 1 PUT de escritura bajo /api/v1/**. Solo el
- * primero debe sobrevivir al filtro.
+ * Regresion de seguridad + allowlist academica (ADR-0018 / DD-UC-024):
+ * el catalogo cubre el sistema (cursos, estudiantes, gestiones, …), no
+ * solo usuarios, y excluye auth/plataforma/ai/escrituras/notas individuales.
  */
 class DescubridorHerramientasOpenApiAdapterTest {
 
@@ -32,33 +25,52 @@ class DescubridorHerramientasOpenApiAdapterTest {
     private static final String OPENAPI_FIXTURE = """
             {
               "paths": {
+                "/api/v1/estudiantes": {
+                  "get": {
+                    "operationId": "listarEstudiantes",
+                    "summary": "Listar",
+                    "parameters": [
+                      {"name": "q", "in": "query", "required": false, "schema": {"type": "string"}}
+                    ]
+                  },
+                  "post": {"operationId": "crearEstudiante", "summary": "Alta de estudiante"}
+                },
+                "/api/v1/cursos": {
+                  "get": {
+                    "operationId": "listarCursos",
+                    "summary": "Lista cursos"
+                  }
+                },
+                "/api/v1/evaluaciones/{id}/calificaciones": {
+                  "get": {
+                    "operationId": "listarCalificaciones",
+                    "summary": "Notas por estudiante"
+                  }
+                },
                 "/api/v1/notassie/alumnos/{id}/promedio": {
                   "get": {
                     "operationId": "consultarPromedioAlumno",
-                    "summary": "Consulta el promedio de un alumno",
-                    "parameters": [
-                      {"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}
-                    ]
+                    "summary": "Consulta el promedio de un alumno"
                   }
                 },
                 "/api/v1/auth/login": {
                   "post": {"operationId": "login", "summary": "Login"}
                 },
-                "/api/v1/plataforma/salud": {
-                  "get": {"operationId": "salud", "summary": "Healthcheck"}
+                "/api/v1/plataforma/tenants": {
+                  "get": {"operationId": "listarTenants", "summary": "Tenants"}
                 },
                 "/api/v1/ai/chat": {
                   "post": {"operationId": "chat", "summary": "Chat v0"}
                 },
-                "/api/v1/notassie/calificaciones": {
-                  "put": {"operationId": "actualizarCalificacion", "summary": "Actualiza una calificacion"}
+                "/api/v1/usuarios": {
+                  "put": {"operationId": "reemplazarUsuario", "summary": "Reemplaza un usuario"}
                 }
               }
             }
             """;
 
     @Test
-    void ningunaHerramientaDescubiertaViolaElFiltroDeSeguridad() {
+    void catalogoAllowlistCubreAcademicoYExcluyeRiesgos() {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo("http://localhost:8080/v3/api-docs"))
@@ -69,15 +81,23 @@ class DescubridorHerramientasOpenApiAdapterTest {
 
         List<HerramientaLlm> catalogo = adapter.descubrir();
 
-        // Solo la herramienta de lectura legitima debe sobrevivir.
-        assertThat(catalogo).hasSize(1);
-        assertThat(catalogo.get(0).nombre()).isEqualTo("consultarPromedioAlumno");
+        assertThat(catalogo).extracting(HerramientaLlm::nombre)
+                .containsExactlyInAnyOrder("listarEstudiantes", "listarCursos");
+
+        HerramientaLlm estudiantes = catalogo.stream()
+                .filter(h -> "listarEstudiantes".equals(h.nombre()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(estudiantes.descripcion()).containsIgnoringCase("estudiante");
+        assertThat(estudiantes.descripcion()).doesNotContain("solo usuarios");
 
         for (HerramientaLlm h : catalogo) {
             assertThat(h.path()).startsWith("/api/v1/");
             for (String prohibido : PREFIJOS_PROHIBIDOS) {
                 assertThat(h.path()).doesNotStartWith(prohibido);
             }
+            assertThat(h.path().toLowerCase()).doesNotContain("/calificaciones");
+            assertThat(DescubridorHerramientasOpenApiAdapter.estaEnAllowlist(h.path())).isTrue();
             if (!"GET".equalsIgnoreCase(h.metodoHttp())) {
                 assertThat(h.metodoHttp()).isEqualToIgnoringCase("POST");
                 assertThat(h.path().toLowerCase()).matches(".*(consultar|buscar|obtener|listar|search|query).*");

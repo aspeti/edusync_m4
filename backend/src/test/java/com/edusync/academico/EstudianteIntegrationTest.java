@@ -126,6 +126,9 @@ class EstudianteIntegrationTest {
         InscripcionResponse.class);
     assertThat(inscripcion2026.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     assertThat(inscripcion2026.getBody().estado()).isEqualTo("ACTIVA");
+    assertThat(inscripcion2026.getBody().cursoNombre()).isEqualTo("Primero de Primaria");
+    assertThat(inscripcion2026.getBody().paraleloNombre()).isEqualTo("A");
+    assertThat(inscripcion2026.getBody().gestionNombre()).isEqualTo("2026");
 
     ResponseEntity<ErrorResponse> duplicada = restTemplate.exchange(
         "/api/v1/inscripciones",
@@ -153,6 +156,12 @@ class EstudianteIntegrationTest {
         new ParameterizedTypeReference<List<InscripcionResponse>>() {});
     assertThat(historial.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(historial.getBody()).hasSize(2);
+    assertThat(historial.getBody())
+        .extracting(InscripcionResponse::cursoNombre)
+        .containsOnly("Primero de Primaria");
+    assertThat(historial.getBody())
+        .extracting(InscripcionResponse::paraleloNombre)
+        .containsOnly("A");
 
     ResponseEntity<ErrorResponse> crossTenant = restTemplate.exchange(
         "/api/v1/estudiantes/" + estudianteId,

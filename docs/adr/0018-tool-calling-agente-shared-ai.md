@@ -10,7 +10,7 @@
 | Título | Adopción de un agente de tool calling multipaso (ReAct) dentro del backend, apoyado en Spring AI (`ToolCallback`), detrás de un puerto de aplicación nuevo que convive con `LlmPort` |
 | Fecha | 13/09/2026 |
 | Autor(es) | Rodrigo Aspeti |
-| Estado | **Propuesta** — pendiente de aprobación humana explícita antes de ejecutar `PR-IMPL-023` |
+| Estado | **Aceptada** |
 | Alcance | Backend, paquete `com.edusync.shared.ai` (dominio, aplicación e infraestructura nuevos; no reabre `LlmPort`/`ChatConLlmService` existentes). No entra a `academico`/`identidad`/`notassie` más allá de consumir sus endpoints REST ya públicos. No toca el baseline congelado (`docs/baseline/`, tag `release/2.0.0`). No supersede a ningún ADR anterior. |
 | Stakeholders consultados | Rodrigo Aspeti (Dev Lead / PM, único integrante de G-EduSync) |
 | ADR relacionado | `ADR-0011` (`shared` OPEN, límites de Spring Modulith); `ADR-0017` (Spring AI ya adoptado detrás de `LlmPort`, primer consumidor de esta decisión). Consume el agente de referencia externo `EduSync_LLM/edusync-agente-llm` (Python) y los laboratorios `Lab3`/`Lab5` del Módulo 7. Habilita `DD-UC-023` / `PR-IMPL-023`. |
@@ -52,7 +52,8 @@ Criterio decisivo: el mismo que ya usó `ADR-0017` — el hexágono aísla al pr
 - **Modelo fijado para el camino agente**: nueva propiedad `edusync.ai.agente.model` (default `llama3.1:8b`, tag explícito, nunca `latest`), independiente de `edusync.ai.ollama.model`/`edusync.ai.open-webui.model` (que siguen en `latest` — `ADR-0017` los dejó fuera de su alcance; este ADR no los toca, solo fija el modelo del camino nuevo). Un agente que decide qué acción tomar no puede depender de un peso de modelo que cambia sin aviso.
 - **Alcance de herramientas expuestas**: idéntico al de `edusync-agente-llm` — bajo `/api/v1/**`, excluyendo `/api/v1/auth/**`, `/api/v1/plataforma/**`, `/api/v1/ai/**`; solo `GET`, o `POST` cuyo path contenga una palabra de consulta explícita (`consultar`, `buscar`, `obtener`, `listar`). **Ninguna escritura** se expone como herramienta sin un ADR de seguimiento dedicado — esto es lo que impide hoy que el modelo dispare un `PUT /calificaciones` por su cuenta.
 - **Contrato nuevo, no se toca el v0**: `POST /api/v1/ai/agente` (JWT obligatorio), devuelve `respuesta` + `herramientasUsadas` + `turnos` + `camino` + `fuente`, igual forma que ya reporta Python. `POST /api/v1/ai/chat` y `POST /api/v1/ai/consultar-usuario` no cambian.
-- **Fuera de alcance de este ADR** (deuda técnica declarada, no olvido): camino `KEYWORD` y resolutores compuestos de Python (optimización de costo/latencia, se puede portar después sin romper nada de lo decidido aquí); servidor/cliente MCP (Spring AI trae starters de MCP que `PR-IMPL-022` evitó a propósito; se revisita en un ADR propio si hace falta paridad con `MCP_HABILITADO` de Python); cualquier herramienta de escritura.
+- **Fuera de alcance de este ADR** (deuda técnica declarada, no olvido): camino `KEYWORD` y resolutores compuestos de Python; servidor/cliente MCP; cualquier herramienta de escritura.
+- **Cierre parcial posterior:** `ADR-0019` / `DD-UC-025` portan KEYWORD, formatter, catálogo tipado, escrituras con confirmación y Open WebUI para el agente. **No supersede** este ADR: loopback HTTP + JWT del usuario + bucle ReAct controlado siguen vigentes. RAG y MCP siguen fuera.
 
 ### 4. Consecuencias
 
@@ -110,3 +111,5 @@ Criterio decisivo: el mismo que ya usó `ADR-0017` — el hexágono aísla al pr
 | Versión | Fecha | Autor | Cambio |
 |---------|-------|-------|--------|
 | 1 | 13/09/2026 | Rodrigo Aspeti | Propuesta inicial: tool calling multipaso sobre Spring AI (Alternativa C), puerto nuevo sin tocar `LlmPort`, propagación de JWT de usuario en vez de cuenta técnica, modelo del agente fijado por versión. Pendiente de aprobación humana antes de habilitar `PR-IMPL-023`. |
+| 2 | 26/09/2026 | Rodrigo Aspeti | Estado **Aceptada**. `DD-UC-024` curó el descubridor (allowlist académica + enrichment) y añadió la consola Angular: el asistente consulta el **sistema**, no solo usuarios. |
+| 3 | 26/09/2026 | Rodrigo Aspeti | Nota: deuda KEYWORD/writes del §3 se aborda en `ADR-0019` (este ADR no se supersede). |

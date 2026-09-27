@@ -19,12 +19,12 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Descubre el catalogo de herramientas leyendo GET /v3/api-docs del
- * propio backend (springdoc-openapi ya expuesto, ver pom.xml). Aplica
- * EXACTAMENTE el mismo filtro que DescubridorTools en
- * edusync-agente-llm (Python): ver ADR-0018 seccion 3. El resultado se
- * cachea en memoria (el catalogo no cambia sin redeploy), igual que el
- * agente Python.
+ * Descubre el catalogo de herramientas leyendo GET /v3/api-docs.
+ *
+ * <p>Estrategia hibrida (DD-UC-024): OpenAPI dinamico + <strong>allowlist</strong>
+ * de prefijos academicos/identidad (el sistema en general, no solo usuarios)
+ * + enrichment de descripciones para el LLM. Sigue excluyendo auth/plataforma/ai,
+ * escrituras y paths de calificaciones individuales (NFR-007).
  */
 @Component
 public class DescubridorHerramientasOpenApiAdapter implements DescubridorHerramientasPort {
@@ -34,6 +34,22 @@ public class DescubridorHerramientasOpenApiAdapter implements DescubridorHerrami
     private static final String PREFIJO_PERMITIDO = "/api/v1/";
     private static final Set<String> PREFIJOS_EXCLUIDOS = Set.of(
             "/api/v1/auth/", "/api/v1/plataforma/", "/api/v1/ai/");
+    /**
+     * Dominio consultable por el asistente: academico + usuarios del tenant.
+     * Fuera: notassie, plataforma, auth, ai, y cualquier GET no listado.
+     */
+    static final List<String> PREFIJOS_ALLOWLIST = List.of(
+            "/api/v1/gestiones-escolares",
+            "/api/v1/cursos",
+            "/api/v1/materias",
+            "/api/v1/estudiantes",
+            "/api/v1/profesores",
+            "/api/v1/evaluaciones",
+            "/api/v1/usuarios",
+            "/api/v1/periodos-evaluacion",
+            "/api/v1/secciones-evaluacion");
+    private static final Set<String> FRAGMENTOS_PII_PROHIBIDOS = Set.of(
+            "/calificaciones", "/nota-provisional");
     private static final Set<String> PALABRAS_CLAVE_POST_SEGURO = Set.of(
             "consultar", "buscar", "obtener", "listar", "search", "query");
 
@@ -41,10 +57,6 @@ public class DescubridorHerramientasOpenApiAdapter implements DescubridorHerrami
     private final String openApiPath;
     private final AtomicReference<List<HerramientaLlm>> cache = new AtomicReference<>();
 
-    /**
-     * Constructor de Spring. No inyecta {@link RestClient.Builder}: AiConfig
-     * deliberadamente no registra uno global (evitaria pisar otros clientes HTTP).
-     */
     @Autowired
     public DescubridorHerramientasOpenApiAdapter(
             @Value("${server.port:8080}") int puertoServidor,
@@ -52,7 +64,6 @@ public class DescubridorHerramientasOpenApiAdapter implements DescubridorHerrami
         this(RestClient.builder(), puertoServidor, openApiPath);
     }
 
-    /** Visible para tests con {@code MockRestServiceServer.bindTo(builder)}. */
     DescubridorHerramientasOpenApiAdapter(
             RestClient.Builder restClientBuilder, int puertoServidor, String openApiPath) {
         this.restClient = restClientBuilder.baseUrl("http://localhost:" + puertoServidor).build();
@@ -101,14 +112,7 @@ public class DescubridorHerramientasOpenApiAdapter implements DescubridorHerrami
         return herramientas;
     }
 
-    /**
-     * Replica exacta de _es_endpoint_permitido
-     * (EduSync_LLM/edusync-agente-llm/agente/descubridor_tools.py):
-     * prefijo /api/v1/**, excluye auth/plataforma/ai, solo GET o POST
-     * de consulta explicita. Cubierta por el test de regresion de
-     * seguridad obligatorio (DescubridorHerramientasOpenApiAdapterTest).
-     */
-    private boolean esEndpointPermitido(String path, String metodoHttp) {
+    boolean esEndpointPermitido(String path, String metodoHttp) {
         if (!path.startsWith(PREFIJO_PERMITIDO)) {
             return false;
         }
@@ -117,36 +121,51 @@ public class DescubridorHerramientasOpenApiAdapter implements DescubridorHerrami
                 return false;
             }
         }
+        if (!estaEnAllowlist(path)) {
+            return false;
+        }
+        String pathMinuscula = path.toLowerCase();
+        for (String fragmento : FRAGMENTOS_PII_PROHIBIDOS) {
+            if (pathMinuscula.contains(fragmento)) {
+                return false;
+            }
+        }
         if ("GET".equals(metodoHttp)) {
             return true;
         }
         if ("POST".equals(metodoHttp)) {
-            String pathMinuscula = path.toLowerCase();
             return PALABRAS_CLAVE_POST_SEGURO.stream().anyMatch(pathMinuscula::contains);
         }
-        return false; // PUT/PATCH/DELETE nunca son herramientas del agente.
+        return false;
+    }
+
+    static boolean estaEnAllowlist(String path) {
+        for (String prefijo : PREFIJOS_ALLOWLIST) {
+            if (path.equals(prefijo) || path.startsWith(prefijo + "/")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private HerramientaLlm aHerramienta(String path, String metodoHttp, JsonNode operacion) {
         String nombre = operacion.hasNonNull("operationId")
                 ? operacion.get("operationId").asString()
                 : (metodoHttp + "_" + path).replaceAll("[^a-zA-Z0-9]+", "_");
-        String descripcion = operacion.hasNonNull("summary")
+        String summary = operacion.hasNonNull("summary")
                 ? operacion.get("summary").asString()
-                : operacion.path("description").asString("Herramienta " + nombre);
+                : operacion.path("description").asString("");
+        String descripcion = DescripcionHerramientaAgente.enriquecer(path, metodoHttp, summary, nombre);
 
         List<ParametroHerramienta> parametros = new ArrayList<>();
         for (JsonNode p : operacion.path("parameters")) {
             String pNombre = p.path("name").asString();
-            String pUbicacion = p.path("in").asString("query"); // path|query
+            String pUbicacion = p.path("in").asString("query");
             String pTipo = p.path("schema").path("type").asString("string");
             boolean requerido = p.path("required").asBoolean(false);
             Ubicacion ubicacion = "path".equals(pUbicacion) ? Ubicacion.PATH : Ubicacion.QUERY;
             parametros.add(new ParametroHerramienta(pNombre, pTipo, requerido, ubicacion));
         }
-        // Cuerpo de request (POST de consulta): se declara como un unico
-        // parametro BODY generico; el detalle de mapeo lo hace
-        // EjecutorHerramientaHttpAdapter.
         if (operacion.has("requestBody")) {
             parametros.add(new ParametroHerramienta("body", "object", false, Ubicacion.BODY));
         }

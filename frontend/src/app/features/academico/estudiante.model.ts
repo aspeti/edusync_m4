@@ -12,8 +12,11 @@ export interface InscripcionResponse {
   id: string;
   estudianteId: string;
   gestionEscolarId: string;
+  gestionNombre?: string | null;
   cursoId: string;
+  cursoNombre?: string | null;
   paraleloId: string;
+  paraleloNombre?: string | null;
   fechaInscripcion: string;
   estado: 'ACTIVA' | 'RETIRADA' | 'TRANSFERIDA';
 }

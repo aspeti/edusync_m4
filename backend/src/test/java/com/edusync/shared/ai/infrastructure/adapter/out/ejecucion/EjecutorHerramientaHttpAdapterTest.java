@@ -1,6 +1,7 @@
 package com.edusync.shared.ai.infrastructure.adapter.out.ejecucion;
 
 import com.edusync.shared.ai.application.port.out.DescubridorHerramientasPort;
+import com.edusync.shared.ai.application.service.CatalogoHerramientasAgente;
 import com.edusync.shared.ai.domain.HerramientaLlm;
 import com.edusync.shared.ai.domain.LlamadaHerramienta;
 import com.edusync.shared.ai.domain.ParametroHerramienta;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -39,7 +41,7 @@ class EjecutorHerramientaHttpAdapterTest {
         when(descubridor.descubrir()).thenReturn(List.of(HERRAMIENTA));
 
         EjecutorHerramientaHttpAdapter adapter = new EjecutorHerramientaHttpAdapter(
-                builder, new ObjectMapper(), descubridor, 8080);
+                builder, new ObjectMapper(), descubridor, new CatalogoHerramientasAgente(), 8080);
 
         String resultado = adapter.ejecutar(
                 new LlamadaHerramienta("tc1", "obtenerNotasAlumno", Map.of("id", "42")),
@@ -60,12 +62,52 @@ class EjecutorHerramientaHttpAdapterTest {
         when(descubridor.descubrir()).thenReturn(List.of(HERRAMIENTA));
 
         EjecutorHerramientaHttpAdapter adapter = new EjecutorHerramientaHttpAdapter(
-                builder, new ObjectMapper(), descubridor, 8080);
+                builder, new ObjectMapper(), descubridor, new CatalogoHerramientasAgente(), 8080);
 
         String resultado = adapter.ejecutar(
                 new LlamadaHerramienta("tc1", "obtenerNotasAlumno", Map.of("id", "99")),
                 "jwt-del-usuario-real");
 
         assertThat(resultado).contains("error");
+    }
+
+    @Test
+    void resuelveToolIdDelCatalogoSinOpenApi() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        server.expect(requestTo("http://localhost:8080/api/v1/cursos"))
+                .andExpect(header("Authorization", "Bearer jwt-keyword"))
+                .andRespond(withSuccess("{\"content\":[],\"totalElements\":0}", MediaType.APPLICATION_JSON));
+
+        DescubridorHerramientasPort descubridor = mock(DescubridorHerramientasPort.class);
+
+        EjecutorHerramientaHttpAdapter adapter = new EjecutorHerramientaHttpAdapter(
+                builder, new ObjectMapper(), descubridor, new CatalogoHerramientasAgente(), 8080);
+
+        String resultado = adapter.ejecutar(
+                new LlamadaHerramienta("keyword", "list_cursos", Map.of()),
+                "jwt-keyword");
+
+        assertThat(resultado).contains("totalElements");
+        server.verify();
+        verifyNoInteractions(descubridor);
+    }
+
+    @Test
+    void writeSinConfirmedNoHaceHttp() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        DescubridorHerramientasPort descubridor = mock(DescubridorHerramientasPort.class);
+
+        EjecutorHerramientaHttpAdapter adapter = new EjecutorHerramientaHttpAdapter(
+                builder, new ObjectMapper(), descubridor, new CatalogoHerramientasAgente(), 8080);
+
+        String resultado = adapter.ejecutar(
+                new LlamadaHerramienta("keyword", "create_curso", Map.of("nombre", "1ro A")),
+                "jwt-keyword");
+
+        assertThat(resultado).contains("confirmationRequired");
+        server.verify();
+        verifyNoInteractions(descubridor);
     }
 }

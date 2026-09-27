@@ -62,8 +62,8 @@ import { AuthService } from '../../core/auth/auth.service';
               <tbody>
                 @for (asig of asignacionesCurso(); track asig.id) {
                   <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 0.5rem;">{{ nombreCurso(asig.cursoId) }}</td>
-                    <td style="padding: 0.5rem;">{{ nombreParaleloAsignado(asig) }}</td>
+                    <td style="padding: 0.5rem;">{{ asig.cursoNombre || nombreCurso(asig.cursoId) }}</td>
+                    <td style="padding: 0.5rem;">{{ asig.paraleloNombre || nombreParaleloAsignado(asig) }}</td>
                   </tr>
                 }
               </tbody>
@@ -115,8 +115,8 @@ import { AuthService } from '../../core/auth/auth.service';
                 @for (asig of asignacionesProfesor(); track asig.id) {
                   <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding: 0.5rem;">{{ nombreProfesor(asig.profesorId) }}</td>
-                    <td style="padding: 0.5rem;">{{ nombreCurso(asig.cursoId) }}</td>
-                    <td style="padding: 0.5rem;">{{ nombreParaleloAsignado(asig) }}</td>
+                    <td style="padding: 0.5rem;">{{ asig.cursoNombre || nombreCurso(asig.cursoId) }}</td>
+                    <td style="padding: 0.5rem;">{{ asig.paraleloNombre || nombreParaleloAsignado(asig) }}</td>
                   </tr>
                 }
               </tbody>
@@ -143,7 +143,7 @@ import { AuthService } from '../../core/auth/auth.service';
                   <select [(ngModel)]="asignacionCursoSeleccionadaId" name="asignacionCursoSeleccionadaId" required style="padding: 0.4rem; min-width: 200px;">
                     <option value="">Seleccione...</option>
                     @for (asig of asignacionesCurso(); track asig.id) {
-                      <option [value]="asig.id">{{ nombreCurso(asig.cursoId) }} — {{ nombreParaleloAsignado(asig) }}</option>
+                      <option [value]="asig.id">{{ asig.cursoNombre || nombreCurso(asig.cursoId) }} — {{ asig.paraleloNombre || nombreParaleloAsignado(asig) }}</option>
                     }
                   </select>
                 </label>
@@ -194,8 +194,8 @@ export class MateriaDetallePage implements OnInit {
     return this.cursos().find((c) => c.id === cursoId)?.nombre ?? cursoId;
   }
 
-  nombreParaleloAsignado(asig: { paraleloId: string }): string {
-    return this.paralelosPorId()[asig.paraleloId]?.nombre ?? asig.paraleloId;
+  nombreParaleloAsignado(asig: { paraleloId: string; paraleloNombre?: string | null }): string {
+    return asig.paraleloNombre || this.paralelosPorId()[asig.paraleloId]?.nombre || asig.paraleloId;
   }
 
   nombreProfesor(profesorId: string): string {
@@ -274,10 +274,7 @@ export class MateriaDetallePage implements OnInit {
     this.http
       .get<AsignacionCursoResponse[]>(`${ApiBase.BASE}/materias/${this.materiaId}/asignaciones-curso`)
       .subscribe({
-        next: (lista) => {
-          this.asignacionesCurso.set(lista);
-          this.cargarParalelosDeAsignaciones(lista);
-        },
+        next: (lista) => this.asignacionesCurso.set(lista),
       });
     this.http
       .get<AsignacionProfesorResponse[]>(`${ApiBase.BASE}/materias/${this.materiaId}/asignaciones-profesor`)
@@ -292,15 +289,6 @@ export class MateriaDetallePage implements OnInit {
     this.http.get<ProfesorResumenResponse[]>(`${ApiBase.BASE}/materias/profesores-disponibles`).subscribe({
       next: (lista) => this.profesores.set(lista),
     });
-  }
-
-  private cargarParalelosDeAsignaciones(asignaciones: AsignacionCursoResponse[]): void {
-    const cursoIds = [...new Set(asignaciones.map((a) => a.cursoId))];
-    for (const cursoId of cursoIds) {
-      this.http.get<ParaleloResponse[]>(`${ApiBase.BASE}/cursos/${cursoId}/paralelos`).subscribe({
-        next: (paralelos) => this.registrarParalelos(paralelos),
-      });
-    }
   }
 
   private registrarParalelos(paralelos: ParaleloResponse[]): void {

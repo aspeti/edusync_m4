@@ -2,9 +2,10 @@
 name: ollama-edusync
 description: >
   Integra o extiende el consumo de LLM (Ollama o Open WebUI) en EduSync vía
-  POST /api/v1/ai/chat y adaptadores hexagonales en shared.ai. Activar cuando el
-  usuario pide "conecta Ollama", "Open WebUI", "endpoint de chat LLM",
-  "diagnostica E_LLM_NO_DISPONIBLE", o pide al ollama-agent trabajar sobre el spike LLM.
+  POST /api/v1/ai/chat, POST /api/v1/ai/agente (tool calling) y adaptadores
+  hexagonales en shared.ai. Activar cuando el usuario pide "conecta Ollama",
+  "Open WebUI", "asistente IA", "tool calling", "diagnostica E_LLM_NO_DISPONIBLE",
+  o pide al ollama-agent trabajar sobre el spike LLM.
 disable-model-invocation: false
 ---
 
@@ -12,9 +13,9 @@ disable-model-invocation: false
 
 ## 1. Cuándo activarlo
 
-- Conectar / reparar / extender `POST /api/v1/ai/chat` (Ollama o Open WebUI).
-- Diagnosticar `E_LLM_NO_DISPONIBLE` / `E_AI_DESHABILITADO` / API key faltante.
-- Añadir UI mínima de chat (solo si se pide explícitamente).
+- Conectar / reparar / extender `POST /api/v1/ai/chat` o `POST /api/v1/ai/agente`.
+- Diagnosticar `E_LLM_NO_DISPONIBLE` / `E_AI_DESHABILITADO` / `E_LIMITE_TURNOS`.
+- UI del asistente (`/asistente`) o el descubridor OpenAPI (allowlist).
 
 **NO activar** para agentes del AI-SDLC (dev/docs/qa); eso no es runtime LLM.
 
@@ -39,12 +40,32 @@ Authorization: Bearer <JWT EduSync>
 → 503 { "codigo": "E_AI_DESHABILITADO", ... }
 ```
 
+### Contrato v1 — asistente (tool calling, `ADR-0018`)
+
+```http
+POST /api/v1/ai/agente
+Authorization: Bearer <JWT EduSync>
+{ "pregunta": "..." }
+
+→ 200 { "respuesta", "herramientasUsadas", "turnos", "camino", "fuente" }
+→ 429 { "codigo": "E_LIMITE_TURNOS", ... }
+→ 502 { "codigo": "E_LLM_NO_DISPONIBLE" | "E_HERRAMIENTA_NO_DISPONIBLE", ... }
+→ 503 { "codigo": "E_AI_DESHABILITADO", ... }
+```
+
+El catálogo de tools se descubre desde `/v3/api-docs` con **allowlist** académica
+(gestiones, cursos, materias, estudiantes, profesores, evaluaciones metadatos,
+usuarios, periodos, secciones). Excluye auth/plataforma/ai y calificaciones
+individuales. Spring AI vive solo en `infrastructure` (`AgenteLlmAdapter`).
+El modelo del agente es `edusync.ai.agente.model` (default `llama3.1:8b`).
+`POST /api/v1/ai/consultar-usuario` es spike legado, no es la UI de producto.
+
 ### Proveedores (`edusync.ai.provider`)
 
 | Valor | Adaptador | Upstream | Auth upstream |
 |-------|-----------|----------|---------------|
-| `ollama` (default) | `OllamaLlmAdapter` | `POST {base}/api/generate` | ninguna |
-| `open-webui` | `OpenWebUiLlmAdapter` | `POST {base}/api/chat/completions` | `Bearer ${OPEN_WEBUI_API_KEY}` |
+| `ollama` (default) | `OllamaLlmAdapter` | Spring AI `ChatClient` → Ollama local | ninguna |
+| `open-webui` | `OpenWebUiLlmAdapter` | Spring AI (protocolo compatible OpenAI) | `Bearer ${OPEN_WEBUI_API_KEY}` |
 
 ## 4. Secretos (obligatorio)
 
@@ -73,7 +94,7 @@ cd backend; mvn spring-boot:run
 
 ## 6. Invariantes
 
-- Auth JWT EduSync obligatoria en `/api/v1/ai/chat`.
+- Auth JWT EduSync obligatoria en `/api/v1/ai/chat` y `/api/v1/ai/agente`.
 - Sin log de prompt/respuesta completa ni de API keys.
 - Sin hardcode de URL/modelo/secretos.
 - Nuevo proveedor distinto → ADR + aprobación humana.

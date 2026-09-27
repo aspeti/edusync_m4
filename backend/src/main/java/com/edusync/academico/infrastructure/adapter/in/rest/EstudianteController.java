@@ -6,6 +6,7 @@ import com.edusync.academico.application.port.in.EstudianteFiltro;
 import com.edusync.academico.application.port.in.ListarEstudiantesUseCase;
 import com.edusync.academico.application.port.in.ListarInscripcionesEstudianteUseCase;
 import com.edusync.academico.application.port.in.ObtenerEstudianteUseCase;
+import com.edusync.academico.application.service.EtiquetasAcademicas;
 import com.edusync.academico.domain.Estudiante;
 import com.edusync.academico.domain.Inscripcion;
 import com.edusync.shared.PageQuery;
@@ -49,6 +50,7 @@ public class EstudianteController {
   private final ListarEstudiantesUseCase listarEstudiantesUseCase;
   private final ObtenerEstudianteUseCase obtenerEstudianteUseCase;
   private final ListarInscripcionesEstudianteUseCase listarInscripcionesEstudianteUseCase;
+  private final EtiquetasAcademicas etiquetasAcademicas;
   private final TenantContextProvider tenantContextProvider;
 
   @PostMapping
@@ -119,12 +121,16 @@ public class EstudianteController {
   }
 
   private InscripcionResponse aResponse(Inscripcion inscripcion) {
+    UUID tenantId = inscripcion.getTenantId();
     return new InscripcionResponse(
         inscripcion.getId().valor(),
         inscripcion.getEstudianteId().valor(),
         inscripcion.getGestionEscolarId().valor(),
+        etiquetasAcademicas.nombreGestion(tenantId, inscripcion.getGestionEscolarId().valor()),
         inscripcion.getCursoId().valor(),
+        etiquetasAcademicas.nombreCurso(tenantId, inscripcion.getCursoId().valor()),
         inscripcion.getParaleloId().valor(),
+        etiquetasAcademicas.nombreParalelo(tenantId, inscripcion.getParaleloId().valor()),
         inscripcion.getFechaInscripcion(),
         inscripcion.getEstado().name());
   }

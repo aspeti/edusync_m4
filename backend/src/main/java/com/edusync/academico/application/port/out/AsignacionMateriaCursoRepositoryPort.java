@@ -17,6 +17,9 @@ public interface AsignacionMateriaCursoRepositoryPort {
 
   List<AsignacionMateriaCurso> listarPorMateriaYTenant(MateriaId materiaId, UUID tenantId);
 
+  List<AsignacionMateriaCurso> listarPorCursoParaleloYTenant(
+      CursoId cursoId, ParaleloId paraleloId, UUID tenantId);
+
   boolean existePorMateriaCursoParaleloYTenant(
       MateriaId materiaId, CursoId cursoId, ParaleloId paraleloId, UUID tenantId);
 }

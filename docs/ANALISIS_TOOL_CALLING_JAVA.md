@@ -1,5 +1,7 @@
 # Análisis — Tool calling con agente en Java para EduSync
 
+> **Estado 26/09/2026:** este análisis (v2, 13/09/2026) quedó **parcialmente obsoleto**. El backend de tool calling vive en `shared.ai` (`DD-UC-023` / `PR-IMPL-023` / `ADR-0018`) y la consola Angular en `DD-UC-024` / `PR-IMPL-024`. El descubridor OpenAPI se **curó** con allowlist académica (consultas del sistema, no solo usuarios). Conservar este archivo como contexto histórico de la decisión; la fuente de verdad de diseño es `docs/design/DD-UC-023.md` + `docs/design/DD-UC-024.md`.
+
 **Revisión de los laboratorios de Python (Módulo 7), del proyecto `edusync-agente-llm`, y del backend Java tras la adopción de Spring AI (`ADR-0017`) — cambios necesarios antes de implementar tool calling**
 
 | Campo | Valor |

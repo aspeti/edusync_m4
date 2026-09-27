@@ -133,6 +133,8 @@ frontend/src/app/
   | `POST` | `/materias/{id}/asignaciones-profesor` `{profesorId, cursoId, paraleloId}` | `201 AsignacionProfesorResponse` | `404` materia/curso/paralelo/profesor; **`409 E_MATERIA_SIN_CURSO`** |
   | `GET` | `/materias/{id}/asignaciones-profesor` | `200 List<AsignacionProfesorResponse>` | `404` materia |
 
+  `AsignacionCursoResponse` / `AsignacionProfesorResponse` incluyen `cursoNombre` y `paraleloNombre` (etiquetas de lectura; no anidan el agregado `Curso`/`Paralelo`).
+
 - **UI**:
   - Lista: caja `q` + paginación (`PageResponse<T>`), sin `<select>` de estado (`Materia` no tiene estado). Cada fila enlaza al detalle.
   - Alta: formulario `nombre` → `POST /materias` → navega a la lista o al detalle.
@@ -247,3 +249,4 @@ flowchart LR
 |---------|-------|-------|--------|
 | v1.0 | 21/08/2026 | Rodrigo Aspeti | Creación del duodécimo Design Doc (`DD-UC-012`): primer *vertical slice* fullstack de `academico` (backend + UI en el mismo DD) para `FSD-UC-018`. Tres Aggregates independientes (`Materia`, `AsignacionMateriaCurso`, `AsignacionMateriaProfesor`); `ProfesorConsultaPort` en `academico` implementado por `identidad`; A1 `409 E_MATERIA_SIN_CURSO`; `GET /materias/{id}` desde el día 1; RBAC `ADMIN`+`SECRETARIA`; consola Angular lista/alta/detalle con asignaciones inline. Estado `aprobado`; ejecución de `PR-IMPL-012` pendiente. |
 | v1.1 | 21/08/2026 | Rodrigo Aspeti | Ejecución real de `PR-IMPL-012`: backend (`Materia` + asignaciones, `ProfesorConsultaPort`/`ProfesorConsultaPortImpl`, `V7__academico_materia.sql`, delta GET Cursos para `SECRETARIA`) y UI (`materias-list`/`materia-create`/`materia-detalle`, `roleGuard` `data.roles`). `mvn test` 154/154 (incluye `ModularityTests` 7/7); `ng build` verde (3 lazy chunks: `materias-list-page`, `materia-create-page`, `materia-detalle-page`). `FSD-UC-018` cierra implementación **completa** (backend + UI) — cuarto `FSD-UC` en cerrar ambas capas. Estado `ejecutado`, DoD 100%. |
+| v1.2 | 27/09/2026 | Rodrigo Aspeti | DTOs de asignación enriquecidos con `cursoNombre`/`paraleloNombre` (etiquetas, sin anidar agregados). |

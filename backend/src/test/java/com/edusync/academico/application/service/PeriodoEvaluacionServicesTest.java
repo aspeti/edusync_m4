@@ -8,7 +8,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.edusync.academico.application.port.in.CrearPeriodoEvaluacionCommand;
+import com.edusync.academico.application.port.out.AsignacionMateriaCursoRepositoryPort;
+import com.edusync.academico.application.port.out.AsignacionMateriaProfesorRepositoryPort;
 import com.edusync.academico.application.port.out.GestionEscolarRepositoryPort;
+import com.edusync.academico.application.port.out.ParametroPeriodoRepositoryPort;
 import com.edusync.academico.application.port.out.PeriodoEvaluacionRepositoryPort;
 import com.edusync.academico.application.port.out.SeccionEvaluacionRepositoryPort;
 import com.edusync.academico.domain.EstadoPeriodoEvaluacion;
@@ -32,6 +35,8 @@ class PeriodoEvaluacionServicesTest {
   private GestionEscolarRepositoryPort gestionPort;
   private PeriodoEvaluacionRepositoryPort periodoPort;
   private SeccionEvaluacionRepositoryPort seccionPort;
+  private ParametroPeriodoRepositoryPort parametroPort;
+  private AsignacionMateriaCursoRepositoryPort cursoPort;
   private CrearPeriodoEvaluacionService crearService;
   private CambiarEstadoPeriodoEvaluacionService cambiarEstadoService;
   private EliminarPeriodoEvaluacionService eliminarService;
@@ -44,8 +49,15 @@ class PeriodoEvaluacionServicesTest {
     gestionPort = mock(GestionEscolarRepositoryPort.class);
     periodoPort = mock(PeriodoEvaluacionRepositoryPort.class);
     seccionPort = mock(SeccionEvaluacionRepositoryPort.class);
+    parametroPort = mock(ParametroPeriodoRepositoryPort.class);
+    cursoPort = mock(AsignacionMateriaCursoRepositoryPort.class);
     crearService = new CrearPeriodoEvaluacionService(gestionPort, periodoPort);
-    cambiarEstadoService = new CambiarEstadoPeriodoEvaluacionService(periodoPort, seccionPort);
+    cambiarEstadoService = new CambiarEstadoPeriodoEvaluacionService(
+        periodoPort,
+        seccionPort,
+        parametroPort,
+        cursoPort,
+        mock(AsignacionMateriaProfesorRepositoryPort.class));
     eliminarService = new EliminarPeriodoEvaluacionService(periodoPort);
   }
 
@@ -96,7 +108,7 @@ class PeriodoEvaluacionServicesTest {
     PeriodoEvaluacion t1 = periodo("T1", LocalDate.of(2027, 2, 1), LocalDate.of(2027, 5, 31), 1, EstadoPeriodoEvaluacion.ABIERTO);
     PeriodoEvaluacion t2 = periodo("T2", LocalDate.of(2027, 6, 1), LocalDate.of(2027, 8, 31), 2, EstadoPeriodoEvaluacion.PENDIENTE);
     when(periodoPort.buscarPorIdYTenant(t2.getId(), tenantId)).thenReturn(Optional.of(t2));
-    when(seccionPort.listarPorGestionYTenant(t2.getGestionEscolarId(), tenantId)).thenReturn(seccionesValidas());
+    stubApertura(t2);
     when(periodoPort.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
 
     PeriodoEvaluacion actualizado =
@@ -110,7 +122,7 @@ class PeriodoEvaluacionServicesTest {
     PeriodoEvaluacion t1 = periodo("T1", LocalDate.of(2027, 2, 1), LocalDate.of(2027, 5, 31), 1, EstadoPeriodoEvaluacion.CERRADO);
     PeriodoEvaluacion t2 = periodo("T2", LocalDate.of(2027, 6, 1), LocalDate.of(2027, 8, 31), 2, EstadoPeriodoEvaluacion.PENDIENTE);
     when(periodoPort.buscarPorIdYTenant(t2.getId(), tenantId)).thenReturn(Optional.of(t2));
-    when(seccionPort.listarPorGestionYTenant(t2.getGestionEscolarId(), tenantId)).thenReturn(seccionesValidas());
+    stubApertura(t2);
     when(periodoPort.listarPorGestionYTenant(t2.getGestionEscolarId(), tenantId)).thenReturn(List.of(t1, t2));
     when(periodoPort.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -149,6 +161,22 @@ class PeriodoEvaluacionServicesTest {
       String nombre, LocalDate inicio, LocalDate fin, int orden, EstadoPeriodoEvaluacion estado) {
     return PeriodoEvaluacion.reconstruir(
         PeriodoEvaluacionId.nueva(), tenantId, gestionId, nombre, inicio, fin, orden, estado);
+  }
+
+  private void stubApertura(PeriodoEvaluacion periodo) {
+    List<com.edusync.academico.domain.SeccionEvaluacion> secciones = seccionesValidas();
+    when(seccionPort.listarPorGestionYTenant(periodo.getGestionEscolarId(), tenantId)).thenReturn(secciones);
+    when(parametroPort.listarPorPeriodoYTenant(periodo.getId(), tenantId)).thenReturn(secciones.stream()
+        .map(seccion -> com.edusync.academico.domain.ParametroPeriodo.crear(
+            com.edusync.academico.domain.ParametroPeriodoId.nueva(),
+            tenantId,
+            periodo.getId(),
+            seccion.getId(),
+            java.math.BigDecimal.ZERO,
+            seccion.getNota(),
+            com.edusync.academico.domain.ReglaCombinacionPeriodo.PROMEDIO_SIMPLE))
+        .toList());
+    when(cursoPort.listarPorTenant(tenantId)).thenReturn(List.of());
   }
 
   private List<com.edusync.academico.domain.SeccionEvaluacion> seccionesValidas() {

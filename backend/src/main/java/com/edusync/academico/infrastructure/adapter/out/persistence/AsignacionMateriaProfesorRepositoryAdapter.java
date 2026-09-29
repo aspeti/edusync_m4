@@ -38,6 +38,11 @@ class AsignacionMateriaProfesorRepositoryAdapter implements AsignacionMateriaPro
   }
 
   @Override
+  public List<AsignacionMateriaProfesor> listarPorTenant(UUID tenantId) {
+    return jpaRepository.findByTenantId(tenantId).stream().map(this::aDominio).toList();
+  }
+
+  @Override
   public List<AsignacionMateriaProfesor> listarPorProfesorYTenant(UUID profesorId, UUID tenantId) {
     return jpaRepository.findByProfesorIdAndTenantId(profesorId, tenantId).stream()
         .map(this::aDominio)

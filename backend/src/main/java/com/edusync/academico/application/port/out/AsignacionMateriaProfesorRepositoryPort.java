@@ -17,4 +17,6 @@ public interface AsignacionMateriaProfesorRepositoryPort {
 
   /** Consulta inversa por profesor ({@code DD-UC-014}): lista simple, sin paginar. */
   List<AsignacionMateriaProfesor> listarPorProfesorYTenant(UUID profesorId, UUID tenantId);
+
+  List<AsignacionMateriaProfesor> listarPorTenant(UUID tenantId);
 }

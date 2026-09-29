@@ -2,8 +2,8 @@
 producto: "EduSync"
 grupo: "G-EduSync"
 documento: DTP                 # Documento Técnico del Producto (continuación VIVA del DTI)
-version: v1.50                 # versiona la implementación, no el diseño de M4
-fecha: "27/09/2026"
+version: v1.52                 # versiona la implementación, no el diseño de M4
+fecha: "29/09/2026"
 status: vivo                   # vivo | en_revision | publicado-release   (NUNCA "congelado")
 audiencia: dual                # humanos + agentes IA
 baseline_ref:                  # el baseline CONGELADO del que parte este DTP (M4)
@@ -114,6 +114,7 @@ flowchart LR
 | 27/09/2026 | **Ejecución de `PR-IMPL-026`** (`DD-UC-026`, `ADR-0020`): consultas académicas dinámicas del asistente — `find_*` (resolución de nombres a UUID del tenant), `POST /consultas-academicas/consultar` (notas/promedio/reprobados/nómina/materias), camino `CONSULTA` (0 turnos LLM), ReAct sobre catálogo tipado, history+contexto en `/asistente`. Sin Playbook por combinación. Chat v0 intacto. Baseline intacto. | Preguntas NL combinando alumno/curso/materia/periodo sin IDs (`NFR-007`, `FSD-UC-016`) | `ADR-0020` | `mvn test` **299/299**; `ng build` verde. `pendiente de commit formal` | Rodrigo Aspeti |
 | 27/09/2026 | **`ADR-0021`** + `DD-UC-027` + **ejecución de `PR-IMPL-027`** (oleada 1 Lab 6): grafo Java (no LangGraph) con `GUARDRAIL_ENTRADA`/`CLASIFICAR`/`BLOQUEADO`/`SALUDO`/`KEYWORD`/`CONSULTA`/`REACT`/`GUARDRAIL_SALIDA`; temperatura del agente `0`; badge UI. RAG/checkpoint/caché semántico diferidos. Chat v0 intacto. Baseline intacto. | Patrones de producción del Lab 6 sobre el stack vivo (`NFR-007`) | `ADR-0021` | `mvn test` **315/315**; `ng build` verde. `pendiente de commit formal` | Rodrigo Aspeti |
 | 27/09/2026 | **`DD-UC-028` + `PR-IMPL-028`**: camino `PROCESO` (RAG léxico) con corpus de procesos EduSync (`docs/ai/base_conocimiento/`). | Preguntas de «cómo funciona» citando FSD-UC (`NFR-007`) | `ADR-0021` (oleada 2) | `mvn test` **321/321**; `ng build` verde. `pendiente de commit formal` | Rodrigo Aspeti |
+| 29/09/2026 | **Ejecución de `PR-IMPL-029`** (`DD-UC-029`): `ParametroPeriodo` (`V13`), `GET`/`PUT /api/v1/periodos-evaluacion/{id}/parametros` y gates al abrir (`E_PARAMETROS_INCOMPLETOS`, `E_MATERIA_SIN_DOCENTE`). Panel en la pantalla de periodos. Inmutable fuera de `PENDIENTE`. Sin apertura secuencial ni freeze (`ADR-0014`). `ng build` verde. Tests del slice en verde | El periodo se podía abrir sin parámetros ni cobertura docente | — | delta de `FSD-UC-009` ejecutado; cierre por centralizador, notificación y `audit_log` siguen fuera | Rodrigo Aspeti |
 
 ### A.2 Deltas respecto al DTI vFinal
 
@@ -145,7 +146,7 @@ flowchart LR
 | `FSD-UC-003` (Consolidación de centralizadores) | — | pendiente | `release/3.0.0` | — | Ídem |
 | `FSD-UC-004` (Exportación SIE) | — | pendiente | `release/3.0.0` | — | Ídem |
 | `FSD-UC-005` (Modificación retroactiva) | — | pendiente | `release/3.0.0` | — | Ídem |
-| `FSD-UC-009` (Administración de periodos) | — | pendiente | `release/3.0.0` | — | Ídem |
+| `FSD-UC-009` (Administración de periodos) | `DD-UC-029` (ejecutado) | **parcial** (parámetros + cobertura al abrir) | `release/3.0.0` | `PR-IMPL-029` | Delta sobre `PeriodoEvaluacion`. Alta de gestión y seed de periodos ya estaban en `FSD-UC-012`/`013`. Apertura secuencial no restaurada (`ADR-0014`). Cierre por centralizador, notificación y `audit_log` siguen fuera |
 | `FSD-UC-011` (Gestión de Tenants y Suscripciones) | `DD-UC-003` + `DD-UC-004` (UI) + `DD-UC-007` (filtros/paginación) | **completo** (API + UI consola SysAdmin, con filtros/paginación) | `release/3.0.0` | 98/98 tests backend verde (incluye `ModularityTests` 7/7); `ng build` verde | **`PR-IMPL-003` ejecutado** (API). **`PR-IMPL-004` ejecutado** (19/07/2026): consola SysAdmin Angular + `GET /tenants`. **`PR-IMPL-007` ejecutado** (20/08/2026): `GET /tenants` gana filtros (`q`/`estado`) y paginación (`page`/`size`) + UI. Diseño del tenant "demo" sigue diferido |
 | `FSD-UC-012` (Gestión Escolar) | `DD-UC-008` (backend) + `DD-UC-009` (UI) + `DD-UC-019` (relajación + visibilidad por rol) | **completo** (backend + UI, con filtros/paginación) | `release/3.0.0` | 238/238 tests backend verde (incluye `ModularityTests` 7/7); `ng build` verde | Primer feature de negocio real del módulo `academico`. **`PR-IMPL-008`/`009`/`019` ejecutados**. Delta `ADR-0013`: el `POST` **siembra 3 periodos y 4 secciones**. Delta `ADR-0014` (`PR-IMPL-019`): sin máquina de estados (cualquier transición es válida); nuevo `PATCH .../{id}` de nombre/fechas; visibilidad `ACTIVA`-only para `SECRETARIA`/`PROFESOR`/`ASESOR` (404 si no es la gestión activa) |
 | `FSD-UC-013` (Periodos de evaluación) | `DD-UC-015` (backend + UI fullstack) + `DD-UC-019` (relajación) | **completo** (backend + UI) | `release/3.0.0` | `mvn test` 238/238 verde (incluye `ModularityTests` 7/7); `ng build` verde | Seed 3 periodos al crear gestión; `GET /gestiones-escolares/{id}`. **`PR-IMPL-015`/`019` ejecutados**. Delta `ADR-0014`: apertura **ya no es secuencial** ni tiene freeze de N/datos — el `ADMIN` puede abrir/cerrar cualquier periodo en cualquier orden. Secciones (`FSD-UC-014`) fuera de este slice |
@@ -205,7 +206,7 @@ Estado actual: la cadena existe completa hasta `Design Doc` para `FSD-UC-011`/`F
 | §7 Asíncrona / event-driven | no | `docs/baseline/DTI.md` §7 (Spring Events; migración a SQS FIFO prevista en `ADR-0004`, no ejecutada aún) |
 | §8 Despliegue cloud | no | `docs/baseline/DTI.md` §8 / `docs/diagrams/deployment_aws.mmd` (imagen Docker deberá basarse en OpenJDK 25 al implementarse, ver `ADR-0008` §5) |
 | §9 Capa de IA / agentes | **sí** | Este DTP §A.2 (filas 8–12) + `ADR-0017`/`0018`/`0019`/`0020`/`0021` — Spring AI 2.0.0 detrás de `LlmPort`; ReAct + KEYWORD + CONSULTA + grafo/guardrails + camino PROCESO (`PR-IMPL-023`..`028`). El DTI §9 queda como foto histórica (“sin IA en runtime”) |
-| §10 Prompt mapping | sí (crece con `PR-IMPL-*`) | `docs/PROMPT_MAPPING.md` v2.50 (área `IMPL`, filas `PR-IMPL-001`..`020` + `PR-IMPL-022`..`028`; `PR-IMPL-021`/`PR-ADR-009` reservados por `DD-UC-021`) |
+| §10 Prompt mapping | sí (crece con `PR-IMPL-*`) | `docs/PROMPT_MAPPING.md` v2.52 (área `IMPL`, filas `PR-IMPL-001`..`020` + `PR-IMPL-022`..`029`; `PR-IMPL-021`/`PR-ADR-009` reservados por `DD-UC-021`; `PR-IMPL-029` ejecutado) |
 | §11 NFRs | no | `docs/baseline/DTI.md` §11 |
 | §12 POCs | no | `docs/baseline/DTI.md` §12 / `docs/pocs/POC-01-rls-multitenancy/`, `docs/pocs/POC-02-circuit-breaker-sie/` (ejecución con evidencia real sigue pendiente) |
 | §13–§16 Seguridad / Observabilidad / DevOps / Antipatrones | no | `docs/baseline/DTI.md` §13–§16 |
@@ -283,3 +284,5 @@ Estado actual: la cadena existe completa hasta `Design Doc` para `FSD-UC-011`/`F
 | v1.48 | 27/09/2026 | Rodrigo Aspeti | **`ADR-0020`** + `DD-UC-026` + `PR-IMPL-026`: consultas académicas dinámicas (`find_*`, `consultar_academico`, camino `CONSULTA`, contexto). §A.1 nueva fila. §A.2 delta 11. §B §9/§10/§21 → `PROMPT_MAPPING` v2.48. Baseline intacto. |
 | v1.49 | 27/09/2026 | Rodrigo Aspeti | **`ADR-0021`** + `DD-UC-027` + `PR-IMPL-027`: grafo Java + guardrails (oleada 1 Lab 6, sin LangGraph). §A.1 nueva fila. §A.2 delta 12. §B §9/§10 → `PROMPT_MAPPING` v2.49. Baseline intacto. |
 | v1.50 | 27/09/2026 | Rodrigo Aspeti | **`DD-UC-028` + `PR-IMPL-028`**: RAG léxico de procesos EduSync (camino `PROCESO`). §A.1 nueva fila. §B §9/§10 → `PROMPT_MAPPING` v2.50. Baseline intacto. |
+| v1.51 | 29/09/2026 | Rodrigo Aspeti | **`DD-UC-029` + `PR-IMPL-029` (borrador)**: delta de `FSD-UC-009` (parámetros del periodo y cobertura docente al abrir). §A.1 nueva fila. §A.3 `FSD-UC-009` pasa a `en progreso`. §B §10 → `PROMPT_MAPPING` v2.51. Sin código. Baseline intacto. |
+| v1.52 | 29/09/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-029`**: `ParametroPeriodo`, `V13`, `GET`/`PUT .../parametros`, gates al abrir y panel en periodos. §A.1 fila de ejecución. §A.3 `FSD-UC-009` pasa a `parcial`. §B §10 → `PROMPT_MAPPING` v2.52. `FSD` v2.16. Baseline intacto. |

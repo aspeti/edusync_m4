@@ -1,12 +1,17 @@
 package com.edusync.academico.application.service;
 
 import com.edusync.academico.application.port.in.CambiarEstadoPeriodoEvaluacionUseCase;
+import com.edusync.academico.application.port.out.AsignacionMateriaCursoRepositoryPort;
+import com.edusync.academico.application.port.out.AsignacionMateriaProfesorRepositoryPort;
+import com.edusync.academico.application.port.out.ParametroPeriodoRepositoryPort;
 import com.edusync.academico.application.port.out.PeriodoEvaluacionRepositoryPort;
 import com.edusync.academico.application.port.out.SeccionEvaluacionRepositoryPort;
 import com.edusync.academico.domain.EstadoPeriodoEvaluacion;
 import com.edusync.academico.domain.PeriodoEvaluacion;
 import com.edusync.academico.domain.PeriodoEvaluacionId;
 import com.edusync.academico.domain.PeriodoNoEncontradoException;
+import com.edusync.academico.domain.SeccionEvaluacion;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
  * periodo en cualquier orden. Se conserva la exigencia de secciones sumando 100
  * ({@code E_SUMA_SECCIONES_INVALIDA}) al abrir un periodo: es un requisito de integridad del
  * motor de calculo ({@code ADR-0013}), no una restriccion de flujo/edicion.
+ * {@code DD-UC-029} anade parametros completos y cobertura docente, sin restaurar la
+ * apertura secuencial.
  */
 @Service
 @RequiredArgsConstructor
@@ -26,6 +33,9 @@ public class CambiarEstadoPeriodoEvaluacionService implements CambiarEstadoPerio
 
   private final PeriodoEvaluacionRepositoryPort periodoEvaluacionRepositoryPort;
   private final SeccionEvaluacionRepositoryPort seccionEvaluacionRepositoryPort;
+  private final ParametroPeriodoRepositoryPort parametroPeriodoRepositoryPort;
+  private final AsignacionMateriaCursoRepositoryPort asignacionMateriaCursoRepositoryPort;
+  private final AsignacionMateriaProfesorRepositoryPort asignacionMateriaProfesorRepositoryPort;
 
   @Override
   @Transactional
@@ -35,8 +45,13 @@ public class CambiarEstadoPeriodoEvaluacionService implements CambiarEstadoPerio
         .orElseThrow(PeriodoNoEncontradoException::new);
 
     if (nuevoEstado == EstadoPeriodoEvaluacion.ABIERTO) {
-      SeccionEvaluacionPolitica.exigirSumaCien(
-          seccionEvaluacionRepositoryPort.listarPorGestionYTenant(periodo.getGestionEscolarId(), tenantId));
+      List<SeccionEvaluacion> secciones = seccionEvaluacionRepositoryPort.listarPorGestionYTenant(
+          periodo.getGestionEscolarId(), tenantId);
+      SeccionEvaluacionPolitica.exigirSumaCien(secciones);
+      AperturaPeriodoPolitica.exigirParametrosCompletos(
+          secciones, parametroPeriodoRepositoryPort.listarPorPeriodoYTenant(periodo.getId(), tenantId));
+      AperturaPeriodoPolitica.exigirCoberturaDocente(
+          asignacionMateriaCursoRepositoryPort, asignacionMateriaProfesorRepositoryPort, tenantId);
     }
 
     periodo.cambiarEstado(nuevoEstado);

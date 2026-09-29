@@ -4,7 +4,10 @@ import com.edusync.academico.application.port.in.ActualizarPeriodoEvaluacionComm
 import com.edusync.academico.application.port.in.ActualizarPeriodoEvaluacionUseCase;
 import com.edusync.academico.application.port.in.CambiarEstadoPeriodoEvaluacionUseCase;
 import com.edusync.academico.application.port.in.EliminarPeriodoEvaluacionUseCase;
+import com.edusync.academico.application.port.in.GuardarParametrosPeriodoUseCase;
+import com.edusync.academico.application.port.in.ListarParametrosPeriodoUseCase;
 import com.edusync.academico.domain.EstadoPeriodoEvaluacion;
+import com.edusync.academico.domain.ParametroPeriodo;
 import com.edusync.academico.domain.PeriodoEvaluacion;
 import com.edusync.shared.exception.DomainException;
 import com.edusync.shared.tenant.TenantContextProvider;
@@ -12,6 +15,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,8 +23,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,6 +47,8 @@ public class PeriodoEvaluacionController {
   private final ActualizarPeriodoEvaluacionUseCase actualizarPeriodoEvaluacionUseCase;
   private final EliminarPeriodoEvaluacionUseCase eliminarPeriodoEvaluacionUseCase;
   private final CambiarEstadoPeriodoEvaluacionUseCase cambiarEstadoPeriodoEvaluacionUseCase;
+  private final GuardarParametrosPeriodoUseCase guardarParametrosPeriodoUseCase;
+  private final ListarParametrosPeriodoUseCase listarParametrosPeriodoUseCase;
   private final TenantContextProvider tenantContextProvider;
 
   @PatchMapping("/{id}")
@@ -75,7 +83,8 @@ public class PeriodoEvaluacionController {
       description = "DD-UC-019: ADMIN puede abrir/cerrar cualquier periodo en cualquier orden.")
   @ApiResponse(responseCode = "200", description = "Estado actualizado")
   @ApiResponse(responseCode = "404", description = "E_PERIODO_NO_ENCONTRADO")
-  @ApiResponse(responseCode = "422", description = "E_SUMA_SECCIONES_INVALIDA (al abrir)")
+  @ApiResponse(responseCode = "422", description = "E_SUMA_SECCIONES_INVALIDA / E_PARAMETROS_INCOMPLETOS (al abrir)")
+  @ApiResponse(responseCode = "409", description = "E_MATERIA_SIN_DOCENTE (al abrir)")
   public ResponseEntity<PeriodoEvaluacionResponse> cambiarEstado(
       @PathVariable UUID id, @Valid @RequestBody CambiarEstadoPeriodoEvaluacionRequest request) {
     PeriodoEvaluacion periodo = cambiarEstadoPeriodoEvaluacionUseCase.cambiarEstado(
@@ -83,14 +92,53 @@ public class PeriodoEvaluacionController {
     return ResponseEntity.ok(aResponse(periodo));
   }
 
+  @GetMapping("/{id}/parametros")
+  @PreAuthorize("hasRole('ADMIN')")
+  @Operation(summary = "Listar parametros de un periodo", description = "DD-UC-029. Exclusivo ADMIN.")
+  @ApiResponse(responseCode = "200", description = "Parametros del periodo")
+  @ApiResponse(responseCode = "404", description = "E_PERIODO_NO_ENCONTRADO")
+  public ResponseEntity<List<ParametroPeriodoResponse>> listarParametros(@PathVariable UUID id) {
+    List<ParametroPeriodoResponse> parametros = listarParametrosPeriodoUseCase.listar(tenantActual(), id).stream()
+        .map(this::aParametroResponse)
+        .toList();
+    return ResponseEntity.ok(parametros);
+  }
+
+  @PutMapping("/{id}/parametros")
+  @PreAuthorize("hasRole('ADMIN')")
+  @Operation(summary = "Reemplazar parametros de un periodo PENDIENTE", description = "DD-UC-029 / BR-007.")
+  @ApiResponse(responseCode = "200", description = "Parametros guardados")
+  @ApiResponse(responseCode = "404", description = "E_PERIODO_NO_ENCONTRADO / E_SECCION_NO_ENCONTRADA")
+  @ApiResponse(
+      responseCode = "422",
+      description = "E_PARAMETROS_INMUTABLES / E_PARAMETROS_INCOMPLETOS / E_RANGO_INVALIDO / E_REGLA_NO_SOPORTADA")
+  public ResponseEntity<List<ParametroPeriodoResponse>> guardarParametros(
+      @PathVariable UUID id, @Valid @RequestBody GuardarParametrosPeriodoRequest request) {
+    List<GuardarParametrosPeriodoUseCase.Item> items = request.parametros().stream()
+        .map(item -> new GuardarParametrosPeriodoUseCase.Item(
+            item.seccionEvaluacionId(), item.rangoMin(), item.rangoMax(), item.reglaCombinacion()))
+        .toList();
+    List<ParametroPeriodoResponse> guardados = guardarParametrosPeriodoUseCase.guardar(tenantActual(), id, items)
+        .stream()
+        .map(this::aParametroResponse)
+        .toList();
+    return ResponseEntity.ok(guardados);
+  }
+
   @ExceptionHandler(DomainException.class)
   public ResponseEntity<ErrorResponse> alManejarErrorDeDominio(DomainException ex) {
     HttpStatus status = switch (ex.getErrorCode()) {
-      case "E_PERIODO_NO_ENCONTRADO", "E_GESTION_ESCOLAR_NO_ENCONTRADA" -> HttpStatus.NOT_FOUND;
+      case "E_PERIODO_NO_ENCONTRADO", "E_GESTION_ESCOLAR_NO_ENCONTRADA", "E_SECCION_NO_ENCONTRADA" ->
+          HttpStatus.NOT_FOUND;
       case "E_FECHAS_INVALIDAS",
           "E_PERIODOS_SOLAPADOS",
           "E_PERIODO_UNICO",
-          "E_SUMA_SECCIONES_INVALIDA" -> HttpStatus.UNPROCESSABLE_CONTENT;
+          "E_SUMA_SECCIONES_INVALIDA",
+          "E_PARAMETROS_INCOMPLETOS",
+          "E_PARAMETROS_INMUTABLES",
+          "E_REGLA_NO_SOPORTADA",
+          "E_RANGO_INVALIDO" -> HttpStatus.UNPROCESSABLE_CONTENT;
+      case "E_MATERIA_SIN_DOCENTE" -> HttpStatus.CONFLICT;
       default -> HttpStatus.CONFLICT;
     };
     return ResponseEntity.status(status).body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));
@@ -109,5 +157,15 @@ public class PeriodoEvaluacionController {
         periodo.getFechaFin(),
         periodo.getOrden(),
         periodo.getEstado().name());
+  }
+
+  private ParametroPeriodoResponse aParametroResponse(ParametroPeriodo parametro) {
+    return new ParametroPeriodoResponse(
+        parametro.getId().valor(),
+        parametro.getPeriodoEvaluacionId().valor(),
+        parametro.getSeccionEvaluacionId().valor(),
+        parametro.getRangoMin(),
+        parametro.getRangoMax(),
+        parametro.getReglaCombinacion().name());
   }
 }

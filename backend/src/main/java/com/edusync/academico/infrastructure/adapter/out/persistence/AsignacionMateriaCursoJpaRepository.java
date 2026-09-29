@@ -13,4 +13,6 @@ interface AsignacionMateriaCursoJpaRepository extends JpaRepository<AsignacionMa
 
   boolean existsByMateriaIdAndCursoIdAndParaleloIdAndTenantId(
       UUID materiaId, UUID cursoId, UUID paraleloId, UUID tenantId);
+
+  List<AsignacionMateriaCursoJpaEntity> findByTenantId(UUID tenantId);
 }

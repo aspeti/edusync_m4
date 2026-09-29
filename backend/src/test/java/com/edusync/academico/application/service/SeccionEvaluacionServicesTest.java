@@ -11,7 +11,10 @@ import static org.mockito.Mockito.when;
 
 import com.edusync.academico.application.port.in.ActualizarSeccionEvaluacionCommand;
 import com.edusync.academico.application.port.in.ReemplazarSeccionesEvaluacionCommand;
+import com.edusync.academico.application.port.out.AsignacionMateriaCursoRepositoryPort;
+import com.edusync.academico.application.port.out.AsignacionMateriaProfesorRepositoryPort;
 import com.edusync.academico.application.port.out.GestionEscolarRepositoryPort;
+import com.edusync.academico.application.port.out.ParametroPeriodoRepositoryPort;
 import com.edusync.academico.application.port.out.PeriodoEvaluacionRepositoryPort;
 import com.edusync.academico.application.port.out.SeccionEvaluacionRepositoryPort;
 import com.edusync.academico.domain.EstadoGestionEscolar;
@@ -52,7 +55,12 @@ class SeccionEvaluacionServicesTest {
     seccionPort = mock(SeccionEvaluacionRepositoryPort.class);
     reemplazarService = new ReemplazarSeccionesEvaluacionService(gestionPort, seccionPort);
     actualizarService = new ActualizarSeccionEvaluacionService(seccionPort);
-    cambiarEstadoService = new CambiarEstadoPeriodoEvaluacionService(periodoPort, seccionPort);
+    cambiarEstadoService = new CambiarEstadoPeriodoEvaluacionService(
+        periodoPort,
+        seccionPort,
+        mock(ParametroPeriodoRepositoryPort.class),
+        mock(AsignacionMateriaCursoRepositoryPort.class),
+        mock(AsignacionMateriaProfesorRepositoryPort.class));
   }
 
   @Test

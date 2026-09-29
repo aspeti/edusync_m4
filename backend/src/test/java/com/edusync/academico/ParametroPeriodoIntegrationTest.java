@@ -8,16 +8,16 @@ import com.edusync.academico.infrastructure.adapter.in.rest.CambiarEstadoPeriodo
 import com.edusync.academico.infrastructure.adapter.in.rest.CrearAsignacionCursoRequest;
 import com.edusync.academico.infrastructure.adapter.in.rest.CrearAsignacionProfesorRequest;
 import com.edusync.academico.infrastructure.adapter.in.rest.CrearCursoRequest;
-import com.edusync.academico.infrastructure.adapter.in.rest.CrearEvaluacionRequest;
 import com.edusync.academico.infrastructure.adapter.in.rest.CrearGestionEscolarRequest;
 import com.edusync.academico.infrastructure.adapter.in.rest.CrearMateriaRequest;
 import com.edusync.academico.infrastructure.adapter.in.rest.CrearParaleloRequest;
 import com.edusync.academico.infrastructure.adapter.in.rest.CursoResponse;
 import com.edusync.academico.infrastructure.adapter.in.rest.ErrorResponse;
-import com.edusync.academico.infrastructure.adapter.in.rest.EvaluacionResponse;
 import com.edusync.academico.infrastructure.adapter.in.rest.GestionEscolarResponse;
+import com.edusync.academico.infrastructure.adapter.in.rest.GuardarParametrosPeriodoRequest;
 import com.edusync.academico.infrastructure.adapter.in.rest.MateriaResponse;
 import com.edusync.academico.infrastructure.adapter.in.rest.ParaleloResponse;
+import com.edusync.academico.infrastructure.adapter.in.rest.ParametroPeriodoResponse;
 import com.edusync.academico.infrastructure.adapter.in.rest.PeriodoEvaluacionResponse;
 import com.edusync.academico.infrastructure.adapter.in.rest.SeccionEvaluacionResponse;
 import com.edusync.identidad.infrastructure.adapter.in.rest.CrearUsuarioRequest;
@@ -28,6 +28,7 @@ import com.edusync.plataforma.infrastructure.adapter.in.rest.AdminCreadoResponse
 import com.edusync.plataforma.infrastructure.adapter.in.rest.CrearAdminTenantRequest;
 import com.edusync.plataforma.infrastructure.adapter.in.rest.RegistrarTenantRequest;
 import com.edusync.plataforma.infrastructure.adapter.in.rest.TenantResponse;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -51,14 +52,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
- * Stop condition de {@code PR-IMPL-017} ({@code DD-UC-017} &sect;6): dos evals Saber
- * con {@code puntajeMaximo=45}, A1 409, periodo PENDIENTE 422, Profesor no asignado 404,
- * cross-tenant 404.
+ * {@code DD-UC-029}: parametros por seccion, inmutables fuera de {@code PENDIENTE},
+ * y cobertura docente al abrir. Sin seed automatico.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
 @Testcontainers
-class EvaluacionIntegrationTest {
+class ParametroPeriodoIntegrationTest {
 
   @Container
   static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:15")
@@ -83,108 +83,90 @@ class EvaluacionIntegrationTest {
   private String sysAdminPassword;
 
   @Test
-  void dosEvalsSaberA1PeriodoPendienteYAislamiento() {
-    HttpHeaders adminA = crearTenantYAutenticarAdmin("Colegio Evals A", "admin-evals-a@colegio.edu.bo");
-    HttpHeaders adminB = crearTenantYAutenticarAdmin("Colegio Evals B", "admin-evals-b@colegio.edu.bo");
-
+  void putGetAbrirYPutPosteriorInmutable() {
+    HttpHeaders adminA = crearTenantYAutenticarAdmin("Colegio Param A", "admin-param-a@colegio.edu.bo");
+    HttpHeaders adminB = crearTenantYAutenticarAdmin("Colegio Param B", "admin-param-b@colegio.edu.bo");
     UUID gestionId = crearGestion(adminA);
-    UUID cursoId = crearCurso(adminA);
-    UUID paraleloId = crearParalelo(adminA, cursoId);
-    UUID profesorId = crearProfesor(adminA, "Profesor Asignado", "profesor-evals@colegio.edu.bo");
-    UUID materiaId = crearMateria(adminA, "Matemáticas");
-    asignarCursoYProfesor(adminA, materiaId, cursoId, paraleloId, profesorId);
+    UUID periodoId = listarPeriodos(gestionId, adminA).get(0).id();
 
-    List<PeriodoEvaluacionResponse> periodos = listarPeriodos(gestionId, adminA);
-    UUID t1 = periodos.get(0).id();
-    UUID t2 = periodos.get(1).id();
-    UUID saberId = listarSecciones(gestionId, adminA).stream()
-        .filter(s -> s.nombre().equals("Saber"))
-        .findFirst()
-        .orElseThrow()
-        .id();
-
-    ParametrosPeriodoDePrueba.configurarPorDefecto(restTemplate, adminA, gestionId, t1);
-    restTemplate.exchange(
-        "/api/v1/periodos-evaluacion/" + t1 + "/estado",
+    ResponseEntity<ErrorResponse> sinParametros = restTemplate.exchange(
+        "/api/v1/periodos-evaluacion/" + periodoId + "/estado",
         HttpMethod.PATCH,
         new HttpEntity<>(new CambiarEstadoPeriodoEvaluacionRequest("ABIERTO"), adminA),
-        PeriodoEvaluacionResponse.class);
-
-    ResponseEntity<EvaluacionResponse> eval1 = restTemplate.exchange(
-        "/api/v1/evaluaciones",
-        HttpMethod.POST,
-        new HttpEntity<>(
-            new CrearEvaluacionRequest(
-                "Prueba 1", materiaId, t1, saberId, LocalDate.of(2026, 3, 10), null),
-            adminA),
-        EvaluacionResponse.class);
-    assertThat(eval1.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-    assertThat(eval1.getBody().puntajeMaximo()).isEqualByComparingTo("45.00");
-    assertThat(eval1.getBody().estado()).isEqualTo("ACTIVA");
-
-    ResponseEntity<EvaluacionResponse> eval2 = restTemplate.exchange(
-        "/api/v1/evaluaciones",
-        HttpMethod.POST,
-        new HttpEntity<>(
-            new CrearEvaluacionRequest(
-                "Prueba 2", materiaId, t1, saberId, LocalDate.of(2026, 3, 20), "oral"),
-            adminA),
-        EvaluacionResponse.class);
-    assertThat(eval2.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-    assertThat(eval2.getBody().puntajeMaximo()).isEqualByComparingTo("45.00");
-
-    ResponseEntity<ErrorResponse> pendiente = restTemplate.exchange(
-        "/api/v1/evaluaciones",
-        HttpMethod.POST,
-        new HttpEntity<>(
-            new CrearEvaluacionRequest(
-                "En T2", materiaId, t2, saberId, LocalDate.of(2026, 6, 10), null),
-            adminA),
         ErrorResponse.class);
-    assertThat(pendiente.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
-    assertThat(pendiente.getBody().codigo()).isEqualTo("E_PERIODO_NO_ABIERTO");
+    assertThat(sinParametros.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+    assertThat(sinParametros.getBody().codigo()).isEqualTo("E_PARAMETROS_INCOMPLETOS");
 
-    UUID materiaSinProfesor = crearMateria(adminA, "Física");
-    ResponseEntity<ErrorResponse> sinProfesor = restTemplate.exchange(
-        "/api/v1/evaluaciones",
-        HttpMethod.POST,
-        new HttpEntity<>(
-            new CrearEvaluacionRequest(
-                "Sin profesor", materiaSinProfesor, t1, saberId, LocalDate.of(2026, 3, 11), null),
-            adminA),
-        ErrorResponse.class);
-    assertThat(sinProfesor.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-    assertThat(sinProfesor.getBody().codigo()).isEqualTo("E_MATERIA_SIN_PROFESOR");
-
-    crearProfesor(adminA, "Otro Profesor", "otro-profesor-evals@colegio.edu.bo");
-    HttpHeaders otroProfesor = autenticarComo("otro-profesor-evals@colegio.edu.bo", "secreto123");
-    ResponseEntity<ErrorResponse> noAsignado = restTemplate.exchange(
-        "/api/v1/evaluaciones",
-        HttpMethod.POST,
-        new HttpEntity<>(
-            new CrearEvaluacionRequest(
-                "Ajeno", materiaId, t1, saberId, LocalDate.of(2026, 3, 12), null),
-            otroProfesor),
-        ErrorResponse.class);
-    assertThat(noAsignado.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    assertThat(noAsignado.getBody().codigo()).isEqualTo("E_MATERIA_NO_ENCONTRADA");
+    ParametrosPeriodoDePrueba.configurarPorDefecto(restTemplate, adminA, gestionId, periodoId);
+    ResponseEntity<List<ParametroPeriodoResponse>> listado = restTemplate.exchange(
+        "/api/v1/periodos-evaluacion/" + periodoId + "/parametros",
+        HttpMethod.GET,
+        new HttpEntity<>(adminA),
+        new ParameterizedTypeReference<>() {});
+    assertThat(listado.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(listado.getBody()).hasSize(4);
+    assertThat(listado.getBody()).allSatisfy(p -> assertThat(p.reglaCombinacion()).isEqualTo("PROMEDIO_SIMPLE"));
 
     ResponseEntity<ErrorResponse> cross = restTemplate.exchange(
-        "/api/v1/evaluaciones/" + eval1.getBody().id(),
+        "/api/v1/periodos-evaluacion/" + periodoId + "/parametros",
         HttpMethod.GET,
         new HttpEntity<>(adminB),
         ErrorResponse.class);
     assertThat(cross.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    assertThat(cross.getBody().codigo()).isEqualTo("E_EVALUACION_NO_ENCONTRADA");
+    assertThat(cross.getBody().codigo()).isEqualTo("E_PERIODO_NO_ENCONTRADO");
 
-    HttpHeaders profesorAsignado = autenticarComo("profesor-evals@colegio.edu.bo", "secreto123");
-    ResponseEntity<List<MateriaResponse>> mias = restTemplate.exchange(
-        "/api/v1/materias/mias",
-        HttpMethod.GET,
-        new HttpEntity<>(profesorAsignado),
-        new ParameterizedTypeReference<List<MateriaResponse>>() {});
-    assertThat(mias.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(mias.getBody()).extracting(MateriaResponse::id).contains(materiaId);
+    ResponseEntity<PeriodoEvaluacionResponse> abierto = restTemplate.exchange(
+        "/api/v1/periodos-evaluacion/" + periodoId + "/estado",
+        HttpMethod.PATCH,
+        new HttpEntity<>(new CambiarEstadoPeriodoEvaluacionRequest("ABIERTO"), adminA),
+        PeriodoEvaluacionResponse.class);
+    assertThat(abierto.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+    List<SeccionEvaluacionResponse> secciones = listarSecciones(gestionId, adminA);
+    ResponseEntity<ErrorResponse> putAbierto = restTemplate.exchange(
+        "/api/v1/periodos-evaluacion/" + periodoId + "/parametros",
+        HttpMethod.PUT,
+        new HttpEntity<>(
+            new GuardarParametrosPeriodoRequest(secciones.stream()
+                .map(seccion -> new GuardarParametrosPeriodoRequest.Item(
+                    seccion.id(), BigDecimal.ZERO, seccion.nota(), "PROMEDIO_SIMPLE"))
+                .toList()),
+            adminA),
+        ErrorResponse.class);
+    assertThat(putAbierto.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+    assertThat(putAbierto.getBody().codigo()).isEqualTo("E_PARAMETROS_INMUTABLES");
+  }
+
+  @Test
+  void materiaConCursoSinProfesorBloqueaLaApertura() {
+    HttpHeaders admin = crearTenantYAutenticarAdmin("Colegio Param Docente", "admin-param-docente@colegio.edu.bo");
+    UUID gestionId = crearGestion(admin);
+    UUID periodoId = listarPeriodos(gestionId, admin).get(0).id();
+    UUID cursoId = crearCurso(admin);
+    UUID paraleloId = crearParalelo(admin, cursoId);
+    UUID materiaId = crearMateria(admin, "Ciencias");
+    asignarCurso(admin, materiaId, cursoId, paraleloId);
+    ParametrosPeriodoDePrueba.configurarPorDefecto(restTemplate, admin, gestionId, periodoId);
+
+    ResponseEntity<ErrorResponse> sinDocente = restTemplate.exchange(
+        "/api/v1/periodos-evaluacion/" + periodoId + "/estado",
+        HttpMethod.PATCH,
+        new HttpEntity<>(new CambiarEstadoPeriodoEvaluacionRequest("ABIERTO"), admin),
+        ErrorResponse.class);
+    assertThat(sinDocente.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    assertThat(sinDocente.getBody().codigo()).isEqualTo("E_MATERIA_SIN_DOCENTE");
+    assertThat(sinDocente.getBody().mensaje()).doesNotContain("@");
+
+    UUID profesorId = crearProfesor(admin, "Profe Ciencias", "profe-param-docente@colegio.edu.bo");
+    asignarProfesor(admin, materiaId, profesorId, cursoId, paraleloId);
+
+    ResponseEntity<PeriodoEvaluacionResponse> abierto = restTemplate.exchange(
+        "/api/v1/periodos-evaluacion/" + periodoId + "/estado",
+        HttpMethod.PATCH,
+        new HttpEntity<>(new CambiarEstadoPeriodoEvaluacionRequest("ABIERTO"), admin),
+        PeriodoEvaluacionResponse.class);
+    assertThat(abierto.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(abierto.getBody().estado()).isEqualTo("ABIERTO");
   }
 
   private UUID crearGestion(HttpHeaders admin) {
@@ -192,7 +174,7 @@ class EvaluacionIntegrationTest {
             "/api/v1/gestiones-escolares",
             HttpMethod.POST,
             new HttpEntity<>(
-                new CrearGestionEscolarRequest("2026", LocalDate.of(2026, 2, 1), LocalDate.of(2026, 11, 30)),
+                new CrearGestionEscolarRequest("2027", LocalDate.of(2027, 2, 1), LocalDate.of(2027, 11, 30)),
                 admin),
             GestionEscolarResponse.class)
         .getBody()
@@ -219,16 +201,6 @@ class EvaluacionIntegrationTest {
         .id();
   }
 
-  private UUID crearProfesor(HttpHeaders admin, String nombre, String email) {
-    return restTemplate.exchange(
-            "/api/v1/usuarios",
-            HttpMethod.POST,
-            new HttpEntity<>(new CrearUsuarioRequest(nombre, email, "secreto123", Set.of("PROFESOR")), admin),
-            UsuarioResponse.class)
-        .getBody()
-        .id();
-  }
-
   private UUID crearMateria(HttpHeaders admin, String nombre) {
     return restTemplate.exchange(
             "/api/v1/materias",
@@ -239,13 +211,26 @@ class EvaluacionIntegrationTest {
         .id();
   }
 
-  private void asignarCursoYProfesor(
-      HttpHeaders admin, UUID materiaId, UUID cursoId, UUID paraleloId, UUID profesorId) {
+  private UUID crearProfesor(HttpHeaders admin, String nombre, String email) {
+    return restTemplate.exchange(
+            "/api/v1/usuarios",
+            HttpMethod.POST,
+            new HttpEntity<>(new CrearUsuarioRequest(nombre, email, "secreto123", Set.of("PROFESOR")), admin),
+            UsuarioResponse.class)
+        .getBody()
+        .id();
+  }
+
+  private void asignarCurso(HttpHeaders admin, UUID materiaId, UUID cursoId, UUID paraleloId) {
     restTemplate.exchange(
         "/api/v1/materias/" + materiaId + "/asignaciones-curso",
         HttpMethod.POST,
         new HttpEntity<>(new CrearAsignacionCursoRequest(cursoId, paraleloId), admin),
         AsignacionCursoResponse.class);
+  }
+
+  private void asignarProfesor(
+      HttpHeaders admin, UUID materiaId, UUID profesorId, UUID cursoId, UUID paraleloId) {
     restTemplate.exchange(
         "/api/v1/materias/" + materiaId + "/asignaciones-profesor",
         HttpMethod.POST,
@@ -273,7 +258,7 @@ class EvaluacionIntegrationTest {
 
   private HttpHeaders crearTenantYAutenticarAdmin(String nombreTenant, String adminEmail) {
     HttpHeaders sysAdminHeaders = autenticarComo(sysAdminEmail, sysAdminPassword);
-    var tenantId = restTemplate.exchange(
+    UUID tenantId = restTemplate.exchange(
             "/api/v1/plataforma/tenants",
             HttpMethod.POST,
             new HttpEntity<>(

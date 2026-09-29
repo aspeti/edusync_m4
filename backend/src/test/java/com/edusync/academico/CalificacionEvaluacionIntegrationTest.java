@@ -117,7 +117,7 @@ class CalificacionEvaluacionIntegrationTest {
         listarSecciones(gestionId, adminA).stream()
             .collect(Collectors.toMap(SeccionEvaluacionResponse::nombre, Function.identity()));
 
-    abrirPeriodo(adminA, t1);
+    abrirPeriodo(adminA, gestionId, t1);
 
     UUID evalSaber1 =
         crearEval(adminA, "Saber 1", materiaId, t1, secciones.get("Saber").id());
@@ -232,7 +232,8 @@ class CalificacionEvaluacionIntegrationTest {
         .id();
   }
 
-  private void abrirPeriodo(HttpHeaders admin, UUID periodoId) {
+  private void abrirPeriodo(HttpHeaders admin, UUID gestionId, UUID periodoId) {
+    ParametrosPeriodoDePrueba.configurarPorDefecto(restTemplate, admin, gestionId, periodoId);
     restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + periodoId + "/estado",
         HttpMethod.PATCH,

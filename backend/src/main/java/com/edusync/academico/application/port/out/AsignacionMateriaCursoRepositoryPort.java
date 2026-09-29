@@ -22,4 +22,6 @@ public interface AsignacionMateriaCursoRepositoryPort {
 
   boolean existePorMateriaCursoParaleloYTenant(
       MateriaId materiaId, CursoId cursoId, ParaleloId paraleloId, UUID tenantId);
+
+  List<AsignacionMateriaCurso> listarPorTenant(UUID tenantId);
 }

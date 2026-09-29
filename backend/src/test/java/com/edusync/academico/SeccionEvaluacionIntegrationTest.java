@@ -127,6 +127,7 @@ class SeccionEvaluacionIntegrationTest {
 
     List<PeriodoEvaluacionResponse> periodos = listarPeriodos(gestionId, adminA);
     UUID t1 = periodos.get(0).id();
+    ParametrosPeriodoDePrueba.configurarPorDefecto(restTemplate, adminA, gestionId, t1);
     restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + t1 + "/estado",
         HttpMethod.PATCH,
@@ -179,6 +180,7 @@ class SeccionEvaluacionIntegrationTest {
         new ParameterizedTypeReference<List<SeccionEvaluacionResponse>>() {});
 
     List<PeriodoEvaluacionResponse> periodos = listarPeriodos(gestionId, admin);
+    ParametrosPeriodoDePrueba.configurarPorDefecto(restTemplate, admin, gestionId, periodos.get(0).id());
     ResponseEntity<PeriodoEvaluacionResponse> abierto = restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + periodos.get(0).id() + "/estado",
         HttpMethod.PATCH,

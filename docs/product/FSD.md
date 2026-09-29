@@ -24,8 +24,8 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.15 |
-| **Fecha** | 12/09/2026 |
+| **Versión del documento** | v2.16 |
+| **Fecha** | 29/09/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
 | **Estado** | En revisión |
@@ -109,9 +109,9 @@ Todo el ciclo queda sellado en un `audit_log` append-only inalterable, con aisla
 |---------|-------------|----------------------|--------------|-----------------|--------|
 | T-001 | Setup multitenant: configurar RLS en PostgreSQL + inyección de `tenant_id` en SecurityContext de Spring | FSD-UC-001 | — | PR-ARCH-001 | pendiente |
 | T-002 | Módulo de Autenticación: JWT issue/validate + RBAC con Spring Security | FSD-UC-001 | T-001 | PR-UC-001 | pendiente |
-| T-003 | CRUD Gestión Académica + 3 periodos + validación de apertura secuencial | FSD-UC-009 | T-002 | PR-UC-009 | pendiente |
-| T-004 | Motor de parámetros: tabla `parametro_academico` + API de configuración por periodo | FSD-UC-009 | T-003 | PR-UC-009 | pendiente |
-| T-005 | Asignación docente-materia + verificación de cobertura antes de apertura | FSD-UC-009 | T-003 | PR-UC-009 | pendiente |
+| T-003 | CRUD Gestión Académica + 3 periodos + validación de apertura secuencial | FSD-UC-009 | T-002 | PR-UC-009 | cubierto por `FSD-UC-012`/`013`; la apertura secuencial queda anulada por `ADR-0014` |
+| T-004 | Motor de parámetros: tabla `parametro_academico` + API de configuración por periodo | FSD-UC-009 | T-003 | PR-UC-009 | ejecutado como `parametro_periodo` (`DD-UC-029`); el peso sigue en `SeccionEvaluacion.nota` |
+| T-005 | Asignación docente-materia + verificación de cobertura antes de apertura | FSD-UC-009 | T-003 | PR-UC-009 | asignación en `FSD-UC-018`; cobertura al abrir ejecutada en `DD-UC-029` |
 | T-006 | Endpoint POST /calificaciones con validación paramétrica en tiempo real | FSD-UC-001 | T-004, T-005 | PR-UC-001 | pendiente |
 | T-007 | Motor de consolidación: PROMEDIO_SIMPLE + floor + estado PROVISIONAL/OFICIAL | FSD-UC-003 | T-006 | PR-UC-003 | pendiente |
 | T-008 | Cierre atómico de materia: verificación completitud + transición SOLO_LECTURA | FSD-UC-002 | T-006, T-007 | PR-UC-002 | pendiente |
@@ -490,6 +490,13 @@ Escenario: Apertura secuencial válida
     Y los parámetros quedan inmutables
     Y los docentes reciben notificación
 ```
+
+> **Realización vigente (`DD-UC-029` / `PR-IMPL-029`, 29/09/2026).** El flujo clásico de arriba no se reimplementa como modelo paralelo. La gestión y los periodos viven en `POST /api/v1/gestiones-escolares` y `PATCH /api/v1/periodos-evaluacion/{id}/estado` (`FSD-UC-012`/`013`). `BR-006`/`RB-05` y el escenario de apertura secuencial siguen anulados por `ADR-0014`. Lo que este caso de uso añade:
+>
+> - `GET`/`PUT /api/v1/periodos-evaluacion/{id}/parametros` (`ADMIN`). El `PUT` reemplaza el conjunto: una fila por sección vigente, `rangoMin` ≥ 0, `rangoMax` > `rangoMin` y `rangoMax` ≤ `seccion.nota`, regla solo `PROMEDIO_SIMPLE` (`422 E_REGLA_NO_SOPORTADA` si no). No hay seed automático.
+> - Fuera de `PENDIENTE` el `PUT` responde `422 E_PARAMETROS_INMUTABLES` (`BR-007`). Volver el periodo a `PENDIENTE` vuelve a habilitarlo. Nombres, fechas y la plantilla de secciones siguen editables (`ADR-0014`).
+> - Abrir exige parámetros completos (`422 E_PARAMETROS_INCOMPLETOS`), suma de secciones = 100 y que toda materia con curso asignado tenga profesor (`409 E_MATERIA_SIN_DOCENTE`). Cerrar o volver a `PENDIENTE` no exige esos gates.
+> - Quedan fuera: cierre por centralizadores, notificación a docentes, `audit_log`, `floor()` y las reglas `SUMA`/`MEJOR_N`.
 
 ---
 
@@ -1486,6 +1493,7 @@ Paso 13 → audit_log entry + notificación
 | v2.13 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-015` (§4.6.5) cierra implementación **completa** (backend + UI fullstack, `DD-UC-017`/`PR-IMPL-017`): GET lista/detalle, PATCH datos/`ANULADA`, `GET /materias/mias`, `puntajeMaximo` derivado, A1, periodo `ABIERTO`. A2 `E_RANGO_INVALIDO` **diferido** a calificación de estudiante (`FSD-UC-016`). |
 | v2.14 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-016` (§4.6.6) cierra implementación **completa** (backend + UI fullstack, `DD-UC-018`/`PR-IMPL-018`): `PUT/GET` calificaciones, `GET` nota-provisional, motor `CalculoNotas` (`round` HALF_UP, sin `floor()`), A2 `E_RANGO_INVALIDO` cerrado. |
 | v2.15 | 12/09/2026 | Rodrigo Aspeti | **`ADR-0014`** (relaja `ADR-0013` §3.1.4/3.1.5/§3.2.2): `FSD-UC-012` (§4.6.2) gana actor secundario de solo lectura (Secretaria/Profesor/Asesor), nuevo `PATCH /gestiones-escolares/{id}` (nombre/fechas) y A2 de visibilidad `ACTIVA`-only (404 para roles no-`ADMIN` sobre una gestión no activa). `FSD-UC-013` (§4.6.3) elimina A2/A3 (`E_PERIODO_NO_SECUENCIAL`/`E_PERIODOS_INMUTABLES`): apertura ya no es secuencial, sin freeze de N/datos; se conserva A1 `E_PERIODOS_SOLAPADOS` y A4→A2 `E_PERIODO_UNICO`. `FSD-UC-014` (§4.6.4) elimina A3 (`E_SECCIONES_INMUTABLES`, freeze sticky); se conservan A1 `E_PESO_INVALIDO` y A2 `E_SUMA_SECCIONES_INVALIDA`. `BR-017`/`BR-018` (§5.1) reescritas para reflejar la relajación, conservando explícitamente las invariantes de integridad del motor de cálculo. Trazado a `DD-UC-019`/`PR-IMPL-019` (backend + UI fullstack, ejecutado). Sin cambios en `FSD-UC-015`/`016` (`CalculoNotas`/`CalificacionEvaluacion` intactos). |
+| v2.16 | 29/09/2026 | Rodrigo Aspeti | **`DD-UC-029` / `PR-IMPL-029`**: nota de realización en `FSD-UC-009` (§4.5). Parámetros por sección del periodo (`GET`/`PUT .../parametros`) e inmutables fuera de `PENDIENTE`; al abrir, `E_PARAMETROS_INCOMPLETOS` y `E_MATERIA_SIN_DOCENTE`. T-004/T-005 marcadas en el delta genérico. No restaura la apertura secuencial (`ADR-0014`). Cierre por centralizador, notificación y `audit_log` siguen fuera. |
 
 ---
 

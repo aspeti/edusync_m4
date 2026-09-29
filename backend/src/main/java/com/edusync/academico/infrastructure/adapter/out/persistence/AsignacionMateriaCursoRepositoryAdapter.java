@@ -47,6 +47,11 @@ class AsignacionMateriaCursoRepositoryAdapter implements AsignacionMateriaCursoR
   }
 
   @Override
+  public List<AsignacionMateriaCurso> listarPorTenant(UUID tenantId) {
+    return jpaRepository.findByTenantId(tenantId).stream().map(this::aDominio).toList();
+  }
+
+  @Override
   public boolean existePorMateriaCursoParaleloYTenant(
       MateriaId materiaId, CursoId cursoId, ParaleloId paraleloId, UUID tenantId) {
     return jpaRepository.existsByMateriaIdAndCursoIdAndParaleloIdAndTenantId(

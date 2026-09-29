@@ -10,4 +10,6 @@ interface AsignacionMateriaProfesorJpaRepository
   List<AsignacionMateriaProfesorJpaEntity> findByMateriaIdAndTenantId(UUID materiaId, UUID tenantId);
 
   List<AsignacionMateriaProfesorJpaEntity> findByProfesorIdAndTenantId(UUID profesorId, UUID tenantId);
+
+  List<AsignacionMateriaProfesorJpaEntity> findByTenantId(UUID tenantId);
 }

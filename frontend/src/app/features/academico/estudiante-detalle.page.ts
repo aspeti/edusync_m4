@@ -63,9 +63,9 @@ import { AuthService } from '../../core/auth/auth.service';
               <tbody>
                 @for (insc of inscripciones(); track insc.id) {
                   <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 0.5rem;">{{ nombreGestion(insc.gestionEscolarId) }}</td>
-                    <td style="padding: 0.5rem;">{{ nombreCurso(insc.cursoId) }}</td>
-                    <td style="padding: 0.5rem;">{{ nombreParalelo(insc.paraleloId) }}</td>
+                    <td style="padding: 0.5rem;">{{ insc.gestionNombre || nombreGestion(insc.gestionEscolarId) }}</td>
+                    <td style="padding: 0.5rem;">{{ insc.cursoNombre || nombreCurso(insc.cursoId) }}</td>
+                    <td style="padding: 0.5rem;">{{ insc.paraleloNombre || nombreParalelo(insc.paraleloId) }}</td>
                     <td style="padding: 0.5rem;">{{ insc.fechaInscripcion }}</td>
                     <td style="padding: 0.5rem;">{{ insc.estado }}</td>
                   </tr>
@@ -228,10 +228,7 @@ export class EstudianteDetallePage implements OnInit {
     this.http
       .get<InscripcionResponse[]>(`${ApiBase.BASE}/estudiantes/${this.estudianteId}/inscripciones`)
       .subscribe({
-        next: (lista) => {
-          this.inscripciones.set(lista);
-          this.cargarParalelosDeInscripciones(lista);
-        },
+        next: (lista) => this.inscripciones.set(lista),
       });
   }
 
@@ -256,15 +253,6 @@ export class EstudianteDetallePage implements OnInit {
     this.http.get<PageResponse<CursoResponse>>(`${ApiBase.BASE}/cursos`, { params }).subscribe({
       next: (respuesta) => this.cursos.set(respuesta.content),
     });
-  }
-
-  private cargarParalelosDeInscripciones(inscripciones: InscripcionResponse[]): void {
-    const cursoIds = [...new Set(inscripciones.map((i) => i.cursoId))];
-    for (const cursoId of cursoIds) {
-      this.http.get<ParaleloResponse[]>(`${ApiBase.BASE}/cursos/${cursoId}/paralelos`).subscribe({
-        next: (paralelos) => this.registrarParalelos(paralelos),
-      });
-    }
   }
 
   private registrarParalelos(paralelos: ParaleloResponse[]): void {

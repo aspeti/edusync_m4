@@ -116,6 +116,8 @@ class MateriaIntegrationTest {
         new HttpEntity<>(new CrearAsignacionCursoRequest(cursoId, paraleloId), adminA),
         AsignacionCursoResponse.class);
     assertThat(asignacionCurso.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    assertThat(asignacionCurso.getBody().cursoNombre()).isEqualTo("Primero de Primaria");
+    assertThat(asignacionCurso.getBody().paraleloNombre()).isEqualTo("A");
 
     ResponseEntity<AsignacionProfesorResponse> asignacionProfesor = restTemplate.exchange(
         "/api/v1/materias/" + materiaId + "/asignaciones-profesor",
@@ -124,6 +126,8 @@ class MateriaIntegrationTest {
         AsignacionProfesorResponse.class);
     assertThat(asignacionProfesor.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     assertThat(asignacionProfesor.getBody().profesorId()).isEqualTo(profesorId);
+    assertThat(asignacionProfesor.getBody().cursoNombre()).isEqualTo("Primero de Primaria");
+    assertThat(asignacionProfesor.getBody().paraleloNombre()).isEqualTo("A");
 
     ResponseEntity<List<ProfesorResumenResponse>> catalogo = restTemplate.exchange(
         "/api/v1/materias/profesores-disponibles",

@@ -16,6 +16,7 @@ import com.edusync.academico.application.port.in.ListarProfesoresDisponiblesUseC
 import com.edusync.academico.application.port.in.MateriaFiltro;
 import com.edusync.academico.application.port.in.ObtenerMateriaVisibleUseCase;
 import com.edusync.academico.application.port.in.ObtenerNotaProvisionalUseCase;
+import com.edusync.academico.application.service.EtiquetasAcademicas;
 import com.edusync.academico.domain.AsignacionMateriaCurso;
 import com.edusync.academico.domain.AsignacionMateriaProfesor;
 import com.edusync.academico.domain.CalculoNotas;
@@ -69,6 +70,7 @@ public class MateriaController {
   private final ListarMateriasAsignadasUseCase listarMateriasAsignadasUseCase;
   private final ListarEvaluacionesUseCase listarEvaluacionesUseCase;
   private final ObtenerNotaProvisionalUseCase obtenerNotaProvisionalUseCase;
+  private final EtiquetasAcademicas etiquetasAcademicas;
   private final TenantContextProvider tenantContextProvider;
 
   @PostMapping
@@ -244,20 +246,26 @@ public class MateriaController {
   }
 
   private AsignacionCursoResponse aResponse(AsignacionMateriaCurso asignacion) {
+    UUID tenantId = asignacion.getTenantId();
     return new AsignacionCursoResponse(
         asignacion.getId().valor(),
         asignacion.getMateriaId().valor(),
         asignacion.getCursoId().valor(),
-        asignacion.getParaleloId().valor());
+        etiquetasAcademicas.nombreCurso(tenantId, asignacion.getCursoId().valor()),
+        asignacion.getParaleloId().valor(),
+        etiquetasAcademicas.nombreParalelo(tenantId, asignacion.getParaleloId().valor()));
   }
 
   private AsignacionProfesorResponse aResponse(AsignacionMateriaProfesor asignacion) {
+    UUID tenantId = asignacion.getTenantId();
     return new AsignacionProfesorResponse(
         asignacion.getId().valor(),
         asignacion.getMateriaId().valor(),
         asignacion.getProfesorId(),
         asignacion.getCursoId().valor(),
-        asignacion.getParaleloId().valor());
+        etiquetasAcademicas.nombreCurso(tenantId, asignacion.getCursoId().valor()),
+        asignacion.getParaleloId().valor(),
+        etiquetasAcademicas.nombreParalelo(tenantId, asignacion.getParaleloId().valor()));
   }
 
   private ProfesorResumenResponse aResponse(ProfesorResumen profesor) {

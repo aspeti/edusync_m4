@@ -14,7 +14,7 @@
 | Versión | v0.2 |
 | Fecha | 13/09/2026 |
 | Autor(es) | Rodrigo Aspeti |
-| Estado | **Primer borrador de código generado — pendiente de compilar/verificar contra el classpath real y de revisión humana** (no está en el mismo estado que `PR-IMPL-022`, que sí corrió `mvn test` 250/250) |
+| Estado | **Ejecutado** (curado allowlist/UI en `DD-UC-024`, 26/09/2026) |
 
 > **Convención de ruta**: este prompt vive en `docs/prompts/impl/`, siguiendo `plantillas/plantillas3/FEATURE_DESIGN_DOC_TEMPLATE.md` §5.
 >

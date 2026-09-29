@@ -13,10 +13,13 @@ import com.edusync.academico.application.port.out.EstudianteRepositoryPort;
 import com.edusync.academico.domain.EstadoEstudiante;
 import com.edusync.academico.domain.Estudiante;
 import com.edusync.academico.domain.RudeDuplicadoException;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("agente")
 class CrearEstudianteServiceTest {
 
   private EstudianteRepositoryPort estudianteRepositoryPort;
@@ -59,5 +62,42 @@ class CrearEstudianteServiceTest {
             });
 
     verify(estudianteRepositoryPort, never()).guardar(any());
+  }
+
+  @Test
+  void falloRuntimeExceptionEnGuardarDelRepositorio() {
+    when(estudianteRepositoryPort.existePorRudeYTenant(any(), any())).thenReturn(false);
+    when(estudianteRepositoryPort.guardar(any(Estudiante.class)))
+        .thenThrow(new RuntimeException("Error al guardar"));
+
+    assertThatThrownBy(
+            () ->
+                service.crear(
+                    new CrearEstudianteCommand(
+                        UUID.randomUUID(), "12345678", "Ana Pérez", EstadoEstudiante.ACTIVO, null)))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("Error al guardar");
+
+    verify(estudianteRepositoryPort).guardar(any(Estudiante.class));
+  }
+
+  @Test
+  void retornoDelPuertoSePropagaSinMutar() {
+    UUID tenantId = UUID.randomUUID();
+    CrearEstudianteCommand command =
+        new CrearEstudianteCommand(
+            tenantId, "87654321", "Estudiante Prueba", EstadoEstudiante.ACTIVO, Map.of("key", "val"));
+    Estudiante estudianteGuardado = mock(Estudiante.class);
+
+    when(estudianteRepositoryPort.existePorRudeYTenant(command.rude(), command.tenantId()))
+        .thenReturn(false);
+    when(estudianteRepositoryPort.guardar(any(Estudiante.class)))
+        .thenReturn(estudianteGuardado);
+
+    Estudiante resultado = service.crear(command);
+
+    assertThat(resultado).isSameAs(estudianteGuardado);
+    verify(estudianteRepositoryPort).existePorRudeYTenant(command.rude(), command.tenantId());
+    verify(estudianteRepositoryPort).guardar(any(Estudiante.class));
   }
 }

@@ -1,0 +1,54 @@
+{
+  "id": "20260915-042757-CrearEstudianteService",
+  "layer": "UNIT",
+  "status": "FAILED",
+  "createdAt": "2026-09-15T04:27:57.622093200Z",
+  "updatedAt": "2026-09-15T04:37:22.107795800Z",
+  "target": "CrearEstudianteService (crear)",
+  "clase": "backend/src/main/java/com/edusync/academico/application/service/CrearEstudianteService.java",
+  "salida": "backend/src/test/java/com/edusync/academico/application/service/CrearEstudianteServiceAgenteTest.java",
+  "contexto": [
+    "backend/src/main/java/com/edusync/academico/application/port/in/CrearEstudianteCommand.java"
+  ],
+  "testManual": [
+    "backend/src/test/java/com/edusync/academico/application/service/CrearEstudianteServiceTest.java"
+  ],
+  "tarea": "Add only missing negative unit tests with Mockito: repository failure on guardar, blank rude if service validates it. Max 3 tests. Do not duplicate existing tests. Return complete Java test class only.",
+  "existingTestMethods": [
+    "creaUnEstudianteCuandoElRudeEsUnicoEnElTenant",
+    "rechazaCon409CuandoElRudeYaExisteEnElTenant"
+  ],
+  "existingTestCount": 2,
+  "salidaExists": true,
+  "proposedScenarios": [
+    "conflicto por duplicado (unique / ya existe)",
+    "validacion: blank / vacio / fuera de rango",
+    "fallo de dependencia (repositorio / puerto de salida)",
+    "happy path / invariante de metodo: crear"
+  ],
+  "publicMethods": [
+    "crear"
+  ],
+  "human": {
+    "verdict": null,
+    "note": null,
+    "decidedAt": null
+  },
+  "generation": {
+    "at": "2026-09-15T04:32:05.822777900Z",
+    "promptTokens": 1554,
+    "completionTokens": 646,
+    "seconds": 242.309,
+    "model": "llama3.1:latest",
+    "provider": "ollama",
+    "tag": "agente"
+  },
+  "execution": {
+    "at": "2026-09-15T04:37:22.103232300Z",
+    "command": "mvn -Dtest=CrearEstudianteServiceAgenteTest test",
+    "exitCode": 1,
+    "passed": false,
+    "logTail": "Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3\nWARNING: A Java agent has been loaded dynamically (C:\\Users\\Admin\\.m2\\repository\\net\\bytebuddy\\byte-buddy-agent\\1.18.10\\byte-buddy-agent-1.18.10.jar)\nWARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning\nWARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information\nWARNING: Dynamic loading of agents will be disallowed by default in a future release\nJava HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended\n[ERROR] Tests run: 3, Failures: 2, Errors: 0, Skipped: 0, Time elapsed: 0.946 s <<< FAILURE! -- in com.edusync.academico.application.service.CrearEstudianteServiceAgenteTest\n[ERROR] com.edusync.academico.application.service.CrearEstudianteServiceAgenteTest.rechazaConRudeVacio -- Time elapsed: 0.009 s <<< FAILURE!\njava.lang.AssertionError: \n\nExpecting code to raise a throwable.\n\tat com.edusync.academico.application.service.CrearEstudianteServiceAgenteTest.rechazaConRudeVacio(CrearEstudianteServiceAgenteTest.java:40)\n\n[ERROR] com.edusync.academico.application.service.CrearEstudianteServiceAgenteTest.rechazaConRudeNulo -- Time elapsed: 0.007 s <<< FAILURE!\njava.lang.AssertionError: \n\nExpecting actual throwable to be an instance of:\n  com.edusync.academico.domain.RudeDuplicadoException\nbut was:\n  java.lang.NullPointerException: rude no puede ser nulo\n\tat java.base/java.util.Objects.requireNonNull(Objects.java:246)\n\tat com.edusync.academico.domain.Estudiante.crear(Estudiante.java:55)\n\tat com.edusync.academico.application.service.CrearEstudianteService.crear(CrearEstudianteService.java:27)\n\t...(87 remaining lines not displayed - this can be changed with Assertions.setMaxStackTraceElementsDisplayed)\n\tat com.edusync.academico.application.service.CrearEstudianteServiceAgenteTest.rechazaConRudeNulo(CrearEstudianteServiceAgenteTest.java:53)\n\n[ERROR] Failures: \n[ERROR]   CrearEstudianteServiceAgenteTest.rechazaConRudeNulo:53 \nExpecting actual throwable to be an instance of:\n  com.edusync.academico.domain.RudeDuplicadoException\nbut was:\n  java.lang.NullPointerException: rude no puede ser nulo\n\tat java.base/java.util.Objects.requireNonNull(Objects.java:246)\n\tat com.edusync.academico.domain.Estudiante.crear(Estudiante.java:55)\n\tat com.edusync.academico.application.service.CrearEstudianteService.crear(CrearEstudianteService.java:27)\n\t...(87 remaining lines not displayed - this can be changed with Assertions.setMaxStackTraceElementsDisplayed)\n[ERROR]   CrearEstudianteServiceAgenteTest.rechazaConRudeVacio:40 \nExpecting code to raise a throwable.\n[ERROR] Tests run: 3, Failures: 2, Errors: 0, Skipped: 0\n[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.6:test (default-test) on project edusync-backend: There are test failures.\n[ERROR] \n[ERROR] See C:\\Users\\Admin\\Documents\\Maestria\\edusync_m4\\backend\\target\\surefire-reports for the individual test results.\n[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.\n[ERROR] -> [Help 1]\n[ERROR] \n[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.\n[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n[ERROR] \n[ERROR] For more information about the errors and possible solutions, please read the following articles:\n[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException\n"
+  },
+  "note": "La IA NUNCA aprueba. Tras --generar, auditar (skill §4.5) y usar --decidir --veredicto APPROVE|REJECT|MODIFIED."
+}

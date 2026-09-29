@@ -11,6 +11,8 @@ Herramientas y artefactos para auditar la suite de tests (no sustituyen `mvn tes
 | **Pitest** | Mutaciones sobrevivientes en dominio crítico | `cd backend && mvn -Punit test org.pitest:pitest-maven:mutationCoverage` | Umbral mutación 60 % (también perfil `mutation` en verify) |
 | **Vitest (Angular)** | Cobertura frontend (`core/auth` y specs existentes) | `cd frontend && npm run test:coverage` | Report + umbrales en `angular.json` |
 | **Matriz FSD-UC** | Trazabilidad caso de uso ↔ tests | [`matriz-fsd-uc-tests.md`](./matriz-fsd-uc-tests.md) | Revisión humana / `qa-agent` |
+| **M7 CLI (forma lab)** | Prompt + sidecar `*AgenteTest.java` + log de tokens; **no pisa** el test a mano | `python tools/m7-unit/agente_generador.py ejercicio_1_analizador` (ver `tools/m7-unit/README.md`) | Auditoría humana 3 preguntas; `@Tag("agente")` → `@Tag("auditado")` |
+| **Generación de tests con IA (fusionar)** | Analiza tests existentes y con `--escribir` agrega métodos `@Test` no duplicados en el `*Test.java` | `java tools/ai-test-generator-edusync/GenerarTest.java --clase ...` (+ `--escribir` / `--run`) | Revisión humana del diff — PASSED ≠ aprobado |
 | **CI** | Enforcement en PR | `.github/workflows/ci.yml` | `mvn verify` + `npm run test:coverage` |
 
 ## Reportes locales
@@ -18,6 +20,7 @@ Herramientas y artefactos para auditar la suite de tests (no sustituyen `mvn tes
 - JaCoCo HTML: `backend/target/site/jacoco/index.html`
 - Pitest HTML: `backend/target/pit-reports/index.html`
 - Frontend coverage: `frontend/coverage/`
+- Sesiones HITL antiguas (histórico): [`ai-test-sessions/`](./ai-test-sessions/)
 
 ## Alcance del umbral JaCoCo
 

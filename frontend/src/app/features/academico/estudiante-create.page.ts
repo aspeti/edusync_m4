@@ -25,8 +25,9 @@ import { ApiBase } from '../../core/api/api-base';
 
       <form (ngSubmit)="onSubmit()">
         <div style="margin-bottom: 1rem;">
-          <label>RUDE</label><br />
+          <label for="est-rude">RUDE</label><br />
           <input
+            id="est-rude"
             type="text"
             [(ngModel)]="rude"
             name="rude"
@@ -37,8 +38,9 @@ import { ApiBase } from '../../core/api/api-base';
           />
         </div>
         <div style="margin-bottom: 1rem;">
-          <label>Nombre completo</label><br />
+          <label for="est-nombre">Nombre completo</label><br />
           <input
+            id="est-nombre"
             type="text"
             [(ngModel)]="nombreCompleto"
             name="nombreCompleto"

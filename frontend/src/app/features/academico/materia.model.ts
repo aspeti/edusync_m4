@@ -8,7 +8,9 @@ export interface AsignacionCursoResponse {
   id: string;
   materiaId: string;
   cursoId: string;
+  cursoNombre?: string | null;
   paraleloId: string;
+  paraleloNombre?: string | null;
 }
 
 export interface AsignacionProfesorResponse {
@@ -16,7 +18,9 @@ export interface AsignacionProfesorResponse {
   materiaId: string;
   profesorId: string;
   cursoId: string;
+  cursoNombre?: string | null;
   paraleloId: string;
+  paraleloNombre?: string | null;
 }
 
 export interface ProfesorResumenResponse {

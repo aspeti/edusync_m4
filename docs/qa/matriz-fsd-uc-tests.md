@@ -34,7 +34,7 @@ Actualizar cuando se agregue o cierre un `FSD-UC` / `PR-IMPL`.
 |------|-------|--------|
 | Spring Modulith (ADR-0011) | `ModularityTests` (7 ejecuciones) | OK |
 | Paginación shared | `PageQueryTest`, `PageResultTest`, `PageResponseTest` | OK |
-| Spike LLM (`shared.ai`) | `ChatConLlmServiceTest`, `ConsultarUsuarioServiceTest`, `ExtraerConsultaUsuarioServiceTest`, `LlmStructuredExtractorTest`, `OpenWebUiLlmAdapterTest`, `BuscarUsuarioPorNombrePortImplTest` | OK (fuera de FSD-UC de negocio) |
+| Spike LLM (`shared.ai`) | `ChatConLlmServiceTest`, … + sidecars M7 `*AgenteTest` (`tools/m7-unit`) | PARCIAL (HITL: `@Tag("agente")` hasta auditoría humana) |
 | JWT util | `JwtTokenProviderTest` | OK |
 
 ## Perfil Bolivia SIE (baseline / pendiente de código)

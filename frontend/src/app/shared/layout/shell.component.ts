@@ -14,6 +14,7 @@ import { Router } from '@angular/router';
  * (visibilidad de solo lectura); DD-UC-021 revierte esa ampliación — el enlace vuelve a
  * ser exclusivo ADMIN, porque esos roles ya no listan ni eligen una Gestión Escolar
  * (consumen "la gestión actual" de forma implícita, sin pantalla propia).
+ * DD-UC-024 añade el enlace "Asistente" para ADMIN/SECRETARIA/PROFESOR.
  */
 @Component({
   selector: 'app-shell',
@@ -37,6 +38,9 @@ import { Router } from '@angular/router';
       }
       @if (auth.hasRole('PROFESOR')) {
         <a routerLink="/academico/mis-materias" style="color: white; text-decoration: none;">Mis materias</a>
+      }
+      @if (auth.hasRole('ADMIN') || auth.hasRole('SECRETARIA') || auth.hasRole('PROFESOR')) {
+        <a routerLink="/asistente" style="color: white; text-decoration: none;">Asistente</a>
       }
       <span style="flex: 1"></span>
       <button (click)="logout()" style="cursor: pointer; padding: 0.25rem 0.75rem;">Cerrar sesión</button>

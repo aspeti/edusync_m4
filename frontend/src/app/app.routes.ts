@@ -209,6 +209,13 @@ export const routes: Routes = [
           import('./features/academico/profesores-list.page').then((m) => m.ProfesoresListPage),
       },
       {
+        path: 'asistente',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'SECRETARIA', 'PROFESOR'] },
+        loadComponent: () =>
+          import('./features/asistente/asistente-chat.page').then((m) => m.AsistenteChatPage),
+      },
+      {
         path: 'home',
         canActivate: [authGuard],
         loadComponent: () =>

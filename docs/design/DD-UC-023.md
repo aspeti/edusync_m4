@@ -16,7 +16,7 @@ adrs:
 prompts:
   - "PR-IMPL-023"
 release: "release/3.0.0"
-status: borrador
+status: implementado
 fecha: "13/09/2026"
 autores:
   - "Rodrigo Aspeti"
@@ -169,3 +169,4 @@ flowchart TD
 | Versión | Fecha | Autor | Cambio |
 |---------|-------|-------|--------|
 | v0.1 | 13/09/2026 | Rodrigo Aspeti | Creación del Design Doc (`DD-UC-023`): agente de tool calling multipaso sobre Spring AI, detrás de `AgenteLlmPort` (`ADR-0018` Alternativa C). Prompt `PR-IMPL-023` en borrador; ejecución de código pendiente de aprobación humana. |
+| v0.2 | 26/09/2026 | Rodrigo Aspeti | Curado en `DD-UC-024`: allowlist académica + enrichment; el asistente consulta el sistema, no solo usuarios. Consola Angular en el mismo turno (`PR-IMPL-024`). |

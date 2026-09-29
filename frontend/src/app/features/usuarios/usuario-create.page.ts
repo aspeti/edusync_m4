@@ -27,8 +27,9 @@ import { ApiBase } from '../../core/api/api-base';
 
       <form (ngSubmit)="onSubmit()">
         <div style="margin-bottom: 1rem;">
-          <label>Nombre completo</label><br />
+          <label for="usr-nombre">Nombre completo</label><br />
           <input
+            id="usr-nombre"
             type="text"
             [(ngModel)]="nombreCompleto"
             name="nombreCompleto"
@@ -37,8 +38,9 @@ import { ApiBase } from '../../core/api/api-base';
           />
         </div>
         <div style="margin-bottom: 1rem;">
-          <label>Email</label><br />
+          <label for="usr-email">Email</label><br />
           <input
+            id="usr-email"
             type="email"
             [(ngModel)]="email"
             name="email"
@@ -47,8 +49,9 @@ import { ApiBase } from '../../core/api/api-base';
           />
         </div>
         <div style="margin-bottom: 1rem;">
-          <label>Contraseña inicial</label><br />
+          <label for="usr-password">Contraseña inicial</label><br />
           <input
+            id="usr-password"
             type="password"
             [(ngModel)]="passwordInicial"
             name="passwordInicial"

@@ -1,0 +1,46 @@
+{
+  "id": "20260915-041919-CrearEstudianteService",
+  "layer": "UNIT",
+  "status": "PROPOSED",
+  "createdAt": "2026-09-15T04:19:19.620195600Z",
+  "updatedAt": "2026-09-15T04:19:19.620195600Z",
+  "target": "CrearEstudianteService (crear)",
+  "clase": "backend/src/main/java/com/edusync/academico/application/service/CrearEstudianteService.java",
+  "salida": "backend/src/test/java/com/edusync/academico/application/service/CrearEstudianteServiceAgenteTest.java",
+  "contexto": [
+    "backend/src/main/java/com/edusync/academico/domain/Estudiante.java"
+  ],
+  "testManual": [
+    "backend/src/test/java/com/edusync/academico/domain/EstudianteTest.java",
+    "backend/src/test/java/com/edusync/academico/application/service/CrearEstudianteServiceTest.java"
+  ],
+  "tarea": "Generate unit tests for CrearEstudianteService. Focus on duplicate RUDE, null or blank inputs, and repository failures. Do not duplicate existing tests.",
+  "existingTestMethods": [
+    "creaUnEstudianteActivoPorDefectoCuandoEstadoEsNulo",
+    "rechazaRudeNulo",
+    "rechazaNombreCompletoNulo",
+    "datosPersonalesQuedanInmutables",
+    "creaUnEstudianteCuandoElRudeEsUnicoEnElTenant",
+    "rechazaCon409CuandoElRudeYaExisteEnElTenant"
+  ],
+  "existingTestCount": 6,
+  "salidaExists": false,
+  "proposedScenarios": [
+    "null / valores nulos en entradas obligatorias",
+    "conflicto por duplicado (unique / ya existe)",
+    "validacion: blank / vacio / fuera de rango",
+    "fallo de dependencia (repositorio / puerto de salida)",
+    "happy path / invariante de metodo: crear"
+  ],
+  "publicMethods": [
+    "crear"
+  ],
+  "human": {
+    "verdict": null,
+    "note": null,
+    "decidedAt": null
+  },
+  "generation": null,
+  "execution": null,
+  "note": "La IA NUNCA aprueba. Tras --generar, auditar (skill §4.5) y usar --decidir --veredicto APPROVE|REJECT|MODIFIED."
+}

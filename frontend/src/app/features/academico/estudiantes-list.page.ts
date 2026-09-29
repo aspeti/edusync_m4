@@ -17,7 +17,7 @@ import { PageResponse } from '../../core/api/page-response.model';
   template: `
     <div style="max-width: 1000px; margin: 0 auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2>Estudiantes</h2>
+        <h2 data-testid="estudiantes-heading">Estudiantes</h2>
         <a routerLink="/academico/estudiantes/nuevo" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; text-decoration: none; border-radius: 4px;">
           + Nuevo Estudiante
         </a>

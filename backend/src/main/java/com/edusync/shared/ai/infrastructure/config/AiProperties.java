@@ -19,6 +19,7 @@ public class AiProperties {
 
   private final Ollama ollama = new Ollama();
   private final OpenWebUi openWebui = new OpenWebUi();
+  private final Agente agente = new Agente();
 
   public boolean isEnabled() {
     return enabled;
@@ -42,6 +43,10 @@ public class AiProperties {
 
   public OpenWebUi getOpenWebui() {
     return openWebui;
+  }
+
+  public Agente getAgente() {
+    return agente;
   }
 
   public static class Ollama {
@@ -111,6 +116,84 @@ public class AiProperties {
 
     public void setTimeoutSeconds(int timeoutSeconds) {
       this.timeoutSeconds = timeoutSeconds;
+    }
+  }
+
+  /** Camino ReAct / tool calling ({@code POST /api/v1/ai/agente}, ADR-0018). */
+  public static class Agente {
+    /** Tag fijo; nunca {@code latest}. */
+    private String model = "llama3.1:8b";
+    private int maxTurnos = 6;
+    private boolean habilitado = true;
+    private String openapiPath = "/v3/api-docs";
+    private String ollamaBaseUrl = "http://localhost:11434";
+    private int timeoutSeconds = 120;
+    private boolean llmHabilitado = true;
+    /** 0 = determinista (ADR-0021). */
+    private Double temperature = 0.0;
+
+    public String getModel() {
+      return model;
+    }
+
+    public void setModel(String model) {
+      this.model = model;
+    }
+
+    public int getMaxTurnos() {
+      return maxTurnos;
+    }
+
+    public void setMaxTurnos(int maxTurnos) {
+      this.maxTurnos = maxTurnos;
+    }
+
+    public boolean isHabilitado() {
+      return habilitado;
+    }
+
+    public void setHabilitado(boolean habilitado) {
+      this.habilitado = habilitado;
+    }
+
+    public String getOpenapiPath() {
+      return openapiPath;
+    }
+
+    public void setOpenapiPath(String openapiPath) {
+      this.openapiPath = openapiPath;
+    }
+
+    public String getOllamaBaseUrl() {
+      return ollamaBaseUrl;
+    }
+
+    public void setOllamaBaseUrl(String ollamaBaseUrl) {
+      this.ollamaBaseUrl = ollamaBaseUrl;
+    }
+
+    public int getTimeoutSeconds() {
+      return timeoutSeconds;
+    }
+
+    public void setTimeoutSeconds(int timeoutSeconds) {
+      this.timeoutSeconds = timeoutSeconds;
+    }
+
+    public boolean isLlmHabilitado() {
+      return llmHabilitado;
+    }
+
+    public void setLlmHabilitado(boolean llmHabilitado) {
+      this.llmHabilitado = llmHabilitado;
+    }
+
+    public Double getTemperature() {
+      return temperature;
+    }
+
+    public void setTemperature(Double temperature) {
+      this.temperature = temperature;
     }
   }
 }

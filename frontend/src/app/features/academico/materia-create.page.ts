@@ -25,8 +25,9 @@ import { ApiBase } from '../../core/api/api-base';
 
       <form (ngSubmit)="onSubmit()">
         <div style="margin-bottom: 1.5rem;">
-          <label>Nombre</label><br />
+          <label for="mat-nombre">Nombre</label><br />
           <input
+            id="mat-nombre"
             type="text"
             [(ngModel)]="nombre"
             name="nombre"

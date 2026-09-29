@@ -24,7 +24,7 @@ import { AuthService } from '../../core/auth/auth.service';
   template: `
     <div style="max-width: 1000px; margin: 0 auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2>Gestión Escolar</h2>
+        <h2 data-testid="gestiones-heading">Gestión Escolar</h2>
         @if (esAdmin()) {
           <a routerLink="/academico/gestiones-escolares/nuevo" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; text-decoration: none; border-radius: 4px;">
             + Nueva Gestión Escolar

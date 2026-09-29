@@ -21,21 +21,20 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * Generador simple de tests UNIT para EduSync.
+ * Generador de tests UNIT / INTEGRATION para EduSync.
  *
  * Uso:
- *   java GenerarTest.java --clase backend/src/main/java/.../FooService.java
- *   java GenerarTest.java --clase ... --tarea "..." --escribir
- *   java GenerarTest.java --clase ... --escribir --run
+ *   java GenerarTest.java --clase backend/src/main/java/.../CrearEstudianteService.java
+ *   java GenerarTest.java --clase ... --tipo integration --escribir
+ *   java GenerarTest.java --clase ... --tipo unit --escribir --run
  *
- * Por defecto solo analiza (lista tests existentes y huecos).
- * --escribir llama al LLM (temperature=0) y agrega SOLO metodos @Test que no existan.
- * Nunca toca src/main. La IA no aprueba: el humano revisa el diff.
+ * Por defecto: tipo=unit, solo analiza. --escribir llama al LLM (temperature=0).
+ * Proveedores .env: ollama | open-webui | openai | gemini.
  */
 public class GenerarTest {
 
-    private static final String SYSTEM_PROMPT = """
-            Eres un generador de tests JUnit 5 para EduSync (Java 25, Spring Boot 4.1.0,
+    private static final String SYSTEM_PROMPT_UNIT = """
+            Eres un generador de tests JUnit 5 UNITARIOS para EduSync (Java 25, Spring Boot 4.1.0,
             arquitectura hexagonal, Mockito + AssertJ).
             REGLAS:
             - Devuelve SOLO codigo Java (clase de test completa), sin markdown ni explicaciones.
@@ -48,6 +47,30 @@ public class GenerarTest {
             - Incluye @Tag("agente") en la clase.
             """;
 
+    private static final String SYSTEM_PROMPT_INTEGRATION = """
+            Eres un generador de tests de INTEGRACION para EduSync (Java 25, Spring Boot 4.1.0).
+            Patron OBLIGATORIO del proyecto (copiar estructura de los *IntegrationTest existentes):
+            - @SpringBootTest(webEnvironment = RANDOM_PORT)
+            - @AutoConfigureTestRestTemplate
+            - @Testcontainers
+            - PostgreSQLContainer("postgres:15") + @DynamicPropertySource
+            - TestRestTemplate + login JWT (seed sysadmin) + crear tenant/admin si hace falta
+            - AssertJ sobre status HTTP y body (ErrorResponse.codigo() cuando aplique)
+            - Package del modulo (ej. com.edusync.academico), NO subpaquete application
+            REGLAS:
+            - Devuelve SOLO codigo Java completo, sin markdown.
+            - NO dupliques metodos @Test de EXISTENTES.
+            - Solo escenarios FALTANTES. Maximo 3 metodos @Test nuevos.
+            - NO uses MockMvc/Mockito para el flujo HTTP; es integracion real.
+            - NO inventes endpoints ni error codes; usa los del Controller/DTOs del contexto.
+            - PII sintetica (RUDE inventado, nombres de prueba). Incluye @Tag("agente").
+            - Si el archivo ya existe, igual puedes devolver clase completa con SOLO metodos nuevos
+              (+ helpers privados nuevos SOLO si no existen ya con ese nombre).
+            - PROHIBIDO convertir helpers privados existentes (crearTenantYAutenticarAdmin, autenticarComo,
+              crearGestion, crearCurso, crearParalelo, etc.) en metodos @Test.
+            - Un @Test nuevo NO debe llamarse igual que un helper privado del archivo.
+            """;
+
     private static final Pattern TEST_METHOD =
             Pattern.compile("@Test\\b[\\s\\S]*?\\bvoid\\s+(\\w+)\\s*\\(", Pattern.MULTILINE);
     private static final Pattern PUBLIC_METHOD =
@@ -56,6 +79,22 @@ public class GenerarTest {
             Pattern.compile("```(?:java)?\\r?\\n(.*?)```", Pattern.DOTALL);
     private static final Pattern LINEA_PACKAGE =
             Pattern.compile("^\\s*package\\s+[\\w.]+\\s*;\\s*$", Pattern.MULTILINE);
+
+    private enum TipoTest {
+        UNIT, INTEGRATION;
+
+        static TipoTest parse(String s) throws Fallo {
+            if (s == null || s.isBlank()) {
+                return UNIT;
+            }
+            return switch (s.trim().toLowerCase(Locale.ROOT)) {
+                case "unit", "unidad", "u" -> UNIT;
+                case "integration", "integracion", "it", "i" -> INTEGRATION;
+                default -> throw new Fallo("--tipo invalido: " + s
+                        + " (usa unit | integration)");
+            };
+        }
+    }
 
     public static void main(String[] args) {
         try {
@@ -75,14 +114,17 @@ public class GenerarTest {
         Path raiz = raizRepo();
         if (a.clase == null || a.clase.isBlank()) {
             throw new Fallo("falta --clase <ruta-a-*.java>\n"
-                    + "ejemplo: java GenerarTest.java --clase "
-                    + "backend/src/main/java/com/edusync/.../CrearEstudianteService.java");
+                    + "ejemplo unit: java GenerarTest.java --clase "
+                    + "backend/src/main/java/com/edusync/.../CrearEstudianteService.java\n"
+                    + "ejemplo IT:   java GenerarTest.java --tipo integration --clase "
+                    + "backend/src/main/java/com/edusync/.../EstudianteController.java --escribir");
         }
 
+        TipoTest tipo = a.tipo;
         Path clase = resolver(raiz, a.clase, "--clase");
         Path salida = a.salida != null
                 ? dentroDeRaiz(raiz, a.salida, "--salida")
-                : testPathPara(clase);
+                : testPathPara(clase, tipo);
 
         if (a.runOnly) {
             if (!Files.exists(salida)) {
@@ -92,12 +134,23 @@ public class GenerarTest {
             return;
         }
 
-        List<Path> testsExistentes = descubrirTests(raiz, clase, salida);
+        List<Path> testsExistentes = descubrirTests(raiz, clase, salida, tipo);
         List<Path> contexto = new ArrayList<>();
         for (String c : a.contexto) {
             contexto.add(resolver(raiz, c, "--contexto"));
         }
-        String tarea = resolverTarea(raiz, a.tarea);
+        if (tipo == TipoTest.INTEGRATION) {
+            Path ctrl = encontrarController(raiz, clase);
+            if (ctrl != null && !contexto.contains(ctrl)) {
+                contexto.add(0, ctrl);
+            }
+            // Un IT hermano como referencia de estilo (si existe otro)
+            Path refIt = encontrarIntegrationDeReferencia(raiz, salida);
+            if (refIt != null && !testsExistentes.contains(refIt) && !contexto.contains(refIt)) {
+                contexto.add(refIt);
+            }
+        }
+        String tarea = resolverTarea(raiz, a.tarea, tipo);
 
         String claseSrc = Files.readString(clase, StandardCharsets.UTF_8);
         Set<String> metodosExistentes = new LinkedHashSet<>();
@@ -105,9 +158,9 @@ public class GenerarTest {
             metodosExistentes.addAll(extraerTestMethods(Files.readString(t, StandardCharsets.UTF_8)));
         }
         List<String> publicMethods = extraerPublicMethods(claseSrc);
-        List<String> faltantes = inferirFaltantes(tarea, claseSrc, publicMethods, metodosExistentes);
+        List<String> faltantes = inferirFaltantes(tipo, tarea, claseSrc, publicMethods, metodosExistentes);
 
-        imprimirAnalisis(raiz, clase, salida, testsExistentes, metodosExistentes, faltantes);
+        imprimirAnalisis(raiz, tipo, clase, salida, testsExistentes, metodosExistentes, faltantes);
 
         if (faltantes.isEmpty()) {
             System.out.println("Nada que generar: los escenarios basicos ya estan cubiertos "
@@ -117,25 +170,30 @@ public class GenerarTest {
         if (!a.escribir) {
             System.out.println();
             System.out.println("Modo analisis (no se escribio nada). Para generar:");
-            System.out.println("  java GenerarTest.java --clase " + rel(raiz, clase)
-                    + " --escribir");
+            System.out.println("  java GenerarTest.java --tipo " + tipo.name().toLowerCase(Locale.ROOT)
+                    + " --clase " + rel(raiz, clase) + " --escribir");
             return;
         }
 
-        String codigoNuevo = llamarYExtraer(raiz, clase, contexto, testsExistentes, salida,
+        String codigoNuevo = llamarYExtraer(raiz, tipo, clase, contexto, testsExistentes, salida,
                 tarea, metodosExistentes, faltantes);
+        Set<String> nombresReservados = new LinkedHashSet<>(metodosExistentes);
+        if (Files.exists(salida)) {
+            nombresReservados.addAll(extraerMetodosDeclarados(
+                    Files.readString(salida, StandardCharsets.UTF_8)));
+        }
         List<String> generados = extraerTestMethods(codigoNuevo);
         List<String> duplicados = new ArrayList<>();
         List<String> nuevos = new ArrayList<>();
         for (String m : generados) {
-            if (metodosExistentes.contains(m)) {
+            if (nombresReservados.contains(m)) {
                 duplicados.add(m);
             } else {
                 nuevos.add(m);
             }
         }
         if (!duplicados.isEmpty()) {
-            System.out.println("aviso: el modelo propuso duplicados (se omiten): "
+            System.out.println("aviso: el modelo propuso duplicados/helpers (se omiten): "
                     + String.join(", ", duplicados));
         }
         if (nuevos.isEmpty()) {
@@ -145,12 +203,11 @@ public class GenerarTest {
 
         if (Files.exists(salida)) {
             String actual = Files.readString(salida, StandardCharsets.UTF_8);
-            String fusion = fusionarMetodos(actual, codigoNuevo, new LinkedHashSet<>(metodosExistentes));
+            String fusion = fusionarMetodos(actual, codigoNuevo, nombresReservados);
             Files.writeString(salida, fusion, StandardCharsets.UTF_8);
             System.out.println("actualizado (solo metodos nuevos): " + rel(raiz, salida));
         } else {
             Files.createDirectories(salida.getParent());
-            // Filtrar del codigo completo los metodos duplicados por si acaso
             String limpio = quitarMetodos(codigoNuevo, new LinkedHashSet<>(duplicados));
             if (!limpio.contains("@Tag")) {
                 limpio = insertarTrasImports(limpio, "@Tag(\"agente\")\n");
@@ -163,12 +220,16 @@ public class GenerarTest {
         }
         System.out.println("metodos agregados: " + String.join(", ", nuevos));
         System.out.println("HITL: revisa el archivo. Verde != correcto. La IA no aprueba.");
+        if (tipo == TipoTest.INTEGRATION) {
+            System.out.println("nota: integration requiere Docker (Testcontainers PostgreSQL 15).");
+        }
 
         if (a.run) {
             ejecutarMaven(raiz, nombreSinExtension(salida));
         } else {
-            System.out.println("para ejecutar: java GenerarTest.java --clase "
-                    + rel(raiz, clase) + " --run-only");
+            System.out.println("para ejecutar: java GenerarTest.java --tipo "
+                    + tipo.name().toLowerCase(Locale.ROOT)
+                    + " --clase " + rel(raiz, clase) + " --run-only");
             System.out.println("  o: cd backend && mvn.cmd -Dtest="
                     + nombreSinExtension(salida) + " test");
         }
@@ -176,10 +237,11 @@ public class GenerarTest {
 
     // ----------------------------------------------------------- analisis
 
-    private static void imprimirAnalisis(Path raiz, Path clase, Path salida,
+    private static void imprimirAnalisis(Path raiz, TipoTest tipo, Path clase, Path salida,
                                          List<Path> tests, Set<String> metodos,
                                          List<String> faltantes) {
         System.out.println("========== ANALISIS ==========");
+        System.out.println("Tipo:      " + tipo);
         System.out.println("Clase:     " + rel(raiz, clase));
         System.out.println("Salida:    " + rel(raiz, salida)
                 + (Files.exists(salida) ? " (existe)" : " (nuevo)"));
@@ -206,13 +268,7 @@ public class GenerarTest {
         System.out.println("==============================");
     }
 
-    /**
-     * Busca tests del proyecto relacionados a la clase:
-     * 1) espejo ClassNameTest.java
-     * 2) mismo paquete de test: *Test.java que mencionen el nombre simple
-     * 3) si es *Service, intenta domain/<Tipo>Test.java basico
-     */
-    private static List<Path> descubrirTests(Path raiz, Path clase, Path salida)
+    private static List<Path> descubrirTests(Path raiz, Path clase, Path salida, TipoTest tipo)
             throws IOException {
         Set<Path> out = new LinkedHashSet<>();
         if (Files.exists(salida)) {
@@ -223,6 +279,23 @@ public class GenerarTest {
             return new ArrayList<>(out);
         }
         String simple = nombreSinExtension(clase);
+        String stem = stemAgregado(simple);
+
+        if (tipo == TipoTest.INTEGRATION) {
+            try (Stream<Path> walk = Files.walk(testJavaRoot)) {
+                walk.filter(p -> p.getFileName().toString().endsWith("IntegrationTest.java"))
+                        .forEach(p -> {
+                            String name = p.getFileName().toString();
+                            if (name.equals(stem + "IntegrationTest.java")
+                                    || name.equals(simple + "IntegrationTest.java")
+                                    || name.contains(stem)) {
+                                out.add(p);
+                            }
+                        });
+            }
+            return new ArrayList<>(out);
+        }
+
         try (Stream<Path> walk = Files.walk(testJavaRoot)) {
             walk.filter(p -> p.toString().endsWith("Test.java"))
                     .filter(p -> !p.getFileName().toString().contains("Integration"))
@@ -242,38 +315,76 @@ public class GenerarTest {
                                 out.add(p);
                             }
                         } catch (IOException ignored) {
-                            // skip unreadable
+                            // skip
                         }
                     });
         }
-        // Dominio hermano tipico: .../application/service/FooService -> .../domain/FooTest
         String path = clase.toString().replace('\\', '/');
-        if (path.contains("/application/service/") && simple.endsWith("Service")) {
-            String stem = simple.replaceFirst("^(Crear|Listar|Obtener|Actualizar|Cambiar|Upsert)", "")
-                    .replaceFirst("Service$", "");
-            if (!stem.isBlank()) {
-                Path domainGuess = guessDomainTest(testJavaRoot, clase, stem);
-                if (domainGuess != null && Files.exists(domainGuess)) {
-                    out.add(domainGuess);
-                }
+        if (path.contains("/application/service/") && simple.endsWith("Service") && !stem.isBlank()) {
+            Path domainGuess = guessDomainTest(testJavaRoot, clase, stem);
+            if (domainGuess != null && Files.exists(domainGuess)) {
+                out.add(domainGuess);
             }
         }
         return new ArrayList<>(out);
     }
 
+    private static Path encontrarController(Path raiz, Path clase) throws IOException {
+        String stem = stemAgregado(nombreSinExtension(clase));
+        if (stem.isBlank()) {
+            return null;
+        }
+        Path mainJava = raiz.resolve("backend/src/main/java");
+        if (!Files.isDirectory(mainJava)) {
+            return null;
+        }
+        String want = stem + "Controller.java";
+        try (Stream<Path> walk = Files.walk(mainJava)) {
+            return walk.filter(p -> p.getFileName().toString().equals(want))
+                    .findFirst()
+                    .orElse(null);
+        }
+    }
+
+    /** Otro *IntegrationTest del mismo modulo como plantilla de estilo (max 1). */
+    private static Path encontrarIntegrationDeReferencia(Path raiz, Path salidaObjetivo)
+            throws IOException {
+        Path testJavaRoot = raiz.resolve("backend/src/test/java");
+        if (!Files.isDirectory(testJavaRoot)) {
+            return null;
+        }
+        Path modulo = salidaObjetivo.getParent();
+        if (modulo == null || !Files.isDirectory(modulo)) {
+            return null;
+        }
+        try (Stream<Path> list = Files.list(modulo)) {
+            return list.filter(p -> p.getFileName().toString().endsWith("IntegrationTest.java"))
+                    .filter(p -> !p.equals(salidaObjetivo))
+                    .findFirst()
+                    .orElse(null);
+        }
+    }
+
+    /** CrearEstudianteService / EstudianteController / Estudiante → Estudiante */
+    private static String stemAgregado(String simple) {
+        String s = simple;
+        s = s.replaceFirst("Controller$", "");
+        s = s.replaceFirst("Service$", "");
+        s = s.replaceFirst("^(Crear|Listar|Obtener|Actualizar|Cambiar|Upsert|Registrar)", "");
+        return s;
+    }
+
     private static Path guessDomainTest(Path testJavaRoot, Path clase, String stem) {
-        // .../com/edusync/academico/application/service/X.java
-        // -> .../com/edusync/academico/domain/StemTest.java
-        Path pkg = clase.getParent(); // service
+        Path pkg = clase.getParent();
         if (pkg == null || pkg.getParent() == null || pkg.getParent().getParent() == null) {
             return null;
         }
-        Path module = pkg.getParent().getParent(); // academico
+        Path module = pkg.getParent().getParent();
         String moduleName = module.getFileName().toString();
         return testJavaRoot.resolve("com/edusync/" + moduleName + "/domain/" + stem + "Test.java");
     }
 
-    private static Path testPathPara(Path claseMain) throws Fallo {
+    private static Path testPathPara(Path claseMain, TipoTest tipo) throws Fallo {
         String s = claseMain.toAbsolutePath().normalize().toString().replace('\\', '/');
         String marker = "/src/main/java/";
         int idx = s.indexOf(marker);
@@ -285,11 +396,26 @@ public class GenerarTest {
         if (!rest.endsWith(".java")) {
             throw new Fallo("--clase debe ser un .java");
         }
-        String testRel = rest.substring(0, rest.length() - 5) + "Test.java";
-        return Path.of(prefix + "/src/test/java/" + testRel);
+        String withoutJava = rest.substring(0, rest.length() - 5);
+        if (tipo == TipoTest.UNIT) {
+            return Path.of(prefix + "/src/test/java/" + withoutJava + "Test.java");
+        }
+        // Integration: com/edusync/{modulo}/{Stem}IntegrationTest.java
+        String[] parts = withoutJava.split("/");
+        if (parts.length < 3 || !parts[0].equals("com") || !parts[1].equals("edusync")) {
+            throw new Fallo("no se pudo resolver modulo para integration desde " + withoutJava);
+        }
+        String modulo = parts[2]; // academico | identidad | plataforma | shared
+        String simple = parts[parts.length - 1];
+        String stem = stemAgregado(simple);
+        if (stem.isBlank()) {
+            stem = simple;
+        }
+        return Path.of(prefix + "/src/test/java/com/edusync/" + modulo + "/"
+                + stem + "IntegrationTest.java");
     }
 
-    private static List<String> inferirFaltantes(String tarea, String claseSrc,
+    private static List<String> inferirFaltantes(TipoTest tipo, String tarea, String claseSrc,
                                                    List<String> methods,
                                                    Set<String> existing) {
         Set<String> out = new LinkedHashSet<>();
@@ -302,8 +428,34 @@ public class GenerarTest {
                 }
             }
         }
-        String lowerAll = (tarea + "\n" + String.join(" ", existing)).toLowerCase(Locale.ROOT);
         String lowerSrc = claseSrc.toLowerCase(Locale.ROOT);
+
+        if (tipo == TipoTest.INTEGRATION) {
+            if (!cubre(existing, "aislamiento") && !cubre(existing, "crosstenant")
+                    && !cubre(existing, "otrotenant") && !cubre(existing, "404")) {
+                out.add("aislamiento cross-tenant (404 al acceder recurso de otro tenant)");
+            }
+            if ((lowerSrc.contains("duplic") || lowerSrc.contains("conflict")
+                    || lowerSrc.contains("409") || lowerSrc.contains("unique"))
+                    && !cubre(existing, "duplic") && !cubre(existing, "409")
+                    && !cubre(existing, "conflict")) {
+                out.add("HTTP 409 conflicto de negocio (ej. RUDE/codigo duplicado)");
+            }
+            if (!cubre(existing, "401") && !cubre(existing, "403")
+                    && !cubre(existing, "unauthorized") && !cubre(existing, "sinauth")) {
+                out.add("rechazo sin JWT o con rol insuficiente (401/403)");
+            }
+            if (existing.isEmpty() || (!cubre(existing, "alta") && !cubre(existing, "crear")
+                    && !cubre(existing, "post") && !cubre(existing, "exito"))) {
+                out.add("happy path HTTP: crear/listar recurso y validar status + body");
+            }
+            out.removeIf(s -> cubre(existing, s));
+            List<String> list = new ArrayList<>(out);
+            if (list.size() > 3) {
+                return list.subList(0, 3);
+            }
+            return list;
+        }
 
         if ((lowerSrc.contains("duplic") || lowerSrc.contains("existepor") || lowerSrc.contains("unique"))
                 && !cubre(existing, "duplic") && !cubre(existing, "yaexiste")
@@ -323,7 +475,6 @@ public class GenerarTest {
                 continue;
             }
             if (!cubre(existing, m) && !cubre(existing, "crear") && m.equals("crear")) {
-                // happy path often named differently
                 if (!cubre(existing, "cuando") && !cubre(existing, "exito")
                         && !cubre(existing, "unico") && existing.stream().noneMatch(
                         e -> e.toLowerCase(Locale.ROOT).contains("crea"))) {
@@ -331,7 +482,6 @@ public class GenerarTest {
                 }
             }
         }
-        // Filtrar items de la tarea genérica que ya estan cubiertos por nombre
         out.removeIf(s -> cubre(existing, s));
         List<String> list = new ArrayList<>(out);
         if (list.size() > 5) {
@@ -362,7 +512,7 @@ public class GenerarTest {
 
     // ----------------------------------------------------------- LLM + merge
 
-    private static String llamarYExtraer(Path raiz, Path clase, List<Path> contexto,
+    private static String llamarYExtraer(Path raiz, TipoTest tipo, Path clase, List<Path> contexto,
                                          List<Path> tests, Path salida, String tarea,
                                          Set<String> existentes, List<String> faltantes)
             throws Exception {
@@ -385,15 +535,17 @@ public class GenerarTest {
 
         String paquete = paqueteDesdeRuta(salida);
         String nombre = nombreSinExtension(salida);
-        String user = "PACKAGE: " + paquete + "\nCLASE TEST: " + nombre + "\n\n"
+        String user = "TIPO: " + tipo + "\nPACKAGE: " + paquete + "\nCLASE TEST: " + nombre + "\n\n"
                 + ctx + "\n\nTAREA:\n" + tarea
                 + "\n\nSi el archivo de test ya existe, igual devuelve una clase COMPLETA "
-                + "con SOLO los metodos nuevos (pueden incluir setUp/@BeforeEach si hace falta).";
+                + "con SOLO los metodos nuevos (pueden incluir helpers privados si hacen falta).";
 
+        String system = tipo == TipoTest.INTEGRATION
+                ? SYSTEM_PROMPT_INTEGRATION : SYSTEM_PROMPT_UNIT;
         Config cfg = Config.leer(raiz);
-        System.out.println("LLM -> " + cfg.resumen());
+        System.out.println("LLM -> " + cfg.resumen() + " [" + tipo + "]");
         long t0 = System.currentTimeMillis();
-        LlmRespuesta resp = llamarModelo(cfg, SYSTEM_PROMPT, user);
+        LlmRespuesta resp = llamarModelo(cfg, system, user);
         System.out.printf("ok en %.1fs (tokens in=%s out=%s)%n",
                 (System.currentTimeMillis() - t0) / 1000.0,
                 resp.promptTokens == null ? "?" : resp.promptTokens,
@@ -487,6 +639,19 @@ public class GenerarTest {
 
     // ----------------------------------------------------------- helpers
 
+    /** Todos los metodos void/typed del archivo (incluye helpers privados). */
+    private static Set<String> extraerMetodosDeclarados(String src) {
+        Set<String> names = new LinkedHashSet<>();
+        Matcher m = Pattern.compile(
+                "^\\s*(?:public|private|protected)?\\s*(?:static\\s+)?"
+                        + "(?:void|[A-Z][\\w.<>,\\[\\]\\s]*)\\s+(\\w+)\\s*\\(",
+                Pattern.MULTILINE).matcher(src);
+        while (m.find()) {
+            names.add(m.group(1));
+        }
+        return names;
+    }
+
     private static List<String> extraerTestMethods(String src) {
         List<String> names = new ArrayList<>();
         Matcher m = TEST_METHOD.matcher(src);
@@ -518,8 +683,13 @@ public class GenerarTest {
                 + "\n```java\n" + Files.readString(ruta, StandardCharsets.UTF_8) + "\n```";
     }
 
-    private static String resolverTarea(Path raiz, String tarea) throws IOException {
+    private static String resolverTarea(Path raiz, String tarea, TipoTest tipo) throws IOException {
         if (tarea == null || tarea.isBlank()) {
+            if (tipo == TipoTest.INTEGRATION) {
+                return "Genera solo tests de integracion HTTP faltantes "
+                        + "(happy path, error de negocio 4xx, aislamiento tenant). "
+                        + "No dupliques metodos existentes. No inventes endpoints ni codes.";
+            }
             return "Genera solo tests unitarios faltantes (negativos / borde). "
                     + "No dupliques metodos existentes. No inventes excepciones ni codes.";
         }
@@ -646,22 +816,41 @@ public class GenerarTest {
         body.put("messages", List.of(
                 Map.of("role", "system", "content", systemMsg),
                 Map.of("role", "user", "content", userMsg)));
+        String payload = Json.escribir(body);
         HttpClient client = HttpClient.newBuilder().connectTimeout(cfg.timeout).build();
-        HttpRequest.Builder reqB = HttpRequest.newBuilder()
-                .uri(URI.create(cfg.baseUrl + "/chat/completions"))
-                .timeout(cfg.timeout)
-                .header("Content-Type", "application/json; charset=utf-8");
-        if (cfg.apiKey != null && !cfg.apiKey.isBlank() && !cfg.apiKey.equals("ollama")) {
-            reqB.header("Authorization", "Bearer " + cfg.apiKey);
+        int maxIntentos = 4;
+        for (int intento = 1; intento <= maxIntentos; intento++) {
+            HttpRequest.Builder reqB = HttpRequest.newBuilder()
+                    .uri(URI.create(cfg.baseUrl + "/chat/completions"))
+                    .timeout(cfg.timeout)
+                    .header("Content-Type", "application/json; charset=utf-8");
+            // Ollama local no exige Bearer; Open WebUI, OpenAI y Gemini sí.
+            if (cfg.apiKey != null && !cfg.apiKey.isBlank() && !cfg.apiKey.equals("ollama")) {
+                reqB.header("Authorization", "Bearer " + cfg.apiKey);
+            }
+            HttpResponse<String> resp = client.send(
+                    reqB.POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8))
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            int code = resp.statusCode();
+            if (code / 100 == 2) {
+                return parsearChatCompletion(resp.body());
+            }
+            boolean reintable = code == 429 || code == 503;
+            if (reintable && intento < maxIntentos) {
+                long esperaMs = 2000L * intento * intento;
+                System.out.printf("aviso: HTTP %d (intento %d/%d), reintento en %ds...%n",
+                        code, intento, maxIntentos, esperaMs / 1000);
+                Thread.sleep(esperaMs);
+                continue;
+            }
+            throw new Fallo("HTTP " + code + ": " + resp.body());
         }
-        HttpResponse<String> resp = client.send(
-                reqB.POST(HttpRequest.BodyPublishers.ofString(Json.escribir(body),
-                        StandardCharsets.UTF_8)).build(),
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (resp.statusCode() / 100 != 2) {
-            throw new Fallo("HTTP " + resp.statusCode() + ": " + resp.body());
-        }
-        Map<?, ?> raiz = (Map<?, ?>) Json.leer(resp.body());
+        throw new Fallo("sin respuesta del LLM tras reintentos");
+    }
+
+    private static LlmRespuesta parsearChatCompletion(String bodyJson) throws Fallo {
+        Map<?, ?> raiz = (Map<?, ?>) Json.leer(bodyJson);
         List<?> choices = (List<?>) raiz.get("choices");
         if (choices == null || choices.isEmpty()) {
             throw new Fallo("respuesta sin choices");
@@ -695,9 +884,40 @@ public class GenerarTest {
             this.timeout = timeout;
         }
 
-        static Config leer(Path raiz) throws IOException {
+        static Config leer(Path raiz) throws IOException, Fallo {
             Map<String, String> env = leerDotenv(raiz.resolve(".env"));
             String proveedor = valor(env, "EDUSYNC_AI_PROVIDER", "ollama").toLowerCase(Locale.ROOT);
+            if (proveedor.equals("openai") || proveedor.equals("chatgpt")) {
+                // API oficial ChatGPT / OpenAI (compatible: base + /chat/completions).
+                String base = valor(env, "OPENAI_BASE_URL", "https://api.openai.com/v1");
+                String apiKey = valor(env, "OPENAI_API_KEY", "");
+                if (apiKey.isBlank()) {
+                    throw new Fallo("EDUSYNC_AI_PROVIDER=openai requiere OPENAI_API_KEY "
+                            + "(en .env o variable de entorno; nunca commitear la clave)");
+                }
+                return new Config("openai", trimSlash(base),
+                        apiKey,
+                        valor(env, "OPENAI_MODEL", "gpt-4o-mini"),
+                        Duration.ofSeconds(Long.parseLong(
+                                valor(env, "OPENAI_TIMEOUT_SECONDS", "120"))));
+            }
+            if (proveedor.equals("gemini") || proveedor.equals("google")
+                    || proveedor.equals("google-ai")) {
+                // Gemini via endpoint OpenAI-compat (mismo /chat/completions que openai).
+                // Docs: https://ai.google.dev/gemini-api/docs/openai
+                String base = valor(env, "GEMINI_BASE_URL",
+                        "https://generativelanguage.googleapis.com/v1beta/openai");
+                String apiKey = valor(env, "GEMINI_API_KEY", "");
+                if (apiKey.isBlank()) {
+                    throw new Fallo("EDUSYNC_AI_PROVIDER=gemini requiere GEMINI_API_KEY "
+                            + "(Google AI Studio; nunca commitear la clave)");
+                }
+                return new Config("gemini", trimSlash(base),
+                        apiKey,
+                        valor(env, "GEMINI_MODEL", "gemini-3.8-flash"),
+                        Duration.ofSeconds(Long.parseLong(
+                                valor(env, "GEMINI_TIMEOUT_SECONDS", "120"))));
+            }
             if (proveedor.equals("open-webui")) {
                 String base = valor(env, "OPEN_WEBUI_BASE_URL", "http://localhost:3000");
                 return new Config(proveedor, trimSlash(base) + "/api",
@@ -706,7 +926,8 @@ public class GenerarTest {
                         Duration.ofSeconds(Long.parseLong(
                                 valor(env, "OPEN_WEBUI_TIMEOUT_SECONDS", "300"))));
             }
-            return new Config(proveedor,
+            // ollama (default) u otro nombre → mismo endpoint OpenAI-compat local
+            return new Config(proveedor.isBlank() ? "ollama" : proveedor,
                     trimSlash(valor(env, "OLLAMA_BASE_URL", "http://localhost:11434")) + "/v1",
                     "ollama",
                     valor(env, "OLLAMA_MODEL", "llama3.1:latest"),
@@ -760,6 +981,7 @@ public class GenerarTest {
         String salida;
         String tarea;
         List<String> contexto = new ArrayList<>();
+        TipoTest tipo = TipoTest.UNIT;
         boolean escribir;
         boolean run;
         boolean runOnly;
@@ -785,16 +1007,18 @@ public class GenerarTest {
                         System.out.println("""
                                 Uso:
                                   java GenerarTest.java --clase <src/main/.../Foo.java>
-                                  java GenerarTest.java --clase ... --escribir
-                                  java GenerarTest.java --clase ... --escribir --run
+                                  java GenerarTest.java --tipo unit --clase ... --escribir
+                                  java GenerarTest.java --tipo integration --clase ... --escribir
 
                                 Flags:
-                                  --clase       clase bajo prueba (obligatorio)
+                                  --clase       clase bajo prueba (Service/Controller)
+                                  --tipo        unit (default) | integration
                                   --tarea       prompt opcional
                                   --contexto    archivo extra (repetible)
-                                  --salida      override del *Test.java espejo
+                                  --salida      override del archivo de test
                                   --escribir    llama LLM y agrega tests no duplicados
                                   --run         tras escribir, corre mvn -Dtest=...
+                                  --run-only    solo ejecuta el test espejo
                                 """);
                         System.exit(0);
                     }
@@ -810,11 +1034,11 @@ public class GenerarTest {
                     case "--salida" -> a.salida = v;
                     case "--tarea" -> a.tarea = v;
                     case "--contexto" -> a.contexto.add(v);
+                    case "--tipo", "--layer" -> a.tipo = TipoTest.parse(v);
                     default -> throw new Fallo("flag desconocido: " + f + " (usa --help)");
                 }
             }
             if (a.runOnly) {
-                // permitir --clase --run-only sin escribir
                 a.run = true;
                 a.escribir = false;
             }

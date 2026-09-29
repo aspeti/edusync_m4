@@ -1,56 +1,54 @@
-# Generador de tests unitarios con IA — EduSync
+# Generador de tests UNIT / INTEGRATION con IA — EduSync
 
 Herramienta simple: **lee los tests del proyecto**, lista lo que ya existe y **solo agrega escenarios faltantes** (sin duplicar métodos `@Test`).
 
-## Uso (3 modos)
+## Uso
 
 ```powershell
 cd tools\ai-test-generator-edusync
 
-# 1) Solo analizar (default) — no llama LLM, no escribe
-java GenerarTest.java --clase backend/src/main/java/com/edusync/academico/application/service/CrearEstudianteService.java
+# --- UNIT (default) ---
+java GenerarTest.java --clase backend/src/main/java/.../CrearEstudianteService.java
+java GenerarTest.java --tipo unit --clase ... --escribir
 
-# 2) Generar solo lo que falta (fusiona en *Test.java existente)
-java GenerarTest.java --clase backend/src/main/java/com/edusync/academico/application/service/CrearEstudianteService.java --escribir
+# --- INTEGRATION ---
+java GenerarTest.java --tipo integration `
+  --clase backend/src/main/java/com/edusync/academico/infrastructure/adapter/in/rest/EstudianteController.java
 
-# 3) Generar + ejecutar Maven
-java GenerarTest.java --clase ...\CrearEstudianteService.java --escribir --run
+java GenerarTest.java --tipo integration --clase ...\EstudianteController.java `
+  --tarea "- rechazo HTTP 401 sin JWT" --escribir
 ```
 
-Opcional: `--tarea "..."`, `--contexto <archivo>`, `--salida <ruta>`.
+También acepta un `*Service` como `--clase` en integration: resuelve `EstudianteIntegrationTest` y busca el `*Controller` automáticamente.
 
-## Qué hace automáticamente
+## Qué hace
 
-| Paso | Comportamiento |
-|------|----------------|
-| Localiza salida | `src/main/java/Foo.java` → `src/test/java/FooTest.java` |
-| Lee tests existentes | `FooTest`, `FooAgenteTest`, tests del paquete que usan `Foo`, y heurística de dominio (`CrearEstudianteService` → `EstudianteTest`) |
-| Anti-duplicado | Lista métodos `@Test` existentes; el LLM recibe esa lista; al fusionar se omiten nombres repetidos |
-| Escritura | Si el test existe → **agrega** métodos nuevos. Si no → crea el archivo |
-| HITL | `--escribir` es la confirmación humana. La IA **no aprueba**; revisa el diff |
+| | Unit | Integration |
+|--|------|-------------|
+| Salida | `.../FooServiceTest.java` | `com/edusync/{modulo}/FooIntegrationTest.java` |
+| Stack | JUnit + Mockito + AssertJ | `@SpringBootTest` + Testcontainers PG 15 + TestRestTemplate |
+| Anti-duplicado | Por nombre `@Test` | Igual; fusiona en el IT existente |
+| Ejecutar | `mvn -Dtest=...` | Igual (**requiere Docker**) |
 
-## Requisitos
+`--escribir` = confirmación humana. La IA **no aprueba**.
 
-- JDK del backend
-- Para `--escribir`: Ollama/Open WebUI vía `.env` (`EDUSYNC_AI_PROVIDER`, `OLLAMA_*` o `OPEN_WEBUI_*`)
-- Para `--run`: `mvn` / `mvn.cmd` en PATH
+## Proveedores LLM
 
-## Ejemplo de salida (análisis)
+| `EDUSYNC_AI_PROVIDER` | Variables |
+|----------------------|-----------|
+| `ollama` (default) | `OLLAMA_*` |
+| `open-webui` | `OPEN_WEBUI_*` |
+| `openai` | `OPENAI_API_KEY`, `OPENAI_MODEL`, ... |
+| `gemini` | `GEMINI_API_KEY`, `GEMINI_MODEL` (default `gemini-3.8-flash`), ... |
 
-```text
-========== ANALISIS ==========
-Clase:     backend/src/main/java/.../CrearEstudianteService.java
-Salida:    backend/src/test/java/.../CrearEstudianteServiceTest.java (existe)
-Tests leidos (2):
-  - .../CrearEstudianteServiceTest.java
-  - .../EstudianteTest.java
-Metodos @Test existentes (6):
-  - creaUnEstudianteCuandoElRudeEsUnicoEnElTenant
-  - rechazaCon409CuandoElRudeYaExisteEnElTenant
-  - ...
-Escenarios faltantes propuestos (1):
-  1. fallo del puerto/repositorio al persistir
-==============================
+```powershell
+$env:EDUSYNC_AI_PROVIDER="ollama"
+$env:OLLAMA_MODEL="llama3.1:8b"
+
+# Gemini (Google AI Studio → API key)
+$env:EDUSYNC_AI_PROVIDER="gemini"
+$env:GEMINI_API_KEY="AIza..."
+$env:GEMINI_MODEL="gemini-3.8-flash"
 ```
 
-Si no hay faltantes → termina sin llamar al LLM.
+Gemini usa el endpoint OpenAI-compat de Google (`.../v1beta/openai/chat/completions`); no hace falta otro cliente HTTP.

@@ -23,6 +23,7 @@ import com.edusync.shared.web.PageResponse;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,6 +50,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
 @Testcontainers
+@Tag("agente")
 class EstudianteIntegrationTest {
 
   @Container
@@ -255,5 +257,21 @@ class EstudianteIntegrationTest {
     HttpHeaders headers = new HttpHeaders();
     headers.setBearerAuth(login.getBody().accessToken());
     return headers;
+  }
+
+  @Test
+  void getEstudianteInexistenteDevuelve404() {
+    HttpHeaders admin = crearTenantYAutenticarAdmin(
+        "Colegio Estudiantes 404", "admin-est-404@colegio.edu.bo");
+    UUID inexistente = UUID.randomUUID();
+
+    ResponseEntity<ErrorResponse> response = restTemplate.exchange(
+        "/api/v1/estudiantes/" + inexistente,
+        HttpMethod.GET,
+        new HttpEntity<>(admin),
+        ErrorResponse.class);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(response.getBody().codigo()).isEqualTo("E_ESTUDIANTE_NO_ENCONTRADO");
   }
 }

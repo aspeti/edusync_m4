@@ -1,0 +1,9 @@
+{
+  "students": ["EDUSYNC_TEST_STUDENT_001", "EDUSYNC_TEST_STUDENT_002"],
+  "teachers": ["EDUSYNC_TEST_TEACHER_001"],
+  "tenants": ["EDUSYNC_TEST_TENANT_A", "EDUSYNC_TEST_TENANT_B"],
+  "courses": ["3ro A", "3ro B", "4to A"],
+  "canary": "EDUSYNC_REDACTED_CANARY_001",
+  "roles": ["SYSADMIN", "ADMIN", "SECRETARIA", "PROFESOR"],
+  "nota": "Solo identificadores sinteticos. Sin RUDE real, sin correo real, sin JWT de una sesion viva."
+}

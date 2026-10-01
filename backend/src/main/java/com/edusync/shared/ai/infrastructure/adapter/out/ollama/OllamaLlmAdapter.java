@@ -13,7 +13,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Adaptador {@link LlmPort} → Ollama via Spring AI {@link ChatClient}.
- * Activo cuando {@code edusync.ai.provider=ollama} (default).
+ * Activo cuando {@code edusync.ai.provider=ollama}.
+ * El default del producto es Gemini ({@code ADR-0023}); este adaptador queda para el perfil local sin clave cloud.
  * MUST NOT loguear prompt ni respuesta completa (AGENTS.md &sect;7).
  */
 @Component

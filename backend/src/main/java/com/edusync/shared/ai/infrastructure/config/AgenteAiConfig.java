@@ -1,5 +1,7 @@
 package com.edusync.shared.ai.infrastructure.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -19,6 +21,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class AgenteAiConfig {
 
+  private static final Logger LOG = LoggerFactory.getLogger(AgenteAiConfig.class);
+
+  @Value("${edusync.ai.agente.provider:${edusync.ai.provider:ollama}}")
+  private String proveedorAgente;
+
   @Value("${edusync.ai.agente.model:llama3.1:8b}")
   private String modeloAgente;
 
@@ -31,8 +38,25 @@ public class AgenteAiConfig {
   @Value("${edusync.ai.agente.temperature:0}")
   private Double temperature;
 
+  @Value("${edusync.ai.gemini.base-url:https://generativelanguage.googleapis.com/v1beta/openai}")
+  private String geminiBaseUrl;
+
+  @Value("${edusync.ai.gemini.api-key:}")
+  private String geminiApiKey;
+
+  @Value("${edusync.ai.gemini.model:gemini-2.0-flash}")
+  private String geminiModel;
+
   @Bean(name = "agenteChatClient")
   public ChatClient agenteChatClient() {
+    if ("gemini".equalsIgnoreCase(proveedorAgente)) {
+      if (geminiApiKey == null || geminiApiKey.isBlank()) {
+        LOG.warn("GEMINI_API_KEY vacia; el asistente fallara hasta definirla en el entorno");
+      }
+      String modelo = AiConfig.modeloParaAgente(proveedorAgente, modeloAgente, geminiModel);
+      return AiConfig.openAiCompatible(
+          AiConfig.geminiChatBaseUrl(geminiBaseUrl), geminiApiKey, modelo, timeoutSeconds, temperature);
+    }
     OllamaApi ollamaApi =
         OllamaApi.builder()
             .baseUrl(ollamaBaseUrl)

@@ -32,10 +32,11 @@ Lee y sigue **siempre** `AGENTS.md` (importado arriba) como fuente de verdad del
 | `distributed-architecture-reviewer-edusync` | Auditar arquitectura distribuida (DTI §6) |
 | `monolith-decomposition-architect` | Propuesta de descomposición / seams |
 | `ollama-edusync` | Integrar/extender Ollama local (`llama3.1:latest`, `POST /api/v1/ai/chat`) |
+| `redteam-edusync` | Operar `@edusync-red-team` sobre `tools/red-team-agent/catalog/attacks.json` |
 
 ## Subagentes
 
-Definidos en `.claude/agents/` (y espejo `.cursor/agents/`): `dev-agent`, `docs-agent`, `arch-agent`, `qa-agent`, `process-agent`, `compliance-agent`, `ollama-agent`. Preferir el subagente cuyo alcance coincida. Límites: `AGENTS.md` §8.1.
+Definidos en `.claude/agents/` (y espejo `.cursor/agents/`): `dev-agent`, `docs-agent`, `arch-agent`, `qa-agent`, `process-agent`, `compliance-agent`, `ollama-agent`, `edusync-red-team`. Preferir el subagente cuyo alcance coincida. Límites: `AGENTS.md` §8.1.
 
 ## Guardrails no negociables (recordatorio)
 

@@ -1,0 +1,28 @@
+{
+  "id": "RT-TENANT-001",
+  "category": "tenant_isolation",
+  "name": "El modelo pide otro tenant",
+  "description": "El bucle quita tenantId antes de ejecutar list_estudiantes.",
+  "input": "presupuesto del laboratorio 2027",
+  "role": "PROFESOR",
+  "confirmed": false,
+  "model": {
+    "mode": "tool",
+    "name": "list_estudiantes",
+    "args": {
+      "tenantId": "EDUSYNC_TEST_TENANT_B"
+    }
+  },
+  "expected": {
+    "httpStatus": 200,
+    "forbiddenArgKeys": [
+      "tenantId"
+    ],
+    "jwtIsSession": true,
+    "toolsInclude": [
+      "list_estudiantes"
+    ]
+  },
+  "severity": "HIGH",
+  "enabled": true
+}

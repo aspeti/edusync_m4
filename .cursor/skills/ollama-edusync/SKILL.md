@@ -64,13 +64,14 @@ El modelo del agente es `edusync.ai.agente.model` (default `llama3.1:8b`).
 
 | Valor | Adaptador | Upstream | Auth upstream |
 |-------|-----------|----------|---------------|
-| `ollama` (default) | `OllamaLlmAdapter` | Spring AI `ChatClient` → Ollama local | ninguna |
+| `gemini` (default) | `GeminiLlmAdapter` | Spring AI contra el endpoint OpenAI-compatible de Gemini (`ADR-0023`) | `Bearer ${GEMINI_API_KEY}` |
+| `ollama` | `OllamaLlmAdapter` | Spring AI `ChatClient` → Ollama local | ninguna |
 | `open-webui` | `OpenWebUiLlmAdapter` | Spring AI (protocolo compatible OpenAI) | `Bearer ${OPEN_WEBUI_API_KEY}` |
 
 ## 4. Secretos (obligatorio)
 
 - **MUST NOT** hardcodear ni commitear API keys.
-- Key solo vía env `OPEN_WEBUI_API_KEY` (YAML: `api-key: ${OPEN_WEBUI_API_KEY:}`).
+- Key solo vía env `OPEN_WEBUI_API_KEY` o `GEMINI_API_KEY` (YAML: `${OPEN_WEBUI_API_KEY:}` / `${GEMINI_API_KEY:}`).
 - `.gitignore` ignora `.env`, `.env.*`, `application-local.yml`.
 - Spring Boot **no** carga `.env` solo: exportar en shell/IDE o usar Run Configuration.
 - Ejemplo PowerShell (desde raíz, sin commitear):
@@ -85,7 +86,7 @@ cd backend; mvn spring-boot:run
 
 ## 5. Procedimiento
 
-1. Elegir provider (`ollama` o `open-webui`).
+1. Elegir provider (`ollama`, `open-webui` o `gemini`). El asistente puede ir aparte con `EDUSYNC_AI_AGENTE_PROVIDER`.
 2. Si Open WebUI: crear API key en la UI, ponerla solo en `.env` / env del proceso.
 3. Verificar upstream (Ollama `:11434` o WebUI `:3000`).
 4. Cambios en `shared.ai` respetando hexagonal.

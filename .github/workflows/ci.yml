@@ -27,6 +27,10 @@ jobs:
           java-version: "25"
           cache: maven
 
+      - name: Red team catalog
+        working-directory: tools/red-team-agent
+        run: python cli.py sync --check
+
       - name: mvn verify (tests + jacoco:check ≥ 80% domain/application)
         run: mvn -B verify
 

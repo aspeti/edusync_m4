@@ -14,11 +14,12 @@ public class AiProperties {
   /** Si es {@code false}, {@code POST /api/v1/ai/chat} responde 503. */
   private boolean enabled = true;
 
-  /** {@code ollama} (default) o {@code open-webui}. */
-  private String provider = "ollama";
+  /** {@code gemini} (default), {@code ollama} o {@code open-webui}. */
+  private String provider = "gemini";
 
   private final Ollama ollama = new Ollama();
   private final OpenWebUi openWebui = new OpenWebUi();
+  private final Gemini gemini = new Gemini();
   private final Agente agente = new Agente();
 
   public boolean isEnabled() {
@@ -43,6 +44,10 @@ public class AiProperties {
 
   public OpenWebUi getOpenWebui() {
     return openWebui;
+  }
+
+  public Gemini getGemini() {
+    return gemini;
   }
 
   public Agente getAgente() {
@@ -84,6 +89,50 @@ public class AiProperties {
     /** NUNCA poner un valor real aqui; solo ${OPEN_WEBUI_API_KEY}. */
     private String apiKey = "";
     private String model = "llama3.1:latest";
+    private int timeoutSeconds = 120;
+
+    public String getBaseUrl() {
+      return baseUrl;
+    }
+
+    public void setBaseUrl(String baseUrl) {
+      this.baseUrl = baseUrl;
+    }
+
+    public String getApiKey() {
+      return apiKey;
+    }
+
+    public void setApiKey(String apiKey) {
+      this.apiKey = apiKey;
+    }
+
+    public String getModel() {
+      return model;
+    }
+
+    public void setModel(String model) {
+      this.model = model;
+    }
+
+    public int getTimeoutSeconds() {
+      return timeoutSeconds;
+    }
+
+    public void setTimeoutSeconds(int timeoutSeconds) {
+      this.timeoutSeconds = timeoutSeconds;
+    }
+  }
+
+  /**
+   * Gemini Developer API por el endpoint compatible con OpenAI (ADR-0023).
+   * La API key MUST venir solo de {@code GEMINI_API_KEY}.
+   */
+  public static class Gemini {
+    private String baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai";
+    /** NUNCA poner un valor real aqui; solo ${GEMINI_API_KEY}. */
+    private String apiKey = "";
+    private String model = "gemini-2.0-flash";
     private int timeoutSeconds = 120;
 
     public String getBaseUrl() {

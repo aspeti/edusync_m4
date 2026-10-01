@@ -2,8 +2,8 @@
 producto: "EduSync"
 grupo: "G-EduSync"
 documento: DTP                 # Documento Técnico del Producto (continuación VIVA del DTI)
-version: v1.52                 # versiona la implementación, no el diseño de M4
-fecha: "29/09/2026"
+version: v1.53                 # versiona la implementación, no el diseño de M4
+fecha: "30/09/2026"
 status: vivo                   # vivo | en_revision | publicado-release   (NUNCA "congelado")
 audiencia: dual                # humanos + agentes IA
 baseline_ref:                  # el baseline CONGELADO del que parte este DTP (M4)
@@ -115,6 +115,7 @@ flowchart LR
 | 27/09/2026 | **`ADR-0021`** + `DD-UC-027` + **ejecución de `PR-IMPL-027`** (oleada 1 Lab 6): grafo Java (no LangGraph) con `GUARDRAIL_ENTRADA`/`CLASIFICAR`/`BLOQUEADO`/`SALUDO`/`KEYWORD`/`CONSULTA`/`REACT`/`GUARDRAIL_SALIDA`; temperatura del agente `0`; badge UI. RAG/checkpoint/caché semántico diferidos. Chat v0 intacto. Baseline intacto. | Patrones de producción del Lab 6 sobre el stack vivo (`NFR-007`) | `ADR-0021` | `mvn test` **315/315**; `ng build` verde. `pendiente de commit formal` | Rodrigo Aspeti |
 | 27/09/2026 | **`DD-UC-028` + `PR-IMPL-028`**: camino `PROCESO` (RAG léxico) con corpus de procesos EduSync (`docs/ai/base_conocimiento/`). | Preguntas de «cómo funciona» citando FSD-UC (`NFR-007`) | `ADR-0021` (oleada 2) | `mvn test` **321/321**; `ng build` verde. `pendiente de commit formal` | Rodrigo Aspeti |
 | 29/09/2026 | **Ejecución de `PR-IMPL-029`** (`DD-UC-029`): `ParametroPeriodo` (`V13`), `GET`/`PUT /api/v1/periodos-evaluacion/{id}/parametros` y gates al abrir (`E_PARAMETROS_INCOMPLETOS`, `E_MATERIA_SIN_DOCENTE`). Panel en la pantalla de periodos. Inmutable fuera de `PENDIENTE`. Sin apertura secuencial ni freeze (`ADR-0014`). `ng build` verde. Tests del slice en verde | El periodo se podía abrir sin parámetros ni cobertura docente | — | delta de `FSD-UC-009` ejecutado; cierre por centralizador, notificación y `audit_log` siguen fuera | Rodrigo Aspeti |
+| 30/09/2026 | **`ADR-0023`**: proveedor Gemini opcional para chat y asistente, endpoint compatible con OpenAI, sin dependencia nueva. Default Ollama. `GEMINI_API_KEY` solo por entorno. Un tag `llama*` no se envía a Gemini | Correr el asistente contra un modelo que responde dentro del timeout del red team live | `ADR-0023` (no supersede `ADR-0017`/`0018`) | `ProveedorGeminiTest`; arranque default sin key | G-EduSync |
 
 ### A.2 Deltas respecto al DTI vFinal
 
@@ -286,3 +287,4 @@ Estado actual: la cadena existe completa hasta `Design Doc` para `FSD-UC-011`/`F
 | v1.50 | 27/09/2026 | Rodrigo Aspeti | **`DD-UC-028` + `PR-IMPL-028`**: RAG léxico de procesos EduSync (camino `PROCESO`). §A.1 nueva fila. §B §9/§10 → `PROMPT_MAPPING` v2.50. Baseline intacto. |
 | v1.51 | 29/09/2026 | Rodrigo Aspeti | **`DD-UC-029` + `PR-IMPL-029` (borrador)**: delta de `FSD-UC-009` (parámetros del periodo y cobertura docente al abrir). §A.1 nueva fila. §A.3 `FSD-UC-009` pasa a `en progreso`. §B §10 → `PROMPT_MAPPING` v2.51. Sin código. Baseline intacto. |
 | v1.52 | 29/09/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-029`**: `ParametroPeriodo`, `V13`, `GET`/`PUT .../parametros`, gates al abrir y panel en periodos. §A.1 fila de ejecución. §A.3 `FSD-UC-009` pasa a `parcial`. §B §10 → `PROMPT_MAPPING` v2.52. `FSD` v2.16. Baseline intacto. |
+| v1.53 | 30/09/2026 | G-EduSync | **`ADR-0023`**: Gemini opcional en `edusync.ai.provider` y `edusync.ai.agente.provider`. §A.1 fila. Default Ollama. Baseline intacto. |

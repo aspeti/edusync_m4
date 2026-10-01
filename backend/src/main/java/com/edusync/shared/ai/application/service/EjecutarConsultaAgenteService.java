@@ -57,6 +57,7 @@ public class EjecutarConsultaAgenteService implements EjecutarConsultaAgenteUseC
     private final boolean aiEnabled;
     private final boolean agenteHabilitado;
     private final boolean llmHabilitado;
+    private final PoliticaAlcanceAgente politicaAlcance = new PoliticaAlcanceAgente();
 
     public EjecutarConsultaAgenteService(
             AgenteLlmPort agenteLlmPort,
@@ -225,7 +226,20 @@ public class EjecutarConsultaAgenteService implements EjecutarConsultaAgenteUseC
         if (definicion.escritura()) {
             return resolverEscrituraKeyword(definicion, match.argumentos(), jwtUsuario, confirmed);
         }
-        LlamadaHerramienta llamada = new LlamadaHerramienta("keyword", definicion.toolId(), match.argumentos());
+        if (!politicaAlcance.puedeEjecutar(definicion.toolId())) {
+            log.debug("Camino KEYWORD tool={} rechazada por rol", definicion.toolId());
+            return new RespuestaAgente(
+                    "No puedo listar las cuentas de la institucion con este rol.",
+                    List.of(),
+                    0,
+                    RespuestaAgente.CAMINO_KEYWORD,
+                    RespuestaAgente.FUENTE_CATALOGO,
+                    RespuestaAgente.AGENTE_GENERAL,
+                    List.of(new PasoTrazaAgente(1, definicion.toolId(), definicion.tablasFuente(), false)),
+                    false);
+        }
+        LlamadaHerramienta llamada = politicaAlcance.sanear(
+                new LlamadaHerramienta("keyword", definicion.toolId(), match.argumentos()));
         String observacion = ejecutorHerramientaPort.ejecutar(llamada, jwtUsuario);
         boolean exito = observacion == null || !observacion.contains("\"error\"");
         String texto = formateadorRespuesta.formatear(definicion, observacion);
@@ -348,7 +362,12 @@ public class EjecutarConsultaAgenteService implements EjecutarConsultaAgenteUseC
             }
 
             historial.add(MensajeAgente.decisionHerramienta(llamada));
-            String observacion = ejecutorHerramientaPort.ejecutar(llamada, jwtUsuario);
+            if (!politicaAlcance.puedeEjecutar(llamada.nombreHerramienta())) {
+                historial.add(MensajeAgente.observacion("{\"error\":\"sin permiso\"}"));
+                continue;
+            }
+            LlamadaHerramienta saneada = politicaAlcance.sanear(llamada);
+            String observacion = ejecutorHerramientaPort.ejecutar(saneada, jwtUsuario);
             historial.add(MensajeAgente.observacion(observacion));
             herramientasUsadas.add(llamada.nombreHerramienta());
             ultimaObservacion = observacion;

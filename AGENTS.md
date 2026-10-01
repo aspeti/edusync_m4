@@ -318,7 +318,7 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 | Reducción de boilerplate | Lombok | 1.18.46 (`scope=provided`) | Sin restricción en `infrastructure`/`application`; en `domain/` restringido a un *allowlist* (`@Getter`/`@EqualsAndHashCode`/`@ToString`, nomenclatura JavaBean estándar; nunca `@Data`/`@Setter`/`@Builder` público, que evadirían la validación de invariantes de los Aggregate Roots) (`ADR-0012`) |
 | Documentación de API | springdoc-openapi | `springdoc-openapi-starter-webmvc-ui` 3.0.3 | Rama `3.x.x` compatible con Spring Boot 4.x; genera `/v3/api-docs` + `/swagger-ui.html` desde las anotaciones de los controladores/DTOs existentes (`ADR-0012`) |
 | Validación de entrada | Bean Validation (Jakarta) | `spring-boot-starter-validation` (BOM `spring-boot-starter-parent`) | `@NotBlank`/`@Email`/`@Size` declarativos en DTOs de `infrastructure/adapter/in/rest/`, con `@ExceptionHandler(MethodArgumentNotValidException.class)` común normalizando al formato `ErrorResponse` (`ADR-0012`) |
-| Cliente LLM (infra) | Spring AI | **2.0.0** (`spring-ai-bom`; docs oficiales: Boot 4.0.x y 4.1.x) | Solo en `shared.ai.infrastructure` como implementación de `LlmPort`; no entra a `domain/`/`application/`; default Ollama `llama3.1:latest`; sin PII en logs (`ADR-0017` / `PR-IMPL-022`) |
+| Cliente LLM (infra) | Spring AI | **2.0.0** (`spring-ai-bom`; docs oficiales: Boot 4.0.x y 4.1.x) | Solo en `shared.ai.infrastructure`. Default Gemini (`gemini-2.0-flash`, o `GEMINI_MODEL` en `.env`). Ollama queda con `EDUSYNC_AI_PROVIDER=ollama`. Key solo en `GEMINI_API_KEY` (`ADR-0023`). Sin PII en logs |
 
 > El agente **MUST NOT** introducir dependencias fuera de esta tabla sin crear un ADR en `docs/adr/` y obtener aprobación humana explícita en el PR.
 
@@ -396,6 +396,7 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 | `process-agent` | Modelar workflows y diagramas de estado (Docente, Director) garantizando consistencia con UCs | Sonnet | `read`, `edit` | Opera en `docs/diagrams/`; diagramas deben usar `stateDiagram-v2` y nombres reales del dominio |
 | `compliance-agent` | Validar que ningún output de `dev-agent` viole invariantes regulatorias del SIE (RUDE, floor, rangos) | Sonnet | `read`, ejecutar golden tests | Solo lectura de artefactos + ejecución de golden tests en CI; bloquea merge si falla |
 | `ollama-agent` | Integrar/extender LLM en runtime vía Ollama local (`llama3.1:latest`, `POST /api/v1/ai/chat`, paquete `shared.ai`) | Sonnet | `read`, `edit`, `run-tests` | **MUST NOT** loguear/enviar PII/RUDE/notas al modelo; **MUST NOT** cambiar de proveedor LLM sin ADR; **MUST NOT** editar `docs/baseline/**`; skill `ollama-edusync`. Espejo: `.claude/agents/ollama-agent.md` + `.cursor/agents/ollama-agent.md` |
+| `redteam-agent` | Alias de `edusync-red-team`. Genera y mantiene pruebas del asistente desde `tools/red-team-agent/catalog/attacks.json` | Sonnet | `read`, `edit`, `run-tests` | **MUST NOT** atacar hosts ajenos; **MUST NOT** loguear PII/RUDE/secretos; **MUST NOT** marcar un hueco como cubierto; **MUST NOT** editar `docs/baseline/**`. Espejo: `.claude/agents/edusync-red-team.md` + `.cursor/agents/edusync-red-team.md` |
 
 ### 8.2 Guardrails generales
 
@@ -633,6 +634,7 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 | v0.48 | 21/08/2026 | Rodrigo Aspeti | **Ejecución real de `PR-IMPL-018` + sync documental (`dtp-sync`)**: código fullstack de Calificaciones + `CalculoNotas` — Aggregate `CalificacionEvaluacion`, motor `round` HALF_UP (sin `floor()`), `V12`, matriz UI. Verificación: `mvn test` → **235/235** verde (incluye `ModularityTests` 7/7); `ng build` verde. `docs/product/FSD.md` v2.13→v2.14; `docs/PROMPT_MAPPING.md` v2.37→v2.38; `docs/product/DTP.md` v1.37→v1.38. `FSD-UC-016` cierra implementación **completa** (backend + UI) — décimo `FSD-UC` en cerrar ambas capas. Sin ADR nuevo. Baseline intacto. |
 | v0.49 | 13/09/2026 | Rodrigo Aspeti | **`ADR-0017`** + `DD-UC-022` + `PR-IMPL-022` (Aprobado, ejecución pendiente) + `PR-ADR-010`: Spring AI como cliente HTTP/LLM **detrás** de `LlmPort` (Alternativa C). §4 tabla de stack añade fila Spring AI (versión a fijar al ejecutar el prompt, tras verificar BOM vs Boot 4.1.0). `docs/PROMPT_MAPPING.md` v2.42→v2.43; `docs/product/DTP.md` v1.40→v1.41 (delta 8 vs DTI §9). Sin código en este turno. Baseline intacto. |
 | v0.50 | 13/09/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-022`**: fija Spring AI **2.0.0** en §4. Adaptadores `ChatClient` detrás de `LlmPort`. `mvn test` **250/250** (incluye `ModularityTests` 7/7). `docs/PROMPT_MAPPING.md` v2.43→v2.44; `docs/product/DTP.md` v1.41→v1.42. Baseline intacto. |
+| v0.51 | 30/09/2026 | G-EduSync | **`ADR-0023`**: Gemini opcional (`EDUSYNC_AI_PROVIDER=gemini` / `EDUSYNC_AI_AGENTE_PROVIDER`) por el endpoint compatible con OpenAI. Default Ollama sin cambio. Key solo en `GEMINI_API_KEY`. |
 
 ---
 

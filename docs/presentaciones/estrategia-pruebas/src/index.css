@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+/* Plataforma de control de calidad: escenario 16:9 oscuro, cian para lo determinista,
+   esmeralda para lo verificado, ámbar para lo pendiente. Un solo tema (oscuro) por decisión. */
+@theme {
+  --color-ink: #070b14;        /* fondo del escenario */
+  --color-panel: #0e1524;      /* superficies */
+  --color-line: #1d2a40;       /* bordes */
+  --color-mute: #8193b2;       /* texto secundario */
+  --color-text: #e6edf7;       /* texto principal */
+  --color-neon: #38c8ff;       /* acento determinista */
+  --color-emerald: #2ee6a6;    /* verificado / éxito */
+  --color-amber: #ffb547;      /* pendiente / próximo paso */
+  --color-rose: #ff5c7a;       /* fuera de alcance / ataque */
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+:root { color-scheme: dark; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--color-ink);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { text-wrap: balance; }
+.tnum { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--color-neon); outline-offset: 2px; }
+
+/* trama de fondo tipo papel milimetrado de osciloscopio */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgb(56 200 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(56 200 255 / 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}

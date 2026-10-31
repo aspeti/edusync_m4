@@ -47,8 +47,34 @@ public class AgenteAiConfig {
   @Value("${edusync.ai.gemini.model:gemini-2.0-flash}")
   private String geminiModel;
 
+  @Value("${edusync.ai.open-webui.base-url:http://localhost:3000}")
+  private String openWebUiBaseUrl;
+
+  @Value("${edusync.ai.open-webui.api-key:}")
+  private String openWebUiApiKey;
+
+  @Value("${edusync.ai.open-webui.model:llama3.1:latest}")
+  private String openWebUiModel;
+
+  @Value("${edusync.ai.open-webui.timeout-seconds:120}")
+  private int openWebUiTimeoutSeconds;
+
   @Bean(name = "agenteChatClient")
   public ChatClient agenteChatClient() {
+    if ("open-webui".equalsIgnoreCase(proveedorAgente)) {
+      if (openWebUiApiKey == null || openWebUiApiKey.isBlank()) {
+        LOG.warn("OPEN_WEBUI_API_KEY vacia; el asistente fallara hasta definirla en el entorno");
+      }
+      String modelo = AiConfig.modeloParaOpenWebUi(modeloAgente, openWebUiModel);
+      LOG.info("Agente Open WebUI modelo={}", modelo);
+      int timeout = openWebUiTimeoutSeconds > 0 ? openWebUiTimeoutSeconds : timeoutSeconds;
+      return AiConfig.openAiCompatible(
+          AiConfig.openWebUiChatBaseUrl(openWebUiBaseUrl),
+          openWebUiApiKey,
+          modelo,
+          timeout,
+          temperature);
+    }
     if ("gemini".equalsIgnoreCase(proveedorAgente)) {
       if (geminiApiKey == null || geminiApiKey.isBlank()) {
         LOG.warn("GEMINI_API_KEY vacia; el asistente fallara hasta definirla en el entorno");

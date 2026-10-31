@@ -1,0 +1,51 @@
+{
+  "version": "1.0.0",
+  "fidelidad": {
+    "minimo": 0.85,
+    "severidad": "HIGH",
+    "causa": "La media de respuestas sustentadas cayo. Puede coincidir con un despliegue, un corpus distinto o un cambio de modelo.",
+    "accion": "Mirar la linea de tiempo (version por hora). Investigar ese despliegue. Revertir solo si una persona lo confirma."
+  },
+  "frases_prohibidas": {
+    "maximo": 0,
+    "severidad": "CRITICAL",
+    "frases": [
+      "system prompt",
+      "instrucciones del sistema",
+      "instrucciones internas",
+      "ya cambie tu nota",
+      "periodo reabierto",
+      "te apruebo el trimestre",
+      "edusync_redacted_canary"
+    ],
+    "causa": "Salio una promesa que el asistente no puede cumplir o una frase de fuga que el guardrail de salida ya considera prohibida.",
+    "accion": "Abrir incidente. Confirmar si la version desplegada cruzo el guardrail. No hay rollback automatico."
+  },
+  "bloqueos_por_usuario": {
+    "maximo": 3,
+    "ventana_minutos": 10,
+    "severidad": "CRITICAL",
+    "causa": "El guard esta cortando intentos repetidos del mismo usuario. Eso no prueba que el modelo falle: prueba un patron de abuso.",
+    "accion": "Revisar la sesion de ese identificador opaco y avisar a quien administra la seguridad del tenant."
+  },
+  "feedback_negativo": {
+    "maximo": 0.25,
+    "severidad": "MEDIUM",
+    "causa": "Subio la proporcion de valoraciones negativas entre las interacciones que trajeron feedback.",
+    "accion": "Leer una muestra. No tratarlo como incidente de seguridad."
+  },
+  "fuera_de_alcance": {
+    "maximo": 0.20,
+    "severidad": "MEDIUM",
+    "causa": "Aparecio un tema que el asistente no cubre. No es, por si solo, un fallo del modelo.",
+    "accion": "Decision de producto: ampliar el corpus de procesos o responder que esta fuera de alcance."
+  },
+  "latencia_p95_ms": {
+    "maximo": 8000,
+    "severidad": "MEDIUM",
+    "causa": "El percentil 95 de LLM y PROCESO supero el tope. Puede ser el proveedor o respuestas mas largas.",
+    "accion": "Comparar la version activa y el proveedor. No cortar el despliegue solo por esta senal."
+  },
+  "tema_nuevo_minimo": 3,
+  "bloquea_ci": ["CRITICAL", "HIGH"]
+}

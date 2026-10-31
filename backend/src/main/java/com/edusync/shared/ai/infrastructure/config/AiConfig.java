@@ -109,6 +109,21 @@ public class AiConfig {
     return modeloAgente;
   }
 
+  /**
+   * Con Open WebUI se envía {@code OPEN_WEBUI_MODEL}. El default del agente
+   * ({@code llama3.1:8b}, tag de Ollama en {@code application.yml}) no lo pisa.
+   * Cualquier otro {@code EDUSYNC_AI_AGENTE_MODEL} sí: es el modelo que se pide.
+   */
+  static String modeloParaOpenWebUi(String modeloAgente, String modeloOpenWebUi) {
+    String abierto = modeloOpenWebUi == null || modeloOpenWebUi.isBlank()
+        ? "llama3.1:latest"
+        : modeloOpenWebUi;
+    if (modeloAgente == null || modeloAgente.isBlank() || "llama3.1:8b".equals(modeloAgente)) {
+      return abierto;
+    }
+    return modeloAgente;
+  }
+
   static ChatClient openAiCompatible(
       String baseUrl, String apiKey, String model, int timeoutSeconds, Double temperature) {
     OpenAiChatOptions.Builder options =

@@ -2,6 +2,8 @@
 backend/target/
 backend/.mvn/
 backend/*.log
+backend/logs/
+tools/monitor-asistente/resultados/
 
 # Frontend build output (frontend/ tiene su propio .gitignore para node_modules/dist)
 frontend/dist/

@@ -39,4 +39,4 @@ Sin LangGraph, sin Chroma, sin embeddings de terceros.
 
 ## 3. Fuera de alcance
 
-Embeddings Ollama, caché semántico, nodo ESCALAR, checkpoint SQLite.
+Caché semántico, nodo ESCALAR, checkpoint SQLite. El ranking por embeddings (índice en memoria, misma cita textual) es `DD-UC-030` / `ADR-0024`. Este recuperador léxico queda como respaldo si el embedding falla.

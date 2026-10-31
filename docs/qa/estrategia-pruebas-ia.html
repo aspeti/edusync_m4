@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Estrategia de Pruebas y Validación — G-EduSync</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --bg-2: #101826;
+      --ink: #eef3f8;
+      --muted: #93a0b5;
+      --line: #243044;
+      --emerald: #3ee0a0;
+      --emerald-dim: #14352c;
+      --blue: #8eb4ff;
+      --clay: #ff8b7a;
+      --clay-dim: #3a221f;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    body {
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+    .frame {
+      width: min(100vw, calc(100vh * 16 / 9));
+      height: min(100vh, calc(100vw * 9 / 16));
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+    }
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 4.2% 5% 8%;
+      display: none;
+      flex-direction: column;
+    }
+    .slide.on { display: flex; }
+    .kicker {
+      color: var(--emerald);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+      font-weight: 650;
+      margin: 0 0 0.6rem;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4.4vw, 3.4rem);
+      line-height: 1.05;
+      font-weight: 680;
+      letter-spacing: -0.03em;
+      max-width: 16ch;
+    }
+    h2 {
+      margin: 0 0 0.35rem;
+      font-size: clamp(1.6rem, 3vw, 2.3rem);
+      letter-spacing: -0.03em;
+      font-weight: 680;
+    }
+    .lead {
+      margin: 0.7rem 0 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.7vw, 1.25rem);
+      max-width: 62ch;
+      line-height: 1.4;
+    }
+    .grid-3, .grid-4, .grid-2 {
+      display: grid;
+      gap: 1rem;
+      margin-top: 1.3rem;
+      align-content: start;
+    }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-2 { grid-template-columns: 1.15fr 0.85fr; }
+    .card {
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1.1rem 1.15rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .card h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 680;
+    }
+    .card p, .split li, .note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+    .stat {
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      font-weight: 720;
+      letter-spacing: -0.04em;
+      color: var(--emerald);
+      line-height: 1;
+    }
+    .icon {
+      width: 28px;
+      height: 28px;
+      color: var(--emerald);
+    }
+    .icon.clay { color: var(--clay); }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 1.6rem;
+    }
+    .metric {
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.3rem 1.1rem;
+    }
+    .metric b {
+      display: block;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      letter-spacing: -0.05em;
+      line-height: 0.95;
+      color: var(--emerald);
+      font-weight: 720;
+    }
+    .metric span {
+      display: block;
+      margin-top: 0.7rem;
+      color: var(--ink);
+      font-size: 1rem;
+      font-weight: 650;
+    }
+    .metric small {
+      display: block;
+      margin-top: 0.35rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1.2rem;
+      flex: 1;
+    }
+    .col {
+      border-radius: 16px;
+      padding: 1.2rem 1.3rem;
+      border: 1px solid var(--line);
+    }
+    .col.yes { background: var(--emerald-dim); }
+    .col.no { background: var(--clay-dim); }
+    .col h3 { margin: 0 0 0.8rem; font-size: 1.15rem; }
+    .col ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.55rem; }
+    .col li { color: var(--ink); display: grid; grid-template-columns: 1.1rem 1fr; gap: 0.55rem; }
+    .mark { font-weight: 700; }
+    .yes .mark { color: var(--emerald); }
+    .no .mark { color: var(--clay); }
+    .close {
+      margin-top: auto;
+      max-width: 34ch;
+    }
+    .close p {
+      font-size: clamp(1.35rem, 2.4vw, 1.9rem);
+      line-height: 1.25;
+      margin: 0.4rem 0 0;
+      letter-spacing: -0.02em;
+    }
+    .qa {
+      margin-top: 1.6rem;
+      color: var(--blue);
+      font-size: 1.05rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .bar {
+      position: absolute;
+      left: 5%;
+      right: 5%;
+      bottom: 3.2%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+    .dots { display: flex; gap: 0.4rem; }
+    .dots button {
+      width: 1.7rem;
+      height: 0.28rem;
+      border: 0;
+      padding: 0;
+      background: #2a3548;
+      cursor: pointer;
+    }
+    .dots button.on { background: var(--emerald); }
+    .nav button {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.25rem 0.6rem;
+      cursor: pointer;
+      font: inherit;
+    }
+    .hero-meta {
+      margin-top: auto;
+      display: flex;
+      gap: 1.5rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .hero-meta strong { color: var(--ink); font-weight: 650; }
+    .src { margin-top: 0.9rem; color: var(--muted); font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+  <div class="frame" id="deck">
+    <section class="slide on" data-title="Título">
+      <p class="kicker">G-EduSync · Módulo 7</p>
+      <h1>Estrategia de Pruebas y Validación</h1>
+      <p class="lead">Del determinismo al análisis probabilístico. Primero el código. Después el modelo. Al final, lo que el asistente realmente dice.</p>
+      <div class="hero-meta">
+        <div><strong>Endpoint</strong><br />POST /api/v1/ai/agente</div>
+        <div><strong>Corrida Java</strong><br />2 de octubre de 2026</div>
+        <div><strong>Defensa de evals</strong><br />python evals/evaluar.py v3</div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Determinista">
+      <p class="kicker">01 · Software tradicional</p>
+      <h2>La base determinista</h2>
+      <p class="lead">El código base tiene que estar verde antes de discutir si el modelo respondió bien.</p>
+      <div class="grid-3">
+        <article class="card">
+          <div class="stat">112/115</div>
+          <h3>Unit tests</h3>
+          <p>Guardrails, grafo, recuperador, formateador y monitor. Sin modelo y sin red. Las 3 fallas son de la suite agente: un teléfono placeholder, un CI que se enmascara y no bloquea, y un nombre que no se recorta a «silvia».</p>
+        </article>
+        <article class="card">
+          <div class="stat">31/31</div>
+          <h3>Integración y contrato</h3>
+          <p>MockMvc del controlador con el servicio real. Allow-list OpenAPI: fuera auth, plataforma, /ai y notas sueltas. Adaptadores HTTP simulados de Ollama y Open WebUI.</p>
+        </article>
+        <article class="card">
+          <div class="stat">Manual</div>
+          <h3>End-to-end</h3>
+          <p>Catálogo en vivo y las 12 preguntas contra localhost. No entra solo a la build. Un HTTP 500 no cuenta como defensa ni como ataque logrado.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Red team">
+      <p class="kicker">02 · Adversarial</p>
+      <h2>Red teaming</h2>
+      <p class="lead">El éxito del ataque es observable: una tool, un argumento o un literal. Nunca “el párrafo se parece”.</p>
+      <div class="grid-4">
+        <article class="card">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 5 6v6c0 4.5 3 6.8 7 8 4-1.2 7-3.5 7-8V6l-7-3Z"/><path d="M9 12h6"/></svg>
+          <h3>Prompt injection</h3>
+          <p>Frases de inyección conocidas se bloquean en la entrada. En el gate, RT-INJ y RT-GUARD quedan en 0 éxitos.</p>
+        </article>
+        <article class="card">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          <h3>System prompt</h3>
+          <p>La salida redacta “system prompt”. RT-CRED en el gate: 0. Con Gemini en vivo ese caso devolvió HTTP 500: no medido.</p>
+        </article>
+        <article class="card">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v18M7 8h7a3 3 0 0 1 0 6H8"/><path d="M8 14h8a3 3 0 0 1 0 6H7"/></svg>
+          <h3>Fuga de PII</h3>
+          <p>El listado no copia correo ni RUDE. PROFESOR + list_usuarios: 3/3 antes, 0/3 después. Datos sintéticos.</p>
+        </article>
+        <article class="card">
+          <svg class="icon clay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M8 12h8"/></svg>
+          <h3>Sesgo y toxicidad</h3>
+          <p>No hay una suite de sesgo ni de toxicidad en esta entrega. No lo presentamos como cubierto.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Evals">
+      <p class="kicker">03 · Calidad de la respuesta</p>
+      <h2>Evaluaciones offline</h2>
+      <p class="lead">Doce casos dorados. El juez es una rúbrica escrita, no otro modelo.</p>
+      <div class="grid-2">
+        <div class="grid-3" style="margin-top:0; grid-template-columns: 1fr;">
+          <article class="card">
+            <h3>Golden dataset</h3>
+            <p>12 casos, 5 tipos, 4 críticos (EV-001, EV-007, EV-008, EV-011). Umbral: completitud y fidelidad ≥ 0,85, y cero críticos.</p>
+          </article>
+          <article class="card">
+            <h3>Juez</h3>
+            <p>No usamos LLM-as-a-judge. La fidelidad mira si cada oración está en el contexto corto. Acuerdo humano en 6 casos: 100 %, kappa 1,00. Con seis no se generaliza.</p>
+          </article>
+        </div>
+        <div class="grid-3" style="margin-top:0; grid-template-columns: 1fr;">
+          <article class="card">
+            <h3>Fidelidad y relevancia</h3>
+            <p>Fidelidad de v3: 1,00. Del asistente real: 0,38. Completitud (puntos clave, el análogo de answer relevance): 1,00 en v3 y 0,17 en el endpoint.</p>
+          </article>
+          <article class="card">
+            <h3>Coincidencia, no embeddings</h3>
+            <p>El punto clave se busca normalizado dentro del texto. `round` entre backticks no calza. No hay similitud semántica.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Resultados">
+      <p class="kicker">04 · Lo que salió</p>
+      <h2>Resultados</h2>
+      <p class="lead">Cuatro números que se pueden sostener. Ninguno es un placeholder.</p>
+      <div class="metrics">
+        <div class="metric">
+          <b>0/18</b>
+          <span>Ataques en el gate</span>
+          <small>Modelo doble hostil. 19/19 pruebas verdes, incluida la del catálogo.</small>
+        </div>
+        <div class="metric">
+          <b>0/3</b>
+          <span>list_usuarios, PROFESOR</span>
+          <small>Antes 3/3. Después de PoliticaAlcanceAgente, 0/3 en vivo.</small>
+        </div>
+        <div class="metric">
+          <b>1,00</b>
+          <span>Fidelidad de v3</span>
+          <small>PASA, código 0. Es la corrida de la defensa.</small>
+        </div>
+        <div class="metric">
+          <b>0,38</b>
+          <span>Fidelidad del endpoint</span>
+          <small>Gemini y Open WebUI. 4 críticos. NO PASA. Mismo juez.</small>
+        </div>
+      </div>
+      <p class="src">Fuente: mvn test del paquete shared.ai (2 oct 2026); retest PROFESOR 30 sep 2026; respuestas/v3.json y asistente_openwebui.json.</p>
+    </section>
+
+    <section class="slide" data-title="Alcance">
+      <p class="kicker">05 · Alcance</p>
+      <h2>Qué hicimos y qué no</h2>
+      <div class="split">
+        <div class="col yes">
+          <h3>Sí</h3>
+          <ul>
+            <li><span class="mark">+</span><span>Unitarias e integración dentro de mvn test.</span></li>
+            <li><span class="mark">+</span><span>Red team determinista: 18 casos, enabled solo si el producto los corta.</span></li>
+            <li><span class="mark">+</span><span>Red team en vivo, solo localhost, con antes y después.</span></li>
+            <li><span class="mark">+</span><span>Evals offline reproducibles: v1, v2 y v3, más las 12 preguntas al endpoint.</span></li>
+            <li><span class="mark">+</span><span>Monitor por archivo: día 1 código 0, día 2 código 1. Sin rollback automático.</span></li>
+          </ul>
+        </div>
+        <div class="col no">
+          <h3>No</h3>
+          <ul>
+            <li><span class="mark">–</span><span>Evals offline en cada pull request.</span></li>
+            <li><span class="mark">–</span><span>Un LLM calificando a otro LLM.</span></li>
+            <li><span class="mark">–</span><span>Suite de sesgo o toxicidad, ni monitoreo continuo de eso en producción.</span></li>
+            <li><span class="mark">–</span><span>Fine-tuning del modelo base.</span></li>
+            <li><span class="mark">–</span><span>Medición viva de 9 ataques: devolvieron HTTP 500.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Cierre">
+      <p class="kicker">06 · Cierre</p>
+      <div class="close">
+        <h2>Dos preguntas distintas</h2>
+        <p>Lo determinista asegura el cómo funciona el código. El red team y las evals aseguran el qué genera el asistente.</p>
+      </div>
+      <p class="qa">Preguntas</p>
+    </section>
+
+    <div class="bar">
+      <div class="dots" id="dots"></div>
+      <div class="nav">
+        <button type="button" id="prev" aria-label="Anterior">Anterior</button>
+        <button type="button" id="next" aria-label="Siguiente">Siguiente</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    const dots = document.getElementById("dots");
+    let i = 0;
+    slides.forEach((_, n) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("aria-label", "Diapositiva " + (n + 1));
+      b.addEventListener("click", () => show(n));
+      dots.appendChild(b);
+    });
+    function show(n) {
+      i = (n + slides.length) % slides.length;
+      slides.forEach((s, k) => s.classList.toggle("on", k === i));
+      [...dots.children].forEach((d, k) => d.classList.toggle("on", k === i));
+    }
+    document.getElementById("next").onclick = () => show(i + 1);
+    document.getElementById("prev").onclick = () => show(i - 1);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); show(i + 1); }
+      if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); show(i - 1); }
+      if (e.key === "Home") show(0);
+      if (e.key === "End") show(slides.length - 1);
+    });
+    show(0);
+  </script>
+</body>
+</html>

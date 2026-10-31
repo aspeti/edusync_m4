@@ -1,7 +1,7 @@
-﻿# PROMPT_MAPPING — EduSync
+# PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.52`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.53`.
 > Cada prompt sigue la estructura de `plantillas/plantillas1/PROMPT_TEMPLATE.md`.
 > Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
@@ -82,6 +82,8 @@
 | PR-IMPL-027 | `docs/design/DD-UC-027.md` + `docs/prompts/impl/PR-IMPL-027.md` — grafo de producción oleada 1 (guardrails + rutas Java + saludo + temperatura 0, `ADR-0021`) | generación | `dev-agent` | Sonnet | 27/09/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-027.md` | Patrones Lab 6 en Java; sin LangGraph/RAG/checkpoint |
 | PR-IMPL-028 | `docs/design/DD-UC-028.md` + `docs/prompts/impl/PR-IMPL-028.md` — RAG léxico de procesos EduSync (camino PROCESO) | generación | `dev-agent` | Sonnet | 27/09/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-028.md` | Corpus académico; 0 LLM si hay match; sin Chroma |
 | PR-IMPL-029 | `docs/design/DD-UC-029.md` + `docs/prompts/impl/PR-IMPL-029.md` — parámetros del periodo y cobertura docente al abrir (`FSD-UC-009`) | generación | `dev-agent` | Sonnet | 29/09/2026 | Ejecutado | `docs/prompts/impl/PR-IMPL-029.md` | Delta sobre `PeriodoEvaluacion`; sin apertura secuencial (`ADR-0014`); `V13` + panel de periodos |
+| PR-IMPL-030 | `docs/design/DD-UC-030.md` + `docs/prompts/impl/PR-IMPL-030.md` — RAG vectorial del camino PROCESO (embeddings en memoria) | generación | `dev-agent` | Sonnet | 02/10/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-030.md` | Cita textual; sin Chroma ni pgvector; léxico de `DD-UC-028` solo si el embedding falla; ejecución pendiente |
+| PR-ADR-011 | `docs/adr/0024-rag-vectorial-camino-proceso.md` — embeddings del proveedor ya configurado para PROCESO | generación | `arch-agent` | Sonnet | 02/10/2026 | Aprobado | `prompts/PR-ADR-011.md` | Alternativa D; no supersede a `ADR-0021` ni a `ADR-0023` |
 
 ---
 
@@ -111,7 +113,7 @@ flowchart TD
     end
 
     subgraph SOPORTE["Capa de Soporte"]
-        ADR["PR-ADR-001..010\nDecisiones\nArquitectonicas\n(arch-agent)"]
+        ADR["PR-ADR-001..011\nDecisiones\nArquitectonicas\n(arch-agent)"]
         AUD["PR-AUD-001\nAuditoria\ny Trazabilidad\n(qa-agent)"]
         INF["PR-INF-001\nIndicadores\nInstitucionales\n(docs-agent)"]
     end
@@ -257,6 +259,7 @@ flowchart TD
         IMPL027["PR-IMPL-027\nGrafo producción\nguardrails Lab 6"]
         IMPL028["PR-IMPL-028\nRAG procesos\nEduSync"]
         IMPL029["PR-IMPL-029\nParametros periodo\nFSD-UC-009"]
+        IMPL030["PR-IMPL-030\nRAG vectorial\ncamino PROCESO"]
     end
     FSD --> IMPL001
     HEX --> IMPL001
@@ -335,6 +338,8 @@ flowchart TD
     ADR --> IMPL028
     IMPL019 --> IMPL029
     FSD --> IMPL029
+    IMPL028 --> IMPL030
+    ADR --> IMPL030
 ```
 
 ---
@@ -344,8 +349,8 @@ flowchart TD
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
 | `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-POC-001, PR-POC-002, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills → POCs → roadmap → aportes → aliases vFinal); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel, configuración de agentes, evidencia de pruebas de concepto, hoja de ruta de release, informe de aportes individuales y snapshots congelados de entrega | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md`; POCs en `docs/pocs/`; roadmap canónico en `docs/roadmap.md`; aportes por release en `docs/aportes/release-<x.y.z>.md`; aliases `_vFinal.md` en `docs/brd/`, `docs/mrd/`, `docs/prd/`, `docs/fsd/` |
-| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006, PR-IMPL-007, PR-IMPL-008, PR-IMPL-009, PR-IMPL-010, PR-IMPL-011, PR-IMPL-012, PR-IMPL-013, PR-IMPL-014, PR-IMPL-015, PR-IMPL-016, PR-IMPL-017, PR-IMPL-018, PR-IMPL-019, PR-IMPL-020, PR-IMPL-022, PR-IMPL-023, PR-IMPL-024, PR-IMPL-025, PR-IMPL-026, PR-IMPL-027, PR-IMPL-028, PR-IMPL-029 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
-| `arch-agent` | PR-ADR-001..005, PR-ADR-006, PR-ADR-007, PR-ADR-008, PR-ADR-010, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006, PR-IMPL-007, PR-IMPL-008, PR-IMPL-009, PR-IMPL-010, PR-IMPL-011, PR-IMPL-012, PR-IMPL-013, PR-IMPL-014, PR-IMPL-015, PR-IMPL-016, PR-IMPL-017, PR-IMPL-018, PR-IMPL-019, PR-IMPL-020, PR-IMPL-022, PR-IMPL-023, PR-IMPL-024, PR-IMPL-025, PR-IMPL-026, PR-IMPL-027, PR-IMPL-028, PR-IMPL-029, PR-IMPL-030 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
+| `arch-agent` | PR-ADR-001..005, PR-ADR-006, PR-ADR-007, PR-ADR-008, PR-ADR-010, PR-ADR-011, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
 
@@ -4165,6 +4170,100 @@ y tests JUnit 5.
 
 ---
 
+### PR-ADR-011 — RAG vectorial del camino PROCESO
+
+```markdown
+# Role
+Eres el arquitecto de EduSync. Registras una decisión costosa de revertir
+sin tocar el baseline.
+
+# Task
+Redactar ADR-0024: el camino PROCESO recupera por embeddings del proveedor
+ya configurado, cita los párrafos y no añade Chroma ni pgvector.
+
+# Context
+- ADR-0021 difirió embeddings. ADR-0017 deja Spring AI detrás de un puerto.
+- ADR-0023 ya eligió Gemini (endpoint compatible con OpenAI) u Ollama.
+- El corpus son seis markdown institucionales, sin datos de estudiantes.
+
+# Reasoning
+1. El overlap y el regex fallan en las 12 preguntas corridas contra el asistente.
+2. Descartar redactar con el LLM, Chroma y pgvector.
+3. Aceptar el índice en memoria y el léxico como respaldo técnico.
+
+# Stop condition
+ADR con las secciones de contexto, alternativas, decisión, consecuencias,
+impacto, reversión, validación y referencias. Estado Aceptada.
+Sin editar docs/baseline/**.
+
+# Output
+docs/adr/0024-rag-vectorial-camino-proceso.md.
+
+# Invariants
+- No supersede a ADR-0021 ni a ADR-0023.
+- domain/ y application/ no importan Spring AI.
+- Al menos tres alternativas además de la elegida.
+
+# Failure modes
+- E_CHROMA_O_PGVECTOR: la decisión introduce un store nuevo.
+- E_LLM_REDACTA_CORPUS: el chat reescribe la cita.
+- E_BASELINE_TOCADO: revertir.
+```
+
+---
+
+### PR-IMPL-030 — RAG vectorial del camino PROCESO
+
+```markdown
+# Role
+Eres el servicio de aplicación del asistente EduSync (Java 25, Spring Boot
+4.1.0, hexagonal). Recuperas procesos institucionales por similitud y citas
+el corpus.
+
+# Task
+Implementa EmbeddingPort, el índice en memoria y el adaptador Spring AI del
+proveedor ya configurado, según docs/design/DD-UC-030.md §2 y ADR-0024.
+El léxico de DD-UC-028 queda solo como respaldo si el embedding falla.
+
+# Context
+- Documentos: DD-UC-030, ADR-0024, ADR-0017, ADR-0023, DD-UC-028.
+- Stack: Java 25, Spring Boot 4.1.0, Spring AI 2.0.0 ya en el BOM.
+- Sin Chroma, sin pgvector, sin que el LLM redacte la cita, sin PII en logs,
+  sin secretos en el repo, sin editar docs/baseline/**.
+- El id del modelo se verifica contra el proveedor al implementar.
+- El umbral sale del test con puerto falso. No se copia 0,85 de la compuerta offline.
+
+# Reasoning
+1. KEYWORD y CONSULTA siguen primero y no embeben.
+2. Indexar los mismos párrafos que el recuperador léxico.
+3. Filtrar por umbral y cortar en 2.
+4. Si embed falla, delegar al léxico. Si responde bajo el umbral, no hay PROCESO.
+5. Tests del §6 del design doc, sin red.
+
+# Stop condition
+mvn test en verde, incluidos ModularityTests. Ningún test llama a Gemini
+ni a Ollama. domain/ y application/ no importan Spring AI.
+
+# Output
+Código en com.edusync.shared.ai, application.yml, .env.example comentado
+y tests JUnit 5. dtp-sync al cerrar la ejecución.
+
+# Invariants
+- PROCESO sigue siendo cita más Fuente. Cero turnos de chat en ese camino.
+- No se embebe historial, notas, RUDE ni salida de tools.
+- KEYWORD no llama a EmbeddingPort.
+
+# Failure modes
+- E_LLM_REDACTA_CORPUS: PROCESO pasa los fragmentos al chat.
+- E_SPRING_AI_EN_APPLICATION: import de Spring AI fuera de infrastructure.
+- E_DEPENDENCIA_NUEVA: Chroma, pgvector u otro cliente fuera del BOM.
+- E_FALLBACK_OMITIDO: un embedding caído produce HTTP 500 o respuesta vacía.
+- E_PII_EN_LOG: la pregunta o el vector quedan en INFO.
+- E_BASELINE_TOCADO: revertir.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
@@ -4279,6 +4378,8 @@ y tests JUnit 5.
 | Design Doc `DD-UC-027` + `ADR-0021` + `NFR-007` | `DD-UC-027, ADR-0021, NFR-007` | PR-IMPL-027 | `dev-agent` | Grafo de producción oleada 1 (guardrails + rutas Java) — **ejecutado** 27/09/2026 | `docs/design/DD-UC-027.md`, `docs/adr/0021-grafo-produccion-guardrails-asistente.md`, `docs/prompts/impl/PR-IMPL-027.md` |
 | Design Doc `DD-UC-028` + `ADR-0021` + `NFR-007` | `DD-UC-028, ADR-0021, NFR-007` | PR-IMPL-028 | `dev-agent` | RAG léxico procesos EduSync (camino PROCESO) — **ejecutado** 27/09/2026 | `docs/design/DD-UC-028.md`, `docs/ai/base_conocimiento/`, `docs/prompts/impl/PR-IMPL-028.md` |
 | Design Doc `DD-UC-029` + `ADR-0002` + `ADR-0013` + `ADR-0014` + `docs/product/FSD.md` (`FSD-UC-009`) | `DD-UC-029, ADR-0002, ADR-0013, ADR-0014, FSD-UC-009` | PR-IMPL-029 | `dev-agent` | Parámetros del periodo y cobertura docente al abrir — **ejecutado** 29/09/2026 | `docs/design/DD-UC-029.md`, `docs/prompts/impl/PR-IMPL-029.md` |
+| Design Doc `DD-UC-030` + `ADR-0024` + `DD-UC-028` + `NFR-007` + `FSD-UC-016` | `DD-UC-030, ADR-0024, DD-UC-028, NFR-007, FSD-UC-016` | PR-IMPL-030 | `dev-agent` | RAG vectorial del camino PROCESO — **aprobado (prompt)**, ejecución pendiente | `docs/design/DD-UC-030.md`, `docs/prompts/impl/PR-IMPL-030.md`, `docs/adr/0024-rag-vectorial-camino-proceso.md` |
+| Design Doc `DD-UC-030` + `ADR-0021` + `ADR-0023` | `DD-UC-030, ADR-0021, ADR-0023` | PR-ADR-011 | `arch-agent` | `ADR-0024` (embeddings en memoria para PROCESO) — **Aprobado** | `docs/adr/0024-rag-vectorial-camino-proceso.md`, `prompts/PR-ADR-011.md` |
 
 ---
 
@@ -4359,3 +4460,4 @@ y tests JUnit 5.
 | v2.50 | 27/09/2026 | Rodrigo Aspeti | `PR-IMPL-028` (`DD-UC-028`): RAG léxico sobre procesos EduSync (camino PROCESO). Total 67 → 68. |
 | v2.51 | 29/09/2026 | Rodrigo Aspeti | `PR-IMPL-029` (`DD-UC-029`, `FSD-UC-009`): parámetros del periodo y cobertura docente al abrir. Borrador; no restaura la apertura secuencial (`ADR-0014`). Índice, flowchart, matriz `dev-agent`, contrato y trazabilidad. Total 68 → 69. |
 | v2.52 | 29/09/2026 | Rodrigo Aspeti | `PR-IMPL-029` pasa a **ejecutado**: `ParametroPeriodo`, `V13`, gates al abrir y panel de periodos. Sin contrato nuevo. |
+| v2.53 | 02/10/2026 | G-EduSync | `PR-IMPL-030` + `PR-ADR-011` (`DD-UC-030`, `ADR-0024` Aceptada): RAG vectorial del camino PROCESO, índice en memoria, cita textual, léxico de `DD-UC-028` solo si el embedding falla. Prompt aprobado, ejecución pendiente. Índice, flowchart (`IMPL030`), matriz `dev-agent`/`arch-agent`, contratos y trazabilidad. Total 69 → 71. |

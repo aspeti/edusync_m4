@@ -1,5 +1,6 @@
 package com.edusync.shared.ai.infrastructure.adapter.in.rest;
 
+import com.edusync.shared.ai.application.monitoring.RegistroInteraccionAgente;
 import com.edusync.shared.ai.application.port.in.EjecutarConsultaAgenteUseCase;
 import com.edusync.shared.ai.domain.AiDeshabilitadoException;
 import com.edusync.shared.ai.domain.HerramientaNoDisponibleException;
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,9 +35,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class AgenteController {
 
     private final EjecutarConsultaAgenteUseCase ejecutarConsultaAgenteUseCase;
+    private final RegistroInteraccionAgente registroInteraccion;
 
     public AgenteController(EjecutarConsultaAgenteUseCase ejecutarConsultaAgenteUseCase) {
+        this(ejecutarConsultaAgenteUseCase, RegistroInteraccionAgente.NULO);
+    }
+
+    @Autowired
+    public AgenteController(
+            EjecutarConsultaAgenteUseCase ejecutarConsultaAgenteUseCase,
+            RegistroInteraccionAgente registroInteraccion) {
         this.ejecutarConsultaAgenteUseCase = ejecutarConsultaAgenteUseCase;
+        this.registroInteraccion = registroInteraccion;
     }
 
     @PostMapping("/agente")
@@ -52,12 +63,15 @@ public class AgenteController {
         }
         String jwt = authorization.substring("Bearer ".length());
         boolean confirmed = Boolean.TRUE.equals(request.confirmed());
+        long inicio = System.nanoTime();
         RespuestaAgente respuesta = ejecutarConsultaAgenteUseCase.consultar(
                 request.pregunta(),
                 jwt,
                 confirmed,
                 request.history() == null ? java.util.List.of() : request.history(),
                 request.contexto());
+        long latenciaMs = Math.max(0L, (System.nanoTime() - inicio) / 1_000_000L);
+        registroInteraccion.registrar(jwt, request.pregunta(), respuesta, latenciaMs);
         return ResponseEntity.ok(AgenteResponse.desde(respuesta));
     }
 

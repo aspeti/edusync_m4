@@ -27,4 +27,14 @@ class ProveedorGeminiTest {
     assertThat(AiConfig.modeloParaAgente("ollama", "llama3.1:8b", "gemini-2.0-flash"))
         .isEqualTo("llama3.1:8b");
   }
+
+  @Test
+  void openWebUiEnviaElModeloConfigurado() {
+    assertThat(AiConfig.modeloParaOpenWebUi("llama3.1:8b", "llama3.1:latest"))
+        .isEqualTo("llama3.1:latest");
+    assertThat(AiConfig.modeloParaOpenWebUi("qwen2.5:7b", "llama3.1:latest"))
+        .isEqualTo("qwen2.5:7b");
+    assertThat(AiConfig.modeloParaOpenWebUi(null, "mistral"))
+        .isEqualTo("mistral");
+  }
 }

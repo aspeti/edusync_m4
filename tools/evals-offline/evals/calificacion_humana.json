@@ -1,0 +1,11 @@
+{
+  "nota": "Fidelidad aplicada a mano con la rúbrica, sobre respuestas ya grabadas. Estos números no los calcula el juez. El script los compara después.",
+  "casos": [
+    {"id": "EV-001", "version": "v3", "fidelidad_humana": 1.0, "porque": "La respuesta es el contexto: round a 2 decimales, sin cifras nuevas."},
+    {"id": "EV-001", "version": "v1", "fidelidad_humana": 0.0, "porque": "Agrega el resultado 64 y un truncado con floor que el contexto no dice."},
+    {"id": "EV-005", "version": "v3", "fidelidad_humana": 1.0, "porque": "Negativa de gestión, sin cifras, alineada al contexto."},
+    {"id": "EV-010", "version": "v2", "fidelidad_humana": 0.0, "porque": "Otra vez aparece el 64, que no está en el contexto recortado."},
+    {"id": "EV-004", "version": "muestra", "fidelidad_humana": 0.5, "porque": "El hecho está en el contexto, pero cierra con una oración que el contexto no respalda y no trae cifras."},
+    {"id": "EV-012", "version": "v3", "fidelidad_humana": 1.0, "porque": "PROVISIONAL y el 0 del periodo faltante están en el contexto, y la respuesta no agrega nada."}
+  ]
+}

@@ -1,0 +1,8 @@
+[
+  {
+    "id": "EV-004",
+    "version": "muestra",
+    "pregunta": "¿Cómo se obtiene la nota de periodo?",
+    "respuesta": "La nota de periodo suma las secciones completas de esa materia en el periodo. El resultado se redondea a entero con round HALF_UP. Espero haberte ayudado."
+  }
+]

@@ -15,7 +15,7 @@
 | Stakeholders consultados | Rodrigo Aspeti (Dev Lead / PM, único integrante de G-EduSync) |
 | ADR relacionado | Ninguno — primera decisión de diseño visual del proyecto. Sirve de base a `DD-UC-020` (login) y a los Design Docs de UI posteriores que adopten el mismo lenguaje visual. |
 
-> **Nota de modificación (10/11/2026).** `ADR-0026` (propuesta) enmienda la decisión de §3: se adopta **PrimeNG (línea 21.x)** como única librería de UI (incluida `p-table` para las grillas de notas y centralizadores), tematizada con los tokens de este ADR. Los tokens de `_tokens.scss` siguen siendo la fuente de verdad visual; `shared/ui/` se conserva hasta migrar cada pantalla. La Alternativa B y la restricción "No se agrega Angular Material, PrimeNG ni Tailwind" quedan superadas en lo que respecta a PrimeNG. El cuerpo histórico no se reescribe.
+> **Nota de modificación (10/11/2026).** `ADR-0026` (*Aceptada*) enmienda la decisión de §3: se adopta **PrimeNG (línea 21.x)** como única librería de UI (incluida `p-table` para las grillas de notas y centralizadores), tematizada con los tokens de este ADR. Los tokens de `_tokens.scss` siguen siendo la fuente de verdad visual; `shared/ui/` se conserva hasta migrar cada pantalla. La Alternativa B y la restricción "No se agrega Angular Material, PrimeNG ni Tailwind" quedan superadas en lo que respecta a PrimeNG. El cuerpo histórico no se reescribe.
 
 ### 1. Contexto
 

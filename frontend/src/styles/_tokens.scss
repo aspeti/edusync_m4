@@ -27,6 +27,22 @@
   --color-accent: rgba(15, 42, 92, 0.08);
   --color-danger-bg: #fdecea;
   --color-danger-text: #c62828;
+  --color-success-bg: #e8f5e9;
+  --color-success-text: #2e7d32;
+
+  // Escala del primario para PrimeNG definePreset (DD-UC-032 / ADR-0026).
+  // Los hexadecimales viven solo aquí; el TypeScript referencia var(--…).
+  --color-primary-50: #eef2f8;
+  --color-primary-100: #d6e0ef;
+  --color-primary-200: #adc1df;
+  --color-primary-300: #849fcf;
+  --color-primary-400: #5b7ebf;
+  --color-primary-500: #3257a0;
+  --color-primary-600: #0f2a5c;
+  --color-primary-700: #0b1f45;
+  --color-primary-800: #081633;
+  --color-primary-900: #050e22;
+  --color-primary-950: #030914;
 
   // Tipografía
   --font-family-base: -apple-system, 'Segoe UI', Roboto, system-ui, sans-serif;

@@ -11,10 +11,10 @@
 | Tipo de prompt | generación |
 | Modelo recomendado | Sonnet |
 | Temperatura | 0.0 |
-| Versión | v0.1 |
+| Versión | v0.2 |
 | Fecha | 10/11/2026 |
 | Autor(es) | G-EduSync |
-| Estado | **Aprobado (prompt)** — ejecutar solo cuando `ADR-0026` esté *Aceptada* |
+| Estado | **Ejecutado** |
 
 > No ejecutar este prompt como parte del diseño. La implementación es un turno aparte. Preferible ejecutarlo **antes** del paso de frontend de `PR-IMPL-031` (`DD-UC-032` §8 punto 5).
 
@@ -92,3 +92,4 @@ Implementa en este orden:
 | Versión | Fecha | Autor | Cambio |
 |---------|-------|-------|--------|
 | v0.1 | 10/11/2026 | G-EduSync | Prompt aprobado. Ejecución pendiente de `ADR-0026` *Aceptada* |
+| v0.2 | 10/11/2026 | G-EduSync | Ejecutado: `primeng` 21.1.10 + CDK 21.2.14 + `@primeuix/themes` 3.1.0; tema EduSync; matriz `p-table`; `ng build` verde; 12/12 tests utilidad |

@@ -10,7 +10,7 @@
 | Titulo | PrimeNG (línea 21.x) como única librería de UI de terceros; `p-table` para la grilla de registro de notas y los centralizadores |
 | Fecha | 10/11/2026 |
 | Autor(es) | G-EduSync |
-| Estado | **Propuesta** (pendiente de aprobación humana) |
+| Estado | **Aceptada** |
 | Alcance | Frontend Angular (`frontend/`). No afecta al backend, a RBAC, a contratos REST ni al modelo de dominio. No toca `docs/baseline/**`. **Modifica** `ADR-0015` (Alternativa C → PrimeNG sobre los tokens propios) y lo declara, en parte, superado; respeta `ADR-0008` (Angular 21 LTS). |
 | ADR relacionado | `ADR-0015` (design system propio, que este ADR enmienda), `ADR-0008` (stack vivo), `ADR-0025` (el centralizador queda diferido), `DD-UC-018` (matriz de calificaciones actual) |
 
@@ -109,3 +109,4 @@ Costo bajo antes de ejecutar el prompt de implementación (solo documentos). Des
 |---------|-------|-------|--------|
 | v0.1 | 10/11/2026 | G-EduSync | Propuesta inicial: PrimeNG + AG Grid Community |
 | v0.2 | 10/11/2026 | G-EduSync | Se descarta AG Grid Community por decisión del responsable: PrimeNG es la única librería de UI, y la grilla de notas y los centralizadores usan `p-table`. Se renombra el archivo y el título. Alternativa B elegida |
+| v1.0 | 10/11/2026 | G-EduSync | Aceptada. Habilita la ejecución de `PR-IMPL-032` (`DD-UC-032`) |

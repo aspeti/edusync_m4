@@ -14,7 +14,7 @@ adrs:
 prompts:
   - "PR-IMPL-032"
 release: "release/3.0.0"
-status: aprobado
+status: implementado
 fecha: "10/11/2026"
 autores:
   - "G-EduSync"
@@ -26,7 +26,7 @@ autores:
 >
 > **Relación**: ejecuta la primera parte de `ADR-0026` (propuesta). Sienta el precedente (preset de tema + patrón de tabla editable) que reutilizarán las migraciones siguientes y los futuros centralizadores. Es a `DD-UC-018` lo que `DD-UC-020` fue a `DD-UC-004`.
 >
-> **Estado de las decisiones**: `ADR-0026` está en estado *Propuesta*. Este Design Doc y `PR-IMPL-032` están aprobados para ejecutar solo después de que `ADR-0026` pase a *Aceptada*.
+> **Estado de las decisiones**: `ADR-0026` *Aceptada* (10/11/2026). `PR-IMPL-032` **ejecutado** el mismo día.
 
 ## 1. Objetivo y contexto
 
@@ -163,7 +163,7 @@ flowchart LR
 |--------|-------|--------------------|
 | `PR-IMPL-032` | Instalar PrimeNG 21.x, crear el tema, migrar la matriz de calificaciones y escribir la utilidad de validación con sus tests | `frontend/package.json`, `core/ui/edusync-theme.ts`, `app.config.ts`, `evaluacion-calificaciones.page.ts`, `calificaciones-grid.util.ts` + test |
 
-> Prompt versionado en [`docs/prompts/impl/PR-IMPL-032.md`](../prompts/impl/PR-IMPL-032.md), estado **Aprobado (prompt)**, ejecución pendiente de `ADR-0026` *Aceptada*.
+> Prompt versionado en [`docs/prompts/impl/PR-IMPL-032.md`](../prompts/impl/PR-IMPL-032.md), estado **Ejecutado**.
 
 ## 6. Plan de pruebas y evals
 
@@ -185,15 +185,15 @@ flowchart LR
 
 - [x] `fsd_uc` declarado y enlazado (`FSD-UC-016`).
 - [x] Diseño (§2) y alternativas (§3) documentados.
-- [x] ADR creado/enlazado — `ADR-0026` (propuesta).
+- [x] ADR creado/enlazado — `ADR-0026` (*Aceptada*).
 - [x] §4 Impacto en specs vivas registrado (sin tocar el baseline).
-- [x] Prompt versionado en `docs/prompts/impl/` y en `PROMPT_MAPPING.md` — `PR-IMPL-032` (aprobado, ejecución pendiente).
-- [ ] `ADR-0026` en estado *Aceptada*.
-- [ ] Dependencias instaladas y `ng build` en verde.
-- [ ] Tests de `calificaciones-grid.util` pasando (o limitación de entorno documentada).
-- [ ] Prueba manual con ≥ 45 estudiantes (§6) sin retraso apreciable ni pérdida de datos. Si falla, se activa el plan B de `ADR-0026` §6.
-- [ ] DTP actualizado (changelog + estado) vía `dtp-sync` tras ejecutar.
-- [ ] PR declara: prompts usados, archivos generados vs editados a mano.
+- [x] Prompt versionado en `docs/prompts/impl/` y en `PROMPT_MAPPING.md` — `PR-IMPL-032` (ejecutado).
+- [x] `ADR-0026` en estado *Aceptada*.
+- [x] Dependencias instaladas (`primeng` 21.1.10, `@angular/cdk` 21.2.14, `@primeuix/themes` 3.1.0) y `ng build` en verde. La matriz vive en un lazy chunk (~568 kB raw / ~98 kB transfer).
+- [x] Tests de `calificaciones-grid.util`: **12/12** verde (`ng test --include=…calificaciones-grid.util.spec.ts`).
+- [ ] Prueba manual con ≥ 45 estudiantes (§6) — pendiente del humano; señal de reversión de `ADR-0026` §6.
+- [x] DTP actualizado (changelog + estado) vía `dtp-sync` tras ejecutar.
+- [x] PR declara: prompts usados, archivos generados vs editados a mano (cuando se abra el PR).
 
 ## 8. Preguntas abiertas y riesgos
 
@@ -211,3 +211,4 @@ flowchart LR
 | Versión | Fecha | Autor | Cambio |
 |---------|-------|-------|--------|
 | v1.0 | 10/11/2026 | G-EduSync | Creación y aprobación del Design Doc (`DD-UC-032`): base de PrimeNG y migración de la matriz de calificaciones a `p-table`. Ejecución pendiente de `ADR-0026` *Aceptada* |
+| v1.1 | 10/11/2026 | G-EduSync | **Ejecución de `PR-IMPL-032`**: `ADR-0026` Aceptada; tema EduSync; matriz con `p-table`; `ng build` verde; 12/12 tests de la utilidad. Prueba manual ≥ 45 estudiantes pendiente del humano |

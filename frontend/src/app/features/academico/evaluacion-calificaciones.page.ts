@@ -1,104 +1,131 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
 import { EvaluacionResponse } from './evaluacion.model';
 import { MateriaResponse } from './materia.model';
 import {
   CalificacionFilaResponse,
   NotaProvisionalResponse,
-  UpsertCalificacionesRequest,
 } from './calificacion.model';
 import { ApiBase } from '../../core/api/api-base';
+import {
+  EstadoCelda,
+  calcularCambios,
+  estadoDeCelda,
+  etiquetaEstado,
+  mensajeEstadoCelda,
+} from './calificaciones-grid.util';
 
 /**
- * Matriz de calificaciones de una evaluación (DD-UC-018 / FSD-UC-016):
- * nómina × celda de nota; Guardar → PUT lote; resumen PROVISIONAL.
+ * Matriz de calificaciones de una evaluación (DD-UC-018 / DD-UC-032 / FSD-UC-016):
+ * nómina × celda de nota con p-table; Guardar → PUT solo de lo modificado.
  */
 @Component({
   selector: 'app-evaluacion-calificaciones-page',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [
+    RouterLink,
+    FormsModule,
+    TableModule,
+    InputNumberModule,
+    ButtonModule,
+    MessageModule,
+  ],
   template: `
-    <div style="max-width: 960px; margin: 0 auto;">
-      <div style="margin-bottom: 1rem;">
-        <a [routerLink]="['/academico/materias', materiaId, 'evaluaciones']" style="font-size: 0.85rem;">
-          ← Volver a Evaluaciones
-        </a>
+    <div class="page">
+      <div class="back">
+        <a [routerLink]="['/academico/materias', materiaId, 'evaluaciones']">← Volver a Evaluaciones</a>
       </div>
 
       @if (notFound()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px;">
-          La evaluación no existe o no está asignada a su usuario.
-        </div>
+        <p-message severity="error" text="La evaluación no existe o no está asignada a su usuario." />
       } @else {
         <h2>Calificaciones — {{ evaluacion()?.nombre || '…' }}</h2>
-        <p style="color: #555; margin-top: 0;">
+        <p class="meta">
           Materia: {{ materia()?.nombre || '…' }} · Puntaje máximo: {{ evaluacion()?.puntajeMaximo }}
         </p>
 
         @if (errorMsg()) {
-          <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-            {{ errorMsg() }}
-          </div>
+          <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
         }
         @if (okMsg()) {
-          <div style="background: #e8f5e9; color: #2e7d32; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-            {{ okMsg() }}
-          </div>
+          <p-message severity="success" [text]="okMsg()!" styleClass="block-msg" />
         }
 
         @if (filas().length === 0) {
           <p>No hay estudiantes inscritos en los cursos asignados a esta materia.</p>
         } @else {
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
-            <thead>
-              <tr style="background: #f5f5f5;">
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Estudiante</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">RUDE</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Nota</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;"></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (fila of filas(); track fila.estudianteId) {
-                <tr style="border-bottom: 1px solid #eee;">
-                  <td style="padding: 0.5rem;">{{ fila.nombreCompleto }}</td>
-                  <td style="padding: 0.5rem;">{{ fila.rude }}</td>
-                  <td style="padding: 0.5rem;">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      [attr.max]="evaluacion()?.puntajeMaximo"
-                      [(ngModel)]="edits[fila.estudianteId]"
-                      [name]="'nota-' + fila.estudianteId"
-                      style="padding: 0.35rem; width: 6rem;"
-                    />
-                  </td>
-                  <td style="padding: 0.5rem;">
-                    <button type="button" (click)="verProvisional(fila.estudianteId)" style="cursor: pointer; font-size: 0.85rem;">
-                      Ver provisional
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+          <p class="counter">{{ cambiosPendientes() }} cambios sin guardar</p>
 
-          <button
-            type="button"
-            (click)="guardar()"
-            [disabled]="saving()"
-            style="padding: 0.5rem 1.25rem; cursor: pointer; margin-bottom: 1.5rem;"
+          <p-table
+            [value]="filas()"
+            dataKey="estudianteId"
+            [tableStyle]="{ 'min-width': '40rem' }"
+            styleClass="p-datatable-sm"
           >
-            {{ saving() ? 'Guardando…' : 'Guardar calificaciones' }}
-          </button>
+            <ng-template #header>
+              <tr>
+                <th>Estudiante</th>
+                <th>RUDE</th>
+                <th>Nota [0 – {{ evaluacion()?.puntajeMaximo }}]</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-fila let-rowIndex="rowIndex">
+              <tr [class.fila-modificada]="estadoDe(fila) === 'MODIFICADA'" [class.fila-invalida]="estadoDe(fila) === 'INVALIDA'">
+                <td>{{ fila.nombreCompleto }}</td>
+                <td>{{ fila.rude }}</td>
+                <td>
+                  <p-inputnumber
+                    [ngModel]="edits[fila.estudianteId]"
+                    (ngModelChange)="onNotaChange(fila.estudianteId, $event)"
+                    [name]="'nota-' + fila.estudianteId"
+                    [min]="0"
+                    [max]="evaluacion()?.puntajeMaximo ?? 0"
+                    [maxFractionDigits]="2"
+                    [minFractionDigits]="0"
+                    [useGrouping]="false"
+                    locale="es-BO"
+                    inputStyleClass="nota-input"
+                    (onKeyDown)="onNotaKeydown($event, rowIndex)"
+                    [invalid]="estadoDe(fila) === 'INVALIDA'"
+                  />
+                  @if (mensajeDe(fila); as msg) {
+                    <small class="celda-error">{{ msg }}</small>
+                  }
+                </td>
+                <td>{{ etiquetaDe(fila) }}</td>
+                <td>
+                  <p-button
+                    type="button"
+                    label="Ver provisional"
+                    [link]="true"
+                    size="small"
+                    (onClick)="verProvisional(fila.estudianteId)"
+                  />
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+
+          <p-button
+            type="button"
+            label="{{ saving() ? 'Guardando…' : 'Guardar calificaciones' }}"
+            [disabled]="!puedeGuardar() || saving()"
+            (onClick)="guardar()"
+            styleClass="guardar-btn"
+          />
         }
 
         @if (provisional()) {
-          <section style="background: #fafafa; padding: 1rem; border-radius: 4px;">
-            <h3 style="margin-top: 0;">Resumen provisional</h3>
+          <section class="provisional">
+            <h3>Resumen provisional</h3>
             <p>
               Nota periodo:
               <strong>{{ provisional()!.notaPeriodo ?? '—' }}</strong>
@@ -106,29 +133,78 @@ import { ApiBase } from '../../core/api/api-base';
               <strong>{{ provisional()!.promedioGestion }}</strong>
               ({{ provisional()!.estado }})
             </p>
-            <table style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="background: #f0f0f0;">
-                  <th style="padding: 0.4rem; text-align: left;">Sección</th>
-                  <th style="padding: 0.4rem; text-align: left;">Estado</th>
-                  <th style="padding: 0.4rem; text-align: left;">Nota</th>
+            <p-table [value]="provisional()!.secciones" [tableStyle]="{ 'min-width': '20rem' }" styleClass="p-datatable-sm">
+              <ng-template #header>
+                <tr>
+                  <th>Sección</th>
+                  <th>Estado</th>
+                  <th>Nota</th>
                 </tr>
-              </thead>
-              <tbody>
-                @for (s of provisional()!.secciones; track s.seccionId) {
-                  <tr>
-                    <td style="padding: 0.4rem;">{{ s.nombre }}</td>
-                    <td style="padding: 0.4rem;">{{ s.estado }}</td>
-                    <td style="padding: 0.4rem;">{{ s.notaSeccion ?? '—' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+              </ng-template>
+              <ng-template #body let-s>
+                <tr>
+                  <td>{{ s.nombre }}</td>
+                  <td>{{ s.estado }}</td>
+                  <td>{{ s.notaSeccion ?? '—' }}</td>
+                </tr>
+              </ng-template>
+            </p-table>
           </section>
         }
       }
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+      .back {
+        margin-bottom: var(--space-md);
+        font-size: var(--font-size-small);
+      }
+      .meta {
+        color: var(--color-text-secondary);
+        margin-top: 0;
+      }
+      .counter {
+        font-size: var(--font-size-small);
+        color: var(--color-text-secondary);
+        margin-bottom: var(--space-sm);
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
+      .fila-modificada {
+        background: var(--color-accent);
+      }
+      .fila-invalida {
+        background: var(--color-danger-bg);
+      }
+      .celda-error {
+        display: block;
+        color: var(--color-danger-text);
+        font-size: var(--font-size-small);
+        margin-top: var(--space-xs);
+      }
+      :host ::ng-deep .nota-input {
+        width: 6.5rem;
+      }
+      .guardar-btn {
+        margin: var(--space-lg) 0;
+      }
+      .provisional {
+        background: var(--color-bg);
+        padding: var(--space-md);
+        border-radius: var(--radius-sm);
+      }
+      .provisional h3 {
+        margin-top: 0;
+      }
+    `,
+  ],
 })
 export class EvaluacionCalificacionesPage implements OnInit {
   materiaId = '';
@@ -142,6 +218,20 @@ export class EvaluacionCalificacionesPage implements OnInit {
   okMsg = signal<string | null>(null);
   saving = signal(false);
   edits: Record<string, number | null> = {};
+  private editsVersion = signal(0);
+
+  private maxPuntaje = computed(() => this.evaluacion()?.puntajeMaximo ?? 0);
+
+  private resumenCambios = computed(() => {
+    this.editsVersion();
+    return calcularCambios(this.filas(), this.edits, this.maxPuntaje());
+  });
+
+  cambiosPendientes = computed(() => this.resumenCambios().items.length);
+
+  puedeGuardar = computed(
+    () => this.resumenCambios().items.length > 0 && this.resumenCambios().invalidos.length === 0
+  );
 
   constructor(
     private http: HttpClient,
@@ -166,24 +256,50 @@ export class EvaluacionCalificacionesPage implements OnInit {
     });
   }
 
+  onNotaChange(estudianteId: string, valor: number | null): void {
+    this.edits[estudianteId] = valor;
+    this.editsVersion.update((v) => v + 1);
+  }
+
+  onNotaKeydown(event: Event, rowIndex: number): void {
+    const ke = event as KeyboardEvent;
+    if (ke.key !== 'Enter') {
+      return;
+    }
+    ke.preventDefault();
+    const next = rowIndex + 1;
+    if (next >= this.filas().length) {
+      return;
+    }
+    const inputs = document.querySelectorAll<HTMLInputElement>('.nota-input');
+    const target = inputs[next];
+    if (target) {
+      target.focus();
+      target.select();
+    }
+  }
+
+  estadoDe(fila: CalificacionFilaResponse): EstadoCelda {
+    this.editsVersion();
+    return estadoDeCelda(fila.valor, this.edits[fila.estudianteId] ?? null, this.maxPuntaje());
+  }
+
+  etiquetaDe(fila: CalificacionFilaResponse): string {
+    return etiquetaEstado(this.estadoDe(fila));
+  }
+
+  mensajeDe(fila: CalificacionFilaResponse): string | null {
+    this.editsVersion();
+    return mensajeEstadoCelda(fila.valor, this.edits[fila.estudianteId] ?? null, this.maxPuntaje());
+  }
+
   guardar(): void {
     this.errorMsg.set(null);
     this.okMsg.set(null);
-    const max = this.evaluacion()?.puntajeMaximo ?? 0;
-    const items: UpsertCalificacionesRequest['items'] = [];
-    for (const fila of this.filas()) {
-      const raw = this.edits[fila.estudianteId];
-      if (raw === null || raw === undefined || (raw as unknown) === '') {
-        continue;
-      }
-      const valor = Number(raw);
-      if (Number.isNaN(valor) || valor < 0 || valor > max) {
-        this.errorMsg.set(
-          `Nota inválida para ${fila.nombreCompleto}: debe estar en [0, ${max}].`
-        );
-        return;
-      }
-      items.push({ estudianteId: fila.estudianteId, valor });
+    const { items, invalidos } = calcularCambios(this.filas(), this.edits, this.maxPuntaje());
+    if (invalidos.length > 0) {
+      this.errorMsg.set('Corrija las notas inválidas antes de guardar.');
+      return;
     }
     if (items.length === 0) {
       this.errorMsg.set('Ingrese al menos una nota para guardar.');
@@ -237,6 +353,7 @@ export class EvaluacionCalificacionesPage implements OnInit {
             next[f.estudianteId] = f.valor;
           }
           this.edits = next;
+          this.editsVersion.update((v) => v + 1);
         },
         error: (err: HttpErrorResponse) => {
           if (err.status === 404) {

@@ -33,6 +33,8 @@ Lee y sigue **siempre** `AGENTS.md` (importado arriba) como fuente de verdad del
 | `monolith-decomposition-architect` | Propuesta de descomposición / seams |
 | `ollama-edusync` | Integrar/extender Ollama local (`llama3.1:latest`, `POST /api/v1/ai/chat`) |
 | `redteam-edusync` | Operar `@edusync-red-team` sobre `tools/red-team-agent/catalog/attacks.json` |
+| `github-issues-edusync` | Inventariar backlog vivo (DTP/FSD/PROMPT_MAPPING/ADRs) y crear issues GitHub (`gh`) o lote Markdown |
+| `fullstack-developer` | Agente full-stack adaptativo (SDLC completo). Fuente única: `.claude/skills/fullstack-developer/`; Cursor stub delega ahí. Re-descubre stack vía `references/detected-stack.md` |
 
 ## Subagentes
 

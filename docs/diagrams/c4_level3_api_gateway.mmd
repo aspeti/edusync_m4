@@ -17,9 +17,9 @@ C4Component
     Component(calCtrl, "CalificacionController", "Spring MVC + Jakarta Bean Validation 3.0",
       "POST /api/v1/calificaciones - registro descentralizado por dimension. FSD-UC-001. BR-001 RBAC, BR-002 rango parametrico.")
     Component(cenCtrl, "CentralizadorController", "Spring MVC",
-      "GET /api/v1/centralizadores - lectura PROVISIONAL u OFICIAL. FSD-UC-003 (lectura). RB-08 truncado floor.")
+      "GET /api/v1/centralizadores - lectura PROVISIONAL u OFICIAL. FSD-UC-003 (lectura, diferido: sin centralizador en el producto vivo, ADR-0025).")
     Component(expCtrl, "ExportacionController", "Spring MVC",
-      "POST /api/v1/exportaciones/sie - lanza job idempotente por (RUDE, periodo_id). FSD-UC-004. BR-004 RUDE como unica clave, NFR-011 idempotencia.")
+      "POST /api/v1/exportaciones/sie - lanza job idempotente por (RUDE, materia_id, periodo_id). FSD-UC-004. BR-004 RUDE como unica clave, NFR-011 idempotencia.")
     Component(corCtrl, "CorreccionController", "Spring MVC",
       "POST /api/v1/correcciones (solicitud) + PUT /api/v1/correcciones/{id}/autorizar - flujo con ventana 1-72h. FSD-UC-005. BR-005 autorizacion, BR-009 ventana temporal.")
     Component(perCtrl, "PeriodoController", "Spring MVC",
@@ -34,7 +34,7 @@ C4Component
   }
 
   Container(domain, "domain-layer", "Java 21 - arquitectura hexagonal (sin Spring/JPA)",
-    "Use cases (puertos IN) + Domain Services. Math.floor() vive aqui (BR-008), no en api-gateway. DA-02.")
+    "Use cases (puertos IN) + Domain Services. El calculo de notas (CalculoNotas, round HALF_UP, ADR-0025) vive aqui, no en api-gateway. DA-02.")
   ContainerDb(db, "postgres-rls", "PostgreSQL 15 (RDS Multi-AZ)",
     "Tablas de dominio con RLS multitenant + audit_log append-only protegida con RULE PostgreSQL.")
   Container(events, "event-bus", "Spring ApplicationEventPublisher",

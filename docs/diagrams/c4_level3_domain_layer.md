@@ -21,6 +21,8 @@ artefacto_mermaid: "docs/diagrams/c4_level3_domain_layer.mmd"
 
 # C4 Level 3 - `domain-layer` (EduSync)
 
+> **Vigencia (`ADR-0025`, propuesta, 10/11/2026).** Este diagrama conserva el diseño del Perfil Bolivia SIE de M4 (paquete `bo.edusync`, centralizadores). En el producto vivo: no hay `floor()` ni `ConsolidacionDomainService` (el cálculo es `CalculoNotas`, `round` HALF_UP), el SIE recibe la nota final de periodo y la clave de idempotencia es `(rude, materia_id, periodo_id)`. La inmutabilidad y las correcciones están diferidas. Solo se corrigieron las etiquetas afectadas; el rediseño completo espera a `arquitectura_hexagonal_EduSync.md` (`ADR-0011`).
+
 > Diagrama de componentes del núcleo hexagonal de EduSync. El `.mmd` asociado usa cabecera `C4Component` y este archivo es su espejo narrativo obligatorio (IG-09).
 
 ---
@@ -46,8 +48,8 @@ Quedan fuera de esta frontera:
 | `Input Ports` | Interfaces Java puras | Exponen los use cases FSD-UC-001, 002, 003, 004, 005 y 009 al borde web/scheduler/eventos. | FSD-UC-001..009 |
 | `Output Ports` | Interfaces Java puras | Abstraen repositorios, eventos, SIE, KMS, reloj y tenant context. | DA-01, DA-04, DA-05 |
 | `CalificacionDomainService` | Java 21 domain service | Valida docente, periodo, rangos, RUDE y emite `CalificacionRegistradaEvent`. | BR-001, BR-002, BR-004, BR-007 |
-| `ConsolidacionDomainService` | Java 21 domain service | Unico dueño de `Math.floor()` y de centralizadores `PROVISIONAL`/`OFICIAL`. | BR-003, BR-008, BR-011 |
-| `ExportacionDomainService` | Java 21 domain service | Orquesta exportación SIE e idempotencia por `(rude, periodo_id)`. | BR-004, NFR-011 |
+| `ConsolidacionDomainService` | Java 21 domain service | Diseño histórico del Perfil Bolivia. En el producto vivo lo reemplaza `CalculoNotas` (`round` HALF_UP, sin `floor()`, `ADR-0025`). | BR-008, BR-011 |
+| `ExportacionDomainService` | Java 21 domain service | Orquesta exportación SIE e idempotencia por `(rude, materia_id, periodo_id)` (`ADR-0025`). | BR-004, NFR-011 |
 | `CorreccionDomainService` | Java 21 domain service | Controla autorización jerárquica, ventana 1-72h y corrección append-only. | BR-005, BR-009, BR-010 |
 | `PeriodoDomainService` | Java 21 domain service | Gestiona secuencia T1 -> T2 -> T3 e inmutabilidad de parámetros en `ABIERTO`. | BR-006, BR-007 |
 | `Aggregate Roots` | Plain Java model | GestionAcademica, PeriodoAcademico, Estudiante, Calificacion, Centralizador, ExportacionSIE, CorreccionRetroactiva, AuditLogEntry. | DA-02 |
@@ -74,7 +76,7 @@ Quedan fuera de esta frontera:
 - [x] Cabecera Mermaid `C4Component`.
 - [x] Todos los componentes tienen tecnología explícita.
 - [x] Cada relación declara protocolo: `In-process`, `Port IN`, `Port OUT`, `JDBC/TLS`, `Spring Event`, `AWS KMS SDK/TLS`.
-- [x] `Math.floor()` aparece únicamente en `ConsolidacionDomainService`.
+- [x] ~~`Math.floor()` aparece únicamente en `ConsolidacionDomainService`.~~ **Superado por `ADR-0025`:** `floor()` no existe en el producto vivo; el cálculo es exclusivo de `CalculoNotas`.
 - [x] El dominio no conoce Spring, JPA, AWS SDK ni SQL.
 - [x] `audit_log` no se escribe desde el dominio; se expresa como intención por puerto OUT y lo materializa `AuditLogAspect` fuera de esta frontera.
 - [x] RLS no vive en el dominio; se resuelve por `TenantContextProvider` + `postgres-rls`.

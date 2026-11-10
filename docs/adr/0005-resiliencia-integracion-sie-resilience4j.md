@@ -14,6 +14,8 @@
 | Alcance | Adaptador de exportación al SIE — UC-04 (Exportación y sincronización masiva al SIE) |
 | Stakeholders consultados | Secretaría (Wendy), Directores, Equipo de arquitectura G-EduSync |
 
+> **Nota de modificación (10/11/2026, `ADR-0025` propuesta).** Este ADR sigue **Aceptada**; su cuerpo no se reescribe. `ADR-0025` enmienda un punto: la clave de idempotencia pasa de `rude + periodo_id` a **`rude + materia_id + periodo_id`**, porque el SIE recibe una nota final por materia y periodo (no el centralizador por dimensiones). El resto de la decisión (circuit breaker, timeout 30 s, reintento cada 5 min, estado por registro) se mantiene. Resilience4j aún no está en el `pom.xml`; se añade con `PR-IMPL-031`.
+
 ### 1. Contexto
 
 El SIE (Sistema de Información Educativa) del Ministerio de Educación de Bolivia es un servidor externo con disponibilidad limitada y capacidad de procesamiento que se satura durante los períodos de cierre trimestral, cuando todos los colegios del país intentan enviar sus calificaciones simultáneamente. Históricamente, un fallo del SIE a mitad de una exportación masiva (ej. al enviar el registro del estudiante 47 de 80) obliga al personal administrativo a reiniciar el proceso desde cero, con el riesgo de duplicar registros ya enviados y de tener que trabajar de madrugada.

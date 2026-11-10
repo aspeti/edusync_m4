@@ -1,7 +1,7 @@
 # PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.53`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.55`.
 > Cada prompt sigue la estructura de `plantillas/plantillas1/PROMPT_TEMPLATE.md`.
 > Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
@@ -83,6 +83,10 @@
 | PR-IMPL-028 | `docs/design/DD-UC-028.md` + `docs/prompts/impl/PR-IMPL-028.md` — RAG léxico de procesos EduSync (camino PROCESO) | generación | `dev-agent` | Sonnet | 27/09/2026 | **Ejecutado** | `docs/prompts/impl/PR-IMPL-028.md` | Corpus académico; 0 LLM si hay match; sin Chroma |
 | PR-IMPL-029 | `docs/design/DD-UC-029.md` + `docs/prompts/impl/PR-IMPL-029.md` — parámetros del periodo y cobertura docente al abrir (`FSD-UC-009`) | generación | `dev-agent` | Sonnet | 29/09/2026 | Ejecutado | `docs/prompts/impl/PR-IMPL-029.md` | Delta sobre `PeriodoEvaluacion`; sin apertura secuencial (`ADR-0014`); `V13` + panel de periodos |
 | PR-IMPL-030 | `docs/design/DD-UC-030.md` + `docs/prompts/impl/PR-IMPL-030.md` — RAG vectorial del camino PROCESO (embeddings en memoria) | generación | `dev-agent` | Sonnet | 02/10/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-030.md` | Cita textual; sin Chroma ni pgvector; léxico de `DD-UC-028` solo si el embedding falla; ejecución pendiente |
+| PR-IMPL-031 | `docs/design/DD-UC-031.md` + `docs/prompts/impl/PR-IMPL-031.md` — módulo `notassie`: exportación asíncrona e idempotente de la nota final de periodo al SIE | generación | `dev-agent` | Sonnet | 10/11/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-031.md` | Sin `floor()`; clave `rude+materia_id+periodo_id`; primera dependencia `resilience4j-circuitbreaker`; ejecutar solo con `ADR-0025` *Aceptada* |
+| PR-IMPL-032 | `docs/design/DD-UC-032.md` + `docs/prompts/impl/PR-IMPL-032.md` — base de PrimeNG 21.x (tema EduSync) y migración de la matriz de calificaciones a `p-table` | generación | `dev-agent` | Sonnet | 10/11/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-032.md` | Sin AG Grid; `primeng` 22.x prohibido; ejecutar solo con `ADR-0026` *Aceptada*; preferible antes del frontend de `PR-IMPL-031` |
+| PR-ADR-012 | `docs/adr/0025-sie-recibe-nota-final-de-periodo-y-retiro-de-floor.md` — un solo motor `round`, el SIE recibe la nota final de periodo | generación | `arch-agent` | Sonnet | 10/11/2026 | Aprobado | `prompts/PR-ADR-012.md` | ADR en estado *Propuesta*; enmienda `ADR-0005` (clave) y `ADR-0013` (`floor()`); diferidos listados en §3.7 |
+| PR-ADR-013 | `docs/adr/0026-primeng-libreria-de-componentes-frontend.md` — PrimeNG 21.x como única librería de UI | generación | `arch-agent` | Sonnet | 10/11/2026 | Aprobado | `prompts/PR-ADR-013.md` | ADR en estado *Propuesta*; enmienda `ADR-0015`; AG Grid descartado |
 | PR-ADR-011 | `docs/adr/0024-rag-vectorial-camino-proceso.md` — embeddings del proveedor ya configurado para PROCESO | generación | `arch-agent` | Sonnet | 02/10/2026 | Aprobado | `prompts/PR-ADR-011.md` | Alternativa D; no supersede a `ADR-0021` ni a `ADR-0023` |
 
 ---
@@ -260,6 +264,8 @@ flowchart TD
         IMPL028["PR-IMPL-028\nRAG procesos\nEduSync"]
         IMPL029["PR-IMPL-029\nParametros periodo\nFSD-UC-009"]
         IMPL030["PR-IMPL-030\nRAG vectorial\ncamino PROCESO"]
+        IMPL031["PR-IMPL-031\nExportacion SIE\nnota final de periodo"]
+        IMPL032["PR-IMPL-032\nPrimeNG tema EduSync\nmatriz p-table"]
     end
     FSD --> IMPL001
     HEX --> IMPL001
@@ -340,6 +346,11 @@ flowchart TD
     FSD --> IMPL029
     IMPL028 --> IMPL030
     ADR --> IMPL030
+    IMPL018 --> IMPL031
+    ADR --> IMPL031
+    IMPL018 --> IMPL032
+    IMPL020 --> IMPL032
+    ADR --> IMPL032
 ```
 
 ---
@@ -349,8 +360,8 @@ flowchart TD
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
 | `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-POC-001, PR-POC-002, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills → POCs → roadmap → aportes → aliases vFinal); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel, configuración de agentes, evidencia de pruebas de concepto, hoja de ruta de release, informe de aportes individuales y snapshots congelados de entrega | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md`; POCs en `docs/pocs/`; roadmap canónico en `docs/roadmap.md`; aportes por release en `docs/aportes/release-<x.y.z>.md`; aliases `_vFinal.md` en `docs/brd/`, `docs/mrd/`, `docs/prd/`, `docs/fsd/` |
-| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006, PR-IMPL-007, PR-IMPL-008, PR-IMPL-009, PR-IMPL-010, PR-IMPL-011, PR-IMPL-012, PR-IMPL-013, PR-IMPL-014, PR-IMPL-015, PR-IMPL-016, PR-IMPL-017, PR-IMPL-018, PR-IMPL-019, PR-IMPL-020, PR-IMPL-022, PR-IMPL-023, PR-IMPL-024, PR-IMPL-025, PR-IMPL-026, PR-IMPL-027, PR-IMPL-028, PR-IMPL-029, PR-IMPL-030 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
-| `arch-agent` | PR-ADR-001..005, PR-ADR-006, PR-ADR-007, PR-ADR-008, PR-ADR-010, PR-ADR-011, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006, PR-IMPL-007, PR-IMPL-008, PR-IMPL-009, PR-IMPL-010, PR-IMPL-011, PR-IMPL-012, PR-IMPL-013, PR-IMPL-014, PR-IMPL-015, PR-IMPL-016, PR-IMPL-017, PR-IMPL-018, PR-IMPL-019, PR-IMPL-020, PR-IMPL-022, PR-IMPL-023, PR-IMPL-024, PR-IMPL-025, PR-IMPL-026, PR-IMPL-027, PR-IMPL-028, PR-IMPL-029, PR-IMPL-030, PR-IMPL-031, PR-IMPL-032 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
+| `arch-agent` | PR-ADR-001..005, PR-ADR-006, PR-ADR-007, PR-ADR-008, PR-ADR-010, PR-ADR-011, PR-ADR-012, PR-ADR-013, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
 
@@ -4264,13 +4275,217 @@ y tests JUnit 5. dtp-sync al cerrar la ejecución.
 
 ---
 
+### PR-ADR-012 — El SIE recibe la nota final de periodo; se retira floor()
+
+```markdown
+# Role
+Eres el arquitecto de EduSync. Registras una decisión costosa de revertir
+sin tocar el baseline.
+
+# Task
+Redactar ADR-0025: se retira floor() del producto vivo, el motor genérico
+(round) es el único, y el SIE recibe una nota final entera por estudiante,
+materia y periodo, solo si todas las secciones están completas.
+
+# Context
+- El Perfil Bolivia SIE (FSD-UC-001/003/004, BR-003, BR-008, RB-08) contradice
+  el modelo genérico ya implementado (ADR-0013, FSD-UC-016).
+- ADR-0005 fija la clave rude + periodo_id. Con una nota por materia cambia.
+- Decisiones del responsable (10/11/2026): secciones configurables, todo round,
+  el SIE solo recibe la nota final de cada trimestre, nota incompleta excluida,
+  inmutabilidad diferida, sin cierre de materia.
+
+# Reasoning
+1. Comparar dos motores, enviar también el detalle por sección, o solo la nota final.
+2. Declarar qué queda diferido y qué riesgo se acepta (periodo reabrible, ADR-0014).
+3. Enmendar la clave de ADR-0005 sin reescribir su cuerpo.
+
+# Stop condition
+ADR con contexto, alternativas, decisión, consecuencias, impacto, reversión,
+validación y referencias. Estado Propuesta. Sin editar docs/baseline/**.
+
+# Output
+docs/adr/0025-sie-recibe-nota-final-de-periodo-y-retiro-de-floor.md.
+
+# Invariants
+- No supersede a ningún ADR. Modifica ADR-0005 y ADR-0013 solo mediante nota.
+- BR-004 (RUDE como única clave hacia el SIE) se mantiene.
+- Al menos tres alternativas.
+
+# Failure modes
+- E_FLOOR_REINTRODUCIDO: la decisión conserva floor() en algún punto.
+- E_DIFERIDO_IMPLICITO: algo diferido no aparece listado en §3.7.
+- E_BASELINE_TOCADO: revertir.
+```
+
+---
+
+### PR-IMPL-031 — Exportación de la nota final de periodo al SIE
+
+```markdown
+# Role
+Eres el servicio de dominio de exportación al SIE de EduSync (Java 25, Spring
+Boot 4.1.0, hexagonal, Spring Modulith). Envías al SIE la nota final de periodo
+sin duplicar envíos ni perder avance ante fallos.
+
+# Task
+Implementa docs/design/DD-UC-031.md §2: NotasFinalesPeriodoConsultaPort en
+academico, CalculoNotas.notaPeriodoSiCompleto, módulo notassie (dominio,
+aplicación, V14, API, evento tras commit, scheduler, SieClientPort con
+Resilience4j), TenantActivosPort en plataforma y consola Angular mínima.
+Corrige las dos frases del corpus del asistente que reservan floor() al SIE.
+
+# Context
+- Documentos: DD-UC-031, ADR-0025, ADR-0005, ADR-0013, ADR-0014, ADR-0011,
+  docs/product/FSD.md §4.2/§4.3/§4.6.
+- Stack: Java 25, Spring Boot 4.1.0, PostgreSQL 15, Flyway V14, Angular 21.
+- Única dependencia nueva: resilience4j-circuitbreaker (núcleo, sin starter);
+  verificar versión contra Java 25 y Boot 4.1.0.
+- Restricciones: round HALF_UP, sin floor(); nota solo en CalculoNotas; payload
+  solo rude + materia + periodo + nota; TenantContext (ThreadLocal) fijado en el
+  hilo asíncrono y en el scheduler; RLS FORCE; modo SIE por defecto desactivado
+  y simulado solo en dev; secretos solo por entorno; sin PII/nota en logs INFO;
+  sin editar docs/baseline/** ni V1..V13.
+
+# Reasoning
+1. Verificar qué puertos y métodos existen antes de añadir ninguno.
+2. Definir los tests del §6 del design doc antes del código de cada capa.
+3. domain/ sin Spring ni JPA; Resilience4j solo en infrastructure.
+4. ENVIADO es terminal; cada resultado se persiste en su propia transacción.
+5. ModularityTests sin ciclos (notassie -> academico, notassie -> plataforma).
+
+# Stop condition
+mvn test en verde (incluye ModularityTests 7/7) y ng build en verde. Ningún
+test llama a un SIE real. Ningún log INFO contiene rude, nota ni cuerpo del SIE.
+
+# Output
+Código en com.edusync.{academico,plataforma,notassie}, V14, application.yml /
+application-dev.yml, .env.example, tests JUnit 5 y features/notassie en Angular.
+dtp-sync al cerrar la ejecución.
+
+# Invariants
+- Un solo motor de cálculo; CalculoNotas no cambia su comportamiento existente.
+- Solo un periodo CERRADO es exportable (422 E_PERIODO_NO_CERRADO).
+- Clave rude + materia_id + periodo_id; ENVIADO nunca se reenvía.
+- Un id de otro tenant devuelve 404.
+- Todo envío al SIE pasa por circuit breaker con timeout de 30 s.
+
+# Failure modes
+- E_FLOOR_REINTRODUCIDO: aparece floor() en cálculo de notas.
+- E_CALCULO_FUERA_DOMINIO: la nota se calcula fuera de CalculoNotas.
+- E_PAYLOAD_CON_PII: payload o log con nombre, posición, nota o RUDE en INFO.
+- E_REENVIO_DE_ENVIADO: un registro ENVIADO se envía o se modifica.
+- E_TENANT_CONTEXT_PERDIDO: hilo asíncrono o scheduler sin TenantContext.
+- E_SIE_SIMULADO_EN_DEFECTO: modo simulado activo fuera de dev.
+- E_DEPENDENCIA_NUEVA: dependencia distinta de resilience4j-circuitbreaker.
+- E_RLS_FALTANTE: tabla nueva sin tenant_id o sin política RLS.
+- E_BASELINE_TOCADO: revertir.
+```
+
+---
+
+### PR-ADR-013 — PrimeNG como única librería de UI del frontend
+
+```markdown
+# Role
+Eres el arquitecto de EduSync. Registras una decisión de presentación costosa
+de revertir, sin tocar el baseline ni el dominio.
+
+# Task
+Redactar ADR-0026: PrimeNG (línea 21.x) como única librería de UI, con p-table
+para la matriz de notas y los centralizadores. Enmendar ADR-0015. Descartar
+AG Grid Community.
+
+# Context
+- ADR-0015: tokens propios + shared/ui/, sin librería. Alternativa D abierta.
+- Matriz de notas (DD-UC-018): <table> con <input> por fila.
+- Angular 21 LTS (ADR-0008): primeng 22.x exige Angular 22 y queda excluido.
+- Decisión del responsable (10/11/2026): solo PrimeNG.
+
+# Reasoning
+1. Comparar status quo, solo PrimeNG, PrimeNG + AG Grid y Angular Material.
+2. Conservar los tokens de ADR-0015 como fuente visual (definePreset).
+3. Declarar invariantes: sin cálculo en el frontend; sin Enterprise/bloques de pago.
+
+# Stop condition
+ADR con las 9 secciones. Estado Propuesta. Sin editar docs/baseline/**.
+Archivo: 0026-primeng-libreria-de-componentes-frontend.md.
+
+# Output
+docs/adr/0026-primeng-libreria-de-componentes-frontend.md + nota en ADR-0015.
+
+# Invariants
+- Los tokens de ADR-0015 siguen vigentes.
+- primeng 22.x prohibido mientras el stack sea Angular 21.
+- Sin AG Grid ni otra librería de grillas sin un ADR nuevo.
+
+# Failure modes
+- E_AG_GRID_CONSERVADO: la decisión final mantiene AG Grid.
+- E_PRIMENG_22: se fija la línea 22.x.
+- E_TOKENS_DESCARTADOS: se abandonan los tokens de ADR-0015.
+- E_BASELINE_TOCADO: revertir.
+```
+
+---
+
+### PR-IMPL-032 — Base de PrimeNG y matriz de calificaciones con p-table
+
+```markdown
+# Role
+Eres un Senior Frontend Engineer (Angular 21 standalone/signals) que tematiza
+PrimeNG 21.x con @primeuix/themes (definePreset) sobre design tokens CSS.
+
+# Task
+Implementa docs/design/DD-UC-032.md §2: instalar primeng ^21.1 + @angular/cdk
+^21 + @primeuix/themes; crear core/ui/edusync-theme.ts; providePrimeNG en
+app.config.ts; calificaciones-grid.util.ts + tests; reescribir
+evaluacion-calificaciones.page.ts con p-table. Sin cambios de backend.
+
+# Context
+- Documentos: DD-UC-032, ADR-0026, ADR-0015, ADR-0008, DD-UC-018.
+- Stack: Angular 21.2.x. Sin backend.
+- Restricciones: sin primeng 22.x; sin AG Grid; sin cálculo de notas en UI;
+  validación de celda = UX; identificación por estudianteId; sin tocar
+  login.page.ts ni shared/ui/; sin hexadecimales fuera de _tokens.scss;
+  sin editar docs/baseline/**.
+
+# Reasoning
+1. Verificar peerDependencies de primeng@21 contra el package.json.
+2. Tests de calificaciones-grid.util antes del template.
+3. Confirmar que pantallas no migradas no cambian de aspecto.
+4. Si p-inputnumber con locale boliviano falla con 57,5, fijar el formato.
+
+# Stop condition
+ng build en verde. Tests de la utilidad en verde (o limitación Vitest
+documentada). Ningún rude/nota en console.log. Sin cambios de contrato REST.
+
+# Output
+frontend/package.json (+ lockfile), edusync-theme.ts, app.config.ts,
+calificaciones-grid.util.ts + spec, evaluacion-calificaciones.page.ts,
+AGENTS.md §4. dtp-sync al cerrar.
+
+# Invariants
+- PrimeNG es la única librería de UI de terceros.
+- Sin cálculo de notas ni PII/rude/notas en consola.
+- Contrato PUT /evaluaciones/{id}/calificaciones sin cambios.
+
+# Failure modes
+- E_PRIMENG_22: se instaló primeng 22.x.
+- E_AG_GRID: aparece ag-grid-* en package.json.
+- E_CALCULO_EN_FRONTEND: la tabla calcula promedios o notas.
+- E_COLOR_HARDCODEADO: hexadecimales de marca fuera de _tokens.scss.
+- E_CONTRATO_CAMBIADO / E_LOGIN_TOCADO / E_BASELINE_TOCADO: rechazar o revertir.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
 |---|---|---|
 | IG-01 | El RUDE es la unica clave de identificacion de estudiantes. Ningun prompt puede usar nombre, apellido ni posicion de lista. | PR-UC-001, PR-UC-004, PR-UC-005 |
-| IG-02 | Toda operacion de escritura genera una entrada inmutable en audit_log. | PR-UC-001, PR-UC-002, PR-UC-004, PR-UC-005 |
-| IG-03 | La conversion de escala SIE (floor(nota/3)) es exclusiva del motor UC-03. Ningun otro prompt puede implementarla. | PR-UC-001, PR-UC-003, PR-UC-004 |
+| IG-02 | Toda operacion de escritura genera una entrada inmutable en audit_log. **Diferido para los modulos genericos** (`ADR-0009` §3 punto 5, `ADR-0025` §3.7). | PR-UC-001, PR-UC-002, PR-UC-004, PR-UC-005 |
+| IG-03 | ~~La conversion de escala SIE (floor(nota/3)) es exclusiva del motor UC-03.~~ **Superada por `ADR-0025` (10/11/2026):** no existe conversion de escala ni `floor()`; el calculo de notas es exclusivo de `CalculoNotas` (`round`). Ningun prompt puede reintroducir `floor()`. | PR-UC-001, PR-UC-003, PR-UC-004 |
 | IG-04 | Los parametros academicos (dimensiones, pesos, reglas) son inmutables una vez que el periodo esta ABIERTO. | PR-UC-001, PR-UC-003, PR-UC-009 |
 | IG-05 | Toda consulta esta acotada al tenant_id del usuario autenticado (RLS). Sin excepciones. | Todos los PR-UC-NNN |
 | IG-06 | Ningun prompt puede proponer arquitectura de implementacion, codigo o esquema de tablas en un artefacto de especificacion (BRD, FSD). | PR-ARCH-001, PR-BRD-001 |
@@ -4291,7 +4506,7 @@ y tests JUnit 5. dtp-sync al cerrar la ejecución.
 | `E_RBAC_VIOLATION` | El actor no tiene permiso para la operacion | HTTP 403, registrar en audit_log | Todos los PR-UC-NNN |
 | `E_TENANT_VIOLATION` | Acceso a datos de otro tenant | HTTP 403, registrar en audit_log | Todos |
 | `E_ARQUITECTURA_EN_SPECS` | El output de especificacion contiene codigo | Rechazar y regenerar sin codigo | PR-ARCH-001, PR-BRD-001 |
-| `E_CALCULO_FUERA_DOMINIO` | Calculo de promedio o escala SIE fuera del motor UC-03 | Rechazar output, centralizar en UC-03 | PR-UC-001, PR-UC-004 |
+| `E_CALCULO_FUERA_DOMINIO` | Calculo de promedio fuera de `CalculoNotas`, o cualquier `floor()` (`ADR-0025`) | Rechazar output, centralizar en `CalculoNotas` | PR-UC-001, PR-UC-004 |
 
 ---
 
@@ -4379,6 +4594,10 @@ y tests JUnit 5. dtp-sync al cerrar la ejecución.
 | Design Doc `DD-UC-028` + `ADR-0021` + `NFR-007` | `DD-UC-028, ADR-0021, NFR-007` | PR-IMPL-028 | `dev-agent` | RAG léxico procesos EduSync (camino PROCESO) — **ejecutado** 27/09/2026 | `docs/design/DD-UC-028.md`, `docs/ai/base_conocimiento/`, `docs/prompts/impl/PR-IMPL-028.md` |
 | Design Doc `DD-UC-029` + `ADR-0002` + `ADR-0013` + `ADR-0014` + `docs/product/FSD.md` (`FSD-UC-009`) | `DD-UC-029, ADR-0002, ADR-0013, ADR-0014, FSD-UC-009` | PR-IMPL-029 | `dev-agent` | Parámetros del periodo y cobertura docente al abrir — **ejecutado** 29/09/2026 | `docs/design/DD-UC-029.md`, `docs/prompts/impl/PR-IMPL-029.md` |
 | Design Doc `DD-UC-030` + `ADR-0024` + `DD-UC-028` + `NFR-007` + `FSD-UC-016` | `DD-UC-030, ADR-0024, DD-UC-028, NFR-007, FSD-UC-016` | PR-IMPL-030 | `dev-agent` | RAG vectorial del camino PROCESO — **aprobado (prompt)**, ejecución pendiente | `docs/design/DD-UC-030.md`, `docs/prompts/impl/PR-IMPL-030.md`, `docs/adr/0024-rag-vectorial-camino-proceso.md` |
+| Design Doc `DD-UC-031` + `ADR-0025` + `ADR-0005` + `ADR-0013` + `ADR-0014` + `docs/product/FSD.md` (`FSD-UC-004`) | `DD-UC-031, ADR-0025, ADR-0005, ADR-0013, ADR-0014, FSD-UC-004, FSD-UC-003, FSD-UC-016` | PR-IMPL-031 | `dev-agent` | Exportación de la nota final de periodo al SIE — **aprobado (prompt)**, ejecución pendiente de `ADR-0025` *Aceptada* | `docs/design/DD-UC-031.md`, `docs/prompts/impl/PR-IMPL-031.md` |
+| Design Doc `DD-UC-031` §1/§2 + `ADR-0005` + `ADR-0013` + `docs/product/FSD.md` §4.1–§4.5 | `DD-UC-031, ADR-0005, ADR-0013, FSD-UC-001, FSD-UC-003, FSD-UC-004, FSD-UC-005` | PR-ADR-012 | `arch-agent` | `ADR-0025` (un solo motor `round`; el SIE recibe la nota final de periodo) — **Propuesta** | `docs/adr/0025-sie-recibe-nota-final-de-periodo-y-retiro-de-floor.md`, `prompts/PR-ADR-012.md` |
+| Design Doc `DD-UC-032` + `ADR-0026` + `ADR-0015` + `ADR-0008` + `docs/product/FSD.md` (`FSD-UC-016`) | `DD-UC-032, ADR-0026, ADR-0015, ADR-0008, FSD-UC-016, DD-UC-018` | PR-IMPL-032 | `dev-agent` | Base de PrimeNG y matriz de calificaciones con `p-table` — **aprobado (prompt)**, ejecución pendiente de `ADR-0026` *Aceptada* | `docs/design/DD-UC-032.md`, `docs/prompts/impl/PR-IMPL-032.md` |
+| Design Doc `DD-UC-032` §1/§2 + `ADR-0015` + `ADR-0008` | `DD-UC-032, ADR-0015, ADR-0008, FSD-UC-016` | PR-ADR-013 | `arch-agent` | `ADR-0026` (PrimeNG como única librería de UI) — **Propuesta** | `docs/adr/0026-primeng-libreria-de-componentes-frontend.md`, `prompts/PR-ADR-013.md` |
 | Design Doc `DD-UC-030` + `ADR-0021` + `ADR-0023` | `DD-UC-030, ADR-0021, ADR-0023` | PR-ADR-011 | `arch-agent` | `ADR-0024` (embeddings en memoria para PROCESO) — **Aprobado** | `docs/adr/0024-rag-vectorial-camino-proceso.md`, `prompts/PR-ADR-011.md` |
 
 ---
@@ -4461,3 +4680,5 @@ y tests JUnit 5. dtp-sync al cerrar la ejecución.
 | v2.51 | 29/09/2026 | Rodrigo Aspeti | `PR-IMPL-029` (`DD-UC-029`, `FSD-UC-009`): parámetros del periodo y cobertura docente al abrir. Borrador; no restaura la apertura secuencial (`ADR-0014`). Índice, flowchart, matriz `dev-agent`, contrato y trazabilidad. Total 68 → 69. |
 | v2.52 | 29/09/2026 | Rodrigo Aspeti | `PR-IMPL-029` pasa a **ejecutado**: `ParametroPeriodo`, `V13`, gates al abrir y panel de periodos. Sin contrato nuevo. |
 | v2.53 | 02/10/2026 | G-EduSync | `PR-IMPL-030` + `PR-ADR-011` (`DD-UC-030`, `ADR-0024` Aceptada): RAG vectorial del camino PROCESO, índice en memoria, cita textual, léxico de `DD-UC-028` solo si el embedding falla. Prompt aprobado, ejecución pendiente. Índice, flowchart (`IMPL030`), matriz `dev-agent`/`arch-agent`, contratos y trazabilidad. Total 69 → 71. |
+| v2.54 | 10/11/2026 | G-EduSync | `PR-IMPL-031` + `PR-ADR-012` (`DD-UC-031`, `ADR-0025` *Propuesta*): exportación de la nota final de periodo al SIE sobre el modelo genérico; `floor()` retirado; inmutabilidad, correcciones y `audit_log` diferidos. Prompt aprobado, ejecución pendiente. Índice, flowchart (`IMPL031`), matriz `dev-agent`/`arch-agent`, contratos y trazabilidad. Invariante global `IG-02`/`IG-03` anotados. Total 71 → 73. |
+| v2.55 | 10/11/2026 | G-EduSync | `PR-IMPL-032` + `PR-ADR-013` (`DD-UC-032`, `ADR-0026` *Propuesta*): PrimeNG 21.x como única librería de UI; matriz de calificaciones a `p-table`; AG Grid descartado. Prompt aprobado, ejecución pendiente. Índice, flowchart (`IMPL032`), matriz `dev-agent`/`arch-agent`, contratos y trazabilidad. Total 73 → 75. |

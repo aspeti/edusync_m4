@@ -23,12 +23,12 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión** | v2.3 |
-| **Fecha** | 21/08/2026 |
+| **Versión** | v2.4 |
+| **Fecha** | 10/11/2026 |
 | **Product Manager / Autor** | Rodrigo Aspeti — Dev Lead / PM EduSync |
 | **Revisores** | Docente + Tech Lead + QA |
 | **Estado** | En revisión |
-| **BRD de referencia** | `docs/product/BRD.md` (v3.2) |
+| **BRD de referencia** | `docs/product/BRD.md` (v3.3) |
 | **MRD de referencia** | `docs/MRD-EduSync.md` (v1.0) |
 | **Insumos M2 (UI/UX)** | Sistema de diseño Atomic Design + Design Tokens · WCAG 2.2 AA · Semáforos visuales de reprobación · Wireframes de carga de notas y dashboard director |
 | **Fase Spec Kit cubierta** | Specify ✅ / Plan ⬜ / Tasks ⬜ / Implement ⬜ |
@@ -37,6 +37,8 @@
 ### 0.1 Nomenclatura de roles (vigente desde v2.0 — `ADR-0009`)
 
 > Ver detalle completo en `docs/product/BRD.md` §0.1. Resumen: **SysAdmin** (plataforma, nuevo) · **Admin** = Director · **Secretaria** = Secretaría · **Asesor** (tenant, nuevo, solo lectura de su curso/paralelo) · **Profesor** = Docente. Las épicas E1..E6 (§5.1–§5.6) fueron redactadas antes de `ADR-0009` y usan la nomenclatura histórica (`Director`, `Docente`) por fidelidad a su trazabilidad original; ambos pares de términos son equivalentes desde esta versión. Las épicas E7..E11 (§5.7–§5.11, nuevas) usan la nomenclatura vigente.
+
+> **Nota de vigencia (v2.4 — `ADR-0025`, propuesta, 10/11/2026).** La épica E4 (centralizadores, `PRD-US-011`, `PRD-REQ-010`) y toda mención a `floor` en este documento son **históricas**: el criterio vigente es `round` HALF_UP (`ADR-0013`). El SIE recibe la nota final entera de cada periodo (un registro por estudiante, materia y periodo), solo de un periodo `CERRADO` y solo con todas sus secciones completas (`FSD-UC-004`, `DD-UC-031`). Las épicas de inmutabilidad y correcciones retroactivas (E5, `PRD-US-014`/`015`/`017`, `PRD-REQ-014`/`015`/`017`) siguen siendo requisitos con implementación **diferida**. `RB-08` queda superada; `BR-004` (RUDE) se mantiene.
 
 ---
 
@@ -85,7 +87,7 @@ Los tres actores primarios son: **Docente** (carga de notas, asistencia, solicit
 - **Módulo de Gestión de Gestión Académica (Director):** Creación de la gestión anual, definición de calendario de 3 trimestres, configuración de parámetros académicos (dimensiones, pesos, reglas), asignación de docentes a materias, apertura/cierre secuencial de periodos.
 - **Módulo de Registro de Calificaciones (Docente):** Ingreso de notas por dimensión activa, tipo REGULAR / AYUDA, validación en tiempo real de rangos paramétricos, gestión de número de evaluaciones por dimensión.
 - **Módulo de Cierre Operativo:** Cierre atómico de materia con verificación de completitud al 100 %, transición irreversible a `SOLO_LECTURA`.
-- **Módulo de Consolidación y Centralizadores:** Vista provisional en tiempo real (marcada `PROVISIONAL`), centralizador oficial post-cierre con criterio `floor`, promedio anual solo con 3 trimestres cerrados.
+- **Módulo de Consolidación y Centralizadores:** Vista provisional en tiempo real (marcada `PROVISIONAL`), centralizador oficial post-cierre (**diferido**, `ADR-0025`; criterio `round`, sin `floor`), promedio anual solo con 3 trimestres cerrados.
 - **Módulo de Exportación al SIE:** Exportación masiva por RUDE, estado por estudiante persistido, reintentos idempotentes ante fallos parciales, reporte de resultado (enviados / fallidos / excluidos).
 - **Módulo de Modificaciones Retroactivas:** Solicitud del Docente, autorización del Director con alcance (estudiante o curso) y ventana temporal 1–72 h, alerta 30 min antes de expiración, revocación automática.
 - **Módulo de Gestión de Nóminas:** Altas, bajas y transferencias de estudiantes identificados por RUDE, sin reasignación de posiciones.
@@ -423,7 +425,7 @@ Escenario: Promedio provisional se actualiza al guardar una nota
 | ID | Historia | Prioridad | Valor | Esfuerzo | Criterios |
 |----|----------|-----------|-------|----------|-----------|
 | PRD-US-010 | Como Docente, quiero cerrar mi materia cuando todos los estudiantes tienen todas sus evaluaciones completas, para que la secretaría sepa que mis datos están listos | Must | 9 | 4 | §5.4.1 |
-| PRD-US-011 | Como Secretaría, quiero ver el centralizador oficial una vez que todas las materias de un curso están cerradas para tener los promedios finales calculados con el criterio floor correcto | Must | 10 | 7 | §5.4.2 |
+| PRD-US-011 | **[Reducida por `ADR-0025`: la Secretaría exporta la nota final de periodo; sin centralizador oficial ni `floor`. Ver `FSD-UC-003`/`004`.]** Como Secretaría, quiero ver el centralizador oficial una vez que todas las materias de un curso están cerradas para tener los promedios finales calculados con el criterio floor correcto | Must | 10 | 7 | §5.4.2 |
 
 #### 5.4.1 Criterios PRD-US-010
 
@@ -447,6 +449,7 @@ Escenario: Intento de cierre con evaluaciones incompletas
 #### 5.4.2 Criterios PRD-US-011
 
 ```gherkin
+# Superado por ADR-0025 (propuesta, 10/11/2026): sin floor ni centralizador OFICIAL; se conserva como contexto histórico.
 Escenario: Centralizador oficial generado correctamente con floor
   Dado que todas las materias del curso "2do A" están en estado CERRADO
   Cuando el motor de consolidación procesa el centralizador
@@ -707,7 +710,7 @@ Escenario: Nota de periodo como suma de promedios de sección
     Y si N=3 y solo existe ese periodo, promedio_gestion = 31 (PROVISIONAL)
 
 Nota: el modelo genérico usa round HALF_UP (2 decimales en sección, entero en periodo/gestión).
-floor() permanece exclusivo del Perfil Bolivia SIE (FSD-UC-003). Ver ADR-0013.
+floor() está retirado del producto vivo (ADR-0025, propuesta): el SIE recibe la nota final de periodo con round. Ver ADR-0013.
 ```
 
 ---
@@ -845,7 +848,7 @@ Escenario: Usuario restablece su contraseña
 | PRD-REQ-007 | El sistema debe permitir al Docente gestionar el número de evaluaciones por dimensión (agregar/eliminar) mientras la materia esté en estado ABIERTO | PRD-US-008 | Must |
 | PRD-REQ-008 | El sistema debe mostrar el promedio provisional del estudiante actualizado en tiempo real tras cada nota guardada, marcado como PROVISIONAL | PRD-US-009 | Should |
 | PRD-REQ-009 | El sistema debe verificar que el 100 % de los estudiantes de la nómina tienen todas las evaluaciones declaradas antes de permitir el cierre de la materia | PRD-US-010 | Must |
-| PRD-REQ-010 | El sistema debe calcular el centralizador oficial aplicando PROMEDIO_SIMPLE dentro de cada dimensión y truncado `floor` para todos los decimales | PRD-US-011 | Must |
+| PRD-REQ-010 | **[Superado por `ADR-0025`: nota de periodo con `round` HALF_UP vía `CalculoNotas`; sin `floor` ni centralizador oficial.]** El sistema debe calcular el centralizador oficial aplicando PROMEDIO_SIMPLE dentro de cada dimensión y truncado `floor` para todos los decimales | PRD-US-011 | Must |
 | PRD-REQ-011 | El promedio anual y el índice de reprobación anual solo deben calcularse y mostrarse cuando los 3 trimestres están en estado CERRADO | PRD-US-011 | Must |
 | PRD-REQ-012 | El sistema debe exportar masivamente al SIE vinculando cada calificación al RUDE del estudiante, en el formato ministerial vigente parametrizable sin redespliegue | PRD-US-012 | Must |
 | PRD-REQ-013 | El sistema debe persistir el estado de exportación registro a registro y reanudar desde el último exitoso ante fallos parciales del SIE, sin duplicar registros ya enviados | PRD-US-013 | Must |
@@ -1082,6 +1085,7 @@ Escenario: Usuario restablece su contraseña
 | v2.1 | 12/07/2026 | Rodrigo Aspeti | Corrección de consistencia de stack: §9 (dependencia "Spring Security + JWT") y §10 ("Stack obligatorio") citaban todavía el stack del baseline de M4 (Java 21 / Spring Boot 3.3 / Angular 17) en vez del stack vivo fijado por `ADR-0008` (Java 25 LTS / Spring Boot 4.1.0 / Angular 21 LTS) desde la apertura de `release/3.0.0`. Actualizados ambos puntos con referencia explícita a `ADR-0008`. |
 | v2.2 | 14/07/2026 | Rodrigo Aspeti | Refinamiento del modelo de roles (`ADR-0010`): PRD-US-029 y PRD-REQ-031 pasan de "asignación de rol" (uno) a **multi-rol** (uno o más roles simultáneos), con la invariante de que SysAdmin nunca se combina con un rol de tenant. Nuevo escenario Gherkin en §5.11.1 (multi-rol). Sin cambios en el resto de épicas/requisitos. |
 | v2.3 | 21/08/2026 | Rodrigo Aspeti | `ADR-0013`: E8/E9 (PRD-US-021..024, PRD-REQ-023..026) alineados al modelo genérico (seed 3+4, plantilla por gestión, escala `[0, nota]`, promedio simple, `round` entero, promedio de gestión `/ N` `PROVISIONAL`, apertura secuencial). Sin cambio en E1–E7 ni Perfil Bolivia SIE. |
+| v2.4 | 10/11/2026 | G-EduSync | `ADR-0025` (propuesta): `PRD-US-011` y `PRD-REQ-010` marcadas superadas (sin `floor` ni centralizador oficial); el SIE recibe la nota final entera de cada periodo (`FSD-UC-004`, `DD-UC-031`). E5 (inmutabilidad, correcciones) pasa a implementación diferida. Nota de vigencia en §0.1; BRD de referencia v3.3. Sin IDs nuevos. |
 
 ---
 

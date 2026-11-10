@@ -23,6 +23,8 @@ artefacto_mermaid: "docs/diagrams/c4_level3_api_gateway.mmd"
 
 # C4 Level 3 — `api-gateway` (EduSync)
 
+> **Vigencia (`ADR-0025`, propuesta, 10/11/2026).** El `CentralizadorController` y la lectura de `FSD-UC-003` quedan **diferidos** (no hay centralizador en el producto vivo). La exportación al SIE envía la nota final de periodo con clave `(rude, materia_id, periodo_id)`; la API vigente está en `docs/design/DD-UC-031.md` §2.7. No hay `floor()`.
+
 > Diagrama de componentes del contenedor `api-gateway` (Spring Boot 3.3 / Java 21 / ECS Fargate). Generado por `.cursor/skills/c4-edusync/SKILL.md` v0.3.0 siguiendo el procedimiento de 4 pasos `discovery → draft → validate → refine`.
 >
 > El bloque Mermaid renderizable vive en `c4_level3_api_gateway.mmd`. Este `.md` es su **espejo narrativo obligatorio** (IG-09).
@@ -35,7 +37,7 @@ El contenedor `api-gateway` agrupa todo el adaptador de entrada web del monolito
 
 Quedan **fuera de este nivel 3** y se delegan a otros contenedores:
 
-- **Lógica de negocio y `Math.floor()`** → `domain-layer` (DA-02 / BR-008). Si `floor()` apareciera aquí, sería gap mayor.
+- **Lógica de negocio y cálculo de notas** (`CalculoNotas`, `round` HALF_UP, `ADR-0025`) → `domain-layer` (DA-02 / BR-008). Si un cálculo apareciera aquí, sería gap mayor.
 - **`SIEHttpClient` + circuit breaker** → contenedor `sie-adapter` (ver `c4_level3_sie_adapter.mmd` pendiente).
 - **`MateriaCerradaListener` + consolidación async** → `event-bus` + `domain-layer` (DA-04).
 - **Schedulers** (`VentanaExpiracionScheduler`, `SIERetryScheduler`) → contenedor `scheduler`.
@@ -57,8 +59,8 @@ Quedan **fuera de este nivel 3** y se delegan a otros contenedores:
 | Componente | Endpoint | FSD-UC | BR/DA aplicados |
 |------------|----------|--------|-----------------|
 | `CalificacionController` | `POST /api/v1/calificaciones` | FSD-UC-001 | BR-001 (RBAC docente-materia), BR-002 (rango paramétrico), BR-004 (RUDE), DA-03 (audit_log) |
-| `CentralizadorController` | `GET /api/v1/centralizadores` | FSD-UC-003 (lectura) | BR-008 (`floor` en domain), RB-08 (truncado único) |
-| `ExportacionController` | `POST /api/v1/exportaciones/sie` | FSD-UC-004 | BR-004 (RUDE única clave), NFR-011 (idempotencia `rude+periodo_id`), DA-05 (delegada a `sie-adapter`) |
+| `CentralizadorController` | `GET /api/v1/centralizadores` | FSD-UC-003 (lectura) | BR-008 (cálculo en domain); RB-08 superada por `ADR-0025`; endpoint diferido |
+| `ExportacionController` | `POST /api/v1/exportaciones/sie` | FSD-UC-004 | BR-004 (RUDE única clave), NFR-011 (idempotencia `rude+materia_id+periodo_id`, `ADR-0025`), DA-05 (delegada a `sie-adapter`) |
 | `CorreccionController` | `POST /api/v1/correcciones` + `PUT /{id}/autorizar` | FSD-UC-005 | BR-005 (autorización jerárquica), BR-009 (ventana 1–72 h) |
 | `PeriodoController` | `POST /api/v1/periodos` | FSD-UC-009 | BR-006 (secuencia T1→T2→T3), BR-007 (parámetros inmutables en `ABIERTO`) |
 
@@ -77,7 +79,7 @@ Quedan **fuera de este nivel 3** y se delegan a otros contenedores:
 | FSD-UC | Contenedor C4 | Componente nivel 3 | DA/BR/NFR aplicado |
 |--------|---------------|--------------------|--------------------|
 | FSD-UC-001 — Registro de calificación | `api-gateway` | `CalificacionController` + `Web DTOs` + `JwtAuthFilter` + `RLSTenantInjector` + `AuditLogAspect` | BR-001, BR-002, BR-004, DA-01, DA-03, NFR-008, NFR-010 |
-| FSD-UC-003 — Consolidación (lectura) | `api-gateway` | `CentralizadorController` + `Web DTOs` | BR-008 (`floor` vive en `domain-layer`), RB-08 |
+| FSD-UC-003 — Consolidación (lectura) | `api-gateway` | `CentralizadorController` + `Web DTOs` | BR-008 (el cálculo vive en `domain-layer`); RB-08 superada por `ADR-0025` |
 | FSD-UC-004 — Exportación SIE | `api-gateway` | `ExportacionController` + `Web DTOs` → delega a `sie-adapter` | BR-004, NFR-011, DA-05 |
 | FSD-UC-005 — Corrección retroactiva | `api-gateway` | `CorreccionController` + `Web DTOs` + `AuditLogAspect` | BR-005, BR-009, DA-03 |
 | FSD-UC-009 — Administración de periodos | `api-gateway` | `PeriodoController` + `Web DTOs` | BR-006, BR-007 |
@@ -89,7 +91,7 @@ Quedan **fuera de este nivel 3** y se delegan a otros contenedores:
 
 ### 4.1 Reglas duras verificadas
 
-- [x] **`Math.floor()` no aparece en `api-gateway`.** Vive solo en `ConsolidacionDomainService` dentro de `domain-layer` (BR-008). El `CentralizadorController` se limita a serializar `CentralizadorDTO`.
+- [x] **Ningún cálculo de notas aparece en `api-gateway`.** `floor()` no existe en el producto vivo (`ADR-0025`); el cálculo es exclusivo de `CalculoNotas` en `domain-layer` (BR-008). El `CentralizadorController` (diferido) se limitaría a serializar `CentralizadorDTO`.
 - [x] **`audit_log` solo se escribe desde `AuditLogAspect`** en la misma TX (DA-03). Ningún controller escribe en `audit_log` directamente.
 - [x] **RLS modelado como cross-cutting**: `RLSTenantInjector` precede toda TX; `postgres-rls` aplica la política a nivel DB (DA-01).
 - [x] **RUDE como única clave** en `ExportacionController` y validado en `CalificacionRequestDTO` (BR-004); nunca se serializa `nombre` ni `fecha_nacimiento` desde aquí.

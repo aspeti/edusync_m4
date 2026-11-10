@@ -24,8 +24,8 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.16 |
-| **Fecha** | 29/09/2026 |
+| **Versión del documento** | v2.17 |
+| **Fecha** | 10/11/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
 | **Estado** | En revisión |
@@ -156,6 +156,8 @@ Todo el ciclo queda sellado en un `audit_log` append-only inalterable, con aisla
 
 ### 4.1 FSD-UC-001 — Registro descentralizado de calificaciones por dimensión
 
+> **Realización vigente (`ADR-0025`, propuesta, 10/11/2026).** Este caso de uso **queda absorbido por `FSD-UC-016`** (§4.6.6). No se implementa un modelo paralelo de dimensiones fijas (Ser/Saber/Hacer/Decidir/Autoevaluación) ni un `peso_max` por dimensión: las notas se cargan en las **secciones configurables** de `ADR-0013` (`PUT .../calificaciones`), con rango `[0, seccion.nota]` (`422 E_RANGO_INVALIDO`). La escritura se rechaza si el periodo no está `ABIERTO` con `422 E_PERIODO_NO_ABIERTO` (`ADR-0014`), no con `E_PERIODO_NO_MODIFICABLE`. El texto de abajo se conserva como contexto histórico del Perfil Bolivia SIE. La regla de que la nota es **modificable mientras el periodo está `ABIERTO`** es la vigente; la inmutabilidad y el `append-only` (`BR-005`, `RB-10`) están **diferidos**.
+
 - **Trazabilidad:** `PRD-REQ-006`, `PRD-REQ-007`, `PRD-US-007`, `PRD-US-008`
 - **Actor principal:** Docente
 - **Precondiciones:**
@@ -229,6 +231,8 @@ Escenario: Rechazo por valor fuera de rango
 
 ### 4.2 FSD-UC-003 — Consolidación algorítmica de centralizadores
 
+> **Realización vigente (`ADR-0025`, propuesta, 10/11/2026).** La consolidación se **reduce a la nota final de periodo** que calcula `CalculoNotas` (`FSD-UC-016`): `round` HALF_UP, sin `floor()`. **`BR-003`, `BR-008` y `RB-08` quedan superados** (§5.1). No hay `ConsolidacionDomainService`, ni golden `FloorTest`, ni conversión `floor(nota/3)`. Tampoco se materializa una tabla de centralizador `PROVISIONAL`/`OFICIAL` ni promedio anual hacia el SIE: esos puntos están diferidos. `BR-011` sigue aplicando a los indicadores institucionales del Director, no a la exportación. Lo que el SIE necesita de este caso de uso lo entrega `DD-UC-031` (§4.3). El texto de abajo se conserva como contexto histórico.
+
 - **Trazabilidad:** `PRD-REQ-010`, `PRD-REQ-011`, `PRD-US-011`
 - **Actor principal:** Sistema (Motor de Consolidación, disparado por evento de dominio)
 - **Precondiciones:**
@@ -255,7 +259,7 @@ Escenario: Rechazo por valor fuera de rango
 - **Postcondiciones:**
   1. Tabla `centralizador` actualizada con estado `PROVISIONAL` u `OFICIAL`.
   2. Si oficial: boletines habilitados; indicadores del Director actualizados.
-- **Reglas de negocio aplicables:** BR-003 (floor), RB-08 (criterio único de truncado), RB-11 (indicadores anuales con 3 trimestres cerrados).
+- **Reglas de negocio aplicables:** BR-003 (floor — **superada por `ADR-0025`**), RB-08 (criterio único de truncado — **superada**: el criterio único pasa a ser `round`), RB-11 (indicadores anuales con 3 trimestres cerrados).
 - **Datos de entrada (evento):**
   ```json
   {
@@ -303,6 +307,16 @@ Escenario: Promedio anual bloqueado con solo 2 trimestres cerrados
 ---
 
 ### 4.3 FSD-UC-004 — Exportación masiva al SIE por RUDE
+
+> **Realización vigente (`DD-UC-031` / `PR-IMPL-031` / `ADR-0025`, propuesta, 10/11/2026; ejecución pendiente).** El flujo se **reescribe sobre el modelo genérico**. El texto clásico de abajo (payload por dimensión y centralizador `OFICIAL`) queda como contexto histórico. Lo vigente:
+>
+> - **Qué se envía.** Un registro por (estudiante, materia, periodo) con `rude`, materia, periodo y `notaFinal` entera (la nota de periodo de `CalculoNotas`, sin conversión de escala). Sin nombre ni posición de lista (`BR-004`).
+> - **Cuándo.** Solo un periodo `CERRADO` (`422 E_PERIODO_NO_CERRADO` si no). No existe cierre por materia ni por centralizador: cerrar el periodo basta. Rol `ADMIN` o `SECRETARIA`.
+> - **Nota incompleta.** Si alguna sección del periodo no está `COMPLETO` para ese estudiante y materia, el registro queda `EXCLUIDO_NOTA_INCOMPLETA`. Sin RUDE válido, `EXCLUIDO_SIN_RUDE`. Ambos se reevalúan al volver a exportar.
+> - **Idempotencia.** Clave `rude + materia_id + periodo_id` (enmienda de `ADR-0005`/`DA-05`, que decía `rude + periodo_id`). Un registro `ENVIADO` nunca se reenvía.
+> - **Resiliencia.** Envío asíncrono tras el commit; circuit breaker, timeout de 30 s y reintento cada 5 min de los `FALLIDO` (`ADR-0005`). Estado de la exportación: `EN_PROGRESO` / `PARCIAL` / `COMPLETA`.
+> - **API.** `POST /api/v1/exportaciones/sie` (`202`), `GET /api/v1/exportaciones/sie?periodoId=`, `GET .../{id}/registros`. Errores: `E_PERIODO_NO_ENCONTRADO`, `E_PERIODO_NO_CERRADO`, `E_SIE_NO_CONFIGURADO` (`503`), `E_EXPORTACION_NO_ENCONTRADA`.
+> - **Pendiente de confirmar**: formato real del endpoint SIE, identificador de materia y longitud del RUDE (`DD-UC-031` §8). El payload es provisional.
 
 - **Trazabilidad:** `PRD-REQ-012`, `PRD-REQ-013`, `PRD-US-012`, `PRD-US-013`
 - **Actor principal:** Secretaría
@@ -370,6 +384,8 @@ Escenario: Bloqueo con materias abiertas
 ---
 
 ### 4.4 FSD-UC-005 — Autorización jerárquica de modificación retroactiva
+
+> **Diferido (`ADR-0025`, propuesta, 10/11/2026).** Este caso de uso **no se implementa por ahora**. La decisión del responsable es que los datos sean modificables mientras el periodo esté `ABIERTO` y que la inmutabilidad se aborde más adelante. Quedan diferidos `AutorizacionCorreccion`, las ventanas de 1–72 h, `VentanaExpiracionScheduler`, el `append-only` con `registro_padre_id` y el golden `VentanaTest`. `BR-005` y `BR-009` siguen vigentes como requisitos, sin código. Hoy un periodo `CERRADO` rechaza escrituras con `E_PERIODO_NO_ABIERTO`, pero `ADR-0014` permite reabrirlo. El texto de abajo se conserva sin cambios.
 
 - **Trazabilidad:** `PRD-REQ-014`, `PRD-REQ-015`, `PRD-REQ-017`, `PRD-US-014`, `PRD-US-015`, `PRD-US-017`
 - **Actor principal:** Docente (solicitante) + Director (autorizador)
@@ -497,6 +513,8 @@ Escenario: Apertura secuencial válida
 > - Fuera de `PENDIENTE` el `PUT` responde `422 E_PARAMETROS_INMUTABLES` (`BR-007`). Volver el periodo a `PENDIENTE` vuelve a habilitarlo. Nombres, fechas y la plantilla de secciones siguen editables (`ADR-0014`).
 > - Abrir exige parámetros completos (`422 E_PARAMETROS_INCOMPLETOS`), suma de secciones = 100 y que toda materia con curso asignado tenga profesor (`409 E_MATERIA_SIN_DOCENTE`). Cerrar o volver a `PENDIENTE` no exige esos gates.
 > - Quedan fuera: cierre por centralizadores, notificación a docentes, `audit_log`, `floor()` y las reglas `SUMA`/`MEJOR_N`.
+>
+> **Actualización `ADR-0025` (propuesta, 10/11/2026).** El «cierre por centralizadores» ya no es un requisito: para habilitar la exportación al SIE basta con que el periodo esté `CERRADO` (`PATCH .../estado`, `ADR-0014`). No hay cierre de materia por docente. La notificación a docentes y el `audit_log` siguen diferidos.
 
 ---
 
@@ -862,12 +880,12 @@ Escenario: Rechazo de SYSADMIN combinado con rol de tenant
 |----|-------|------|--------|------------------------|
 | BR-001 | El Docente escribe únicamente en las materias que tiene asignadas. Verificación en cada request mediante `asignacion_docente`. | validación / política | `PRD-REQ-001`, DA-01 | FSD-UC-001, FSD-UC-005 |
 | BR-002 | Ningún valor fuera del rango paramétrico de la dimensión puede persistirse. La validación ocurre antes del `INSERT`. | validación | `PRD-REQ-006`, DA-02 | FSD-UC-001 |
-| BR-003 | El criterio de truncado de decimales es `floor` (piso), no redondeo estándar ni bancario. `floor(64.666) = 64`. | cálculo | `PRD-REQ-010`, DA-02 | FSD-UC-003 |
+| BR-003 | ~~El criterio de truncado de decimales es `floor` (piso), no redondeo estándar ni bancario. `floor(64.666) = 64`.~~ **Superado por `ADR-0025` (propuesta, 10/11/2026):** todo redondeo del producto vivo es `round` HALF_UP (`ADR-0013` §3.4). No hay `floor()`. | cálculo | `PRD-REQ-010`, DA-02 | FSD-UC-003 |
 | BR-004 | La vinculación al SIE es exclusivamente por RUDE. Ningún payload puede usar nombre, apellido ni posición de lista. | política + normativa SIE | `PRD-REQ-012`, Ministerio de Educación Bolivia | FSD-UC-004 |
 | BR-005 | Ningún registro cerrado puede modificarse sin autorización explícita del Director con ventana temporal definida. | política | `PRD-REQ-014`, BR-v2 BR-005 | FSD-UC-005 |
 | BR-006 | La apertura de periodos trimestrales es estrictamente secuencial: T2 no puede abrirse sin T1 cerrado. | política | `PRD-REQ-005`, RB-05 | FSD-UC-009 |
 | BR-007 | Los parámetros académicos del periodo (dimensiones, pesos, reglas) son inmutables desde el momento en que el periodo está en estado `ABIERTO`. | política | `PRD-REQ-003`, DA-02 | FSD-UC-001, FSD-UC-003, FSD-UC-009 |
-| BR-008 | El cálculo de promedios y la conversión a escala SIE (`floor(nota/3)`) ocurren exclusivamente en el motor de dominio. Ningún cálculo puede ejecutarse en adaptadores, SQL ad-hoc ni en el frontend. | arquitectura | DA-02, Constitución §0.1 | FSD-UC-003, FSD-UC-004 |
+| BR-008 | El cálculo de promedios ocurre exclusivamente en el motor de dominio (`CalculoNotas`). Ningún cálculo puede ejecutarse en adaptadores, SQL ad-hoc ni en el frontend. ~~La conversión a escala SIE (`floor(nota/3)`)~~ **no existe** (`ADR-0025`, propuesta, 10/11/2026): el SIE recibe la nota final de periodo sin conversión. | arquitectura | DA-02, Constitución §0.1 | FSD-UC-003, FSD-UC-004 |
 | BR-009 | Toda autorización de modificación retroactiva incluye una ventana de expiración entre 1 y 72 horas (default: 24 h). No existe autorización indefinida. La revocación es automática sin intervención manual. | política | RB-07, `PRD-REQ-015` | FSD-UC-005 |
 | BR-010 | El `audit_log` es inalterable: no se permiten `UPDATE` ni `DELETE` sobre ninguna fila de esta tabla. La escritura solo ocurre mediante el servicio de auditoría (AOP interceptor o Hibernate Envers). | política de datos | `PRD-REQ-018`, DA-03 | Todos |
 | BR-011 | El promedio anual y el índice de reprobación anual solo se calculan y muestran cuando los 3 trimestres del año académico están en estado `CERRADO`. | cálculo | `PRD-REQ-011`, RB-11 | FSD-UC-003, FSD-UC-010 |
@@ -1494,6 +1512,7 @@ Paso 13 → audit_log entry + notificación
 | v2.14 | 21/08/2026 | Rodrigo Aspeti | `FSD-UC-016` (§4.6.6) cierra implementación **completa** (backend + UI fullstack, `DD-UC-018`/`PR-IMPL-018`): `PUT/GET` calificaciones, `GET` nota-provisional, motor `CalculoNotas` (`round` HALF_UP, sin `floor()`), A2 `E_RANGO_INVALIDO` cerrado. |
 | v2.15 | 12/09/2026 | Rodrigo Aspeti | **`ADR-0014`** (relaja `ADR-0013` §3.1.4/3.1.5/§3.2.2): `FSD-UC-012` (§4.6.2) gana actor secundario de solo lectura (Secretaria/Profesor/Asesor), nuevo `PATCH /gestiones-escolares/{id}` (nombre/fechas) y A2 de visibilidad `ACTIVA`-only (404 para roles no-`ADMIN` sobre una gestión no activa). `FSD-UC-013` (§4.6.3) elimina A2/A3 (`E_PERIODO_NO_SECUENCIAL`/`E_PERIODOS_INMUTABLES`): apertura ya no es secuencial, sin freeze de N/datos; se conserva A1 `E_PERIODOS_SOLAPADOS` y A4→A2 `E_PERIODO_UNICO`. `FSD-UC-014` (§4.6.4) elimina A3 (`E_SECCIONES_INMUTABLES`, freeze sticky); se conservan A1 `E_PESO_INVALIDO` y A2 `E_SUMA_SECCIONES_INVALIDA`. `BR-017`/`BR-018` (§5.1) reescritas para reflejar la relajación, conservando explícitamente las invariantes de integridad del motor de cálculo. Trazado a `DD-UC-019`/`PR-IMPL-019` (backend + UI fullstack, ejecutado). Sin cambios en `FSD-UC-015`/`016` (`CalculoNotas`/`CalificacionEvaluacion` intactos). |
 | v2.16 | 29/09/2026 | Rodrigo Aspeti | **`DD-UC-029` / `PR-IMPL-029`**: nota de realización en `FSD-UC-009` (§4.5). Parámetros por sección del periodo (`GET`/`PUT .../parametros`) e inmutables fuera de `PENDIENTE`; al abrir, `E_PARAMETROS_INCOMPLETOS` y `E_MATERIA_SIN_DOCENTE`. T-004/T-005 marcadas en el delta genérico. No restaura la apertura secuencial (`ADR-0014`). Cierre por centralizador, notificación y `audit_log` siguen fuera. |
+| v2.17 | 10/11/2026 | G-EduSync | **`ADR-0025` (propuesta) + `DD-UC-031` / `PR-IMPL-031`**: se reconcilia el Perfil Bolivia SIE con el modelo genérico. Notas de realización en `FSD-UC-001` (§4.1, absorbido por `FSD-UC-016`), `FSD-UC-003` (§4.2, reducido a la nota final de periodo, sin `floor()`), `FSD-UC-004` (§4.3, reescrito: el SIE recibe `rude` + materia + periodo + nota final entera; solo periodo `CERRADO`; clave `rude+materia_id+periodo_id`; `EXCLUIDO_NOTA_INCOMPLETA`), `FSD-UC-005` (§4.4, **diferido**: inmutabilidad y correcciones) y `FSD-UC-009` (§4.5, el cierre por centralizador ya no es requisito). `BR-003`, `BR-008` y `RB-08` marcadas superadas. Sin código en este turno. |
 
 ---
 

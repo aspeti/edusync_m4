@@ -15,6 +15,8 @@
 | Stakeholders consultados | Rodrigo Aspeti (Dev Lead / PM, único integrante de G-EduSync) |
 | ADR relacionado | `ADR-0009` (generalización aditiva; dejó pendientes de definición los 5 puntos de §3) |
 
+> **Nota de modificación (10/11/2026, `ADR-0025` propuesta).** Este ADR sigue **Aceptada**; su cuerpo no se reescribe. Las menciones de que `floor()` «permanece en el Perfil Bolivia SIE» (§3.4, §3.5 y consecuencias) **quedan superadas**: `ADR-0025` retira `floor()` del producto vivo y fija que el SIE recibe la nota final entera de cada periodo calculada con este mismo motor (`round` HALF_UP). `FloorTest` no se crea.
+
 ### 1. Contexto
 
 `ADR-0009` introdujo `GestionEscolar`, `PeriodoEvaluacion`, `SeccionEvaluacion` y `Evaluacion` como extensión aditiva sobre el Perfil Bolivia SIE, y dejó **cinco puntos fuera de alcance** antes de implementar `FSD-UC-013`..`FSD-UC-016`:

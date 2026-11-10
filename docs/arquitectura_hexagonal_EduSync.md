@@ -4,8 +4,8 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v0.2 |
-| **Fecha** | 14/07/2026 |
+| **Versión del documento** | v0.3 |
+| **Fecha** | 10/11/2026 |
 | **Autor** | Rodrigo Aspeti — Dev Lead / PM |
 | **Estado** | Vigente (spec viva, `docs/product/`-adyacente; no forma parte de `docs/baseline/`) |
 | **Stack (Perfil Bolivia SIE, este documento)** | Java 21 · Spring Boot 3.3 · Spring Security 6 · Spring Data JPA · Angular 17 · PostgreSQL 15 (histórico M4) → **vivo desde `release/3.0.0`**: Java 25 LTS · Spring Boot 4.1.0 · Spring Security 7 · Spring Data JPA · Angular 21 LTS · PostgreSQL 15 (`ADR-0008`) |
@@ -21,7 +21,9 @@ Documento de **diseño técnico** que materializa la arquitectura hexagonal (Por
 
 Este documento es **contrato técnico de bajo nivel** y debe ser leído por `dev-agent`, `arch-agent` y `qa-agent` antes de implementar cualquier `FSD-UC-NNN`.
 
-> **Nota de alcance (desde v0.2, `ADR-0011`)**: todo el contenido de este documento (puertos, adaptadores, Aggregate Roots §2–§5) describe exclusivamente el **Perfil Bolivia SIE** (`FSD-UC-001..010`), que en la organización *module-first* de `ADR-0011` corresponde al módulo `com.edusync.notassie` — uno de los 5 módulos de Spring Modulith del backend (junto a `plataforma`, `identidad`, `academico` y `shared`). Ninguna regla de negocio ni invariante del Perfil Bolivia SIE cambia; solo cambia el paquete Java raíz (`bo.edusync` → `com.edusync.notassie`) y su ubicación dentro del árbol module-first. Los otros 4 módulos (capacidades generalizadas de `ADR-0009`/`ADR-0010`) se diseñan en `docs/design/DD-UC-NNN.md` posteriores, no en este documento.
+> **Nota de alcance (desde v0.2, `ADR-0011`)**: todo el contenido de este documento (puertos, adaptadores, Aggregate Roots §2–§5) describe exclusivamente el **Perfil Bolivia SIE** (`FSD-UC-001..010`), que en la organización *module-first* de `ADR-0011` corresponde al módulo `com.edusync.notassie` — uno de los 5 módulos de Spring Modulith del backend (junto a `plataforma`, `identidad`, `academico` y `shared`). Hasta v0.2 ninguna regla de negocio ni invariante del Perfil Bolivia SIE cambiaba; solo el paquete Java raíz (`bo.edusync` → `com.edusync.notassie`) y su ubicación dentro del árbol module-first. Los otros 4 módulos (capacidades generalizadas de `ADR-0009`/`ADR-0010`) se diseñan en `docs/design/DD-UC-NNN.md` posteriores, no en este documento.
+
+> **Nota de vigencia (desde v0.3, `ADR-0025`, propuesta, 10/11/2026)**: tres invariantes de este documento quedan **superadas**. (1) `BR-003`/`BR-008`: no existe `Math.floor()` ni `ConsolidacionDomainService`; el único cálculo de notas es `CalculoNotas` (`round` HALF_UP, módulo `academico`). El Aggregate `Centralizador` y su estado `OFICIAL` inmutable (§5) **no se implementan**. (2) El puerto `ExportacionSIERepository` (§3) usa la clave de idempotencia `rude + materia_id + periodo_id`, no `rude + periodo_id`, y exporta la nota final de periodo. (3) `BR-005`/`BR-009` (`append-only`, ventana 1–72 h) siguen siendo requisitos con implementación **diferida**. Lo que sí se construye en `notassie` está en `docs/design/DD-UC-031.md`. Los detalles de §2–§5 que contradicen esta nota se conservan como diseño histórico y se reescribirán junto con la actualización pendiente de `ADR-0011`.
 
 ---
 
@@ -290,3 +292,4 @@ com.edusync/
 |---------|-------|-------|---------|
 | v0.1 | 24/05/2026 | Rodrigo Aspeti | Versión inicial — 4 tablas: 20 puertos IN, 16 puertos OUT, 32 adaptadores in/out, 8 Aggregate Roots con invariantes BR-001..BR-012 y DA-01..DA-05. Diagrama de paquetes Java y mapa hexagonal Mermaid. Trazabilidad FSD-UC ↔ puerto IN ↔ aggregate. |
 | v0.2 | 14/07/2026 | Rodrigo Aspeti | **Renombrado de paquete y reorganización module-first** (`ADR-0011`, derivado de `docs/design/DD-UC-001.md`): paquete raíz `bo.edusync` → `com.edusync.notassie` en §1.1 (estructura de paquetes) y en las notas de paquete de §2/§3/§4/§5; este documento queda explícitamente acotado al módulo `notassie` (Perfil Bolivia SIE) dentro del monolito modular Spring Modulith de 5 módulos (`plataforma`/`identidad`/`academico`/`notassie`/`shared`), sin cambios en ninguna regla de negocio, invariante, puerto ni Aggregate Root (§2–§5 sin cambios de contenido, solo de paquete). Se añade nota de alcance (§0) y nota sobre la futura migración de `AuthController`/`AutenticarUsuarioUseCase` al módulo `identidad` (`ADR-0010`). Metadatos actualizados: estado `Borrador` → `Vigente`; stack dual (baseline M4 vs. vivo `release/3.0.0`, `ADR-0008`); `PR-HEX-001` referenciado como materializado en `prompts/`. Trazabilidad (§9) ampliada con la fila de `DD-UC-001`/`ADR-0011`. |
+| v0.3 | 10/11/2026 | G-EduSync | Nota de vigencia en §0 (`ADR-0025`, propuesta): superadas `BR-003`/`BR-008` (sin `floor()` ni `ConsolidacionDomainService`; `Centralizador` no se implementa) y la clave de idempotencia (`rude+materia_id+periodo_id`); `BR-005`/`BR-009` diferidas. Se corrige la frase de v0.2 que afirmaba que ninguna regla del Perfil Bolivia cambiaba. §2–§5 se conservan como diseño histórico. Bump menor: la nota altera el alcance de invariantes. |

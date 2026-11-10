@@ -25,7 +25,7 @@ C4Container
       "Desacopla cierre de materia de\nconsolidacion de centralizadores.\nIdempotencia garantizada por\nperiodo_id + materia_id. [DA-04]")
 
     Container(sieadapter, "SIE Adapter", "Java 21, Resilience4j\nHTTPS/REST",
-      "Adaptador de integracion SIE.\nCircuit breaker + timeout 30 s\n+ backoff exponencial.\nIdempotencia por rude+periodo_id.\n[DA-05, FSD-UC-004]")
+      "Adaptador de integracion SIE.\nCircuit breaker + timeout 30 s\n+ backoff exponencial.\nIdempotencia por rude+materia_id+periodo_id (ADR-0025).\n[DA-05, FSD-UC-004]")
 
     Container(scheduler, "Scheduler", "Spring @Scheduled\nIn-process",
       "VentanaExpiracionScheduler:\nrevoca autorizaciones expiradas (BR-009).\nSIERetryScheduler:\nreintenta exportaciones fallidas c/5 min.")

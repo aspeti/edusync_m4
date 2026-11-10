@@ -20,6 +20,8 @@ artefacto_mermaid: "docs/diagrams/c4_level3_sie_adapter.mmd"
 
 # C4 Level 3 - `sie-adapter` (EduSync)
 
+> **Vigencia (`ADR-0025`, propuesta, 10/11/2026).** El adaptador envía la **nota final de periodo** por estudiante, materia y periodo (no el centralizador `OFICIAL`), con clave de idempotencia `(rude, materia_id, periodo_id)`. No hay `floor()` en el producto vivo. Diseño de implementación en `docs/design/DD-UC-031.md`.
+
 > Diagrama de componentes del adaptador de integración con el SIE ministerial. El `.mmd` usa cabecera `C4Component`; este `.md` es su espejo narrativo obligatorio (IG-09).
 
 ---
@@ -43,8 +45,8 @@ Quedan fuera de esta frontera:
 | Componente | Tecnología | Responsabilidad | Trazabilidad |
 |------------|------------|-----------------|--------------|
 | `SIEHttpClientAdapter` | Spring RestClient + Resilience4j | Implementa `SIEExportPort`; ejecuta llamadas HTTPS/REST al SIE. | DA-05, FSD-UC-004 |
-| `SIEPayloadMapper` | Java mapper | Convierte `Centralizador OFICIAL` a payload RUDE-only. | BR-004, NFR-004 |
-| `IdempotencyGuard` | Java service | Consulta estado por `(rude, periodo_id)` antes de enviar; evita duplicados. | NFR-011 |
+| `SIEPayloadMapper` | Java mapper | Convierte la nota final de periodo (`CalculoNotas`) de cada estudiante y materia a payload RUDE-only (`ADR-0025`). | BR-004, NFR-004 |
+| `IdempotencyGuard` | Java service | Consulta estado por `(rude, materia_id, periodo_id)` antes de enviar; evita duplicados. | NFR-011 |
 | `ExportacionEstadoWriter` | Spring Data JPA adapter | Escribe estados `PENDIENTE`, `ENVIADO`, `FALLIDO`, `EXCLUIDO_*` con RLS. | ADR-0005, ADR-0001 |
 | `SIECircuitBreakerConfig` | Resilience4j config | Centraliza `failureRateThreshold`, timeout, retry y backoff. | NFR-012 |
 | `SIEErrorMapper` | Java mapper | Normaliza errores HTTP/red a estados de exportación sin filtrar PII. | NFR-003 |
@@ -71,9 +73,9 @@ Quedan fuera de esta frontera:
 - [x] Cabecera Mermaid `C4Component`.
 - [x] Cada componente tiene tecnología explícita.
 - [x] Cada relación declara protocolo: `HTTPS/REST`, `JDBC/TLS`, `AWS SDK/TLS`, `Micrometer`, `HTTP local/test`.
-- [x] `Math.floor()` no aparece en el `sie-adapter`; el cálculo vive en `ConsolidacionDomainService`.
+- [x] `floor()` no existe en el producto vivo (`ADR-0025`); el `sie-adapter` no calcula, solo envía la nota final que entrega `CalculoNotas`.
 - [x] El payload SIE usa RUDE como única clave visible; no incluye nombre, apellido, fecha de nacimiento ni posición de lista.
-- [x] La idempotencia por `(rude, periodo_id)` se modela antes de cada envío.
+- [x] La idempotencia por `(rude, materia_id, periodo_id)` se modela antes de cada envío.
 - [x] Circuit breaker, timeout, retry y scheduler se trazan contra ADR-0005.
 - [x] WireMock queda modelado como test adapter, no como componente productivo.
 

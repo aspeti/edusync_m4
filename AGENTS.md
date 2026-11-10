@@ -5,7 +5,7 @@
 - **Nombre**: EduSync
 - **Grupo**: G-EduSync
 - **Dominio**: EdTech / GovTech Académico (Unidades Educativas Privadas y de Convenio — Mercado Boliviano)
-- **Resumen de 1 frase**: Plataforma SaaS B2B multitenant que descentraliza el registro de calificaciones por rol, consolida centralizadores automáticamente aplicando la regla `floor` y sincroniza con el sistema estatal SIE a través del código RUDE, eliminando la triple digitación manual.
+- **Resumen de 1 frase**: Plataforma SaaS B2B multitenant que descentraliza el registro de calificaciones por rol, calcula la nota de cada periodo con `round` sobre secciones configurables (sin `floor`, `ADR-0025`) y sincroniza con el sistema estatal SIE a través del código RUDE, eliminando la triple digitación manual.
 
 ### Documentación del proyecto
 
@@ -31,8 +31,8 @@
 | **Regla de baseline congelado** | `.cursor/rules/baseline-congelado.mdc` | Prohíbe a cualquier agente editar `docs/baseline/**`; espejo de la regla de este documento (§8.2) |
 | **Hooks de Cursor** | `.cursor/hooks.json` + `.cursor/hooks/*.js` | Automatización, no solo convención: `protect-baseline.js` (`preToolUse`) bloquea con `permission: deny` cualquier `Write`/`StrReplace`/`EditNotebook`/`Delete` sobre `docs/baseline/**`; `warn-shell-baseline.js` (`beforeShellExecution`) pide confirmación ante comandos de shell que escriban/muevan/borren rutas de `docs/baseline/`; `dtp-sync-reminder.js` (`stop`) revisa `git diff`/`git ls-files --others` al final de cada turno y recuerda ejecutar `@dtp-sync` si hay cambios sin commitear en `backend/`, `frontend/`, `docs/design/` o `docs/prompts/impl/PR-IMPL-*.md` sin reflejo en `docs/product/DTP.md` |
 | **Baseline congelado M4** | `docs/baseline/{BRD_EduSync_vFinal,MRD_EduSync_vFinal,PRD_EduSync_vFinal,FSD_EduSync_vFinal,DTI}.md` | Registro histórico **inmutable** evaluado en M4, tag `release/2.0.0`, `status: congelado`. Protegido por `CODEOWNERS` y `.cursor/rules/baseline-congelado.mdc`. El antiguo `docs/DTI.md` (v0.8, §0–§23) es hoy `docs/baseline/DTI.md` — su continuación viva es `docs/product/DTP.md` |
-| **DTP (capa viva)** | `docs/product/DTP.md` | Documento Técnico del Producto v1.42 (13/09/2026) — continuación viva del DTI congelado; §A.3 marca `FSD-UC-011`..`021` como **completos** (backend + UI); `PR-IMPL-022` **ejecutado** (Spring AI 2.0.0 detrás de `LlmPort`; `mvn test` 250/250) |
-| **PRD/FSD/BRD vivos** | `docs/product/{BRD,PRD,FSD}.md` | Copias editables de la capa viva (banner "COPIA VIVA"), abiertas para `release/3.0.0`; el FSD vivo opera en modo LFSD ⚡ (`docs/product/FSD.md` v2.14, BRD v3.2, PRD v2.3). Desde `ADR-0009`/`ADR-0013`: plataforma SaaS multi-tenant configurable; periodos/secciones/cálculo genérico resueltos (puntos 1–4 de `ADR-0009` §3). Desde `ADR-0010`: `BR-024`/`FSD-UC-021` multi-rol. |
+| **DTP (capa viva)** | `docs/product/DTP.md` | Documento Técnico del Producto v1.55 (10/11/2026) — continuación viva del DTI congelado; §A.3 marca `FSD-UC-011`..`021` como **completos** (backend + UI); `PR-IMPL-022` **ejecutado** (Spring AI 2.0.0 detrás de `LlmPort`; `mvn test` 250/250) |
+| **PRD/FSD/BRD vivos** | `docs/product/{BRD,PRD,FSD}.md` | Copias editables de la capa viva (banner "COPIA VIVA"), abiertas para `release/3.0.0`; el FSD vivo opera en modo LFSD ⚡ (`docs/product/FSD.md` v2.17, BRD v3.3, PRD v2.4). Desde `ADR-0009`/`ADR-0013`: plataforma SaaS multi-tenant configurable; periodos/secciones/cálculo genérico resueltos (puntos 1–4 de `ADR-0009` §3). Desde `ADR-0010`: `BR-024`/`FSD-UC-021` multi-rol. |
 | **Diagramas C4** | `docs/diagrams/c4_level1.mmd`, `c4_level2.mmd`, `c4_level3_api_gateway.mmd`, `c4_level3_domain_layer.mmd`, `c4_level3_sie_adapter.mmd`, `deployment_aws.mmd` (+ `.md` espejos para Level 3/Deployment) | C4 Level 1, 2, 3 y Deployment AWS; cumple la base para la rúbrica de diagramas versionados |
 | **ADRs** | `docs/adr/0001..0006-*.md`, `0008-*.md`, `0009-*.md`, `0010-*.md`, `0011-*.md`, `0012-*.md`, `0013-*.md` | 12 ADRs aprobados: 0001..0006, 0008 stack vivo, 0009 generalización SaaS, 0010 multi-rol, 0011 Modulith, 0012 Lombok/OpenAPI/Bean Validation, **0013 modelo genérico de periodos/secciones/cálculo** (resuelve `ADR-0009` §3 puntos 1–4; ninguno supersede a los anteriores). `ADR-0007` (Strangler Fig) queda *gated*. |
 | **Arq. hexagonal** | `docs/arquitectura_hexagonal_EduSync.md` | Arquitectura hexagonal v0.1 — 20 puertos IN, 16 puertos OUT, 32 adaptadores, 8 Aggregate Roots (Perfil Bolivia SIE, paquete `bo.edusync`, baseline M4). **En actualización** (`ADR-0011`): paquete `com.edusync` + organización monolito modular *module-first* (Spring Modulith) para `release/3.0.0` |
@@ -319,7 +319,8 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 | Documentación de API | springdoc-openapi | `springdoc-openapi-starter-webmvc-ui` 3.0.3 | Rama `3.x.x` compatible con Spring Boot 4.x; genera `/v3/api-docs` + `/swagger-ui.html` desde las anotaciones de los controladores/DTOs existentes (`ADR-0012`) |
 | Validación de entrada | Bean Validation (Jakarta) | `spring-boot-starter-validation` (BOM `spring-boot-starter-parent`) | `@NotBlank`/`@Email`/`@Size` declarativos en DTOs de `infrastructure/adapter/in/rest/`, con `@ExceptionHandler(MethodArgumentNotValidException.class)` común normalizando al formato `ErrorResponse` (`ADR-0012`) |
 | Cliente LLM (infra) | Spring AI | **2.0.0** (`spring-ai-bom`; docs oficiales: Boot 4.0.x y 4.1.x) | Solo en `shared.ai.infrastructure`. Default Gemini (`gemini-2.0-flash`, o `GEMINI_MODEL` en `.env`). Ollama queda con `EDUSYNC_AI_PROVIDER=ollama`. Key solo en `GEMINI_API_KEY` (`ADR-0023`). Sin PII en logs |
-
+| Resiliencia SIE | Resilience4j (`resilience4j-circuitbreaker`, núcleo, sin starter) | Versión a fijar al ejecutar `PR-IMPL-031`, tras verificar compatibilidad con Java 25 / Spring Boot 4.1.0 | Solo en `notassie.infrastructure` (`SieHttpClientAdapter`). Circuit breaker + timeout 30 s + reintento cada 5 min con estado por registro (`ADR-0005`, autorizado por `ADR-0025` §3.6, propuesta). Aún no está en el `pom.xml` |
+| Componentes de UI (frontend) | PrimeNG + `@angular/cdk` + `@primeuix/themes` | `primeng` línea **21.x** (`^21.1`, compatible con Angular 21; **MUST NOT** usar 22.x, exige Angular 22), `@angular/cdk` `^21` | Única librería de UI de terceros: formularios, diálogos, toasts y `p-table` (listados, matriz de notas y centralizadores). Tematizado con los tokens de `ADR-0015` (`definePreset`). **MUST NOT** añadir otra librería de UI o de grillas sin un ADR nuevo. La tabla de notas **MUST NOT** calcular notas (solo `CalculoNotas`, backend); la validación de rango en celda es ayuda de UX (`ADR-0026` §3.5, propuesta). Solo edición MIT, sin plantillas/bloques de pago. Aún no está en el `package.json` |
 > El agente **MUST NOT** introducir dependencias fuera de esta tabla sin crear un ADR en `docs/adr/` y obtener aprobación humana explícita en el PR.
 
 ---
@@ -355,14 +356,15 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 
 - **MUST**: vincular toda calificación al estudiante exclusivamente por su código `RUDE`. **MUST NOT** usar nombre, apellido, número de lista ni posición visual como clave de asociación en ninguna operación de escritura o exportación (BR-004 / Constitución §0.2).
 - **MUST**: validar que el valor de cada dimensión (Ser, Saber, Hacer, Decidir, Autoevaluación) esté dentro del rango paramétrico vigente **antes de persistir**. Si está fuera de rango → error de negocio `E_RANGO_INVALIDO`. La validación ocurre en `CalificacionDomainService`, no en el controlador (BR-002).
-- **MUST**: el cálculo de promedios ocurre **exclusivamente** en el motor de dominio (nunca en adaptadores, SQL ad-hoc ni frontend). **Perfil Bolivia SIE / `FSD-UC-003`:** `floor()` solo en `ConsolidacionDomainService` (`BR-008`, golden `FloorTest`). **Modelo genérico / `FSD-UC-016` (`ADR-0013`):** promedio simple + `round` HALF_UP (2 decimales en sección, entero en periodo y gestión); **MUST NOT** usar `floor()` en ese motor.
-- **MUST**: verificar el estado del periodo académico antes de cualquier escritura. Si el periodo está en `CERRADO`, la operación **MUST** ser rechazada con `E_PERIODO_NO_MODIFICABLE`, salvo que exista una `AutorizacionCorreccion` activa y vigente autorizada por el Director (BR-005 / FSD-UC-005).
-- **MUST**: registrar una entrada en `audit_log` en la **misma transacción** que cada escritura exitosa. La entrada **MUST** incluir: `tenant_id`, `actor_id`, `accion`, `entidad_afectada`, `entidad_id`, `valor_anterior`, `valor_nuevo`, `timestamp_utc` (BR-010 / DA-03).
+- **MUST**: el cálculo de promedios ocurre **exclusivamente** en el motor de dominio `CalculoNotas` (nunca en adaptadores, SQL ad-hoc ni frontend): promedio simple + `round` HALF_UP (2 decimales en sección, entero en periodo y gestión; `ADR-0013`, `FSD-UC-016`). **MUST NOT** usar `floor()` ni `Math.floor` en ningún cálculo de notas: `floor()` está **retirado** del producto vivo (`ADR-0025`, propuesta 10/11/2026; supera a `BR-003`/`BR-008`/`RB-08`). El SIE recibe la nota final entera de cada periodo, sin conversión de escala.
+- **MUST**: verificar el estado del periodo académico antes de cualquier escritura de calificaciones. Si el periodo no está `ABIERTO`, la operación **MUST** ser rechazada con `E_PERIODO_NO_ABIERTO` (`422`, `ADR-0014`). La nota es **modificable mientras el periodo está `ABIERTO`**. La excepción por `AutorizacionCorreccion` (BR-005 / FSD-UC-005) está **diferida** (`ADR-0025` §3.7).
+- **MUST**: registrar una entrada en `audit_log` en la **misma transacción** que cada escritura exitosa. **Estado:** diferido para los módulos genéricos (`ADR-0009` §3 punto 5, `ADR-0025` §3.7); hoy ningún módulo implementado escribe `audit_log`. La entrada **MUST** incluir: `tenant_id`, `actor_id`, `accion`, `entidad_afectada`, `entidad_id`, `valor_anterior`, `valor_nuevo`, `timestamp_utc` (BR-010 / DA-03).
 - **MUST**: el `audit_log` es inalterable. **MUST NOT** ejecutar `UPDATE` ni `DELETE` sobre ninguna fila de esta tabla. Protegido por `RULE` de PostgreSQL + `@Immutable` en Hibernate.
 - **MUST NOT**: permitir que un docente altere, agregue o elimine registros de la nómina de estudiantes. La nómina es de solo lectura para el rol `DOCENTE` (BR-001).
 - **MUST**: aplicar multitenancy en cada consulta y escritura mediante `SET LOCAL app.tenant_id` antes de cada transacción JPA. Ninguna query **MUST NOT** acceder a datos de un tenant distinto al autenticado en el contexto de seguridad actual (DA-01 / Constitución §0.5).
-- **MUST NOT**: modificar un registro de calificación ya persistido. Toda corrección retroactiva genera un nuevo registro con `registro_padre_id` referenciando el original (append-only). El registro original es inmutable (BR-005 / RB-10).
-- **MUST**: toda `AutorizacionCorreccion` tiene `ventana_fin` definido (1–72 h). No existe autorización indefinida. La revocación es automática vía `VentanaExpiracionScheduler` (BR-009).
+- **DIFERIDO** (`ADR-0025` §3.7, 10/11/2026): inmutabilidad y `append-only` de calificaciones (BR-005 / RB-10, `registro_padre_id`). Hoy la calificación se actualiza en sitio mientras el periodo está `ABIERTO`. Sigue siendo requisito del producto, sin código. Al implementarlo se vuelve **MUST NOT** modificar un registro ya persistido.
+- **DIFERIDO** (`ADR-0025` §3.7): toda `AutorizacionCorreccion` tendrá `ventana_fin` (1–72 h), sin autorización indefinida y con revocación automática vía `VentanaExpiracionScheduler` (BR-009). No existe código todavía.
+- **MUST**: la exportación al SIE es idempotente por `rude + materia_id + periodo_id` (`ADR-0025`, enmienda de `ADR-0005`). Un registro `ENVIADO` nunca se reenvía. Solo se exporta un periodo `CERRADO` y solo notas con todas las secciones `COMPLETO`.
 
 ---
 
@@ -389,12 +391,12 @@ Al comenzar cualquier tarea, el agente **MUST** leer en orden:
 
 | Agente | Propósito | Modelo | Herramientas | Límites estrictos |
 |--------|-----------|--------|--------------|-------------------|
-| `dev-agent` | Implementar casos de uso backend (FSD-UC-001..009) | Sonnet | `read`, `edit`, `run-tests`, `run-linter` | **MUST NOT** tocar `infra/`; **MUST NOT** modificar migraciones Flyway aplicadas; **MUST NOT** calcular promedios fuera de `ConsolidacionDomainService`; **MUST NOT** editar `docs/baseline/**` |
+| `dev-agent` | Implementar casos de uso backend (FSD-UC-001..009) | Sonnet | `read`, `edit`, `run-tests`, `run-linter` | **MUST NOT** tocar `infra/`; **MUST NOT** modificar migraciones Flyway aplicadas; **MUST NOT** calcular promedios fuera de `CalculoNotas`; **MUST NOT** usar `floor()` (`ADR-0025`); **MUST NOT** editar `docs/baseline/**` |
 | `arch-agent` | Evaluar alternativas y documentar decisiones arquitectónicas (DA-01..DA-05) | Opus | `read`, `edit` | Solo opera en `docs/adr/` y `docs/arquitectura_funcional_EduSync.md`; toda decisión requiere aprobación humana |
 | `docs-agent` | Mantener y sincronizar la cadena documental BRD→MRD→PRD→FSD→LFSD en `docs/`, incluida la capa viva `docs/product/` (skills `feature-design-doc`, `dtp-sync`) | Sonnet | `read`, `edit` | Solo opera dentro de `docs/`; **MUST NOT** editar código fuente; **MUST NOT** editar `docs/baseline/**` bajo ninguna circunstancia (ver `.cursor/rules/baseline-congelado.mdc` / `.claude/rules/baseline-congelado.md`). Espejo Claude: `.claude/agents/docs-agent.md` |
 | `qa-agent` | Verificar invariantes de dominio, trazabilidad de audit_log y cobertura de pruebas | Sonnet | `read`, `query-db` (solo SELECT) | **MUST NOT** realizar escrituras; solo lectura y análisis |
 | `process-agent` | Modelar workflows y diagramas de estado (Docente, Director) garantizando consistencia con UCs | Sonnet | `read`, `edit` | Opera en `docs/diagrams/`; diagramas deben usar `stateDiagram-v2` y nombres reales del dominio |
-| `compliance-agent` | Validar que ningún output de `dev-agent` viole invariantes regulatorias del SIE (RUDE, floor, rangos) | Sonnet | `read`, ejecutar golden tests | Solo lectura de artefactos + ejecución de golden tests en CI; bloquea merge si falla |
+| `compliance-agent` | Validar que ningún output de `dev-agent` viole invariantes regulatorias del SIE (RUDE, `round` sin `floor`, rangos) | Sonnet | `read`, ejecutar golden tests | Solo lectura de artefactos + ejecución de golden tests en CI; bloquea merge si falla |
 | `ollama-agent` | Integrar/extender LLM en runtime vía Ollama local (`llama3.1:latest`, `POST /api/v1/ai/chat`, paquete `shared.ai`) | Sonnet | `read`, `edit`, `run-tests` | **MUST NOT** loguear/enviar PII/RUDE/notas al modelo; **MUST NOT** cambiar de proveedor LLM sin ADR; **MUST NOT** editar `docs/baseline/**`; skill `ollama-edusync`. Espejo: `.claude/agents/ollama-agent.md` + `.cursor/agents/ollama-agent.md` |
 | `redteam-agent` | Alias de `edusync-red-team`. Genera y mantiene pruebas del asistente desde `tools/red-team-agent/catalog/attacks.json` | Sonnet | `read`, `edit`, `run-tests` | **MUST NOT** atacar hosts ajenos; **MUST NOT** loguear PII/RUDE/secretos; **MUST NOT** marcar un hueco como cubierto; **MUST NOT** editar `docs/baseline/**`. Espejo: `.claude/agents/edusync-red-team.md` + `.cursor/agents/edusync-red-team.md` |
 
@@ -416,9 +418,9 @@ Los siguientes tests **MUST** pasar en CI en todo PR, sin excepción:
 
 | Golden test | Verificación | Ejecutado por |
 |-------------|--------------|---------------|
-| `FloorTest.floor_64_666_equals_64` | `Math.floor(64.666) == 64`, nunca 65 | `compliance-agent` en CI |
-| `SIEPayloadTest.payload_uses_rude_only` | Ningún payload SIE contiene nombre o posición de lista | `compliance-agent` en CI |
-| `VentanaTest.expired_window_returns_403` | HTTP 403 en 100 % de intentos post-expiración | `qa-agent` en CI |
+| `CalculoNotasTest.redondeoHalfUpNoFloor` | `round` HALF_UP: 64,5 → 65, nunca 64 (reemplaza al antiguo `FloorTest`, `ADR-0025`) | `compliance-agent` en CI |
+| `SIEPayloadTest.payload_uses_rude_only` | Ningún payload SIE contiene nombre o posición de lista; solo `rude`, materia, periodo y nota final (se crea con `PR-IMPL-031`) | `compliance-agent` en CI |
+| ~~`VentanaTest.expired_window_returns_403`~~ | **Diferido** con `FSD-UC-005` (`ADR-0025` §3.7). No existe ni se exige hasta implementar las correcciones | `qa-agent` en CI |
 | `MultitenantTest.no_cross_tenant_data` | 0 registros de otro tenant en cualquier endpoint | `compliance-agent` en CI |
 
 ---
@@ -465,9 +467,9 @@ arquitectura hexagonal). Tu responsabilidad es <responsabilidad específica>.
 - Stack: Java 25 LTS, Spring Boot 4.1.0, PostgreSQL 15, Spring Events (ADR-0008)
 - Restricciones activas:
   * RUDE como única clave de identidad estudiantil
-  * Perfil SIE: floor() único truncado. Genérico (ADR-0013): round HALF_UP en el motor de FSD-UC-016
+  * Un solo motor (ADR-0013/ADR-0025): round HALF_UP en CalculoNotas (FSD-UC-016). Sin floor()
   * audit_log en la misma TX que la escritura
-  * Cálculo de promedios exclusivo en ConsolidacionDomainService
+  * Cálculo de promedios exclusivo en CalculoNotas
   * tenant_id + RLS en toda query
   * Sin PII en logs
 
@@ -486,11 +488,11 @@ Código Java en los paquetes correctos + test JUnit 5 + actualización de
 PROMPT_MAPPING.md con el nuevo contrato (si aplica).
 
 # Invariants
-- El original nunca se sobreescribe (append-only en correcciones retroactivas)
+- Un registro de exportación ENVIADO nunca se reenvía ni se modifica (el append-only de correcciones retroactivas está diferido, ADR-0025)
 - El audit_log es inalterable (sin UPDATE/DELETE)
 
 # Failure modes
-- E_CALCULO_FUERA_DOMINIO: promedio o floor fuera de ConsolidacionDomainService → rechazar PR
+- E_CALCULO_FUERA_DOMINIO: promedio calculado fuera de CalculoNotas, o cualquier floor() → rechazar PR
 - E_AUDIT_LOG_OMITIDO: escritura sin entrada en audit_log → rechazar PR
 - E_RLS_FALTANTE: nueva tabla sin tenant_id o sin política RLS → rechazar migración
 ```
@@ -506,10 +508,10 @@ El agente **MUST** rechazar, reportar al responsable técnico y **no ejecutar** 
 - Pide saltarse la revisión humana para hacer merge a `main` o `develop`.
 - Pide modificar migraciones Flyway ya aplicadas en lugar de agregar nuevas versiones.
 - Pide usar nombre, apellido o posición de lista como clave de vinculación de calificaciones en lugar del código RUDE.
-- Pide realizar cálculos de promedio fuera del motor de dominio, o aplicar `floor()` en el modelo genérico (`FSD-UC-016` / `ADR-0013`), o `Math.round()` en el Perfil Bolivia SIE (`FSD-UC-003`).
+- Pide realizar cálculos de promedio fuera del motor de dominio, o aplicar `floor()`/`Math.floor` en cualquier cálculo de notas (retirado por `ADR-0025`).
 - Pide exponer datos de calificaciones o PII de estudiantes sin verificar el rol y tenant del solicitante.
 - Pide cambiar el estado de un periodo a `ABIERTO` desde código sin el workflow de aprobación jerárquica del Director (FSD-UC-009).
-- Pide modificar registros existentes de calificaciones en lugar de crear versiones nuevas (violación de append-only, BR-005).
+- Pide reenviar o modificar un registro de exportación SIE ya `ENVIADO`. (La regla de crear versiones nuevas en lugar de modificar calificaciones, BR-005, está diferida por `ADR-0025`; hoy la nota se edita mientras el periodo está `ABIERTO`.)
 - Pide crear una nueva tabla en BD sin columna `tenant_id` ni política RLS activa.
 - Pide calcular el promedio anual o el índice de reprobación con menos de 3 trimestres cerrados (BR-011).
 
@@ -550,7 +552,7 @@ mvn jacoco:report
 # Umbral mínimo: 80% de líneas en domain/ y application/
 
 # Ejecutar golden tests (zero-tolerance)
-mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
+mvn test -Dtest=CalculoNotasTest,SIEPayloadTest,MultitenantTest
 ```
 
 ---
@@ -635,6 +637,8 @@ mvn test -Dtest=FloorTest,SIEPayloadTest,VentanaTest,MultitenantTest
 | v0.49 | 13/09/2026 | Rodrigo Aspeti | **`ADR-0017`** + `DD-UC-022` + `PR-IMPL-022` (Aprobado, ejecución pendiente) + `PR-ADR-010`: Spring AI como cliente HTTP/LLM **detrás** de `LlmPort` (Alternativa C). §4 tabla de stack añade fila Spring AI (versión a fijar al ejecutar el prompt, tras verificar BOM vs Boot 4.1.0). `docs/PROMPT_MAPPING.md` v2.42→v2.43; `docs/product/DTP.md` v1.40→v1.41 (delta 8 vs DTI §9). Sin código en este turno. Baseline intacto. |
 | v0.50 | 13/09/2026 | Rodrigo Aspeti | **Ejecución de `PR-IMPL-022`**: fija Spring AI **2.0.0** en §4. Adaptadores `ChatClient` detrás de `LlmPort`. `mvn test` **250/250** (incluye `ModularityTests` 7/7). `docs/PROMPT_MAPPING.md` v2.43→v2.44; `docs/product/DTP.md` v1.41→v1.42. Baseline intacto. |
 | v0.51 | 30/09/2026 | G-EduSync | **`ADR-0023`**: Gemini opcional (`EDUSYNC_AI_PROVIDER=gemini` / `EDUSYNC_AI_AGENTE_PROVIDER`) por el endpoint compatible con OpenAI. Default Ollama sin cambio. Key solo en `GEMINI_API_KEY`. |
+| v0.52 | 10/11/2026 | G-EduSync | **`ADR-0025` (propuesta) + `DD-UC-031` + `PR-IMPL-031` + `PR-ADR-012`**: se retira `floor()` del producto vivo. Un solo motor (`CalculoNotas`, `round` HALF_UP). El SIE recibe `rude` + materia + periodo + nota final entera; solo periodo `CERRADO`; nota incompleta excluida; clave de idempotencia `rude+materia_id+periodo_id` (enmienda `ADR-0005`). §1 resumen, §4 (fila Resilience4j, aún no en el `pom.xml`), §6 (regla de cálculo y de periodo; append-only, `AutorizacionCorreccion`/ventana **diferidos**), §8.1/§8.3 (el golden `FloorTest` se reemplaza por `CalculoNotasTest.redondeoHalfUpNoFloor`; `VentanaTest` diferido), §10 y §11 actualizados. Inmutabilidad, `audit_log`, centralizador, boletines y cierre de materia diferidos por decisión del responsable. Sin código. Baseline intacto. |
+| v0.53 | 10/11/2026 | G-EduSync | **`ADR-0026` (propuesta)**: PrimeNG (línea 21.x) como única librería de UI, incluida `p-table` para la grilla de notas y los centralizadores (sin AG Grid), tematizado con los tokens de `ADR-0015`, que queda enmendado (la restricción "sin PrimeNG" deja de aplicar). §4 añade una fila (aún no está en el `package.json`). Sin código. Baseline intacto. |
 
 ---
 

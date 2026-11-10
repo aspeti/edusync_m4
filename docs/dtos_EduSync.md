@@ -4,14 +4,16 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v0.1 |
-| **Fecha** | 24/05/2026 |
+| **Versión del documento** | v0.1.1 |
+| **Fecha** | 10/11/2026 |
 | **Autor** | Rodrigo Aspeti — Dev Lead / PM |
 | **Estado** | Borrador |
 | **Stack** | Java 21 · Spring Boot 3.3 · Jakarta Bean Validation 3.0 · Spring Security 6 · PostgreSQL 15 |
 | **Insumos** | `docs/fsd/FSD_EduSync.md` v1.0 (§4.1 UC-001, §4.2 UC-003, §4.4 UC-005) · `docs/arquitectura_hexagonal_EduSync.md` v0.1 · `AGENTS.md` v0.2 |
 | **Prompt aplicado** | `PR-DTO-001` (registrado en `docs/PROMPT_MAPPING.md` v0.9) |
 | **Trazabilidad** | FSD-UC-001 · FSD-UC-003 · FSD-UC-005 · BR-001..BR-011 · DA-01..DA-03 |
+
+> **Nota de vigencia (v0.1.1 — `ADR-0025`, propuesta, 10/11/2026).** Los DTOs de `Centralizador`, `promedioProvisional` y `promedioAnual` de este documento (con `Math.floor()` y `ConsolidacionDomainService`) describen el Perfil Bolivia de M4 y **no se implementan**: el cálculo vivo es `CalculoNotas` con `round` HALF_UP (`ADR-0013`), expuesto por `GET .../nota-provisional` y `PUT .../calificaciones` (`DD-UC-018`). Los DTOs vigentes de la exportación al SIE están en `docs/design/DD-UC-031.md` §2.5 y §2.7. Los DTOs de `AutorizacionCorreccion` (`FSD-UC-005`) están diferidos.
 
 ---
 
@@ -560,3 +562,4 @@ public enum EstadoAutorizacion {
 | Versión | Fecha | Autor | Cambios |
 |---------|-------|-------|---------|
 | v0.1 | 24/05/2026 | Rodrigo Aspeti | Creación inicial — 4 Request DTOs, 4 Commands, 3 Response DTOs, 5 Domain Events, 5 enums de dominio, 3 tablas de mapeo DTO ↔ Entidad, checklist de implementación y trazabilidad completa a FSD-UC-001 / UC-003 / UC-005 y BR-001..BR-011. Generado a partir del prompt `PR-DTO-001`. |
+| v0.1.1 | 10/11/2026 | G-EduSync | Nota de vigencia en §0 (`ADR-0025`, propuesta): los DTOs de centralizador con `floor()` no se implementan; los de exportación SIE viven en `DD-UC-031`. Patch: sin cambio de contenido técnico. |

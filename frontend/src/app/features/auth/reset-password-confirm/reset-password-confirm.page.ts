@@ -1,71 +1,99 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { CardModule } from 'primeng/card';
+import { InputTextModule } from 'primeng/inputtext';
+import { PasswordModule } from 'primeng/password';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
 import { ApiBase } from '../../../core/api/api-base';
 
-/**
- * Pantalla pública (sin sesión) para completar el restablecimiento de
- * contraseña. POST /api/v1/auth/restablecer-password/confirmar (DD-UC-005).
- * DD-UC-006 §2.
- */
+/** Confirmación pública de reset password (DD-UC-006) — UI PrimeNG. */
 @Component({
   selector: 'app-reset-password-confirm-page',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, CardModule, InputTextModule, PasswordModule, ButtonModule, MessageModule],
   template: `
-    <div style="max-width: 400px; margin: 4rem auto; padding: 2rem; border: 1px solid #ddd; border-radius: 8px;">
-      <h2 style="margin-bottom: 1rem; text-align: center;">Restablecer contraseña</h2>
+    <div class="page">
+      <p-card>
+        <h2>Restablecer contraseña</h2>
 
-      @if (successMsg()) {
-        <div style="background: #e8f5e9; color: #2e7d32; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-          {{ successMsg() }}
-        </div>
-        <a routerLink="/login" style="display:block;text-align:center;">Ir a iniciar sesión</a>
-      }
-
-      @if (!successMsg()) {
-        <p style="color: #555; font-size: 0.9rem;">
-          Pegue el token recibido y elija una nueva contraseña.
-        </p>
-
-        @if (errorMsg()) {
-          <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-            {{ errorMsg() }}
-          </div>
+        @if (successMsg()) {
+          <p-message severity="success" [text]="successMsg()!" styleClass="block-msg" />
+          <p-button label="Ir a iniciar sesión" (onClick)="irLogin()" styleClass="w-full" />
         }
 
-        <form (ngSubmit)="onSubmit()">
-          <div style="margin-bottom: 1rem;">
-            <label for="reset-token">Token</label><br />
-            <input
-              id="reset-token"
-              type="text"
-              [(ngModel)]="token"
-              name="token"
-              required
-              style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
+        @if (!successMsg()) {
+          <p class="hint">Pegue el token recibido y elija una nueva contraseña.</p>
+
+          @if (errorMsg()) {
+            <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
+          }
+
+          <form (ngSubmit)="onSubmit()" class="form">
+            <label class="field" for="reset-token">
+              Token
+              <input pInputText id="reset-token" type="text" [(ngModel)]="token" name="token" required />
+            </label>
+            <label class="field" for="reset-password">
+              Nueva contraseña
+              <p-password
+                inputId="reset-password"
+                [(ngModel)]="passwordNuevo"
+                name="passwordNuevo"
+                [feedback]="false"
+                [toggleMask]="true"
+                styleClass="w-full"
+                inputStyleClass="w-full"
+              />
+            </label>
+            <p-button
+              type="submit"
+              [label]="loading() ? 'Confirmando...' : 'Confirmar'"
+              [disabled]="loading()"
+              styleClass="w-full"
             />
-          </div>
-          <div style="margin-bottom: 1.5rem;">
-            <label for="reset-password">Nueva contraseña</label><br />
-            <input
-              id="reset-password"
-              type="password"
-              [(ngModel)]="passwordNuevo"
-              name="passwordNuevo"
-              required
-              minlength="8"
-              style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
-            />
-          </div>
-          <button type="submit" [disabled]="loading()" style="width: 100%; padding: 0.75rem; cursor: pointer;">
-            {{ loading() ? 'Confirmando...' : 'Confirmar' }}
-          </button>
-        </form>
-      }
+          </form>
+        }
+      </p-card>
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 400px;
+        margin: var(--space-xl) auto;
+      }
+      h2 {
+        margin-top: 0;
+        text-align: center;
+      }
+      .hint {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-small);
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--font-size-small);
+      }
+      :host ::ng-deep .w-full,
+      :host ::ng-deep .p-password {
+        width: 100%;
+      }
+    `,
+  ],
 })
 export class ResetPasswordConfirmPage {
   token = '';
@@ -74,11 +102,17 @@ export class ResetPasswordConfirmPage {
   errorMsg = signal<string | null>(null);
   successMsg = signal<string | null>(null);
 
-  constructor(private http: HttpClient, private route: ActivatedRoute) {
+  constructor(
+    private http: HttpClient,
+    private route: ActivatedRoute,
+    private router: Router,
+  ) {
     const tokenParam = this.route.snapshot.queryParamMap.get('token');
-    if (tokenParam) {
-      this.token = tokenParam;
-    }
+    if (tokenParam) this.token = tokenParam;
+  }
+
+  irLogin(): void {
+    this.router.navigate(['/login']);
   }
 
   onSubmit(): void {

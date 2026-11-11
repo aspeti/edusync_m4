@@ -1,136 +1,215 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { TableModule, TablePageEvent } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { DialogModule } from 'primeng/dialog';
+import { TagModule } from 'primeng/tag';
+import { MessageModule } from 'primeng/message';
+import { RadioButtonModule } from 'primeng/radiobutton';
 import { TenantResponse } from './tenant.model';
 import { ApiBase } from '../../core/api/api-base';
 import { PageResponse } from '../../core/api/page-response.model';
 
 /**
- * Página de lista de Tenants — consola SysAdmin.
- * GET /api/v1/plataforma/tenants (DD-UC-004 §2), con filtros y paginación (DD-UC-007,
- * patrón reutilizable): `q` busca por nombre, `estado` es un filtro exacto.
+ * Lista de Tenants (DD-UC-004/007) — UI PrimeNG (ADR-0026).
+ * Contratos HTTP sin cambio.
  */
 @Component({
   selector: 'app-tenants-list-page',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    InputTextModule,
+    SelectModule,
+    DialogModule,
+    TagModule,
+    MessageModule,
+    RadioButtonModule,
+  ],
   template: `
-    <div style="max-width: 1000px; margin: 0 auto;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <div class="page">
+      <div class="toolbar">
         <h2 data-testid="tenants-heading">Tenants</h2>
-        <a routerLink="/plataforma/tenants/nuevo" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; text-decoration: none; border-radius: 4px;">
-          + Nuevo Tenant
-        </a>
+        <p-button label="+ Nuevo Tenant" (onClick)="irNuevo()" />
       </div>
 
-      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; background: #fafafa; padding: 0.75rem; border-radius: 4px;">
+      <div class="filters">
         <input
+          pInputText
           type="text"
           placeholder="Buscar por nombre..."
           [(ngModel)]="filtroQ"
           (keyup.enter)="aplicarFiltros()"
-          style="padding: 0.4rem; flex: 1; min-width: 200px;"
+          class="filter-q"
         />
-        <select [(ngModel)]="filtroEstado" style="padding: 0.4rem;">
-          <option value="">Todos los estados</option>
-          @for (op of estadoOpciones; track op) {
-            <option [value]="op">{{ op }}</option>
-          }
-        </select>
-        <button (click)="aplicarFiltros()" style="padding: 0.4rem 1rem; cursor: pointer;">Buscar</button>
-        <button (click)="limpiarFiltros()" style="padding: 0.4rem 1rem; cursor: pointer;">Limpiar</button>
+        <p-select
+          [options]="estadoSelectOptions"
+          [(ngModel)]="filtroEstado"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Todos los estados"
+          [showClear]="true"
+          styleClass="filter-select"
+        />
+        <p-button label="Buscar" (onClick)="aplicarFiltros()" />
+        <p-button label="Limpiar" severity="secondary" [outlined]="true" (onClick)="limpiarFiltros()" />
       </div>
 
-      @if (loading()) {
-        <p>Cargando tenants...</p>
-      }
-
       @if (errorMsg()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-          {{ errorMsg() }}
-        </div>
+        <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
       }
 
-      @if (!loading() && tenants().length === 0 && !errorMsg()) {
-        <p>No hay tenants que coincidan con los filtros.</p>
-      }
+      <p-table
+        [value]="tenants()"
+        dataKey="id"
+        [lazy]="true"
+        [paginator]="true"
+        [rows]="tamanoPagina"
+        [totalRecords]="totalElements()"
+        [first]="page() * tamanoPagina"
+        [loading]="loading()"
+        (onPage)="onPage($event)"
+        [tableStyle]="{ 'min-width': '50rem' }"
+        styleClass="p-datatable-sm"
+      >
+        <ng-template #header>
+          <tr>
+            <th>Nombre</th>
+            <th>Estado</th>
+            <th>Inicio suscripción</th>
+            <th>Vencimiento</th>
+            <th>Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-tenant>
+          <tr>
+            <td>{{ tenant.nombre }}</td>
+            <td>
+              <p-tag [value]="tenant.estado" [severity]="estadoSeverity(tenant.estado)" />
+            </td>
+            <td>{{ tenant.fechaInicioSuscripcion }}</td>
+            <td>{{ tenant.fechaVencimientoSuscripcion }}</td>
+            <td class="actions">
+              <p-button
+                label="Crear admin"
+                [link]="true"
+                size="small"
+                (onClick)="irAdmin(tenant.id)"
+              />
+              <p-button label="Cambiar estado" [link]="true" size="small" (onClick)="cambiarEstado(tenant)" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="5">No hay tenants que coincidan con los filtros.</td>
+          </tr>
+        </ng-template>
+      </p-table>
 
-      @if (tenants().length > 0) {
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #f5f5f5;">
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Nombre</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Estado</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Inicio suscripción</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Vencimiento</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (tenant of tenants(); track tenant.id) {
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 0.5rem;">{{ tenant.nombre }}</td>
-                <td style="padding: 0.5rem;">
-                  <span [style.color]="estadoColor(tenant.estado)">{{ tenant.estado }}</span>
-                </td>
-                <td style="padding: 0.5rem;">{{ tenant.fechaInicioSuscripcion }}</td>
-                <td style="padding: 0.5rem;">{{ tenant.fechaVencimientoSuscripcion }}</td>
-                <td style="padding: 0.5rem; display: flex; gap: 0.5rem;">
-                  <a [routerLink]="['/plataforma/tenants', tenant.id, 'admin']"
-                     style="color: #1e3a5f; text-decoration: underline; cursor: pointer;">
-                    Crear admin
-                  </a>
-                  <button (click)="cambiarEstado(tenant)" style="cursor: pointer; font-size: 0.85rem;">
-                    Cambiar estado
-                  </button>
-                </td>
-              </tr>
+      <p-dialog
+        header="Cambiar estado"
+        [modal]="true"
+        [visible]="estadoDialog() !== null"
+        (visibleChange)="onEstadoDialogVisible($event)"
+        [style]="{ width: '24rem' }"
+      >
+        @if (estadoDialog(); as t) {
+          <p>Tenant: <strong>{{ t.nombre }}</strong></p>
+          <div class="estado-list">
+            @for (op of estadoOpciones; track op) {
+              <div class="estado-row">
+                <p-radiobutton
+                  name="estado"
+                  [value]="op"
+                  [(ngModel)]="nuevoEstado"
+                  [inputId]="'estado-' + op"
+                />
+                <label [for]="'estado-' + op">{{ op }}</label>
+              </div>
             }
-          </tbody>
-        </table>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-          <span style="color: #666; font-size: 0.9rem;">
-            {{ totalElements() }} tenant(s) — página {{ page() + 1 }} de {{ totalPaginas() || 1 }}
-          </span>
-          <div style="display: flex; gap: 0.5rem;">
-            <button (click)="irAPagina(page() - 1)" [disabled]="page() === 0" style="padding: 0.3rem 0.8rem; cursor: pointer;">
-              ← Anterior
-            </button>
-            <button (click)="irAPagina(page() + 1)" [disabled]="page() + 1 >= totalPaginas()" style="padding: 0.3rem 0.8rem; cursor: pointer;">
-              Siguiente →
-            </button>
           </div>
-        </div>
-      }
-
-      @if (estadoDialog()) {
-        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">
-          <div style="background:white;padding:2rem;border-radius:8px;min-width:320px;">
-            <h3>Cambiar estado de "{{ estadoDialog()!.nombre }}"</h3>
-            <div style="display:flex;flex-direction:column;gap:0.5rem;margin:1rem 0;">
-              @for (op of estadoOpciones; track op) {
-                <label style="cursor:pointer;">
-                  <input type="radio" name="estado" [value]="op" [(ngModel)]="nuevoEstado" /> {{ op }}
-                </label>
-              }
-            </div>
-            @if (estadoError()) {
-              <p style="color:#c62828;">{{ estadoError() }}</p>
-            }
-            <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
-              <button (click)="cerrarDialog()">Cancelar</button>
-              <button (click)="confirmarEstado()" [disabled]="!nuevoEstado || estadoSaving()"
-                      style="background:#1e3a5f;color:white;padding:0.4rem 1rem;cursor:pointer;">
-                {{ estadoSaving() ? 'Guardando...' : 'Confirmar' }}
-              </button>
-            </div>
+          @if (estadoError()) {
+            <p-message severity="error" [text]="estadoError()!" styleClass="block-msg" />
+          }
+          <div class="dialog-actions">
+            <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="cerrarDialog()" />
+            <p-button
+              [label]="estadoSaving() ? 'Guardando...' : 'Confirmar'"
+              [disabled]="!nuevoEstado || estadoSaving()"
+              (onClick)="confirmarEstado()"
+            />
           </div>
-        </div>
-      }
+        }
+      </p-dialog>
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-md);
+        gap: var(--space-sm);
+      }
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+        align-items: center;
+        margin-bottom: var(--space-md);
+        padding: var(--space-sm);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+      }
+      .filter-q {
+        flex: 1;
+        min-width: 12rem;
+      }
+      :host ::ng-deep .filter-select {
+        min-width: 10rem;
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        align-items: center;
+      }
+      .estado-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        margin: var(--space-md) 0;
+      }
+      .estado-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+      }
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-sm);
+        margin-top: var(--space-md);
+      }
+    `,
+  ],
 })
 export class TenantsListPage implements OnInit {
   tenants = signal<TenantResponse[]>([]);
@@ -141,22 +220,31 @@ export class TenantsListPage implements OnInit {
   estadoError = signal<string | null>(null);
   estadoSaving = signal(false);
 
-  // Filtros (DD-UC-007): `q` busca por nombre; `estado` es un filtro exacto.
   filtroQ = '';
-  filtroEstado = '';
+  filtroEstado: string | null = null;
 
-  // Paginación (DD-UC-007).
   page = signal(0);
   totalElements = signal(0);
-  totalPaginas = signal(0);
-  private readonly tamanoPagina = 20;
+  readonly tamanoPagina = 20;
 
   readonly estadoOpciones = ['ACTIVO', 'SUSPENDIDO', 'VENCIDO'];
+  readonly estadoSelectOptions = this.estadoOpciones.map((e) => ({ label: e, value: e }));
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.cargarTenants();
+  }
+
+  irNuevo(): void {
+    this.router.navigate(['/plataforma/tenants/nuevo']);
+  }
+
+  irAdmin(tenantId: string): void {
+    this.router.navigate(['/plataforma/tenants', tenantId, 'admin']);
   }
 
   aplicarFiltros(): void {
@@ -166,14 +254,14 @@ export class TenantsListPage implements OnInit {
 
   limpiarFiltros(): void {
     this.filtroQ = '';
-    this.filtroEstado = '';
+    this.filtroEstado = null;
     this.page.set(0);
     this.cargarTenants();
   }
 
-  irAPagina(nuevaPagina: number): void {
-    if (nuevaPagina < 0 || nuevaPagina >= this.totalPaginas()) return;
-    this.page.set(nuevaPagina);
+  onPage(event: TablePageEvent): void {
+    const rows = event.rows ?? this.tamanoPagina;
+    this.page.set(Math.floor((event.first ?? 0) / rows));
     this.cargarTenants();
   }
 
@@ -189,7 +277,6 @@ export class TenantsListPage implements OnInit {
       next: (respuesta) => {
         this.tenants.set(respuesta.content);
         this.totalElements.set(respuesta.totalElements);
-        this.totalPaginas.set(respuesta.totalPages);
         this.loading.set(false);
       },
       error: () => {
@@ -199,14 +286,20 @@ export class TenantsListPage implements OnInit {
     });
   }
 
-  estadoColor(estado: string): string {
-    return estado === 'ACTIVO' ? '#2e7d32' : estado === 'SUSPENDIDO' ? '#e65100' : '#757575';
+  estadoSeverity(estado: string): 'success' | 'warn' | 'secondary' {
+    if (estado === 'ACTIVO') return 'success';
+    if (estado === 'SUSPENDIDO') return 'warn';
+    return 'secondary';
   }
 
   cambiarEstado(tenant: TenantResponse): void {
     this.nuevoEstado = tenant.estado;
     this.estadoError.set(null);
     this.estadoDialog.set(tenant);
+  }
+
+  onEstadoDialogVisible(visible: boolean): void {
+    if (!visible) this.cerrarDialog();
   }
 
   cerrarDialog(): void {

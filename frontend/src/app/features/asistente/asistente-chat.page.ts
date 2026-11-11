@@ -1,6 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { ButtonModule } from 'primeng/button';
+import { TextareaModule } from 'primeng/textarea';
+import { TagModule } from 'primeng/tag';
+import { MessageModule } from 'primeng/message';
 import { AsistenteService } from './asistente.service';
 import {
   AgenteResponse,
@@ -15,89 +19,87 @@ import {
 
 /**
  * Consola del asistente (DD-UC-024/025/026/027): KEYWORD, CONSULTA, ReAct, SALUDO o BLOQUEADO.
+ * UI PrimeNG (ADR-0026).
  */
 @Component({
   selector: 'app-asistente-chat-page',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ButtonModule, TextareaModule, TagModule, MessageModule],
   template: `
-    <div style="max-width: 800px; margin: 0 auto;">
+    <div class="page">
       <h2 data-testid="asistente-heading">Asistente</h2>
-      <p style="color: #555; margin-bottom: 1rem;">
+      <p class="lead">
         Pregunta en lenguaje natural sobre cursos, materias, estudiantes, notas o promedios.
         No hace falta conocer IDs. Si hay varios alumnos o periodos, el asistente pedirá aclaración.
       </p>
 
-      <p style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem;">
+      <div class="frases">
         @for (frase of frases; track frase) {
-          <button
-            type="button"
+          <p-button
             [attr.data-testid]="'asistente-chip'"
+            [label]="frase"
+            severity="secondary"
+            [outlined]="true"
+            size="small"
             [disabled]="loading()"
-            (click)="usarFrase(frase)"
-            style="padding: 0.25rem 0.6rem; cursor: pointer; border-radius: 999px; border: 1px solid #ccc; background: #fff;"
-          >
-            {{ frase }}
-          </button>
+            (onClick)="usarFrase(frase)"
+          />
         }
-      </p>
+      </div>
 
       @if (mensajes().length > 0) {
-        <div data-testid="asistente-hilo" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
+        <div data-testid="asistente-hilo" class="hilo">
           @for (m of mensajes(); track $index) {
             <article
+              class="msg"
+              [class.msg-user]="m.role === 'user'"
               [attr.data-testid]="m.role === 'user' ? 'asistente-msg-user' : 'asistente-respuesta'"
-              style="padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #eee;"
-              [style.background]="m.role === 'user' ? '#eef3fb' : '#fafafa'"
-              [style.align-self]="m.role === 'user' ? 'flex-end' : 'stretch'"
-              [style.max-width]="m.role === 'user' ? '85%' : '100%'"
             >
               @if (m.camino) {
-                <p style="margin: 0 0 0.4rem;">
-                  <span
+                <p class="camino-row">
+                  <p-tag
                     data-testid="asistente-camino"
-                    [style.background]="m.camino === 'BLOQUEADO' ? '#fdecea' : (m.camino === 'SALUDO' ? '#e8f5e9' : (m.camino === 'PROCESO' ? '#e3f2fd' : '#e8eaf6'))"
-                    style="display: inline-block; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 4px;"
-                  >{{ m.camino }}</span>
+                    [value]="m.camino"
+                    [severity]="caminoSeverity(m.camino)"
+                  />
                 </p>
               }
-              <p style="white-space: pre-wrap; margin: 0;">{{ m.content }}</p>
+              <p class="content">{{ m.content }}</p>
             </article>
           }
         </div>
       }
 
-      <form (ngSubmit)="enviar()" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+      <form class="composer" (ngSubmit)="enviar()">
         <textarea
+          pTextarea
           data-testid="asistente-pregunta"
           [(ngModel)]="pregunta"
           name="pregunta"
           rows="3"
           placeholder="Ej. ¿Cuáles son las notas de Juan del primer trimestre?"
           [disabled]="loading()"
-          style="flex: 1; padding: 0.5rem; resize: vertical;"
+          class="composer-input"
         ></textarea>
-        <button
+        <p-button
           type="submit"
           data-testid="asistente-enviar"
+          [label]="loading() ? 'Consultando…' : 'Enviar'"
           [disabled]="loading() || !pregunta.trim()"
-          style="padding: 0.5rem 1rem; cursor: pointer; align-self: flex-end;"
-        >
-          {{ loading() ? 'Consultando…' : 'Enviar' }}
-        </button>
+        />
       </form>
 
       @if (errorMsg()) {
-        <div
+        <p-message
           data-testid="asistente-error"
-          style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;"
-        >
-          {{ errorMsg() }}
-        </div>
+          severity="error"
+          [text]="errorMsg()!"
+          styleClass="block-msg"
+        />
       }
 
       @if (resultado(); as r) {
-        <p style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">
+        <p class="meta">
           {{ r.fuente }} · {{ r.turnos }} turno(s)
           @if (r.herramientasUsadas.length > 0) {
             · tools:
@@ -107,7 +109,7 @@ import {
           }
         </p>
         @if (r.steps && r.steps.length > 0) {
-          <ul data-testid="asistente-steps" style="font-size: 0.8rem; color: #555; margin: 0 0 0.75rem; padding-left: 1.2rem;">
+          <ul data-testid="asistente-steps" class="steps">
             @for (s of r.steps; track s.paso) {
               <li>
                 {{ s.toolId }}
@@ -120,30 +122,100 @@ import {
           </ul>
         }
         @if (r.confirmacionRequerida) {
-          <p style="margin: 0.75rem 0 0; display: flex; gap: 0.5rem;">
-            <button
-              type="button"
+          <div class="confirm">
+            <p-button
               data-testid="asistente-confirmar"
+              label="Confirmar"
               [disabled]="loading()"
-              (click)="confirmar()"
-              style="padding: 0.4rem 0.8rem; cursor: pointer;"
-            >
-              Confirmar
-            </button>
-            <button
-              type="button"
+              (onClick)="confirmar()"
+            />
+            <p-button
               data-testid="asistente-cancelar"
+              label="Cancelar"
+              severity="secondary"
+              [outlined]="true"
               [disabled]="loading()"
-              (click)="cancelar()"
-              style="padding: 0.4rem 0.8rem; cursor: pointer;"
-            >
-              Cancelar
-            </button>
-          </p>
+              (onClick)="cancelar()"
+            />
+          </div>
         }
       }
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .lead {
+        color: var(--color-text-secondary);
+        margin-bottom: var(--space-md);
+      }
+      .frases {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+      }
+      .hilo {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+        margin-bottom: var(--space-md);
+      }
+      .msg {
+        padding: var(--space-md);
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        align-self: stretch;
+        max-width: 100%;
+      }
+      .msg-user {
+        background: color-mix(in srgb, var(--color-primary) 8%, white);
+        align-self: flex-end;
+        max-width: 85%;
+      }
+      .camino-row {
+        margin: 0 0 var(--space-sm);
+      }
+      .content {
+        white-space: pre-wrap;
+        margin: 0;
+      }
+      .composer {
+        display: flex;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+        align-items: flex-end;
+      }
+      .composer-input {
+        flex: 1;
+        width: 100%;
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
+      .meta {
+        font-size: var(--font-size-small);
+        color: var(--color-text-secondary);
+        margin-bottom: var(--space-sm);
+      }
+      .steps {
+        font-size: var(--font-size-small);
+        color: var(--color-text-secondary);
+        margin: 0 0 var(--space-md);
+        padding-left: 1.2rem;
+      }
+      .confirm {
+        margin-top: var(--space-md);
+        display: flex;
+        gap: var(--space-sm);
+      }
+    `,
+  ],
 })
 export class AsistenteChatPage {
   pregunta = '';
@@ -156,6 +228,13 @@ export class AsistenteChatPage {
   private contexto: ContextoConsultaAgente | null = this.leerContexto();
 
   constructor(private readonly asistente: AsistenteService) {}
+
+  caminoSeverity(camino: string): 'danger' | 'success' | 'info' | 'secondary' {
+    if (camino === 'BLOQUEADO') return 'danger';
+    if (camino === 'SALUDO') return 'success';
+    if (camino === 'PROCESO') return 'info';
+    return 'secondary';
+  }
 
   usarFrase(frase: string): void {
     this.pregunta = frase;

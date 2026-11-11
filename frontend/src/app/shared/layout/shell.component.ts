@@ -1,57 +1,116 @@
 import { Component } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { MenuItem } from 'primeng/api';
+import { MenubarModule } from 'primeng/menubar';
+import { ButtonModule } from 'primeng/button';
 import { AuthService } from '../../core/auth/auth.service';
-import { Router } from '@angular/router';
 
 /**
- * Shell mínimo post-login: barra de navegación + router outlet.
- * DD-UC-004 §2 (dentro del alcance: layout shell mínimo); DD-UC-006 §2
- * añade el enlace "Usuarios" condicional al rol ADMIN; DD-UC-009 §2 añade
- * el enlace "Gestión Escolar"; DD-UC-011 §2 añade el enlace "Cursos" (ADMIN);
- * DD-UC-012 §2 añade "Materias" si ADMIN o SECRETARIA; DD-UC-013 §2 añade
- * "Estudiantes" con el mismo condicional; DD-UC-014 §2 añade "Profesores" con el
- * mismo condicional. DD-UC-019 amplió "Gestión Escolar" a SECRETARIA/PROFESOR/ASESOR
- * (visibilidad de solo lectura); DD-UC-021 revierte esa ampliación — el enlace vuelve a
- * ser exclusivo ADMIN, porque esos roles ya no listan ni eligen una Gestión Escolar
- * (consumen "la gestión actual" de forma implícita, sin pantalla propia).
- * DD-UC-024 añade el enlace "Asistente" para ADMIN/SECRETARIA/PROFESOR.
+ * Shell post-login: menú por rol + outlet.
+ * Migra el nav inline (DD-UC-004..024) a PrimeNG Menubar + tokens ADR-0015 / ADR-0026.
+ * Visibilidad de enlaces sin cambio funcional respecto al shell previo.
  */
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink],
+  imports: [RouterOutlet, RouterLink, MenubarModule, ButtonModule],
   template: `
-    <nav style="padding: 0.75rem 1rem; background: #1e3a5f; color: white; display: flex; gap: 1rem; align-items: center;">
-      <strong>EduSync</strong>
-      @if (auth.hasRole('SYSADMIN')) {
-        <a routerLink="/plataforma/tenants" style="color: white; text-decoration: none;">Tenants</a>
-      }
-      @if (auth.hasRole('ADMIN')) {
-        <a routerLink="/usuarios" style="color: white; text-decoration: none;">Usuarios</a>
-        <a routerLink="/academico/cursos" style="color: white; text-decoration: none;">Cursos</a>
-        <a routerLink="/academico/gestiones-escolares" style="color: white; text-decoration: none;">Gestión Escolar</a>
-      }
-      @if (auth.hasRole('ADMIN') || auth.hasRole('SECRETARIA')) {
-        <a routerLink="/academico/materias" style="color: white; text-decoration: none;">Materias</a>
-        <a routerLink="/academico/estudiantes" style="color: white; text-decoration: none;">Estudiantes</a>
-        <a routerLink="/academico/profesores" style="color: white; text-decoration: none;">Profesores</a>
-      }
-      @if (auth.hasRole('PROFESOR')) {
-        <a routerLink="/academico/mis-materias" style="color: white; text-decoration: none;">Mis materias</a>
-      }
-      @if (auth.hasRole('ADMIN') || auth.hasRole('SECRETARIA') || auth.hasRole('PROFESOR')) {
-        <a routerLink="/asistente" style="color: white; text-decoration: none;">Asistente</a>
-      }
-      <span style="flex: 1"></span>
-      <button (click)="logout()" style="cursor: pointer; padding: 0.25rem 0.75rem;">Cerrar sesión</button>
-    </nav>
-    <main style="padding: 1rem;">
+    <header class="shell-header">
+      <p-menubar [model]="navItems" styleClass="shell-menubar">
+        <ng-template #start>
+          <a routerLink="/" class="brand">EduSync</a>
+        </ng-template>
+        <ng-template #end>
+          <p-button
+            type="button"
+            label="Cerrar sesión"
+            severity="secondary"
+            [text]="true"
+            styleClass="logout-btn"
+            (onClick)="logout()"
+          />
+        </ng-template>
+      </p-menubar>
+    </header>
+    <main class="shell-main">
       <router-outlet />
     </main>
   `,
+  styles: [
+    `
+      .shell-header {
+        background: var(--color-primary-600);
+        color: var(--color-surface);
+      }
+      .brand {
+        color: var(--color-surface);
+        font-weight: 700;
+        text-decoration: none;
+        margin-right: var(--space-md);
+        font-size: var(--font-size-body);
+      }
+      .shell-main {
+        padding: var(--space-md);
+        background: var(--color-bg);
+        min-height: calc(100vh - 4rem);
+      }
+      :host ::ng-deep .shell-menubar {
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        color: var(--color-surface);
+      }
+      :host ::ng-deep .shell-menubar .p-menubar-item-link {
+        color: var(--color-surface);
+      }
+      :host ::ng-deep .logout-btn {
+        color: var(--color-surface) !important;
+      }
+    `,
+  ],
 })
 export class ShellComponent {
-  constructor(protected auth: AuthService, private router: Router) {}
+  /** Construido una vez al crear el shell (post-login); roles no cambian en sesión. */
+  readonly navItems: MenuItem[];
+
+  constructor(
+    protected auth: AuthService,
+    private router: Router,
+  ) {
+    this.navItems = this.buildNavItems();
+  }
+
+  private buildNavItems(): MenuItem[] {
+    const links: MenuItem[] = [];
+    if (this.auth.hasRole('SYSADMIN')) {
+      links.push({ label: 'Tenants', routerLink: '/plataforma/tenants' });
+    }
+    if (this.auth.hasRole('ADMIN')) {
+      links.push(
+        { label: 'Usuarios', routerLink: '/usuarios' },
+        { label: 'Cursos', routerLink: '/academico/cursos' },
+        { label: 'Gestión Escolar', routerLink: '/academico/gestiones-escolares' },
+      );
+    }
+    if (this.auth.hasRole('ADMIN') || this.auth.hasRole('SECRETARIA')) {
+      links.push(
+        { label: 'Materias', routerLink: '/academico/materias' },
+        { label: 'Estudiantes', routerLink: '/academico/estudiantes' },
+        { label: 'Profesores', routerLink: '/academico/profesores' },
+      );
+    }
+    if (this.auth.hasRole('PROFESOR')) {
+      links.push({ label: 'Mis materias', routerLink: '/academico/mis-materias' });
+    }
+    if (
+      this.auth.hasRole('ADMIN') ||
+      this.auth.hasRole('SECRETARIA') ||
+      this.auth.hasRole('PROFESOR')
+    ) {
+      links.push({ label: 'Asistente', routerLink: '/asistente' });
+    }
+    return links;
+  }
 
   logout(): void {
     this.auth.logout();

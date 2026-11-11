@@ -1,6 +1,7 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { providePrimeNG } from 'primeng/config';
 
 import { routes } from './app.routes';
@@ -12,10 +13,12 @@ import { EduSyncPreset } from './core/ui/edusync-theme';
  * - provideHttpClient con el interceptor Bearer (DD-UC-004 §2).
  * - provideRouter con las rutas protegidas por authGuard/roleGuard.
  * - providePrimeNG con el tema EduSync (ADR-0026 / DD-UC-032).
+ * - provideAnimationsAsync para overlays PrimeNG (Dialog, etc.).
  */
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    provideAnimationsAsync(),
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
     providePrimeNG({

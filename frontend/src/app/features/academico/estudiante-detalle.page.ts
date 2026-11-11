@@ -1,7 +1,13 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
+import { TagModule } from 'primeng/tag';
 import { EstudianteResponse, InscripcionResponse } from './estudiante.model';
 import { CursoResponse, ParaleloResponse } from './curso.model';
 import { GestionEscolarResponse } from './gestion-escolar.model';
@@ -9,127 +15,188 @@ import { ApiBase } from '../../core/api/api-base';
 import { PageResponse } from '../../core/api/page-response.model';
 import { AuthService } from '../../core/auth/auth.service';
 
-/**
- * Detalle de un Estudiante: GET /estudiantes/{id} para título (no query param),
- * historial de inscripciones y alta inline POST /inscripciones (DD-UC-013 §2).
- *
- * <p><strong>DD-UC-021:</strong> ADMIN sigue eligiendo cualquier Gestión Escolar
- * ({@code GET /gestiones-escolares}, exclusivo ADMIN) al inscribir. SECRETARIA ya no
- * elige gestión (403 en el listado): la gestión de la nueva inscripción se resuelve
- * implícitamente contra {@code GET /gestiones-escolares/activa} (404 si el tenant no
- * tiene ninguna ACTIVA, deshabilitando el alta).
- */
+/** Detalle Estudiante + inscripciones (DD-UC-013/021) — UI PrimeNG (ADR-0026). */
 @Component({
   selector: 'app-estudiante-detalle-page',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    SelectModule,
+    InputTextModule,
+    MessageModule,
+    TagModule,
+  ],
   template: `
-    <div style="max-width: 800px; margin: 0 auto;">
-      <div style="margin-bottom: 1rem;">
-        <a routerLink="/academico/estudiantes" style="font-size: 0.85rem;">← Volver a Estudiantes</a>
-      </div>
+    <div class="page">
+      <p-button label="← Volver a Estudiantes" [link]="true" (onClick)="volver()" />
 
       @if (notFound()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px;">
-          El Estudiante no existe o no pertenece a su institución.
-        </div>
+        <p-message
+          severity="error"
+          text="El Estudiante no existe o no pertenece a su institución."
+          styleClass="block-msg"
+        />
       } @else {
         <h2>{{ estudiante()?.nombreCompleto || 'Estudiante' }}</h2>
         @if (estudiante()) {
-          <p style="color: #555; margin-top: 0;">RUDE: {{ estudiante()!.rude }} — {{ estudiante()!.estado }}</p>
+          <p class="meta">
+            RUDE: {{ estudiante()!.rude }}
+            <p-tag
+              [value]="estudiante()!.estado"
+              [severity]="estudiante()!.estado === 'ACTIVO' ? 'success' : 'secondary'"
+            />
+          </p>
         }
 
         @if (errorMsg()) {
-          <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-            {{ errorMsg() }}
-          </div>
+          <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
         }
 
-        <section>
-          <h3>Inscripciones</h3>
-          @if (inscripciones().length === 0) {
-            <p>Este estudiante todavía no tiene inscripciones.</p>
-          } @else {
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
-              <thead>
-                <tr style="background: #f5f5f5;">
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Gestión</th>
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Curso</th>
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Paralelo</th>
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Fecha</th>
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (insc of inscripciones(); track insc.id) {
-                  <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 0.5rem;">{{ insc.gestionNombre || nombreGestion(insc.gestionEscolarId) }}</td>
-                    <td style="padding: 0.5rem;">{{ insc.cursoNombre || nombreCurso(insc.cursoId) }}</td>
-                    <td style="padding: 0.5rem;">{{ insc.paraleloNombre || nombreParalelo(insc.paraleloId) }}</td>
-                    <td style="padding: 0.5rem;">{{ insc.fechaInscripcion }}</td>
-                    <td style="padding: 0.5rem;">{{ insc.estado }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          }
+        <h3>Inscripciones</h3>
+        <p-table
+          [value]="inscripciones()"
+          dataKey="id"
+          [tableStyle]="{ 'min-width': '40rem' }"
+          styleClass="p-datatable-sm"
+        >
+          <ng-template #header>
+            <tr>
+              <th>Gestión</th>
+              <th>Curso</th>
+              <th>Paralelo</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-insc>
+            <tr>
+              <td>{{ insc.gestionNombre || nombreGestion(insc.gestionEscolarId) }}</td>
+              <td>{{ insc.cursoNombre || nombreCurso(insc.cursoId) }}</td>
+              <td>{{ insc.paraleloNombre || nombreParalelo(insc.paraleloId) }}</td>
+              <td>{{ insc.fechaInscripcion }}</td>
+              <td>{{ insc.estado }}</td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="5">Este estudiante todavía no tiene inscripciones.</td>
+            </tr>
+          </ng-template>
+        </p-table>
 
-          <div style="background: #fafafa; padding: 1rem; border-radius: 4px;">
-            <h4 style="margin-top: 0;">Nueva inscripción</h4>
-            @if (!esAdmin() && gestionActivaNoEncontrada()) {
-              <p style="color: #7a5b00; background: #fff3cd; padding: 0.5rem; border-radius: 4px;">
-                No hay una gestión escolar activa en este momento. Contacta al administrador para inscribir estudiantes.
-              </p>
-            } @else {
-              <form (ngSubmit)="crearInscripcion()" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: end;">
-                @if (esAdmin()) {
-                  <label>
-                    Gestión escolar<br />
-                    <select [(ngModel)]="gestionSeleccionadaId" name="gestionSeleccionadaId" required style="padding: 0.4rem; min-width: 160px;">
-                      <option value="">Seleccione...</option>
-                      @for (gestion of gestiones(); track gestion.id) {
-                        <option [value]="gestion.id">{{ gestion.nombre }}</option>
-                      }
-                    </select>
-                  </label>
-                } @else {
-                  <div>
-                    Gestión escolar actual<br />
-                    <strong>{{ nombreGestion(gestionSeleccionadaId) }}</strong>
-                  </div>
-                }
-                <label>
-                  Curso<br />
-                  <select [(ngModel)]="cursoSeleccionadoId" name="cursoSeleccionadoId" (ngModelChange)="onCursoSeleccionado($event)" required style="padding: 0.4rem; min-width: 180px;">
-                    <option value="">Seleccione...</option>
-                    @for (curso of cursos(); track curso.id) {
-                      <option [value]="curso.id">{{ curso.nombre }}</option>
-                    }
-                  </select>
+        <div class="box">
+          <h4>Nueva inscripción</h4>
+          @if (!esAdmin() && gestionActivaNoEncontrada()) {
+            <p-message
+              severity="warn"
+              text="No hay una gestión escolar activa en este momento. Contacta al administrador para inscribir estudiantes."
+              styleClass="block-msg"
+            />
+          } @else {
+            <form class="inline-form" (ngSubmit)="crearInscripcion()">
+              @if (esAdmin()) {
+                <label class="field">
+                  Gestión escolar
+                  <p-select
+                    [options]="gestiones()"
+                    [(ngModel)]="gestionSeleccionadaId"
+                    name="gestionSeleccionadaId"
+                    optionLabel="nombre"
+                    optionValue="id"
+                    placeholder="Seleccione..."
+                    [showClear]="true"
+                  />
                 </label>
-                <label>
-                  Paralelo<br />
-                  <select [(ngModel)]="paraleloSeleccionadoId" name="paraleloSeleccionadoId" required style="padding: 0.4rem; min-width: 120px;">
-                    <option value="">Seleccione...</option>
-                    @for (paralelo of paralelosDelCurso(); track paralelo.id) {
-                      <option [value]="paralelo.id">{{ paralelo.nombre }}</option>
-                    }
-                  </select>
-                </label>
-                <label>
-                  Fecha<br />
-                  <input type="date" [(ngModel)]="fechaInscripcion" name="fechaInscripcion" required style="padding: 0.4rem;" />
-                </label>
-                <button type="submit" [disabled]="saving()" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                  {{ saving() ? 'Inscribiendo...' : 'Inscribir' }}
-                </button>
-              </form>
-            }
-          </div>
-        </section>
+              } @else {
+                <div class="field">
+                  Gestión escolar actual
+                  <strong>{{ nombreGestion(gestionSeleccionadaId || '') }}</strong>
+                </div>
+              }
+              <label class="field">
+                Curso
+                <p-select
+                  [options]="cursos()"
+                  [(ngModel)]="cursoSeleccionadoId"
+                  name="cursoSeleccionadoId"
+                  optionLabel="nombre"
+                  optionValue="id"
+                  placeholder="Seleccione..."
+                  (ngModelChange)="onCursoSeleccionado($event)"
+                  [showClear]="true"
+                />
+              </label>
+              <label class="field">
+                Paralelo
+                <p-select
+                  [options]="paralelosDelCurso()"
+                  [(ngModel)]="paraleloSeleccionadoId"
+                  name="paraleloSeleccionadoId"
+                  optionLabel="nombre"
+                  optionValue="id"
+                  placeholder="Seleccione..."
+                  [showClear]="true"
+                />
+              </label>
+              <label class="field">
+                Fecha
+                <input pInputText type="date" [(ngModel)]="fechaInscripcion" name="fechaInscripcion" required />
+              </label>
+              <p-button
+                type="submit"
+                [label]="saving() ? 'Inscribiendo...' : 'Inscribir'"
+                [disabled]="saving()"
+              />
+            </form>
+          }
+        </div>
       }
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .meta {
+        color: var(--color-text-secondary);
+        display: flex;
+        gap: var(--space-sm);
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .block-msg {
+        display: block;
+        margin: var(--space-md) 0;
+      }
+      .box {
+        margin-top: var(--space-md);
+        padding: var(--space-md);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+      }
+      .box h4 {
+        margin-top: 0;
+      }
+      .inline-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+        align-items: end;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--font-size-small);
+        min-width: 9rem;
+      }
+    `,
+  ],
 })
 export class EstudianteDetallePage implements OnInit {
   estudianteId = '';
@@ -144,18 +211,27 @@ export class EstudianteDetallePage implements OnInit {
   paralelosPorId = signal<Record<string, ParaleloResponse>>({});
   gestionActivaNoEncontrada = signal(false);
 
-  gestionSeleccionadaId = '';
-  cursoSeleccionadoId = '';
-  paraleloSeleccionadoId = '';
+  gestionSeleccionadaId: string | null = null;
+  cursoSeleccionadoId: string | null = null;
+  paraleloSeleccionadoId: string | null = null;
   fechaInscripcion = '';
   saving = signal(false);
 
-  constructor(private http: HttpClient, private route: ActivatedRoute, protected auth: AuthService) {}
+  constructor(
+    private http: HttpClient,
+    private route: ActivatedRoute,
+    private router: Router,
+    protected auth: AuthService,
+  ) {}
 
   ngOnInit(): void {
     this.estudianteId = this.route.snapshot.paramMap.get('id') ?? '';
     this.cargarDetalle();
     this.cargarCatalogos();
+  }
+
+  volver(): void {
+    this.router.navigate(['/academico/estudiantes']);
   }
 
   esAdmin(): boolean {
@@ -174,8 +250,8 @@ export class EstudianteDetallePage implements OnInit {
     return this.paralelosPorId()[paraleloId]?.nombre ?? paraleloId;
   }
 
-  onCursoSeleccionado(cursoId: string): void {
-    this.paraleloSeleccionadoId = '';
+  onCursoSeleccionado(cursoId: string | null): void {
+    this.paraleloSeleccionadoId = null;
     this.paralelosDelCurso.set([]);
     if (!cursoId) return;
     this.http.get<ParaleloResponse[]>(`${ApiBase.BASE}/cursos/${cursoId}/paralelos`).subscribe({
@@ -187,7 +263,12 @@ export class EstudianteDetallePage implements OnInit {
   }
 
   crearInscripcion(): void {
-    if (!this.gestionSeleccionadaId || !this.cursoSeleccionadoId || !this.paraleloSeleccionadoId || !this.fechaInscripcion) {
+    if (
+      !this.gestionSeleccionadaId ||
+      !this.cursoSeleccionadoId ||
+      !this.paraleloSeleccionadoId ||
+      !this.fechaInscripcion
+    ) {
       return;
     }
     this.saving.set(true);
@@ -203,9 +284,9 @@ export class EstudianteDetallePage implements OnInit {
       .subscribe({
         next: (nueva) => {
           this.inscripciones.update((lista) => [...lista, nueva]);
-          this.gestionSeleccionadaId = '';
-          this.cursoSeleccionadoId = '';
-          this.paraleloSeleccionadoId = '';
+          if (this.esAdmin()) this.gestionSeleccionadaId = null;
+          this.cursoSeleccionadoId = null;
+          this.paraleloSeleccionadoId = null;
           this.paralelosDelCurso.set([]);
           this.fechaInscripcion = '';
           this.saving.set(false);
@@ -227,17 +308,15 @@ export class EstudianteDetallePage implements OnInit {
     });
     this.http
       .get<InscripcionResponse[]>(`${ApiBase.BASE}/estudiantes/${this.estudianteId}/inscripciones`)
-      .subscribe({
-        next: (lista) => this.inscripciones.set(lista),
-      });
+      .subscribe({ next: (lista) => this.inscripciones.set(lista) });
   }
 
   private cargarCatalogos(): void {
     const params = new HttpParams().set('page', 0).set('size', 100);
     if (this.esAdmin()) {
-      this.http.get<PageResponse<GestionEscolarResponse>>(`${ApiBase.BASE}/gestiones-escolares`, { params }).subscribe({
-        next: (respuesta) => this.gestiones.set(respuesta.content),
-      });
+      this.http
+        .get<PageResponse<GestionEscolarResponse>>(`${ApiBase.BASE}/gestiones-escolares`, { params })
+        .subscribe({ next: (respuesta) => this.gestiones.set(respuesta.content) });
     } else {
       this.http.get<GestionEscolarResponse>(`${ApiBase.BASE}/gestiones-escolares/activa`).subscribe({
         next: (activa) => {
@@ -265,7 +344,7 @@ export class EstudianteDetallePage implements OnInit {
 
   private mensajeError(
     err: { status?: number; error?: { codigo?: string; mensaje?: string } },
-    fallback: string
+    fallback: string,
   ): string {
     if (err.status === 409 && err.error?.codigo === 'E_INSCRIPCION_DUPLICADA') {
       return err.error.mensaje ?? 'El estudiante ya está inscrito en esa Gestión Escolar.';

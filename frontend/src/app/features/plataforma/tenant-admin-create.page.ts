@@ -2,88 +2,99 @@ import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { PasswordModule } from 'primeng/password';
+import { MessageModule } from 'primeng/message';
 import { AdminCreadoResponse } from './tenant.model';
 import { ApiBase } from '../../core/api/api-base';
 
-/**
- * Paso 2 del wizard de alta: crea el primer ADMIN del Tenant.
- * POST /api/v1/plataforma/tenants/{id}/admins → 201 AdminCreadoResponse.
- * Llamada deliberadamente separada de la creación del tenant (DD-UC-003 §3, DD-UC-004 §2).
- */
+/** Alta Admin de Tenant paso 2 (DD-UC-004) — UI PrimeNG (ADR-0026). */
 @Component({
   selector: 'app-tenant-admin-create-page',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ButtonModule, InputTextModule, PasswordModule, MessageModule],
   template: `
-    <div style="max-width: 480px; margin: 2rem auto;">
+    <div class="page">
       <h2>Nuevo Tenant — Paso 2 de 2</h2>
-      <p style="color: #555;">Cree el primer administrador para el tenant <strong>{{ tenantId }}</strong>.</p>
+      <p class="hint">Cree el primer administrador para el tenant <strong>{{ tenantId }}</strong>.</p>
 
       @if (successMsg()) {
-        <div style="background: #e8f5e9; color: #2e7d32; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-          {{ successMsg() }}
-          <br />
-          <button (click)="irALista()" style="margin-top: 0.5rem; cursor: pointer;">
-            Ir a la lista de Tenants
-          </button>
-        </div>
+        <p-message severity="success" [text]="successMsg()!" styleClass="block-msg" />
+        <p-button label="Ir a la lista de Tenants" (onClick)="irALista()" />
       }
 
       @if (!successMsg()) {
         @if (errorMsg()) {
-          <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-            {{ errorMsg() }}
-          </div>
+          <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
         }
 
-        <form (ngSubmit)="onSubmit()">
-          <div style="margin-bottom: 1rem;">
-            <label>Nombre completo</label><br />
-            <input
-              type="text"
-              [(ngModel)]="nombreCompleto"
-              name="nombreCompleto"
-              required
-              style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
-            />
-          </div>
-          <div style="margin-bottom: 1rem;">
-            <label>Email</label><br />
-            <input
-              type="email"
-              [(ngModel)]="email"
-              name="email"
-              required
-              style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
-            />
-          </div>
-          <div style="margin-bottom: 1.5rem;">
-            <label>Contraseña inicial</label><br />
-            <input
-              type="password"
+        <form (ngSubmit)="onSubmit()" class="form">
+          <label class="field">
+            Nombre completo
+            <input pInputText type="text" [(ngModel)]="nombreCompleto" name="nombreCompleto" required />
+          </label>
+          <label class="field">
+            Email
+            <input pInputText type="email" [(ngModel)]="email" name="email" required />
+          </label>
+          <label class="field">
+            Contraseña inicial
+            <p-password
               [(ngModel)]="password"
               name="password"
-              required
-              minlength="8"
-              style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
+              [feedback]="false"
+              [toggleMask]="true"
+              styleClass="w-full"
+              inputStyleClass="w-full"
             />
-          </div>
-          <div style="display: flex; gap: 0.5rem;">
-            <button type="button" (click)="irALista()" style="flex: 1; padding: 0.75rem; cursor: pointer;">
-              Omitir
-            </button>
-            <button
+          </label>
+          <div class="actions">
+            <p-button type="button" label="Omitir" severity="secondary" [outlined]="true" (onClick)="irALista()" />
+            <p-button
               type="submit"
+              [label]="loading() ? 'Creando admin...' : 'Crear Admin'"
               [disabled]="loading()"
-              style="flex: 2; padding: 0.75rem; background: #1e3a5f; color: white; cursor: pointer; border: none; border-radius: 4px;"
-            >
-              {{ loading() ? 'Creando admin...' : 'Crear Admin' }}
-            </button>
+            />
           </div>
         </form>
       }
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 480px;
+        margin: var(--space-lg) auto;
+      }
+      .hint {
+        color: var(--color-text-secondary);
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--font-size-small);
+      }
+      .actions {
+        display: flex;
+        gap: var(--space-sm);
+      }
+      :host ::ng-deep .w-full,
+      :host ::ng-deep .p-password {
+        width: 100%;
+      }
+    `,
+  ],
 })
 export class TenantAdminCreatePage implements OnInit {
   tenantId = '';

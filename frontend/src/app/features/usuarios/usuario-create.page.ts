@@ -2,90 +2,117 @@ import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { PasswordModule } from 'primeng/password';
+import { CheckboxModule } from 'primeng/checkbox';
+import { MessageModule } from 'primeng/message';
 import { UsuarioResponse } from './usuario.model';
 import { ApiBase } from '../../core/api/api-base';
 
-/**
- * Alta de un usuario del tenant (DD-UC-006 §2).
- * POST /api/v1/usuarios → 201 UsuarioResponse (DD-UC-005).
- * No pide curso/paralelo para ASESOR: el backend no valida esa referencia
- * todavía (DD-UC-005 §1, E_ASESOR_SIN_CURSO diferido).
- */
+/** Alta de Usuario (DD-UC-006) — UI PrimeNG (ADR-0026). */
 @Component({
   selector: 'app-usuario-create-page',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ButtonModule, InputTextModule, PasswordModule, CheckboxModule, MessageModule],
   template: `
-    <div style="max-width: 480px; margin: 2rem auto;">
+    <div class="page">
       <h2>Nuevo Usuario</h2>
 
       @if (errorMsg()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-          {{ errorMsg() }}
-        </div>
+        <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
       }
 
-      <form (ngSubmit)="onSubmit()">
-        <div style="margin-bottom: 1rem;">
-          <label for="usr-nombre">Nombre completo</label><br />
-          <input
-            id="usr-nombre"
-            type="text"
-            [(ngModel)]="nombreCompleto"
-            name="nombreCompleto"
-            required
-            style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
-          />
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label for="usr-email">Email</label><br />
-          <input
-            id="usr-email"
-            type="email"
-            [(ngModel)]="email"
-            name="email"
-            required
-            style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
-          />
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label for="usr-password">Contraseña inicial</label><br />
-          <input
-            id="usr-password"
-            type="password"
+      <form (ngSubmit)="onSubmit()" class="form">
+        <label class="field" for="usr-nombre">
+          Nombre completo
+          <input pInputText id="usr-nombre" type="text" [(ngModel)]="nombreCompleto" name="nombreCompleto" required />
+        </label>
+        <label class="field" for="usr-email">
+          Email
+          <input pInputText id="usr-email" type="email" [(ngModel)]="email" name="email" required />
+        </label>
+        <label class="field" for="usr-password">
+          Contraseña inicial
+          <p-password
+            inputId="usr-password"
             [(ngModel)]="passwordInicial"
             name="passwordInicial"
-            required
-            minlength="8"
-            style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
+            [feedback]="false"
+            [toggleMask]="true"
+            styleClass="w-full"
+            inputStyleClass="w-full"
           />
-        </div>
-        <div style="margin-bottom: 1.5rem;">
-          <label>Roles</label>
-          <div style="display:flex;flex-direction:column;gap:0.35rem;margin-top:0.35rem;">
+        </label>
+        <div class="field">
+          <span>Roles</span>
+          <div class="roles">
             @for (rol of rolesDisponibles; track rol) {
-              <label style="cursor:pointer;">
-                <input type="checkbox" [checked]="roles.includes(rol)" (change)="toggleRol(rol)" />
-                {{ rol }}
-              </label>
+              <div class="role-row">
+                <p-checkbox
+                  [binary]="true"
+                  [ngModel]="roles.includes(rol)"
+                  (ngModelChange)="onRolCheck(rol, $event)"
+                  [name]="'rol-' + rol"
+                  [inputId]="'rol-' + rol"
+                />
+                <label [for]="'rol-' + rol">{{ rol }}</label>
+              </div>
             }
           </div>
         </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button type="button" (click)="volver()" style="flex: 1; padding: 0.75rem; cursor: pointer;">
-            Cancelar
-          </button>
-          <button
+        <div class="actions">
+          <p-button type="button" label="Cancelar" severity="secondary" [outlined]="true" (onClick)="volver()" />
+          <p-button
             type="submit"
+            [label]="loading() ? 'Creando...' : 'Crear Usuario'"
             [disabled]="loading() || roles.length === 0"
-            style="flex: 2; padding: 0.75rem; background: #1e3a5f; color: white; cursor: pointer; border: none; border-radius: 4px;"
-          >
-            {{ loading() ? 'Creando...' : 'Crear Usuario' }}
-          </button>
+          />
         </div>
       </form>
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 480px;
+        margin: var(--space-lg) auto;
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--font-size-small);
+      }
+      .roles {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+      }
+      .role-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+      }
+      .actions {
+        display: flex;
+        gap: var(--space-sm);
+      }
+      :host ::ng-deep .w-full,
+      :host ::ng-deep .p-password {
+        width: 100%;
+      }
+    `,
+  ],
 })
 export class UsuarioCreatePage {
   nombreCompleto = '';
@@ -94,14 +121,15 @@ export class UsuarioCreatePage {
   roles: string[] = [];
   loading = signal(false);
   errorMsg = signal<string | null>(null);
-
-  /** SYSADMIN nunca es una opción aquí (ADR-0010): esta pantalla solo crea usuarios de tenant. */
   readonly rolesDisponibles = ['ADMIN', 'SECRETARIA', 'ASESOR', 'PROFESOR'];
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
 
-  toggleRol(rol: string): void {
-    this.roles = this.roles.includes(rol) ? this.roles.filter((r) => r !== rol) : [...this.roles, rol];
+  onRolCheck(rol: string, checked: boolean): void {
+    this.roles = checked ? [...this.roles, rol] : this.roles.filter((r) => r !== rol);
   }
 
   onSubmit(): void {
@@ -117,9 +145,7 @@ export class UsuarioCreatePage {
         roles: this.roles,
       })
       .subscribe({
-        next: () => {
-          this.router.navigate(['/usuarios']);
-        },
+        next: () => this.router.navigate(['/usuarios']),
         error: (err) => {
           this.loading.set(false);
           const codigo = err.error?.codigo;

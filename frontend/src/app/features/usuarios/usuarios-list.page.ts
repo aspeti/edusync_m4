@@ -1,159 +1,236 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { TableModule, TablePageEvent } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { DialogModule } from 'primeng/dialog';
+import { TagModule } from 'primeng/tag';
+import { MessageModule } from 'primeng/message';
+import { CheckboxModule } from 'primeng/checkbox';
 import { UsuarioResponse } from './usuario.model';
 import { ApiBase } from '../../core/api/api-base';
 import { PageResponse } from '../../core/api/page-response.model';
 
 /**
- * Página de lista de Usuarios — consola Admin del tenant.
- * GET /api/v1/usuarios (DD-UC-006 §2), con filtros y paginación (DD-UC-007, patrón
- * reutilizable): `q` busca por nombre o email, `activo` y `rol` son filtros exactos.
+ * Lista de Usuarios (DD-UC-006/007) — UI PrimeNG (ADR-0026): p-table lazy,
+ * filtros, diálogo de roles. Contratos HTTP sin cambio.
  */
 @Component({
   selector: 'app-usuarios-list-page',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    InputTextModule,
+    SelectModule,
+    DialogModule,
+    TagModule,
+    MessageModule,
+    CheckboxModule,
+  ],
   template: `
-    <div style="max-width: 1000px; margin: 0 auto;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <div class="page">
+      <div class="toolbar">
         <h2 data-testid="usuarios-heading">Usuarios</h2>
-        <a routerLink="/usuarios/nuevo" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; text-decoration: none; border-radius: 4px;">
-          + Nuevo Usuario
-        </a>
+        <p-button label="+ Nuevo Usuario" (onClick)="irNuevo()" />
       </div>
 
-      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; background: #fafafa; padding: 0.75rem; border-radius: 4px;">
+      <div class="filters">
         <input
+          pInputText
           type="text"
           placeholder="Buscar por nombre o email..."
           [(ngModel)]="filtroQ"
           (keyup.enter)="aplicarFiltros()"
-          style="padding: 0.4rem; flex: 1; min-width: 200px;"
+          class="filter-q"
         />
-        <select [(ngModel)]="filtroRol" style="padding: 0.4rem;">
-          <option value="">Todos los roles</option>
-          @for (rol of rolesDisponibles; track rol) {
-            <option [value]="rol">{{ rol }}</option>
-          }
-        </select>
-        <select [(ngModel)]="filtroActivo" style="padding: 0.4rem;">
-          <option value="">Todos los estados</option>
-          <option value="true">Activos</option>
-          <option value="false">Inactivos</option>
-        </select>
-        <button (click)="aplicarFiltros()" style="padding: 0.4rem 1rem; cursor: pointer;">Buscar</button>
-        <button (click)="limpiarFiltros()" style="padding: 0.4rem 1rem; cursor: pointer;">Limpiar</button>
+        <p-select
+          [options]="rolOptions"
+          [(ngModel)]="filtroRol"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Todos los roles"
+          [showClear]="true"
+          styleClass="filter-select"
+        />
+        <p-select
+          [options]="activoOptions"
+          [(ngModel)]="filtroActivo"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Todos los estados"
+          [showClear]="true"
+          styleClass="filter-select"
+        />
+        <p-button label="Buscar" (onClick)="aplicarFiltros()" />
+        <p-button label="Limpiar" severity="secondary" [outlined]="true" (onClick)="limpiarFiltros()" />
       </div>
 
-      @if (loading()) {
-        <p>Cargando usuarios...</p>
-      }
-
       @if (errorMsg()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-          {{ errorMsg() }}
-        </div>
+        <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
       }
-
       @if (resetInfoMsg()) {
-        <div style="background: #e3f2fd; color: #1565c0; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-          {{ resetInfoMsg() }}
-        </div>
+        <p-message severity="info" [text]="resetInfoMsg()!" styleClass="block-msg" />
       }
 
-      @if (!loading() && usuarios().length === 0 && !errorMsg()) {
-        <p>No hay usuarios que coincidan con los filtros.</p>
-      }
+      <p-table
+        [value]="usuarios()"
+        dataKey="id"
+        [lazy]="true"
+        [paginator]="true"
+        [rows]="tamanoPagina"
+        [totalRecords]="totalElements()"
+        [first]="page() * tamanoPagina"
+        [loading]="loading()"
+        (onPage)="onPage($event)"
+        [tableStyle]="{ 'min-width': '50rem' }"
+        styleClass="p-datatable-sm"
+      >
+        <ng-template #header>
+          <tr>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Roles</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-usuario>
+          <tr>
+            <td>{{ usuario.nombreCompleto }}</td>
+            <td>{{ usuario.email }}</td>
+            <td>{{ usuario.roles.join(', ') }}</td>
+            <td>
+              <p-tag
+                [value]="usuario.activo ? 'ACTIVO' : 'INACTIVO'"
+                [severity]="usuario.activo ? 'success' : 'secondary'"
+              />
+            </td>
+            <td class="actions">
+              <p-button label="Editar roles" [link]="true" size="small" (onClick)="abrirRolesDialog(usuario)" />
+              <p-button
+                [label]="usuario.activo ? 'Desactivar' : 'Activar'"
+                [link]="true"
+                size="small"
+                (onClick)="toggleEstado(usuario)"
+              />
+              <p-button
+                [label]="reseteando() === usuario.id ? 'Enviando...' : 'Restablecer password'"
+                [link]="true"
+                size="small"
+                [disabled]="reseteando() === usuario.id"
+                (onClick)="iniciarReset(usuario)"
+              />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="5">No hay usuarios que coincidan con los filtros.</td>
+          </tr>
+        </ng-template>
+      </p-table>
 
-      @if (usuarios().length > 0) {
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #f5f5f5;">
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Nombre</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Email</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Roles</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Estado</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (usuario of usuarios(); track usuario.id) {
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 0.5rem;">{{ usuario.nombreCompleto }}</td>
-                <td style="padding: 0.5rem;">{{ usuario.email }}</td>
-                <td style="padding: 0.5rem;">{{ usuario.roles.join(', ') }}</td>
-                <td style="padding: 0.5rem;">
-                  <span [style.color]="usuario.activo ? '#2e7d32' : '#757575'">
-                    {{ usuario.activo ? 'ACTIVO' : 'INACTIVO' }}
-                  </span>
-                </td>
-                <td style="padding: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                  <button (click)="abrirRolesDialog(usuario)" style="cursor: pointer; font-size: 0.85rem;">
-                    Editar roles
-                  </button>
-                  <button (click)="toggleEstado(usuario)" style="cursor: pointer; font-size: 0.85rem;">
-                    {{ usuario.activo ? 'Desactivar' : 'Activar' }}
-                  </button>
-                  <button (click)="iniciarReset(usuario)" [disabled]="reseteando() === usuario.id" style="cursor: pointer; font-size: 0.85rem;">
-                    {{ reseteando() === usuario.id ? 'Enviando...' : 'Restablecer password' }}
-                  </button>
-                </td>
-              </tr>
+      <p-dialog
+        header="Editar roles"
+        [modal]="true"
+        [visible]="rolesDialog() !== null"
+        (visibleChange)="onRolesDialogVisible($event)"
+        [style]="{ width: '24rem' }"
+      >
+        @if (rolesDialog(); as u) {
+          <p>Usuario: <strong>{{ u.nombreCompleto }}</strong></p>
+          <div class="roles-list">
+            @for (rol of rolesDisponibles; track rol) {
+              <div class="role-row">
+                <p-checkbox
+                  [binary]="true"
+                  [ngModel]="rolesSeleccionados.includes(rol)"
+                  (ngModelChange)="onRolCheck(rol, $event)"
+                  [inputId]="'rol-' + rol"
+                />
+                <label [for]="'rol-' + rol">{{ rol }}</label>
+              </div>
             }
-          </tbody>
-        </table>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-          <span style="color: #666; font-size: 0.9rem;">
-            {{ totalElements() }} usuario(s) — página {{ page() + 1 }} de {{ totalPaginas() || 1 }}
-          </span>
-          <div style="display: flex; gap: 0.5rem;">
-            <button (click)="irAPagina(page() - 1)" [disabled]="page() === 0" style="padding: 0.3rem 0.8rem; cursor: pointer;">
-              ← Anterior
-            </button>
-            <button (click)="irAPagina(page() + 1)" [disabled]="page() + 1 >= totalPaginas()" style="padding: 0.3rem 0.8rem; cursor: pointer;">
-              Siguiente →
-            </button>
           </div>
-        </div>
-      }
-
-      @if (rolesDialog()) {
-        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">
-          <div style="background:white;padding:2rem;border-radius:8px;min-width:320px;">
-            <h3>Editar roles de "{{ rolesDialog()!.nombreCompleto }}"</h3>
-            <div style="display:flex;flex-direction:column;gap:0.5rem;margin:1rem 0;">
-              @for (rol of rolesDisponibles; track rol) {
-                <label style="cursor:pointer;">
-                  <input
-                    type="checkbox"
-                    [checked]="rolesSeleccionados.includes(rol)"
-                    (change)="toggleRolSeleccionado(rol)"
-                  />
-                  {{ rol }}
-                </label>
-              }
-            </div>
-            @if (rolesError()) {
-              <p style="color:#c62828;">{{ rolesError() }}</p>
-            }
-            <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
-              <button (click)="cerrarRolesDialog()">Cancelar</button>
-              <button
-                (click)="confirmarRoles()"
-                [disabled]="rolesSeleccionados.length === 0 || rolesSaving()"
-                style="background:#1e3a5f;color:white;padding:0.4rem 1rem;cursor:pointer;"
-              >
-                {{ rolesSaving() ? 'Guardando...' : 'Guardar' }}
-              </button>
-            </div>
+          @if (rolesError()) {
+            <p-message severity="error" [text]="rolesError()!" styleClass="block-msg" />
+          }
+          <div class="dialog-actions">
+            <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="cerrarRolesDialog()" />
+            <p-button
+              [label]="rolesSaving() ? 'Guardando...' : 'Guardar'"
+              [disabled]="rolesSeleccionados.length === 0 || rolesSaving()"
+              (onClick)="confirmarRoles()"
+            />
           </div>
-        </div>
-      }
+        }
+      </p-dialog>
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-md);
+        gap: var(--space-sm);
+      }
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+        align-items: center;
+        margin-bottom: var(--space-md);
+        padding: var(--space-sm);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+      }
+      .filter-q {
+        flex: 1;
+        min-width: 12rem;
+      }
+      :host ::ng-deep .filter-select {
+        min-width: 10rem;
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+      }
+      .roles-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        margin: var(--space-md) 0;
+      }
+      .role-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+      }
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-sm);
+        margin-top: var(--space-md);
+      }
+    `,
+  ],
 })
 export class UsuariosListPage implements OnInit {
   usuarios = signal<UsuarioResponse[]>([]);
@@ -162,29 +239,37 @@ export class UsuariosListPage implements OnInit {
   resetInfoMsg = signal<string | null>(null);
   reseteando = signal<string | null>(null);
 
-  // Filtros (DD-UC-007): `q` busca por nombre o email; `rol`/`activo` son filtros exactos.
   filtroQ = '';
-  filtroRol = '';
-  filtroActivo = '';
+  filtroRol: string | null = null;
+  filtroActivo: string | null = null;
 
-  // Paginación (DD-UC-007).
   page = signal(0);
   totalElements = signal(0);
-  totalPaginas = signal(0);
-  private readonly tamanoPagina = 20;
+  readonly tamanoPagina = 20;
 
   rolesDialog = signal<UsuarioResponse | null>(null);
   rolesSeleccionados: string[] = [];
   rolesError = signal<string | null>(null);
   rolesSaving = signal(false);
 
-  /** SYSADMIN nunca es una opción aquí (ADR-0010): este formulario solo gestiona roles de tenant. */
   readonly rolesDisponibles = ['ADMIN', 'SECRETARIA', 'ASESOR', 'PROFESOR'];
+  readonly rolOptions = this.rolesDisponibles.map((r) => ({ label: r, value: r }));
+  readonly activoOptions = [
+    { label: 'Activos', value: 'true' },
+    { label: 'Inactivos', value: 'false' },
+  ];
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.cargarUsuarios();
+  }
+
+  irNuevo(): void {
+    this.router.navigate(['/usuarios/nuevo']);
   }
 
   aplicarFiltros(): void {
@@ -194,15 +279,15 @@ export class UsuariosListPage implements OnInit {
 
   limpiarFiltros(): void {
     this.filtroQ = '';
-    this.filtroRol = '';
-    this.filtroActivo = '';
+    this.filtroRol = null;
+    this.filtroActivo = null;
     this.page.set(0);
     this.cargarUsuarios();
   }
 
-  irAPagina(nuevaPagina: number): void {
-    if (nuevaPagina < 0 || nuevaPagina >= this.totalPaginas()) return;
-    this.page.set(nuevaPagina);
+  onPage(event: TablePageEvent): void {
+    const rows = event.rows ?? this.tamanoPagina;
+    this.page.set(Math.floor((event.first ?? 0) / rows));
     this.cargarUsuarios();
   }
 
@@ -219,7 +304,6 @@ export class UsuariosListPage implements OnInit {
       next: (respuesta) => {
         this.usuarios.set(respuesta.content);
         this.totalElements.set(respuesta.totalElements);
-        this.totalPaginas.set(respuesta.totalPages);
         this.loading.set(false);
       },
       error: () => {
@@ -235,10 +319,14 @@ export class UsuariosListPage implements OnInit {
     this.rolesDialog.set(usuario);
   }
 
-  toggleRolSeleccionado(rol: string): void {
-    this.rolesSeleccionados = this.rolesSeleccionados.includes(rol)
-      ? this.rolesSeleccionados.filter((r) => r !== rol)
-      : [...this.rolesSeleccionados, rol];
+  onRolesDialogVisible(visible: boolean): void {
+    if (!visible) this.cerrarRolesDialog();
+  }
+
+  onRolCheck(rol: string, checked: boolean): void {
+    this.rolesSeleccionados = checked
+      ? [...this.rolesSeleccionados, rol]
+      : this.rolesSeleccionados.filter((r) => r !== rol);
   }
 
   cerrarRolesDialog(): void {
@@ -267,7 +355,7 @@ export class UsuariosListPage implements OnInit {
           this.rolesError.set(
             err.error?.codigo === 'E_INVARIANTE_ROL_VIOLADA'
               ? 'Combinación de roles no permitida.'
-              : 'Error al actualizar los roles.'
+              : 'Error al actualizar los roles.',
           );
         },
       });
@@ -288,18 +376,13 @@ export class UsuariosListPage implements OnInit {
       });
   }
 
-  /**
-   * Restablecimiento de contraseña (DD-UC-005 §1, placeholder log-only): la entrega real
-   * de email no está implementada todavía, así que el mensaje es transparente sobre esa
-   * limitación en vez de simular un envío que no ocurre (DD-UC-006 §2/§3).
-   */
   iniciarReset(usuario: UsuarioResponse): void {
     this.reseteando.set(usuario.id);
     this.resetInfoMsg.set(null);
     this.http.post(`${ApiBase.BASE}/usuarios/${usuario.id}/restablecer-password`, {}).subscribe({
       next: () => {
         this.resetInfoMsg.set(
-          `Restablecimiento iniciado para "${usuario.nombreCompleto}". El envío de correo real aún no está implementado (ver DD-UC-005 §1); el token queda registrado en los logs del servidor para completar el flujo manualmente en /restablecer-password.`
+          `Restablecimiento iniciado para "${usuario.nombreCompleto}". El envío de correo real aún no está implementado (ver DD-UC-005 §1); el token queda registrado en los logs del servidor para completar el flujo manualmente en /restablecer-password.`,
         );
         this.reseteando.set(null);
       },

@@ -1,7 +1,11 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
+import { MessageModule } from 'primeng/message';
 import {
   AsignacionCursoResponse,
   AsignacionProfesorResponse,
@@ -13,143 +17,155 @@ import { ApiBase } from '../../core/api/api-base';
 import { PageResponse } from '../../core/api/page-response.model';
 import { AuthService } from '../../core/auth/auth.service';
 
-/**
- * Detalle de una Materia: GET /materias/{id} para el título (no query param),
- * asignaciones curso/paralelo y profesor con alta inline (DD-UC-012 §2).
- * El formulario de profesor solo ofrece combinaciones ya asignadas a curso
- * para no disparar 409 E_MATERIA_SIN_CURSO.
- */
+/** Detalle Materia + asignaciones (DD-UC-012) — UI PrimeNG (ADR-0026). */
 @Component({
   selector: 'app-materia-detalle-page',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [FormsModule, TableModule, ButtonModule, SelectModule, MessageModule],
   template: `
-    <div style="max-width: 800px; margin: 0 auto;">
-      <div style="margin-bottom: 1rem;">
-        <a routerLink="/academico/materias" style="font-size: 0.85rem;">← Volver a Materias</a>
-      </div>
+    <div class="page">
+      <p-button label="← Volver a Materias" [link]="true" (onClick)="volver()" />
 
       @if (notFound()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px;">
-          La Materia no existe o no pertenece a su institución.
-        </div>
+        <p-message severity="error" text="La Materia no existe o no pertenece a su institución." styleClass="block-msg" />
       } @else {
         <h2>{{ materia()?.nombre || 'Materia' }}</h2>
         @if (auth.hasRole('ADMIN')) {
-          <p style="margin-bottom: 1rem;">
-            <a [routerLink]="['/academico/materias', materiaId, 'evaluaciones']">Evaluaciones</a>
-          </p>
+          <p><p-button label="Evaluaciones" [link]="true" (onClick)="irEvaluaciones()" /></p>
         }
 
         @if (errorMsg()) {
-          <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-            {{ errorMsg() }}
-          </div>
+          <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
         }
 
-        <section style="margin-bottom: 2rem;">
+        <section class="section">
           <h3>Asignaciones a Curso / Paralelo</h3>
-          @if (asignacionesCurso().length === 0) {
-            <p>Esta Materia todavía no está asignada a ningún curso.</p>
-          } @else {
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
-              <thead>
-                <tr style="background: #f5f5f5;">
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Curso</th>
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Paralelo</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (asig of asignacionesCurso(); track asig.id) {
-                  <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 0.5rem;">{{ asig.cursoNombre || nombreCurso(asig.cursoId) }}</td>
-                    <td style="padding: 0.5rem;">{{ asig.paraleloNombre || nombreParaleloAsignado(asig) }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          }
+          <p-table
+            [value]="asignacionesCurso()"
+            dataKey="id"
+            [tableStyle]="{ 'min-width': '24rem' }"
+            styleClass="p-datatable-sm"
+          >
+            <ng-template #header>
+              <tr>
+                <th>Curso</th>
+                <th>Paralelo</th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-asig>
+              <tr>
+                <td>{{ asig.cursoNombre || nombreCurso(asig.cursoId) }}</td>
+                <td>{{ asig.paraleloNombre || nombreParaleloAsignado(asig) }}</td>
+              </tr>
+            </ng-template>
+            <ng-template #emptymessage>
+              <tr>
+                <td colspan="2">Esta Materia todavía no está asignada a ningún curso.</td>
+              </tr>
+            </ng-template>
+          </p-table>
 
-          <div style="background: #fafafa; padding: 1rem; border-radius: 4px;">
-            <h4 style="margin-top: 0;">Nueva asignación a curso</h4>
-            <form (ngSubmit)="crearAsignacionCurso()" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: end;">
-              <label>
-                Curso<br />
-                <select [(ngModel)]="cursoSeleccionadoId" name="cursoSeleccionadoId" (ngModelChange)="onCursoSeleccionado($event)" required style="padding: 0.4rem; min-width: 180px;">
-                  <option value="">Seleccione...</option>
-                  @for (curso of cursos(); track curso.id) {
-                    <option [value]="curso.id">{{ curso.nombre }}</option>
-                  }
-                </select>
+          <div class="box">
+            <h4>Nueva asignación a curso</h4>
+            <form class="inline-form" (ngSubmit)="crearAsignacionCurso()">
+              <label class="field">
+                Curso
+                <p-select
+                  [options]="cursos()"
+                  [(ngModel)]="cursoSeleccionadoId"
+                  name="cursoSeleccionadoId"
+                  optionLabel="nombre"
+                  optionValue="id"
+                  placeholder="Seleccione..."
+                  (ngModelChange)="onCursoSeleccionado($event)"
+                  [showClear]="true"
+                />
               </label>
-              <label>
-                Paralelo<br />
-                <select [(ngModel)]="paraleloSeleccionadoId" name="paraleloSeleccionadoId" required style="padding: 0.4rem; min-width: 120px;">
-                  <option value="">Seleccione...</option>
-                  @for (paralelo of paralelosDelCurso(); track paralelo.id) {
-                    <option [value]="paralelo.id">{{ paralelo.nombre }}</option>
-                  }
-                </select>
+              <label class="field">
+                Paralelo
+                <p-select
+                  [options]="paralelosDelCurso()"
+                  [(ngModel)]="paraleloSeleccionadoId"
+                  name="paraleloSeleccionadoId"
+                  optionLabel="nombre"
+                  optionValue="id"
+                  placeholder="Seleccione..."
+                  [showClear]="true"
+                />
               </label>
-              <button type="submit" [disabled]="savingCurso()" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                {{ savingCurso() ? 'Asignando...' : 'Asignar' }}
-              </button>
+              <p-button
+                type="submit"
+                [label]="savingCurso() ? 'Asignando...' : 'Asignar'"
+                [disabled]="savingCurso()"
+              />
             </form>
           </div>
         </section>
 
-        <section>
+        <section class="section">
           <h3>Asignaciones a Profesor</h3>
-          @if (asignacionesProfesor().length === 0) {
-            <p>Esta Materia todavía no tiene profesores asignados.</p>
-          } @else {
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
-              <thead>
-                <tr style="background: #f5f5f5;">
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Profesor</th>
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Curso</th>
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Paralelo</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (asig of asignacionesProfesor(); track asig.id) {
-                  <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 0.5rem;">{{ nombreProfesor(asig.profesorId) }}</td>
-                    <td style="padding: 0.5rem;">{{ asig.cursoNombre || nombreCurso(asig.cursoId) }}</td>
-                    <td style="padding: 0.5rem;">{{ asig.paraleloNombre || nombreParaleloAsignado(asig) }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          }
+          <p-table
+            [value]="asignacionesProfesor()"
+            dataKey="id"
+            [tableStyle]="{ 'min-width': '30rem' }"
+            styleClass="p-datatable-sm"
+          >
+            <ng-template #header>
+              <tr>
+                <th>Profesor</th>
+                <th>Curso</th>
+                <th>Paralelo</th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-asig>
+              <tr>
+                <td>{{ nombreProfesor(asig.profesorId) }}</td>
+                <td>{{ asig.cursoNombre || nombreCurso(asig.cursoId) }}</td>
+                <td>{{ asig.paraleloNombre || nombreParaleloAsignado(asig) }}</td>
+              </tr>
+            </ng-template>
+            <ng-template #emptymessage>
+              <tr>
+                <td colspan="3">Esta Materia todavía no tiene profesores asignados.</td>
+              </tr>
+            </ng-template>
+          </p-table>
 
-          <div style="background: #fafafa; padding: 1rem; border-radius: 4px;">
-            <h4 style="margin-top: 0;">Nueva asignación a profesor</h4>
+          <div class="box">
+            <h4>Nueva asignación a profesor</h4>
             @if (asignacionesCurso().length === 0) {
-              <p style="margin: 0;">Asigne primero un curso/paralelo para poder asignar un profesor.</p>
+              <p>Asigne primero un curso/paralelo para poder asignar un profesor.</p>
             } @else {
-              <form (ngSubmit)="crearAsignacionProfesor()" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: end;">
-                <label>
-                  Profesor<br />
-                  <select [(ngModel)]="profesorSeleccionadoId" name="profesorSeleccionadoId" required style="padding: 0.4rem; min-width: 180px;">
-                    <option value="">Seleccione...</option>
-                    @for (profesor of profesores(); track profesor.id) {
-                      <option [value]="profesor.id">{{ profesor.nombreCompleto }}</option>
-                    }
-                  </select>
+              <form class="inline-form" (ngSubmit)="crearAsignacionProfesor()">
+                <label class="field">
+                  Profesor
+                  <p-select
+                    [options]="profesores()"
+                    [(ngModel)]="profesorSeleccionadoId"
+                    name="profesorSeleccionadoId"
+                    optionLabel="nombreCompleto"
+                    optionValue="id"
+                    placeholder="Seleccione..."
+                    [showClear]="true"
+                  />
                 </label>
-                <label>
-                  Curso / Paralelo<br />
-                  <select [(ngModel)]="asignacionCursoSeleccionadaId" name="asignacionCursoSeleccionadaId" required style="padding: 0.4rem; min-width: 200px;">
-                    <option value="">Seleccione...</option>
-                    @for (asig of asignacionesCurso(); track asig.id) {
-                      <option [value]="asig.id">{{ asig.cursoNombre || nombreCurso(asig.cursoId) }} — {{ asig.paraleloNombre || nombreParaleloAsignado(asig) }}</option>
-                    }
-                  </select>
+                <label class="field">
+                  Curso / Paralelo
+                  <p-select
+                    [options]="opcionesAsignacionCurso"
+                    [(ngModel)]="asignacionCursoSeleccionadaId"
+                    name="asignacionCursoSeleccionadaId"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Seleccione..."
+                    [showClear]="true"
+                  />
                 </label>
-                <button type="submit" [disabled]="savingProfesor()" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                  {{ savingProfesor() ? 'Asignando...' : 'Asignar' }}
-                </button>
+                <p-button
+                  type="submit"
+                  [label]="savingProfesor() ? 'Asignando...' : 'Asignar'"
+                  [disabled]="savingProfesor()"
+                />
               </form>
             }
           </div>
@@ -157,6 +173,44 @@ import { AuthService } from '../../core/auth/auth.service';
       }
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .block-msg {
+        display: block;
+        margin: var(--space-md) 0;
+      }
+      .section {
+        margin-bottom: var(--space-xl);
+      }
+      .box {
+        margin-top: var(--space-md);
+        padding: var(--space-md);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+      }
+      .box h4 {
+        margin-top: 0;
+      }
+      .inline-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+        align-items: end;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--font-size-small);
+        min-width: 10rem;
+      }
+    `,
+  ],
 })
 export class MateriaDetallePage implements OnInit {
   materiaId = '';
@@ -171,23 +225,39 @@ export class MateriaDetallePage implements OnInit {
   profesores = signal<ProfesorResumenResponse[]>([]);
   paralelosPorId = signal<Record<string, ParaleloResponse>>({});
 
-  cursoSeleccionadoId = '';
-  paraleloSeleccionadoId = '';
-  profesorSeleccionadoId = '';
-  asignacionCursoSeleccionadaId = '';
+  cursoSeleccionadoId: string | null = null;
+  paraleloSeleccionadoId: string | null = null;
+  profesorSeleccionadoId: string | null = null;
+  asignacionCursoSeleccionadaId: string | null = null;
   savingCurso = signal(false);
   savingProfesor = signal(false);
 
   constructor(
     private http: HttpClient,
     private route: ActivatedRoute,
-    protected auth: AuthService
+    private router: Router,
+    protected auth: AuthService,
   ) {}
+
+  get opcionesAsignacionCurso(): { label: string; value: string }[] {
+    return this.asignacionesCurso().map((asig) => ({
+      value: asig.id,
+      label: `${asig.cursoNombre || this.nombreCurso(asig.cursoId)} — ${asig.paraleloNombre || this.nombreParaleloAsignado(asig)}`,
+    }));
+  }
 
   ngOnInit(): void {
     this.materiaId = this.route.snapshot.paramMap.get('id') ?? '';
     this.cargarDetalle();
     this.cargarCatalogos();
+  }
+
+  volver(): void {
+    this.router.navigate(['/academico/materias']);
+  }
+
+  irEvaluaciones(): void {
+    this.router.navigate(['/academico/materias', this.materiaId, 'evaluaciones']);
   }
 
   nombreCurso(cursoId: string): string {
@@ -202,8 +272,8 @@ export class MateriaDetallePage implements OnInit {
     return this.profesores().find((p) => p.id === profesorId)?.nombreCompleto ?? profesorId;
   }
 
-  onCursoSeleccionado(cursoId: string): void {
-    this.paraleloSeleccionadoId = '';
+  onCursoSeleccionado(cursoId: string | null): void {
+    this.paraleloSeleccionadoId = null;
     this.paralelosDelCurso.set([]);
     if (!cursoId) return;
     this.http.get<ParaleloResponse[]>(`${ApiBase.BASE}/cursos/${cursoId}/paralelos`).subscribe({
@@ -226,8 +296,8 @@ export class MateriaDetallePage implements OnInit {
       .subscribe({
         next: (nueva) => {
           this.asignacionesCurso.update((lista) => [...lista, nueva]);
-          this.cursoSeleccionadoId = '';
-          this.paraleloSeleccionadoId = '';
+          this.cursoSeleccionadoId = null;
+          this.paraleloSeleccionadoId = null;
           this.paralelosDelCurso.set([]);
           this.savingCurso.set(false);
         },
@@ -252,8 +322,8 @@ export class MateriaDetallePage implements OnInit {
       .subscribe({
         next: (nueva) => {
           this.asignacionesProfesor.update((lista) => [...lista, nueva]);
-          this.profesorSeleccionadoId = '';
-          this.asignacionCursoSeleccionadaId = '';
+          this.profesorSeleccionadoId = null;
+          this.asignacionCursoSeleccionadaId = null;
           this.savingProfesor.set(false);
         },
         error: (err) => {
@@ -273,9 +343,7 @@ export class MateriaDetallePage implements OnInit {
     });
     this.http
       .get<AsignacionCursoResponse[]>(`${ApiBase.BASE}/materias/${this.materiaId}/asignaciones-curso`)
-      .subscribe({
-        next: (lista) => this.asignacionesCurso.set(lista),
-      });
+      .subscribe({ next: (lista) => this.asignacionesCurso.set(lista) });
     this.http
       .get<AsignacionProfesorResponse[]>(`${ApiBase.BASE}/materias/${this.materiaId}/asignaciones-profesor`)
       .subscribe({ next: (lista) => this.asignacionesProfesor.set(lista) });
@@ -299,7 +367,10 @@ export class MateriaDetallePage implements OnInit {
     });
   }
 
-  private mensajeError(err: { status?: number; error?: { codigo?: string; mensaje?: string } }, fallback: string): string {
+  private mensajeError(
+    err: { status?: number; error?: { codigo?: string; mensaje?: string } },
+    fallback: string,
+  ): string {
     if (err.status === 409 && err.error?.codigo === 'E_MATERIA_SIN_CURSO') {
       return err.error.mensaje ?? 'Asigne primero el curso/paralelo a la materia.';
     }

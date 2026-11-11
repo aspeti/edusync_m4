@@ -1,93 +1,116 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
 import { ParaleloResponse } from './curso.model';
 import { ApiBase } from '../../core/api/api-base';
 
-/**
- * Vista de detalle de un Curso: lista sus Paralelos y permite crear uno nuevo
- * inline (DD-UC-011 §2). GET/POST /api/v1/cursos/{id}/paralelos (DD-UC-010 §2,
- * sin paginar — cardinalidad acotada).
- *
- * El nombre del Curso llega como query param `nombre` desde `CursosListPage`
- * (no hay `GET /cursos/{id}` en el backend, DD-UC-010 §2); si falta (navegación
- * directa/recarga), se muestra un encabezado genérico — el `404
- * E_CURSO_NO_ENCONTRADO` del backend sigue siendo la única validación real de
- * existencia del Curso.
- */
+/** Paralelos de un Curso (DD-UC-011) — UI PrimeNG (ADR-0026). */
 @Component({
   selector: 'app-curso-paralelos-page',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [FormsModule, TableModule, ButtonModule, InputTextModule, MessageModule],
   template: `
-    <div style="max-width: 700px; margin: 0 auto;">
-      <div style="margin-bottom: 1rem;">
-        <a routerLink="/academico/cursos" style="font-size: 0.85rem;">← Volver a Cursos</a>
-      </div>
+    <div class="page">
+      <p-button label="← Volver a Cursos" [link]="true" (onClick)="volver()" styleClass="back" />
 
       <h2>Paralelos de "{{ nombreCurso || 'este Curso' }}"</h2>
 
       @if (notFound()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-          El Curso no existe o no pertenece a su institución.
-        </div>
+        <p-message
+          severity="error"
+          text="El Curso no existe o no pertenece a su institución."
+          styleClass="block-msg"
+        />
       } @else {
-        @if (loading()) {
-          <p>Cargando paralelos...</p>
+        @if (errorMsg()) {
+          <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
         }
 
-        @if (!loading() && paralelos().length === 0) {
-          <p>Este Curso todavía no tiene paralelos.</p>
-        }
+        <p-table
+          [value]="paralelos()"
+          dataKey="id"
+          [loading]="loading()"
+          [tableStyle]="{ 'min-width': '20rem' }"
+          styleClass="p-datatable-sm"
+        >
+          <ng-template #header>
+            <tr>
+              <th>Nombre</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-paralelo>
+            <tr>
+              <td>{{ paralelo.nombre }}</td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td>Este Curso todavía no tiene paralelos.</td>
+            </tr>
+          </ng-template>
+        </p-table>
 
-        @if (paralelos().length > 0) {
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;">
-            <thead>
-              <tr style="background: #f5f5f5;">
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Nombre</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (paralelo of paralelos(); track paralelo.id) {
-                <tr style="border-bottom: 1px solid #eee;">
-                  <td style="padding: 0.5rem;">{{ paralelo.nombre }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        }
-
-        <div style="background: #fafafa; padding: 1rem; border-radius: 4px;">
-          <h3 style="margin-top: 0;">Nuevo Paralelo</h3>
-
-          @if (errorMsg()) {
-            <div style="background: #fdecea; color: #c62828; padding: 0.5rem; border-radius: 4px; margin-bottom: 0.75rem;">
-              {{ errorMsg() }}
-            </div>
-          }
-
-          <form (ngSubmit)="onSubmit()" style="display: flex; gap: 0.5rem;">
+        <section class="create-box">
+          <h3>Nuevo Paralelo</h3>
+          <form class="create-form" (ngSubmit)="onSubmit()">
             <input
+              pInputText
               type="text"
               [(ngModel)]="nombreNuevoParalelo"
               name="nombreNuevoParalelo"
               required
               placeholder="Ej: A"
-              style="flex: 1; padding: 0.5rem;"
+              class="grow"
             />
-            <button
+            <p-button
               type="submit"
+              [label]="saving() ? 'Creando...' : 'Crear'"
               [disabled]="saving()"
-              style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; cursor: pointer; border: none; border-radius: 4px;"
-            >
-              {{ saving() ? 'Creando...' : 'Crear' }}
-            </button>
+            />
           </form>
-        </div>
+        </section>
       }
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 700px;
+        margin: 0 auto;
+      }
+      :host ::ng-deep .back {
+        margin-bottom: var(--space-md);
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
+      .create-box {
+        margin-top: var(--space-lg);
+        padding: var(--space-md);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+      }
+      .create-box h3 {
+        margin-top: 0;
+      }
+      .create-form {
+        display: flex;
+        gap: var(--space-sm);
+        flex-wrap: wrap;
+      }
+      .grow {
+        flex: 1;
+        min-width: 8rem;
+      }
+    `,
+  ],
 })
 export class CursoParalelosPage implements OnInit {
   cursoId = '';
@@ -95,7 +118,6 @@ export class CursoParalelosPage implements OnInit {
   paralelos = signal<ParaleloResponse[]>([]);
   loading = signal(true);
   notFound = signal(false);
-
   nombreNuevoParalelo = '';
   saving = signal(false);
   errorMsg = signal<string | null>(null);
@@ -103,7 +125,7 @@ export class CursoParalelosPage implements OnInit {
   constructor(
     private http: HttpClient,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -112,10 +134,13 @@ export class CursoParalelosPage implements OnInit {
     this.cargarParalelos();
   }
 
+  volver(): void {
+    this.router.navigate(['/academico/cursos']);
+  }
+
   cargarParalelos(): void {
     this.loading.set(true);
     this.notFound.set(false);
-
     this.http.get<ParaleloResponse[]>(`${ApiBase.BASE}/cursos/${this.cursoId}/paralelos`).subscribe({
       next: (paralelos) => {
         this.paralelos.set(paralelos);

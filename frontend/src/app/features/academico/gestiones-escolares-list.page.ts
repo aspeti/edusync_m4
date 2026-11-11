@@ -1,192 +1,291 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { TableModule, TablePageEvent } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { DialogModule } from 'primeng/dialog';
+import { TagModule } from 'primeng/tag';
+import { MessageModule } from 'primeng/message';
+import { RadioButtonModule } from 'primeng/radiobutton';
 import { GestionEscolarResponse } from './gestion-escolar.model';
 import { ApiBase } from '../../core/api/api-base';
 import { PageResponse } from '../../core/api/page-response.model';
 import { AuthService } from '../../core/auth/auth.service';
 
 /**
- * Página de lista de Gestiones Escolares.
- * GET /api/v1/gestiones-escolares (DD-UC-008 §2), con filtros y paginación
- * (DD-UC-007, patron reutilizable): `q` busca por nombre, `estado` es un filtro exacto.
- *
- * DD-UC-019: `ADMIN` ve y edita cualquier gestión (nombre/fechas/estado, sin
- * restricción de transición); `SECRETARIA`/`PROFESOR`/`ASESOR` solo ven la
- * gestión "actual" (backend fuerza `estado=ACTIVA`) y no tienen acciones de
- * escritura — ni el botón "+ Nueva Gestión", ni "Editar", ni "Cambiar estado".
+ * Lista de Gestiones Escolares (DD-UC-008/007/019) — UI PrimeNG (ADR-0026).
+ * Contratos HTTP y reglas ADMIN vs solo-lectura sin cambio.
  */
 @Component({
   selector: 'app-gestiones-escolares-list-page',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    InputTextModule,
+    SelectModule,
+    DialogModule,
+    TagModule,
+    MessageModule,
+    RadioButtonModule,
+  ],
   template: `
-    <div style="max-width: 1000px; margin: 0 auto;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <div class="page">
+      <div class="toolbar">
         <h2 data-testid="gestiones-heading">Gestión Escolar</h2>
         @if (esAdmin()) {
-          <a routerLink="/academico/gestiones-escolares/nuevo" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; text-decoration: none; border-radius: 4px;">
-            + Nueva Gestión Escolar
-          </a>
+          <p-button label="+ Nueva Gestión Escolar" (onClick)="irNuevo()" />
         }
       </div>
 
-      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; background: #fafafa; padding: 0.75rem; border-radius: 4px;">
+      <div class="filters">
         <input
+          pInputText
           type="text"
           placeholder="Buscar por nombre..."
           [(ngModel)]="filtroQ"
           (keyup.enter)="aplicarFiltros()"
-          style="padding: 0.4rem; flex: 1; min-width: 200px;"
+          class="filter-q"
         />
         @if (esAdmin()) {
-          <select [(ngModel)]="filtroEstado" style="padding: 0.4rem;">
-            <option value="">Todos los estados</option>
-            @for (op of estadoOpciones; track op) {
-              <option [value]="op">{{ op }}</option>
-            }
-          </select>
+          <p-select
+            [options]="estadoSelectOptions"
+            [(ngModel)]="filtroEstado"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Todos los estados"
+            [showClear]="true"
+            styleClass="filter-select"
+          />
         }
-        <button (click)="aplicarFiltros()" style="padding: 0.4rem 1rem; cursor: pointer;">Buscar</button>
-        <button (click)="limpiarFiltros()" style="padding: 0.4rem 1rem; cursor: pointer;">Limpiar</button>
+        <p-button label="Buscar" (onClick)="aplicarFiltros()" />
+        <p-button label="Limpiar" severity="secondary" [outlined]="true" (onClick)="limpiarFiltros()" />
       </div>
 
       @if (!esAdmin()) {
-        <p style="color: #666; font-size: 0.85rem; margin-top: -0.5rem;">
-          Solo se muestra la gestión escolar actual (estado ACTIVA).
-        </p>
-      }
-
-      @if (loading()) {
-        <p>Cargando gestiones escolares...</p>
+        <p class="hint">Solo se muestra la gestión escolar actual (estado ACTIVA).</p>
       }
 
       @if (errorMsg()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-          {{ errorMsg() }}
-        </div>
+        <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
       }
 
-      @if (!loading() && gestiones().length === 0 && !errorMsg()) {
-        <p>No hay gestiones escolares que coincidan con los filtros.</p>
-      }
-
-      @if (gestiones().length > 0) {
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #f5f5f5;">
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Nombre</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Estado</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Fecha inicio</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Fecha fin</th>
-              <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (gestion of gestiones(); track gestion.id) {
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 0.5rem;">{{ gestion.nombre }}</td>
-                <td style="padding: 0.5rem;">
-                  <span [style.color]="estadoColor(gestion.estado)">{{ gestion.estado }}</span>
-                </td>
-                <td style="padding: 0.5rem;">{{ gestion.fechaInicio }}</td>
-                <td style="padding: 0.5rem;">{{ gestion.fechaFin }}</td>
-                <td style="padding: 0.5rem;">
-                  <a [routerLink]="['/academico/gestiones-escolares', gestion.id, 'periodos']" style="margin-right: 0.5rem; font-size: 0.85rem;">
-                    Periodos
-                  </a>
-                  <a [routerLink]="['/academico/gestiones-escolares', gestion.id, 'secciones']" style="margin-right: 0.5rem; font-size: 0.85rem;">
-                    Secciones
-                  </a>
-                  @if (esAdmin()) {
-                    <button (click)="editar(gestion)" style="cursor: pointer; font-size: 0.85rem; margin-right: 0.5rem;">
-                      Editar
-                    </button>
-                    <button (click)="cambiarEstado(gestion)" style="cursor: pointer; font-size: 0.85rem;">
-                      Cambiar estado
-                    </button>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-          <span style="color: #666; font-size: 0.9rem;">
-            {{ totalElements() }} gestión(es) — página {{ page() + 1 }} de {{ totalPaginas() || 1 }}
-          </span>
-          <div style="display: flex; gap: 0.5rem;">
-            <button (click)="irAPagina(page() - 1)" [disabled]="page() === 0" style="padding: 0.3rem 0.8rem; cursor: pointer;">
-              ← Anterior
-            </button>
-            <button (click)="irAPagina(page() + 1)" [disabled]="page() + 1 >= totalPaginas()" style="padding: 0.3rem 0.8rem; cursor: pointer;">
-              Siguiente →
-            </button>
-          </div>
-        </div>
-      }
-
-      @if (estadoDialog()) {
-        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">
-          <div style="background:white;padding:2rem;border-radius:8px;min-width:320px;">
-            <h3>Cambiar estado de "{{ estadoDialog()!.nombre }}"</h3>
-            <p style="color:#666;font-size:0.85rem;">Estado actual: {{ estadoDialog()!.estado }}</p>
-            <div style="display:flex;flex-direction:column;gap:0.5rem;margin:1rem 0;">
-              @for (op of opcionesDialog(); track op) {
-                <label style="cursor:pointer;">
-                  <input type="radio" name="estado" [value]="op" [(ngModel)]="nuevoEstado" /> {{ op }}
-                </label>
+      <p-table
+        [value]="gestiones()"
+        dataKey="id"
+        [lazy]="true"
+        [paginator]="true"
+        [rows]="tamanoPagina"
+        [totalRecords]="totalElements()"
+        [first]="page() * tamanoPagina"
+        [loading]="loading()"
+        (onPage)="onPage($event)"
+        [tableStyle]="{ 'min-width': '50rem' }"
+        styleClass="p-datatable-sm"
+      >
+        <ng-template #header>
+          <tr>
+            <th>Nombre</th>
+            <th>Estado</th>
+            <th>Fecha inicio</th>
+            <th>Fecha fin</th>
+            <th>Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-gestion>
+          <tr>
+            <td>{{ gestion.nombre }}</td>
+            <td>
+              <p-tag [value]="gestion.estado" [severity]="estadoSeverity(gestion.estado)" />
+            </td>
+            <td>{{ gestion.fechaInicio }}</td>
+            <td>{{ gestion.fechaFin }}</td>
+            <td class="actions">
+              <p-button
+                label="Periodos"
+                [link]="true"
+                size="small"
+                (onClick)="irPeriodos(gestion.id)"
+              />
+              <p-button
+                label="Secciones"
+                [link]="true"
+                size="small"
+                (onClick)="irSecciones(gestion.id)"
+              />
+              @if (esAdmin()) {
+                <p-button label="Editar" [link]="true" size="small" (onClick)="editar(gestion)" />
+                <p-button
+                  label="Cambiar estado"
+                  [link]="true"
+                  size="small"
+                  (onClick)="cambiarEstado(gestion)"
+                />
               }
-            </div>
-            @if (estadoError()) {
-              <p style="color:#c62828;">{{ estadoError() }}</p>
-            }
-            <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
-              <button (click)="cerrarDialog()">Cancelar</button>
-              <button (click)="confirmarEstado()" [disabled]="!nuevoEstado || estadoSaving()"
-                      style="background:#1e3a5f;color:white;padding:0.4rem 1rem;cursor:pointer;">
-                {{ estadoSaving() ? 'Guardando...' : 'Confirmar' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      }
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="5">No hay gestiones escolares que coincidan con los filtros.</td>
+          </tr>
+        </ng-template>
+      </p-table>
 
-      @if (editDialog()) {
-        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">
-          <div style="background:white;padding:2rem;border-radius:8px;min-width:320px;">
-            <h3>Editar "{{ editDialog()!.nombre }}"</h3>
-            <div style="display:flex;flex-direction:column;gap:0.5rem;margin:1rem 0;">
-              <label style="display:flex;flex-direction:column;font-size:0.85rem;">
-                Nombre
-                <input type="text" [(ngModel)]="editNombre" style="padding:0.4rem;" />
-              </label>
-              <label style="display:flex;flex-direction:column;font-size:0.85rem;">
-                Fecha inicio
-                <input type="date" [(ngModel)]="editFechaInicio" style="padding:0.4rem;" />
-              </label>
-              <label style="display:flex;flex-direction:column;font-size:0.85rem;">
-                Fecha fin
-                <input type="date" [(ngModel)]="editFechaFin" style="padding:0.4rem;" />
-              </label>
-            </div>
-            @if (editError()) {
-              <p style="color:#c62828;">{{ editError() }}</p>
+      <p-dialog
+        header="Cambiar estado"
+        [modal]="true"
+        [visible]="estadoDialog() !== null"
+        (visibleChange)="onEstadoDialogVisible($event)"
+        [style]="{ width: '24rem' }"
+      >
+        @if (estadoDialog(); as g) {
+          <p>Gestión: <strong>{{ g.nombre }}</strong></p>
+          <p class="hint">Estado actual: {{ g.estado }}</p>
+          <div class="radio-list">
+            @for (op of opcionesDialog(); track op) {
+              <div class="radio-row">
+                <p-radiobutton
+                  name="estado"
+                  [value]="op"
+                  [(ngModel)]="nuevoEstado"
+                  [inputId]="'estado-' + op"
+                />
+                <label [for]="'estado-' + op">{{ op }}</label>
+              </div>
             }
-            <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
-              <button (click)="cerrarEditDialog()">Cancelar</button>
-              <button (click)="confirmarEdicion()" [disabled]="editSaving()"
-                      style="background:#1e3a5f;color:white;padding:0.4rem 1rem;cursor:pointer;">
-                {{ editSaving() ? 'Guardando...' : 'Guardar' }}
-              </button>
-            </div>
           </div>
-        </div>
-      }
+          @if (estadoError()) {
+            <p-message severity="error" [text]="estadoError()!" styleClass="block-msg" />
+          }
+          <div class="dialog-actions">
+            <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="cerrarDialog()" />
+            <p-button
+              [label]="estadoSaving() ? 'Guardando...' : 'Confirmar'"
+              [disabled]="!nuevoEstado || estadoSaving()"
+              (onClick)="confirmarEstado()"
+            />
+          </div>
+        }
+      </p-dialog>
+
+      <p-dialog
+        header="Editar gestión"
+        [modal]="true"
+        [visible]="editDialog() !== null"
+        (visibleChange)="onEditDialogVisible($event)"
+        [style]="{ width: '24rem' }"
+      >
+        @if (editDialog(); as g) {
+          <div class="form-stack">
+            <label class="field">
+              Nombre
+              <input pInputText type="text" [(ngModel)]="editNombre" />
+            </label>
+            <label class="field">
+              Fecha inicio
+              <input pInputText type="date" [(ngModel)]="editFechaInicio" />
+            </label>
+            <label class="field">
+              Fecha fin
+              <input pInputText type="date" [(ngModel)]="editFechaFin" />
+            </label>
+          </div>
+          @if (editError()) {
+            <p-message severity="error" [text]="editError()!" styleClass="block-msg" />
+          }
+          <div class="dialog-actions">
+            <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="cerrarEditDialog()" />
+            <p-button
+              [label]="editSaving() ? 'Guardando...' : 'Guardar'"
+              [disabled]="editSaving()"
+              (onClick)="confirmarEdicion()"
+            />
+          </div>
+        }
+      </p-dialog>
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-md);
+        gap: var(--space-sm);
+      }
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+        align-items: center;
+        margin-bottom: var(--space-md);
+        padding: var(--space-sm);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+      }
+      .filter-q {
+        flex: 1;
+        min-width: 12rem;
+      }
+      :host ::ng-deep .filter-select {
+        min-width: 10rem;
+      }
+      .hint {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-small);
+        margin: 0 0 var(--space-md);
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+      }
+      .radio-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        margin: var(--space-md) 0;
+      }
+      .radio-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+      }
+      .form-stack {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        margin: var(--space-md) 0;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--font-size-small);
+      }
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-sm);
+        margin-top: var(--space-md);
+      }
+    `,
+  ],
 })
 export class GestionesEscolaresListPage implements OnInit {
   gestiones = signal<GestionEscolarResponse[]>([]);
@@ -205,25 +304,38 @@ export class GestionesEscolaresListPage implements OnInit {
   editError = signal<string | null>(null);
   editSaving = signal(false);
 
-  // Filtros (DD-UC-007): `q` busca por nombre; `estado` es un filtro exacto (solo ADMIN,
-  // DD-UC-019: para el resto de roles el backend fuerza estado=ACTIVA sin importar el filtro).
   filtroQ = '';
-  filtroEstado = '';
+  filtroEstado: string | null = null;
 
-  // Paginación (DD-UC-007).
   page = signal(0);
   totalElements = signal(0);
-  totalPaginas = signal(0);
-  private readonly tamanoPagina = 20;
+  readonly tamanoPagina = 20;
 
   readonly estadoOpciones = ['PLANIFICACION', 'ACTIVA', 'CERRADA'];
+  readonly estadoSelectOptions = this.estadoOpciones.map((e) => ({ label: e, value: e }));
 
   readonly esAdmin = computed(() => this.auth.hasRole('ADMIN'));
 
-  constructor(private http: HttpClient, private auth: AuthService) {}
+  constructor(
+    private http: HttpClient,
+    private auth: AuthService,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.cargarGestiones();
+  }
+
+  irNuevo(): void {
+    this.router.navigate(['/academico/gestiones-escolares/nuevo']);
+  }
+
+  irPeriodos(id: string): void {
+    this.router.navigate(['/academico/gestiones-escolares', id, 'periodos']);
+  }
+
+  irSecciones(id: string): void {
+    this.router.navigate(['/academico/gestiones-escolares', id, 'secciones']);
   }
 
   aplicarFiltros(): void {
@@ -233,14 +345,14 @@ export class GestionesEscolaresListPage implements OnInit {
 
   limpiarFiltros(): void {
     this.filtroQ = '';
-    this.filtroEstado = '';
+    this.filtroEstado = null;
     this.page.set(0);
     this.cargarGestiones();
   }
 
-  irAPagina(nuevaPagina: number): void {
-    if (nuevaPagina < 0 || nuevaPagina >= this.totalPaginas()) return;
-    this.page.set(nuevaPagina);
+  onPage(event: TablePageEvent): void {
+    const rows = event.rows ?? this.tamanoPagina;
+    this.page.set(Math.floor((event.first ?? 0) / rows));
     this.cargarGestiones();
   }
 
@@ -252,29 +364,27 @@ export class GestionesEscolaresListPage implements OnInit {
     if (this.filtroQ.trim()) params = params.set('q', this.filtroQ.trim());
     if (this.filtroEstado) params = params.set('estado', this.filtroEstado);
 
-    this.http.get<PageResponse<GestionEscolarResponse>>(`${ApiBase.BASE}/gestiones-escolares`, { params }).subscribe({
-      next: (respuesta) => {
-        this.gestiones.set(respuesta.content);
-        this.totalElements.set(respuesta.totalElements);
-        this.totalPaginas.set(respuesta.totalPages);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.errorMsg.set('Error al cargar las gestiones escolares.');
-        this.loading.set(false);
-      },
-    });
+    this.http
+      .get<PageResponse<GestionEscolarResponse>>(`${ApiBase.BASE}/gestiones-escolares`, { params })
+      .subscribe({
+        next: (respuesta) => {
+          this.gestiones.set(respuesta.content);
+          this.totalElements.set(respuesta.totalElements);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.errorMsg.set('Error al cargar las gestiones escolares.');
+          this.loading.set(false);
+        },
+      });
   }
 
-  estadoColor(estado: string): string {
-    return estado === 'ACTIVA' ? '#2e7d32' : estado === 'PLANIFICACION' ? '#e65100' : '#757575';
+  estadoSeverity(estado: string): 'success' | 'warn' | 'secondary' {
+    if (estado === 'ACTIVA') return 'success';
+    if (estado === 'PLANIFICACION') return 'warn';
+    return 'secondary';
   }
 
-  /**
-   * DD-UC-019: el endpoint `PATCH /estado` es exclusivamente ADMIN y ya no tiene
-   * una máquina de estados restringida — se puede transicionar a cualquier
-   * estado desde cualquier estado (incluida una gestión CERRADA, antes terminal).
-   */
   transicionesValidas(estadoActual: string): string[] {
     return this.estadoOpciones.filter((op) => op !== estadoActual);
   }
@@ -284,6 +394,10 @@ export class GestionesEscolaresListPage implements OnInit {
     this.nuevoEstado = '';
     this.estadoError.set(null);
     this.estadoDialog.set(gestion);
+  }
+
+  onEstadoDialogVisible(visible: boolean): void {
+    if (!visible) this.cerrarDialog();
   }
 
   cerrarDialog(): void {
@@ -322,6 +436,10 @@ export class GestionesEscolaresListPage implements OnInit {
     this.editDialog.set(gestion);
   }
 
+  onEditDialogVisible(visible: boolean): void {
+    if (!visible) this.cerrarEditDialog();
+  }
+
   cerrarEditDialog(): void {
     this.editDialog.set(null);
   }
@@ -349,7 +467,7 @@ export class GestionesEscolaresListPage implements OnInit {
           this.editError.set(
             codigo === 'E_FECHAS_INVALIDAS'
               ? 'La fecha de fin debe ser posterior a la de inicio.'
-              : 'Error al guardar los cambios.'
+              : 'Error al guardar los cambios.',
           );
           this.editSaving.set(false);
         },

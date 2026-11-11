@@ -1,74 +1,84 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { TagModule } from 'primeng/tag';
+import { MessageModule } from 'primeng/message';
 import { AsignacionProfesorVistaResponse, ProfesorResponse } from './profesor.model';
 import { ApiBase } from '../../core/api/api-base';
 
-/**
- * Detalle de un Profesor: GET /profesores/{id} para título (no query param) y
- * tabla de asignaciones de solo lectura (DD-UC-014 §2). Sin alta inline.
- */
+/** Detalle Profesor (DD-UC-014) — UI PrimeNG (ADR-0026). */
 @Component({
   selector: 'app-profesor-detalle-page',
   standalone: true,
-  imports: [RouterLink],
+  imports: [TableModule, ButtonModule, TagModule, MessageModule],
   template: `
-    <div style="max-width: 800px; margin: 0 auto;">
-      <div style="margin-bottom: 1rem;">
-        <a routerLink="/academico/profesores" style="font-size: 0.85rem;">← Volver a Profesores</a>
-      </div>
+    <div class="page">
+      <p-button label="← Volver a Profesores" [link]="true" (onClick)="volver()" />
 
       @if (notFound()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px;">
-          El Profesor no existe o no pertenece a su institución.
-        </div>
+        <p-message severity="error" text="El Profesor no existe o no pertenece a su institución." styleClass="block-msg" />
       } @else {
         <h2>{{ profesor()?.nombreCompleto || 'Profesor' }}</h2>
         @if (profesor()) {
-          <p style="color: #555; margin-top: 0;">
-            <span
-              style="display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.85rem;"
-              [style.background]="profesor()!.activo ? '#e8f5e9' : '#eeeeee'"
-            >
-              {{ profesor()!.activo ? 'Activo' : 'Inactivo' }}
-            </span>
+          <p class="meta">
+            <p-tag
+              [value]="profesor()!.activo ? 'Activo' : 'Inactivo'"
+              [severity]="profesor()!.activo ? 'success' : 'secondary'"
+            />
           </p>
         }
 
         @if (errorMsg()) {
-          <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-            {{ errorMsg() }}
-          </div>
+          <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
         }
 
-        <section>
-          <h3>Asignaciones</h3>
-          @if (asignaciones().length === 0 && !errorMsg()) {
-            <p>Este profesor todavía no tiene materias asignadas.</p>
-          } @else if (asignaciones().length > 0) {
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
-              <thead>
-                <tr style="background: #f5f5f5;">
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Materia</th>
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Curso</th>
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Paralelo</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (asignacion of asignaciones(); track asignacion.id) {
-                  <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 0.5rem;">{{ asignacion.materiaNombre || asignacion.materiaId }}</td>
-                    <td style="padding: 0.5rem;">{{ asignacion.cursoNombre || asignacion.cursoId }}</td>
-                    <td style="padding: 0.5rem;">{{ asignacion.paraleloNombre || asignacion.paraleloId }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          }
-        </section>
+        <h3>Asignaciones</h3>
+        <p-table
+          [value]="asignaciones()"
+          dataKey="id"
+          [tableStyle]="{ 'min-width': '30rem' }"
+          styleClass="p-datatable-sm"
+        >
+          <ng-template #header>
+            <tr>
+              <th>Materia</th>
+              <th>Curso</th>
+              <th>Paralelo</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-asignacion>
+            <tr>
+              <td>{{ asignacion.materiaNombre || asignacion.materiaId }}</td>
+              <td>{{ asignacion.cursoNombre || asignacion.cursoId }}</td>
+              <td>{{ asignacion.paraleloNombre || asignacion.paraleloId }}</td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="3">Este profesor todavía no tiene materias asignadas.</td>
+            </tr>
+          </ng-template>
+        </p-table>
       }
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .meta {
+        margin-top: 0;
+      }
+      .block-msg {
+        display: block;
+        margin: var(--space-md) 0;
+      }
+    `,
+  ],
 })
 export class ProfesorDetallePage implements OnInit {
   profesorId = '';
@@ -79,12 +89,17 @@ export class ProfesorDetallePage implements OnInit {
 
   constructor(
     private http: HttpClient,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
     this.profesorId = this.route.snapshot.paramMap.get('id') ?? '';
     this.cargarDetalle();
+  }
+
+  volver(): void {
+    this.router.navigate(['/academico/profesores']);
   }
 
   private cargarDetalle(): void {

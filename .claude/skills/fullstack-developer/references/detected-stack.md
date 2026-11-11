@@ -30,6 +30,7 @@
 | Build | Angular application builder | 21.2.19 | `angular.json` | Confirmed |
 | FE tests | Vitest + jsdom + coverage-v8 | vitest **4.1.10** | `package.json`; CI `npm run test:coverage` | Confirmed |
 | FE format | Prettier | ^3.8.1 | `package.json` | Confirmed |
+| FE animations | `@angular/animations` (PrimeNG overlays) | **21.2.18** | `package.json`; `provideAnimationsAsync` in `app.config.ts` | Confirmed |
 | FE package manager | npm | packageManager `npm@8.5.0`; CI Node **22** | `package.json`, `.github/workflows/ci.yml` | Confirmed |
 | Backend language | Java | **25** (LTS) | `pom.xml` `<java.version>25</java.version>`; CI Temurin 25 | Confirmed |
 | Backend framework | Spring Boot | **4.1.0** (Spring Framework 7.x) | `spring-boot-starter-parent` | Confirmed |

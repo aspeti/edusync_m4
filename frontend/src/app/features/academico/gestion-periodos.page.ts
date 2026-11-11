@@ -1,8 +1,15 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { DialogModule } from 'primeng/dialog';
+import { TagModule } from 'primeng/tag';
+import { MessageModule } from 'primeng/message';
 import { GestionEscolarResponse } from './gestion-escolar.model';
 import { PeriodoEvaluacionResponse } from './periodo-evaluacion.model';
 import { SeccionEvaluacionResponse } from './seccion-evaluacion.model';
@@ -26,200 +33,307 @@ interface FilaParametro {
   rangoMax: number;
 }
 
-/**
- * Detalle de Periodos de una Gestion Escolar (DD-UC-015 §2, DD-UC-019): GET
- * gestion por id, lista de periodos, alta/edición/eliminación y abrir/cerrar.
- *
- * DD-UC-019: `ADMIN` puede editar nombre/fechas/estado de cualquier periodo en
- * cualquier momento, sin la secuencialidad de apertura ni el freeze de
- * inmutabilidad que existían antes (ambos exclusivos de este endpoint,
- * ADMIN-only). `SECRETARIA`/`PROFESOR`/`ASESOR` solo ven esta pantalla en modo
- * lectura (la gestión visible ya está acotada a la ACTIVA por el backend).
- */
+/** Periodos de Gestión (DD-UC-015/019) — UI PrimeNG (ADR-0026). */
 @Component({
   selector: 'app-gestion-periodos-page',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    InputTextModule,
+    InputNumberModule,
+    DialogModule,
+    TagModule,
+    MessageModule,
+  ],
   template: `
-    <div style="max-width: 900px; margin: 0 auto;">
-      <div style="margin-bottom: 1rem;">
-        <a routerLink="/academico/gestiones-escolares" style="font-size: 0.85rem;">← Volver a Gestión Escolar</a>
-      </div>
+    <div class="page">
+      <p-button label="← Volver a Gestión Escolar" [link]="true" (onClick)="volver()" />
 
       @if (notFound()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px;">
-          La gestión escolar no existe o no pertenece a su institución.
-        </div>
+        <p-message
+          severity="error"
+          text="La gestión escolar no existe o no pertenece a su institución."
+          styleClass="block-msg"
+        />
       } @else {
         <h2>Periodos de "{{ gestion()?.nombre || '…' }}"</h2>
         @if (gestion()) {
-          <p style="color: #666; font-size: 0.9rem;">
-            {{ gestion()!.fechaInicio }} — {{ gestion()!.fechaFin }}
-            · estado {{ gestion()!.estado }}
+          <p class="meta">
+            {{ gestion()!.fechaInicio }} — {{ gestion()!.fechaFin }} · estado {{ gestion()!.estado }}
           </p>
         }
 
-        @if (loading()) {
-          <p>Cargando periodos...</p>
-        }
-
         @if (errorMsg()) {
-          <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-            {{ errorMsg() }}
-          </div>
+          <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
         }
 
-        @if (!loading() && periodos().length === 0) {
-          <p>Esta gestión todavía no tiene periodos.</p>
-        }
-
-        @if (periodos().length > 0) {
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;">
-            <thead>
-              <tr style="background: #f5f5f5;">
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">#</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Nombre</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Inicio</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Fin</th>
-                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Estado</th>
-                @if (esAdmin()) {
-                  <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #ddd;">Acciones</th>
-                }
-              </tr>
-            </thead>
-            <tbody>
-              @for (periodo of periodos(); track periodo.id) {
-                <tr style="border-bottom: 1px solid #eee;">
-                  <td style="padding: 0.5rem;">{{ periodo.orden }}</td>
-                  <td style="padding: 0.5rem;">{{ periodo.nombre }}</td>
-                  <td style="padding: 0.5rem;">{{ periodo.fechaInicio }}</td>
-                  <td style="padding: 0.5rem;">{{ periodo.fechaFin }}</td>
-                  <td style="padding: 0.5rem;">
-                    <span [style.color]="estadoColor(periodo.estado)">{{ periodo.estado }}</span>
-                  </td>
-                  @if (esAdmin()) {
-                    <td style="padding: 0.5rem;">
-                      <button (click)="editar(periodo)" [disabled]="saving()" style="cursor: pointer; font-size: 0.85rem; margin-right: 0.4rem;">
-                        Editar
-                      </button>
-                      @if (periodo.estado !== 'ABIERTO') {
-                        <button (click)="cambiarEstado(periodo, 'ABIERTO')" [disabled]="saving()" style="cursor: pointer; font-size: 0.85rem; margin-right: 0.4rem;">
-                          Abrir
-                        </button>
-                      } @else {
-                        <button (click)="cambiarEstado(periodo, 'CERRADO')" [disabled]="saving()" style="cursor: pointer; font-size: 0.85rem; margin-right: 0.4rem;">
-                          Cerrar
-                        </button>
-                      }
-                      <button (click)="eliminar(periodo)" [disabled]="saving()" style="cursor: pointer; font-size: 0.85rem; color: #c62828;">
-                        Eliminar
-                      </button>
-                    </td>
-                  }
-                </tr>
-                @if (esAdmin()) {
-                  <tr>
-                    <td colspan="7" style="padding: 0 0.5rem 1rem;">
-                      <div style="background: #fafafa; padding: 0.75rem; border-radius: 4px;">
-                        <strong>Parámetros — {{ periodo.nombre }}</strong>
-                        <p style="margin: 0.25rem 0 0.5rem; font-size: 0.8rem; color: #666;">
-                          Regla fija: PROMEDIO_SIMPLE. El máximo de cada fila no puede superar la nota de la sección.
-                        </p>
-                        @for (fila of filasParametro(periodo.id); track fila.seccionEvaluacionId) {
-                          <div style="display: flex; gap: 0.75rem; align-items: end; margin-bottom: 0.4rem; flex-wrap: wrap;">
-                            <span style="min-width: 10rem; font-size: 0.85rem;">{{ fila.nombre }} (nota {{ fila.nota }})</span>
-                            <label style="display: flex; flex-direction: column; font-size: 0.8rem;">
-                              Mínimo
-                              <input type="number" [ngModel]="fila.rangoMin" [name]="'min-' + periodo.id + fila.seccionEvaluacionId"
-                                     (ngModelChange)="actualizarRango(periodo.id, fila.seccionEvaluacionId, 'min', $event)"
-                                     [disabled]="periodo.estado !== 'PENDIENTE' || saving()" style="padding: 0.3rem; width: 6rem;" />
-                            </label>
-                            <label style="display: flex; flex-direction: column; font-size: 0.8rem;">
-                              Máximo
-                              <input type="number" [ngModel]="fila.rangoMax" [name]="'max-' + periodo.id + fila.seccionEvaluacionId"
-                                     (ngModelChange)="actualizarRango(periodo.id, fila.seccionEvaluacionId, 'max', $event)"
-                                     [disabled]="periodo.estado !== 'PENDIENTE' || saving()" style="padding: 0.3rem; width: 6rem;" />
-                            </label>
-                          </div>
-                        }
-                        @if (periodo.estado === 'PENDIENTE') {
-                          <button type="button" (click)="guardarParametros(periodo)" [disabled]="saving()"
-                                  style="padding: 0.4rem 0.8rem; cursor: pointer;">
-                            Guardar parámetros
-                          </button>
-                        } @else {
-                          <button type="button" (click)="cambiarEstado(periodo, 'PENDIENTE')" [disabled]="saving()"
-                                  style="padding: 0.4rem 0.8rem; cursor: pointer;">
-                            Volver a pendiente
-                          </button>
-                        }
-                      </div>
-                    </td>
-                  </tr>
-                }
+        <p-table
+          [value]="periodos()"
+          dataKey="id"
+          [loading]="loading()"
+          [tableStyle]="{ 'min-width': '40rem' }"
+          styleClass="p-datatable-sm"
+        >
+          <ng-template #header>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+              <th>Estado</th>
+              @if (esAdmin()) {
+                <th>Acciones</th>
               }
-            </tbody>
-          </table>
-        }
+            </tr>
+          </ng-template>
+          <ng-template #body let-periodo>
+            <tr>
+              <td>{{ periodo.orden }}</td>
+              <td>{{ periodo.nombre }}</td>
+              <td>{{ periodo.fechaInicio }}</td>
+              <td>{{ periodo.fechaFin }}</td>
+              <td>
+                <p-tag [value]="periodo.estado" [severity]="estadoSeverity(periodo.estado)" />
+              </td>
+              @if (esAdmin()) {
+                <td class="actions">
+                  <p-button
+                    label="Editar"
+                    [link]="true"
+                    size="small"
+                    [disabled]="saving()"
+                    (onClick)="editar(periodo)"
+                  />
+                  @if (periodo.estado !== 'ABIERTO') {
+                    <p-button
+                      label="Abrir"
+                      [link]="true"
+                      size="small"
+                      [disabled]="saving()"
+                      (onClick)="cambiarEstado(periodo, 'ABIERTO')"
+                    />
+                  } @else {
+                    <p-button
+                      label="Cerrar"
+                      [link]="true"
+                      size="small"
+                      [disabled]="saving()"
+                      (onClick)="cambiarEstado(periodo, 'CERRADO')"
+                    />
+                  }
+                  <p-button
+                    label="Eliminar"
+                    [link]="true"
+                    severity="danger"
+                    size="small"
+                    [disabled]="saving()"
+                    (onClick)="eliminar(periodo)"
+                  />
+                </td>
+              }
+            </tr>
+            @if (esAdmin()) {
+              <tr>
+                <td [attr.colspan]="6">
+                  <div class="box">
+                    <strong>Parámetros — {{ periodo.nombre }}</strong>
+                    <p class="hint">
+                      Regla fija: PROMEDIO_SIMPLE. El máximo de cada fila no puede superar la nota de la
+                      sección.
+                    </p>
+                    @for (fila of filasParametro(periodo.id); track fila.seccionEvaluacionId) {
+                      <div class="param-row">
+                        <span class="param-name">{{ fila.nombre }} (nota {{ fila.nota }})</span>
+                        <label class="field">
+                          Mínimo
+                          <p-inputnumber
+                            [ngModel]="fila.rangoMin"
+                            [name]="'min-' + periodo.id + fila.seccionEvaluacionId"
+                            (ngModelChange)="actualizarRango(periodo.id, fila.seccionEvaluacionId, 'min', $event)"
+                            [disabled]="periodo.estado !== 'PENDIENTE' || saving()"
+                            [useGrouping]="false"
+                          />
+                        </label>
+                        <label class="field">
+                          Máximo
+                          <p-inputnumber
+                            [ngModel]="fila.rangoMax"
+                            [name]="'max-' + periodo.id + fila.seccionEvaluacionId"
+                            (ngModelChange)="actualizarRango(periodo.id, fila.seccionEvaluacionId, 'max', $event)"
+                            [disabled]="periodo.estado !== 'PENDIENTE' || saving()"
+                            [useGrouping]="false"
+                          />
+                        </label>
+                      </div>
+                    }
+                    @if (periodo.estado === 'PENDIENTE') {
+                      <p-button
+                        label="Guardar parámetros"
+                        size="small"
+                        [disabled]="saving()"
+                        (onClick)="guardarParametros(periodo)"
+                      />
+                    } @else {
+                      <p-button
+                        label="Volver a pendiente"
+                        size="small"
+                        [outlined]="true"
+                        [disabled]="saving()"
+                        (onClick)="cambiarEstado(periodo, 'PENDIENTE')"
+                      />
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td [attr.colspan]="esAdmin() ? 6 : 5">Esta gestión todavía no tiene periodos.</td>
+            </tr>
+          </ng-template>
+        </p-table>
 
         @if (esAdmin()) {
-          <div style="background: #fafafa; padding: 1rem; border-radius: 4px;">
-            <h3 style="margin-top: 0;">Nuevo periodo</h3>
-            <form (ngSubmit)="onSubmit()" style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: end;">
-              <label style="display: flex; flex-direction: column; font-size: 0.85rem;">
+          <div class="box">
+            <h3>Nuevo periodo</h3>
+            <form class="inline-form" (ngSubmit)="onSubmit()">
+              <label class="field">
                 Nombre
-                <input type="text" [(ngModel)]="nuevoNombre" name="nuevoNombre" required style="padding: 0.4rem;" />
+                <input pInputText type="text" [(ngModel)]="nuevoNombre" name="nuevoNombre" required />
               </label>
-              <label style="display: flex; flex-direction: column; font-size: 0.85rem;">
+              <label class="field">
                 Inicio
-                <input type="date" [(ngModel)]="nuevaFechaInicio" name="nuevaFechaInicio" required style="padding: 0.4rem;" />
+                <input
+                  pInputText
+                  type="date"
+                  [(ngModel)]="nuevaFechaInicio"
+                  name="nuevaFechaInicio"
+                  required
+                />
               </label>
-              <label style="display: flex; flex-direction: column; font-size: 0.85rem;">
+              <label class="field">
                 Fin
-                <input type="date" [(ngModel)]="nuevaFechaFin" name="nuevaFechaFin" required style="padding: 0.4rem;" />
+                <input pInputText type="date" [(ngModel)]="nuevaFechaFin" name="nuevaFechaFin" required />
               </label>
-              <button type="submit" [disabled]="saving()" style="padding: 0.5rem 1rem; background: #1e3a5f; color: white; border: none; cursor: pointer;">
-                {{ saving() ? 'Guardando...' : 'Agregar' }}
-              </button>
+              <p-button type="submit" [label]="saving() ? 'Guardando...' : 'Agregar'" [disabled]="saving()" />
             </form>
           </div>
         }
       }
 
-      @if (editDialog()) {
-        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">
-          <div style="background:white;padding:2rem;border-radius:8px;min-width:320px;">
-            <h3>Editar "{{ editDialog()!.nombre }}"</h3>
-            <div style="display:flex;flex-direction:column;gap:0.5rem;margin:1rem 0;">
-              <label style="display:flex;flex-direction:column;font-size:0.85rem;">
-                Nombre
-                <input type="text" [(ngModel)]="editNombre" style="padding:0.4rem;" />
-              </label>
-              <label style="display:flex;flex-direction:column;font-size:0.85rem;">
-                Fecha inicio
-                <input type="date" [(ngModel)]="editFechaInicio" style="padding:0.4rem;" />
-              </label>
-              <label style="display:flex;flex-direction:column;font-size:0.85rem;">
-                Fecha fin
-                <input type="date" [(ngModel)]="editFechaFin" style="padding:0.4rem;" />
-              </label>
-            </div>
-            @if (editError()) {
-              <p style="color:#c62828;">{{ editError() }}</p>
-            }
-            <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
-              <button (click)="cerrarEditDialog()">Cancelar</button>
-              <button (click)="confirmarEdicion()" [disabled]="editSaving()"
-                      style="background:#1e3a5f;color:white;padding:0.4rem 1rem;cursor:pointer;">
-                {{ editSaving() ? 'Guardando...' : 'Guardar' }}
-              </button>
-            </div>
+      <p-dialog
+        header="Editar periodo"
+        [modal]="true"
+        [visible]="editDialog() !== null"
+        (visibleChange)="onEditVisible($event)"
+        [style]="{ width: '24rem' }"
+      >
+        @if (editDialog(); as p) {
+          <div class="form-stack">
+            <label class="field">
+              Nombre
+              <input pInputText type="text" [(ngModel)]="editNombre" />
+            </label>
+            <label class="field">
+              Fecha inicio
+              <input pInputText type="date" [(ngModel)]="editFechaInicio" />
+            </label>
+            <label class="field">
+              Fecha fin
+              <input pInputText type="date" [(ngModel)]="editFechaFin" />
+            </label>
           </div>
-        </div>
-      }
+          @if (editError()) {
+            <p-message severity="error" [text]="editError()!" styleClass="block-msg" />
+          }
+          <div class="dialog-actions">
+            <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="cerrarEditDialog()" />
+            <p-button
+              [label]="editSaving() ? 'Guardando...' : 'Guardar'"
+              [disabled]="editSaving()"
+              (onClick)="confirmarEdicion()"
+            />
+          </div>
+        }
+      </p-dialog>
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .meta {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-small);
+      }
+      .hint {
+        margin: var(--space-xs) 0 var(--space-sm);
+        font-size: var(--font-size-small);
+        color: var(--color-text-secondary);
+      }
+      .block-msg {
+        display: block;
+        margin: var(--space-md) 0;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+      }
+      .box {
+        margin-top: var(--space-sm);
+        padding: var(--space-md);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+      }
+      .box h3 {
+        margin-top: 0;
+      }
+      .param-row {
+        display: flex;
+        gap: var(--space-sm);
+        align-items: end;
+        margin-bottom: var(--space-xs);
+        flex-wrap: wrap;
+      }
+      .param-name {
+        min-width: 10rem;
+        font-size: var(--font-size-small);
+      }
+      .inline-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+        align-items: end;
+      }
+      .form-stack {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        margin: var(--space-md) 0;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--font-size-small);
+      }
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-sm);
+        margin-top: var(--space-md);
+      }
+    `,
+  ],
 })
+
 export class GestionPeriodosPage implements OnInit {
   gestion = signal<GestionEscolarResponse | null>(null);
   periodos = signal<PeriodoEvaluacionResponse[]>([]);
@@ -247,6 +361,7 @@ export class GestionPeriodosPage implements OnInit {
   constructor(
     private http: HttpClient,
     private route: ActivatedRoute,
+    private router: Router,
     private auth: AuthService,
   ) {}
 
@@ -255,8 +370,18 @@ export class GestionPeriodosPage implements OnInit {
     this.cargar();
   }
 
-  estadoColor(estado: string): string {
-    return estado === 'ABIERTO' ? '#2e7d32' : estado === 'PENDIENTE' ? '#e65100' : '#757575';
+  volver(): void {
+    this.router.navigate(['/academico/gestiones-escolares']);
+  }
+
+  estadoSeverity(estado: string): 'success' | 'warn' | 'secondary' {
+    if (estado === 'ABIERTO') return 'success';
+    if (estado === 'PENDIENTE') return 'warn';
+    return 'secondary';
+  }
+
+  onEditVisible(visible: boolean): void {
+    if (!visible) this.cerrarEditDialog();
   }
 
   cargar(): void {

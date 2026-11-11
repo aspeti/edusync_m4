@@ -1,34 +1,21 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { CardModule } from 'primeng/card';
+import { InputTextModule } from 'primeng/inputtext';
+import { PasswordModule } from 'primeng/password';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
 import { AuthService } from '../../../core/auth/auth.service';
-import { CardComponent } from '../../../shared/ui/card/card.component';
-import { FormFieldComponent } from '../../../shared/ui/form-field/form-field.component';
-import { ButtonComponent } from '../../../shared/ui/button/button.component';
 
 /**
- * Pantalla de login. Mapea errores HTTP a mensajes de negocio:
- * - 401 → credenciales inválidas
- * - 403 E_TENANT_NO_ACTIVO → tenant suspendido/vencido
- * DD-UC-004 §2, DD-UC-006 §2 (redirect ADMIN → /usuarios), FSD-UC-021 (login UI).
- *
- * Al entrar limpia cualquier JWT residual en sessionStorage para que un token
- * expirado/inválido no se reenvíe en el POST de login.
- *
- * Rediseño visual DD-UC-020 (ADR-0015, Design System EduSync — PR-IMPL-020):
- * adopta `app-card`/`app-form-field`/`app-button` de `shared/ui/` y los
- * tokens de `styles/_tokens.scss` siguiendo el prototipo Figma (nodo
- * 399:20447). El submit sigue invocando exactamente el mismo
- * `AuthService.login()` de antes; no se tocó `core/auth/` ni el contrato
- * `POST /api/v1/auth/login`. "¿Olvidaste tu contraseña?" y "Solicitar
- * acceso institucional" son informativos (DD-UC-020 §1, fuera de alcance
- * su backend: no hay flujo de reset autoiniciado por email ni autoregistro
- * de tenants todavía).
+ * Login UI (DD-UC-004/006/020) con PrimeNG + tokens ADR-0015/0026.
+ * Contrato AuthService.login() sin cambio.
  */
 @Component({
   selector: 'app-login-page',
   standalone: true,
-  imports: [FormsModule, CardComponent, FormFieldComponent, ButtonComponent],
+  imports: [FormsModule, CardModule, InputTextModule, PasswordModule, ButtonModule, MessageModule],
   template: `
     <div class="login-page">
       <div class="login-page__container">
@@ -37,70 +24,55 @@ import { ButtonComponent } from '../../../shared/ui/button/button.component';
           <div class="login-page__tagline">Portal académico</div>
         </header>
 
-        <app-card>
+        <p-card styleClass="login-card">
           <h1 class="login-page__heading">Bienvenido de nuevo</h1>
           <p class="login-page__subheading">
             Ingresa tus credenciales institucionales para acceder a tu panel académico.
           </p>
 
           @if (errorMsg()) {
-            <div class="login-page__error" role="alert" data-testid="login-error">{{ errorMsg() }}</div>
+            <p-message
+              severity="error"
+              [text]="errorMsg()!"
+              styleClass="block-msg"
+              data-testid="login-error"
+            />
           }
 
-          <form (ngSubmit)="onSubmit()" autocomplete="on">
-            <app-form-field
-              label="Correo electrónico"
-              type="email"
-              name="email"
-              autocomplete="username"
-              [required]="true"
-              [value]="email"
-              (valueChange)="email = $event"
-            >
-              <svg
-                app-form-field-icon
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="5" width="18" height="14" rx="2" />
-                <path d="M3 7l9 6 9-6" />
-              </svg>
-            </app-form-field>
+          <form (ngSubmit)="onSubmit()" autocomplete="on" class="login-form">
+            <label class="field" for="login-email">
+              Correo electrónico
+              <input
+                pInputText
+                id="login-email"
+                type="email"
+                name="email"
+                autocomplete="username"
+                required
+                [(ngModel)]="email"
+              />
+            </label>
 
-            <app-form-field
-              label="Contraseña"
-              type="password"
-              name="password"
-              autocomplete="current-password"
-              [required]="true"
-              [value]="password"
-              (valueChange)="password = $event"
-            >
-              <svg
-                app-form-field-icon
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="5" y="11" width="14" height="9" rx="2" />
-                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-              </svg>
-            </app-form-field>
+            <label class="field" for="login-password">
+              Contraseña
+              <p-password
+                inputId="login-password"
+                name="password"
+                [(ngModel)]="password"
+                [feedback]="false"
+                [toggleMask]="true"
+                autocomplete="current-password"
+                styleClass="w-full"
+                inputStyleClass="w-full"
+              />
+            </label>
 
-            <app-button type="submit" [fullWidth]="true" [disabled]="loading()">
-              {{ loading() ? 'Ingresando...' : 'Iniciar sesión' }}
-            </app-button>
+            <p-button
+              type="submit"
+              [label]="loading() ? 'Ingresando...' : 'Iniciar sesión'"
+              [disabled]="loading()"
+              styleClass="w-full"
+            />
           </form>
 
           <div class="login-page__forgot">
@@ -108,12 +80,10 @@ import { ButtonComponent } from '../../../shared/ui/button/button.component';
               ¿Olvidaste tu contraseña?
             </button>
             @if (showForgotInfo()) {
-              <p class="login-page__hint">
-                Contacta a tu administrador institucional para restablecerla.
-              </p>
+              <p class="login-page__hint">Contacta a tu administrador institucional para restablecerla.</p>
             }
           </div>
-        </app-card>
+        </p-card>
 
         <p class="login-page__signup">
           ¿Nuevo en la plataforma?
@@ -154,22 +124,18 @@ import { ButtonComponent } from '../../../shared/ui/button/button.component';
         box-sizing: border-box;
         font-family: var(--font-family-base);
       }
-
       .login-page__container {
         width: 100%;
         max-width: 448px;
       }
-
       .login-page__brand {
         margin-bottom: var(--space-lg);
       }
-
       .login-page__wordmark {
         font-size: var(--font-size-h1);
         font-weight: 700;
         color: var(--color-primary);
       }
-
       .login-page__tagline {
         font-size: var(--font-size-label);
         font-weight: var(--font-weight-label);
@@ -178,33 +144,37 @@ import { ButtonComponent } from '../../../shared/ui/button/button.component';
         color: var(--color-text-secondary);
         margin-top: var(--space-xs);
       }
-
       .login-page__heading {
         margin: 0 0 var(--space-xs);
         font-size: var(--font-size-h1);
         color: var(--color-text);
       }
-
       .login-page__subheading {
         margin: 0 0 var(--space-lg);
         font-size: var(--font-size-body);
         color: var(--color-text-secondary);
       }
-
-      .login-page__error {
-        background: var(--color-danger-bg);
-        color: var(--color-danger-text);
-        padding: var(--space-sm);
-        border-radius: var(--radius-sm);
-        margin-bottom: var(--space-md);
-        font-size: var(--font-size-small);
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
       }
-
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--font-size-label);
+        font-weight: var(--font-weight-label);
+        color: var(--color-text-secondary);
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
       .login-page__forgot {
         margin-top: var(--space-md);
         text-align: center;
       }
-
       .login-page__link {
         background: none;
         border: none;
@@ -215,41 +185,45 @@ import { ButtonComponent } from '../../../shared/ui/button/button.component';
         cursor: pointer;
         text-decoration: underline;
       }
-
       .login-page__hint {
         margin: var(--space-xs) 0 0;
         font-size: var(--font-size-small);
         color: var(--color-text-secondary);
       }
-
       .login-page__hint--center {
         text-align: center;
       }
-
       .login-page__signup {
         margin: var(--space-lg) 0 0;
         text-align: center;
         font-size: var(--font-size-small);
         color: var(--color-text-secondary);
       }
-
       .login-page__footer {
         margin-top: var(--space-xl);
         text-align: center;
         color: var(--color-text-secondary);
         font-size: var(--font-size-small);
       }
-
       .login-page__footer-brand {
         margin: 0 0 var(--space-xs);
       }
-
       .login-page__footer-links {
         margin: 0;
         display: flex;
         gap: var(--space-xs);
         justify-content: center;
         flex-wrap: wrap;
+      }
+      :host ::ng-deep .login-card {
+        box-shadow: var(--shadow-card);
+        border-radius: var(--radius-lg);
+      }
+      :host ::ng-deep .w-full {
+        width: 100%;
+      }
+      :host ::ng-deep .p-password {
+        width: 100%;
       }
     `,
   ],
@@ -262,7 +236,10 @@ export class LoginPage implements OnInit {
   showForgotInfo = signal(false);
   showSignupInfo = signal(false);
 
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(
+    private auth: AuthService,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.auth.logout();
@@ -298,7 +275,9 @@ export class LoginPage implements OnInit {
         } else if (err.status === 403) {
           const codigo = err.error?.codigo;
           if (codigo === 'E_TENANT_NO_ACTIVO') {
-            this.errorMsg.set('Su institución está suspendida o vencida. Contacte al administrador de la plataforma.');
+            this.errorMsg.set(
+              'Su institución está suspendida o vencida. Contacte al administrador de la plataforma.',
+            );
           } else {
             this.errorMsg.set('Acceso denegado.');
           }

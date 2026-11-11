@@ -2,31 +2,31 @@ import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { MessageModule } from 'primeng/message';
 import { EstudianteResponse } from './estudiante.model';
 import { ApiBase } from '../../core/api/api-base';
 
-/**
- * Alta de un Estudiante del tenant (DD-UC-013 §2).
- * POST /api/v1/estudiantes → 201 EstudianteResponse. Sin editor JSON de datosPersonales.
- */
+/** Alta de Estudiante (DD-UC-013) — UI PrimeNG (ADR-0026). */
 @Component({
   selector: 'app-estudiante-create-page',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ButtonModule, InputTextModule, SelectModule, MessageModule],
   template: `
-    <div style="max-width: 480px; margin: 2rem auto;">
+    <div class="page">
       <h2>Nuevo Estudiante</h2>
 
       @if (errorMsg()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-          {{ errorMsg() }}
-        </div>
+        <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
       }
 
-      <form (ngSubmit)="onSubmit()">
-        <div style="margin-bottom: 1rem;">
-          <label for="est-rude">RUDE</label><br />
+      <form (ngSubmit)="onSubmit()" class="form">
+        <label class="field" for="est-rude">
+          RUDE
           <input
+            pInputText
             id="est-rude"
             type="text"
             [(ngModel)]="rude"
@@ -34,43 +34,69 @@ import { ApiBase } from '../../core/api/api-base';
             required
             maxlength="20"
             placeholder="Código RUDE"
-            style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
           />
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label for="est-nombre">Nombre completo</label><br />
+        </label>
+        <label class="field" for="est-nombre">
+          Nombre completo
           <input
+            pInputText
             id="est-nombre"
             type="text"
             [(ngModel)]="nombreCompleto"
             name="nombreCompleto"
             required
             placeholder="Ej: Ana Pérez"
-            style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
           />
-        </div>
-        <div style="margin-bottom: 1.5rem;">
-          <label>Estado</label><br />
-          <select [(ngModel)]="estado" name="estado" style="width: 100%; padding: 0.5rem;">
-            <option value="ACTIVO">ACTIVO</option>
-            <option value="INACTIVO">INACTIVO</option>
-          </select>
-        </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button type="button" (click)="volver()" style="flex: 1; padding: 0.75rem; cursor: pointer;">
-            Cancelar
-          </button>
-          <button
+        </label>
+        <label class="field" for="est-estado">
+          Estado
+          <p-select
+            inputId="est-estado"
+            [options]="estadoOptions"
+            [(ngModel)]="estado"
+            name="estado"
+            optionLabel="label"
+            optionValue="value"
+          />
+        </label>
+        <div class="actions">
+          <p-button type="button" label="Cancelar" severity="secondary" [outlined]="true" (onClick)="volver()" />
+          <p-button
             type="submit"
+            [label]="loading() ? 'Creando...' : 'Crear Estudiante'"
             [disabled]="loading()"
-            style="flex: 2; padding: 0.75rem; background: #1e3a5f; color: white; cursor: pointer; border: none; border-radius: 4px;"
-          >
-            {{ loading() ? 'Creando...' : 'Crear Estudiante' }}
-          </button>
+          />
         </div>
       </form>
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 480px;
+        margin: var(--space-lg) auto;
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--font-size-small);
+      }
+      .actions {
+        display: flex;
+        gap: var(--space-sm);
+      }
+    `,
+  ],
 })
 export class EstudianteCreatePage {
   rude = '';
@@ -78,8 +104,15 @@ export class EstudianteCreatePage {
   estado: 'ACTIVO' | 'INACTIVO' = 'ACTIVO';
   loading = signal(false);
   errorMsg = signal<string | null>(null);
+  readonly estadoOptions = [
+    { label: 'ACTIVO', value: 'ACTIVO' },
+    { label: 'INACTIVO', value: 'INACTIVO' },
+  ];
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
 
   onSubmit(): void {
     if (!this.rude.trim() || !this.nombreCompleto.trim()) return;
@@ -93,9 +126,7 @@ export class EstudianteCreatePage {
         estado: this.estado,
       })
       .subscribe({
-        next: (creado) => {
-          this.router.navigate(['/academico/estudiantes', creado.id]);
-        },
+        next: (creado) => this.router.navigate(['/academico/estudiantes', creado.id]),
         error: (err) => {
           this.loading.set(false);
           if (err.status === 409 && err.error?.codigo === 'E_RUDE_DUPLICADO') {

@@ -2,78 +2,76 @@ import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
 import { GestionEscolarResponse } from './gestion-escolar.model';
 import { ApiBase } from '../../core/api/api-base';
 
-/**
- * Alta de una Gestión Escolar del tenant (DD-UC-009 §2).
- * POST /api/v1/gestiones-escolares → 201 GestionEscolarResponse (DD-UC-008).
- * Nace siempre en estado PLANIFICACION; no se pide estado en el formulario.
- */
+/** Alta de Gestión Escolar (DD-UC-009) — UI PrimeNG (ADR-0026). */
 @Component({
   selector: 'app-gestion-escolar-create-page',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ButtonModule, InputTextModule, MessageModule],
   template: `
-    <div style="max-width: 480px; margin: 2rem auto;">
+    <div class="page">
       <h2>Nueva Gestión Escolar</h2>
 
       @if (errorMsg()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-          {{ errorMsg() }}
-        </div>
+        <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
       }
 
-      <form (ngSubmit)="onSubmit()">
-        <div style="margin-bottom: 1rem;">
-          <label for="ges-nombre">Nombre</label><br />
-          <input
-            id="ges-nombre"
-            type="text"
-            [(ngModel)]="nombre"
-            name="nombre"
-            required
-            placeholder="Ej: 2027"
-            style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
-          />
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label for="ges-inicio">Fecha de inicio</label><br />
-          <input
-            id="ges-inicio"
-            type="date"
-            [(ngModel)]="fechaInicio"
-            name="fechaInicio"
-            required
-            style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
-          />
-        </div>
-        <div style="margin-bottom: 1.5rem;">
-          <label for="ges-fin">Fecha de fin</label><br />
-          <input
-            id="ges-fin"
-            type="date"
-            [(ngModel)]="fechaFin"
-            name="fechaFin"
-            required
-            style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
-          />
-        </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button type="button" (click)="volver()" style="flex: 1; padding: 0.75rem; cursor: pointer;">
-            Cancelar
-          </button>
-          <button
+      <form (ngSubmit)="onSubmit()" class="form">
+        <label class="field" for="ges-nombre">
+          Nombre
+          <input pInputText id="ges-nombre" type="text" [(ngModel)]="nombre" name="nombre" required placeholder="Ej: 2027" />
+        </label>
+        <label class="field" for="ges-inicio">
+          Fecha de inicio
+          <input pInputText id="ges-inicio" type="date" [(ngModel)]="fechaInicio" name="fechaInicio" required />
+        </label>
+        <label class="field" for="ges-fin">
+          Fecha de fin
+          <input pInputText id="ges-fin" type="date" [(ngModel)]="fechaFin" name="fechaFin" required />
+        </label>
+        <div class="actions">
+          <p-button type="button" label="Cancelar" severity="secondary" [outlined]="true" (onClick)="volver()" />
+          <p-button
             type="submit"
+            [label]="loading() ? 'Creando...' : 'Crear Gestión Escolar'"
             [disabled]="loading()"
-            style="flex: 2; padding: 0.75rem; background: #1e3a5f; color: white; cursor: pointer; border: none; border-radius: 4px;"
-          >
-            {{ loading() ? 'Creando...' : 'Crear Gestión Escolar' }}
-          </button>
+          />
         </div>
       </form>
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 480px;
+        margin: var(--space-lg) auto;
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--font-size-small);
+      }
+      .actions {
+        display: flex;
+        gap: var(--space-sm);
+      }
+    `,
+  ],
 })
 export class GestionEscolarCreatePage {
   nombre = '';
@@ -82,7 +80,10 @@ export class GestionEscolarCreatePage {
   loading = signal(false);
   errorMsg = signal<string | null>(null);
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
 
   onSubmit(): void {
     if (!this.nombre || !this.fechaInicio || !this.fechaFin) return;
@@ -96,9 +97,7 @@ export class GestionEscolarCreatePage {
         fechaFin: this.fechaFin,
       })
       .subscribe({
-        next: () => {
-          this.router.navigate(['/academico/gestiones-escolares']);
-        },
+        next: () => this.router.navigate(['/academico/gestiones-escolares']),
         error: (err) => {
           this.loading.set(false);
           const codigo = err.error?.codigo;

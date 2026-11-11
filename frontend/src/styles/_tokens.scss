@@ -8,8 +8,7 @@
 // `var(--token)`, nunca hardcodearlos de nuevo (DD-UC-020 §2, invariante
 // de PR-IMPL-020: "ningún color/tamaño se hardcodea fuera de _tokens.scss").
 //
-// Primer consumidor: frontend/src/app/shared/ui/{card,form-field,button}
-// y frontend/src/app/features/auth/login/login.page.ts (DD-UC-020).
+// Consumidores: páginas PrimeNG (ADR-0026) y login (DD-UC-020) vía `var(--token)`.
 //
 // Se declaran como CSS custom properties en :root (no variables Sass) para
 // que estén disponibles en los estilos embebidos (`styles: [...]`) de

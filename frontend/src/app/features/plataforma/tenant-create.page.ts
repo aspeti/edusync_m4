@@ -2,78 +2,87 @@ import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
 import { TenantResponse } from './tenant.model';
 import { ApiBase } from '../../core/api/api-base';
 
-/**
- * Paso 1 del wizard de alta: crea el Tenant.
- * POST /api/v1/plataforma/tenants → 201 TenantResponse.
- * DD-UC-004 §2 (alta en dos pasos separados — DD-UC-003 §2/§3).
- */
+/** Alta Tenant paso 1 (DD-UC-004) — UI PrimeNG (ADR-0026). */
 @Component({
   selector: 'app-tenant-create-page',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ButtonModule, InputTextModule, MessageModule],
   template: `
-    <div style="max-width: 480px; margin: 2rem auto;">
+    <div class="page">
       <h2>Nuevo Tenant — Paso 1 de 2</h2>
-      <p style="color: #555;">Complete los datos del tenant. En el paso 2 creará el primer ADMIN.</p>
+      <p class="hint">Complete los datos del tenant. En el paso 2 creará el primer ADMIN.</p>
 
       @if (errorMsg()) {
-        <div style="background: #fdecea; color: #c62828; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-          {{ errorMsg() }}
-        </div>
+        <p-message severity="error" [text]="errorMsg()!" styleClass="block-msg" />
       }
 
-      <form (ngSubmit)="onSubmit()">
-        <div style="margin-bottom: 1rem;">
-          <label for="tenant-nombre">Nombre del tenant</label><br />
+      <form (ngSubmit)="onSubmit()" class="form">
+        <label class="field" for="tenant-nombre">
+          Nombre del tenant
+          <input pInputText id="tenant-nombre" type="text" [(ngModel)]="nombre" name="nombre" required />
+        </label>
+        <label class="field" for="tenant-inicio">
+          Fecha inicio suscripción
+          <input pInputText id="tenant-inicio" type="date" [(ngModel)]="fechaInicio" name="fechaInicio" required />
+        </label>
+        <label class="field" for="tenant-fin">
+          Fecha vencimiento suscripción
           <input
-            id="tenant-nombre"
-            type="text"
-            [(ngModel)]="nombre"
-            name="nombre"
-            required
-            style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
-          />
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label for="tenant-inicio">Fecha inicio suscripción</label><br />
-          <input
-            id="tenant-inicio"
-            type="date"
-            [(ngModel)]="fechaInicio"
-            name="fechaInicio"
-            required
-            style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
-          />
-        </div>
-        <div style="margin-bottom: 1.5rem;">
-          <label for="tenant-fin">Fecha vencimiento suscripción</label><br />
-          <input
+            pInputText
             id="tenant-fin"
             type="date"
             [(ngModel)]="fechaVencimiento"
             name="fechaVencimiento"
             required
-            style="width: 100%; padding: 0.5rem; box-sizing: border-box;"
           />
-        </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button type="button" (click)="volver()" style="flex: 1; padding: 0.75rem; cursor: pointer;">
-            Cancelar
-          </button>
-          <button
+        </label>
+        <div class="actions">
+          <p-button type="button" label="Cancelar" severity="secondary" [outlined]="true" (onClick)="volver()" />
+          <p-button
             type="submit"
+            [label]="loading() ? 'Creando...' : 'Crear Tenant →'"
             [disabled]="loading()"
-            style="flex: 2; padding: 0.75rem; background: #1e3a5f; color: white; cursor: pointer; border: none; border-radius: 4px;"
-          >
-            {{ loading() ? 'Creando...' : 'Crear Tenant →' }}
-          </button>
+          />
         </div>
       </form>
     </div>
   `,
+  styles: [
+    `
+      .page {
+        max-width: 480px;
+        margin: var(--space-lg) auto;
+      }
+      .hint {
+        color: var(--color-text-secondary);
+      }
+      .block-msg {
+        display: block;
+        margin-bottom: var(--space-md);
+      }
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--font-size-small);
+      }
+      .actions {
+        display: flex;
+        gap: var(--space-sm);
+      }
+    `,
+  ],
 })
 export class TenantCreatePage {
   nombre = '';
@@ -82,7 +91,10 @@ export class TenantCreatePage {
   loading = signal(false);
   errorMsg = signal<string | null>(null);
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
 
   onSubmit(): void {
     if (!this.nombre || !this.fechaInicio || !this.fechaVencimiento) return;
@@ -96,18 +108,15 @@ export class TenantCreatePage {
         fechaVencimientoSuscripcion: this.fechaVencimiento,
       })
       .subscribe({
-        next: (tenant) => {
-          // Paso 2: ir a crear el admin del tenant recién creado
-          this.router.navigate(['/plataforma/tenants', tenant.id, 'admin']);
-        },
+        next: (tenant) => this.router.navigate(['/plataforma/tenants', tenant.id, 'admin']),
         error: (err) => {
           this.loading.set(false);
           const codigo = err.error?.codigo;
-          if (codigo === 'E_SUSCRIPCION_INCOMPLETA') {
-            this.errorMsg.set('La fecha de vencimiento de suscripción es obligatoria.');
-          } else {
-            this.errorMsg.set('Error al crear el tenant. Intente nuevamente.');
-          }
+          this.errorMsg.set(
+            codigo === 'E_SUSCRIPCION_INCOMPLETA'
+              ? 'La fecha de vencimiento de suscripción es obligatoria.'
+              : 'Error al crear el tenant. Intente nuevamente.',
+          );
         },
         complete: () => this.loading.set(false),
       });

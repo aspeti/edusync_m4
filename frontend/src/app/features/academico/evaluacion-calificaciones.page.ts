@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -29,7 +29,6 @@ import {
   selector: 'app-evaluacion-calificaciones-page',
   standalone: true,
   imports: [
-    RouterLink,
     FormsModule,
     TableModule,
     InputNumberModule,
@@ -38,9 +37,11 @@ import {
   ],
   template: `
     <div class="page">
-      <div class="back">
-        <a [routerLink]="['/academico/materias', materiaId, 'evaluaciones']">← Volver a Evaluaciones</a>
-      </div>
+      <p-button
+        label="← Volver a Evaluaciones"
+        [link]="true"
+        (onClick)="volver()"
+      />
 
       @if (notFound()) {
         <p-message severity="error" text="La evaluación no existe o no está asignada a su usuario." />
@@ -160,10 +161,6 @@ import {
         max-width: 960px;
         margin: 0 auto;
       }
-      .back {
-        margin-bottom: var(--space-md);
-        font-size: var(--font-size-small);
-      }
       .meta {
         color: var(--color-text-secondary);
         margin-top: 0;
@@ -235,8 +232,13 @@ export class EvaluacionCalificacionesPage implements OnInit {
 
   constructor(
     private http: HttpClient,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
+
+  volver(): void {
+    void this.router.navigate(['/academico/materias', this.materiaId, 'evaluaciones']);
+  }
 
   ngOnInit(): void {
     this.materiaId = this.route.snapshot.paramMap.get('id') ?? '';

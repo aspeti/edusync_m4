@@ -24,7 +24,7 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.17 |
+| **Versión del documento** | v2.18 |
 | **Fecha** | 10/11/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
@@ -49,7 +49,7 @@ El sistema descentraliza el registro de calificaciones por rol (RBAC estricto): 
 
 Todo el ciclo queda sellado en un `audit_log` append-only inalterable, con aislamiento multitenant mediante Row-Level Security en PostgreSQL. El diseño arquitectónico sigue los principios de arquitectura hexagonal con separación Domain / Application / Infrastructure, garantizando que ningún cálculo de promedios ni conversión de escala SIE ocurra fuera del motor de dominio.
 
-> **Generalización desde v2.0 (`ADR-0009`):** lo anterior describe el **Perfil Bolivia SIE** (§4.1–§4.5, `FSD-UC-001`..`FSD-UC-009`), vigente sin cambios. Desde esta versión, el dominio de EduSync se extiende con un modelo genérico configurable: un `SysAdmin` de plataforma administra `Tenant`s con ciclo de suscripción propio; cada tenant define su `GestionEscolar` con un número **N** de `PeriodoEvaluacion`, sus propias `SeccionEvaluacion` (peso y nota máxima configurables) y su catálogo de `TipoEvaluacion` — sin asumir 3 trimestres ni dimensiones fijas. Ver los nuevos casos de uso `FSD-UC-011`..`FSD-UC-021` (§4.6) y el modelo de entidades ampliado (§6.3). La reconciliación entre este modelo genérico y el modelo fijo boliviano (`GestionAcademica`/`ParametroAcademico`) queda **pendiente de definición** (`ADR-0009` §3).
+> **Generalización desde v2.0 (`ADR-0009`):** lo anterior describe el **Perfil Bolivia SIE** (§4.1–§4.5, `FSD-UC-001`..`FSD-UC-009`), vigente sin cambios. Desde esta versión, el dominio de EduSync se extiende con un modelo genérico configurable: un `SysAdmin` de plataforma administra `Tenant`s con ciclo de suscripción propio; cada tenant define su `GestionEscolar` con un número **N** de `PeriodoEvaluacion`, sus propias `SeccionEvaluacion` (peso y nota máxima configurables) y su catálogo de `TipoEvaluacion` — sin asumir 3 trimestres ni dimensiones fijas. Ver los casos de uso `FSD-UC-011`..`FSD-UC-022` (§4.6) y el modelo de entidades ampliado (§6.3). La reconciliación entre este modelo genérico y el modelo fijo boliviano (`GestionAcademica`/`ParametroAcademico`) queda **pendiente de definición** (`ADR-0009` §3).
 
 ---
 
@@ -520,7 +520,7 @@ Escenario: Apertura secuencial válida
 
 ## 4.6 Casos de uso funcionales — Módulos generalizados *(nuevos desde v2.0 — `ADR-0009`)*
 
-> Nomenclatura vigente (§0.1). Formato abreviado respecto a §4.1–§4.5 para mantener el documento manejable; cada caso de uso puede ampliarse con su propio Design Doc (`DD-UC-NNN`) antes de implementarse. Ningún punto marcado **Pendiente** debe codificarse sin resolver primero el punto correspondiente de `ADR-0009` §3.
+> Nomenclatura vigente (§0.1). Formato abreviado respecto a §4.1–§4.5 para mantener el documento manejable; cada caso de uso puede ampliarse con su propio Design Doc (`DD-UC-NNN`) antes de implementarse. Ningún punto marcado **Pendiente** debe codificarse sin resolver primero el punto correspondiente de `ADR-0009` §3. Casos de uso del modelo generalizado: `FSD-UC-011`..`FSD-UC-022`.
 
 ### 4.6.1 FSD-UC-011 — Gestión de Tenants y Suscripciones
 
@@ -681,7 +681,8 @@ Escenario: La suma de secciones sigue siendo obligatoria
 - **Reglas de negocio aplicables:** BR-019, BR-022.
 - **Datos de entrada:** `{ "nombre": "string", "materiaId": "uuid", "periodoEvaluacionId": "uuid", "seccionEvaluacionId": "uuid", "fecha": "date", "descripcion": "string?" }`
 - **Implementación:** backend + UI fullstack `DD-UC-017`/`PR-IMPL-017` (ejecutado 21/08/2026). Primera consola `PROFESOR` (`/academico/mis-materias`).
-- **Fuera de este slice:** catálogo `TipoEvaluacion` (diferido, `ADR-0013` §3.5); motor `round` / `Calificacion` (`FSD-UC-016`).
+- **UX de entrada del Profesor (v2.18):** la landing post-login del `PROFESOR` **deja de ser** el listado “Mis materias” como flujo principal de carga de notas. Ese flujo lo sustituye `FSD-UC-022` (planilla por curso/paralelo/materia). Este UC **sigue** siendo la fuente de verdad para crear/anular/editar metadatos de `Evaluacion`.
+- **Fuera de este slice:** catálogo `TipoEvaluacion` (diferido, `ADR-0013` §3.5); motor `round` / `Calificacion` (`FSD-UC-016`); planilla curso-céntrica (`FSD-UC-022`).
 
 ---
 
@@ -707,6 +708,7 @@ Escenario: La suma de secciones sigue siendo obligatoria
 - **Postcondiciones:** Calificaciones persistidas; vista `PROVISIONAL` de sección, periodo y gestión.
 - **Reglas de negocio aplicables:** BR-020.
 - **Implementación:** backend + UI Angular `DD-UC-018`/`PR-IMPL-018` (ejecutado 21/08/2026). Aggregate `CalificacionEvaluacion` (no `Calificacion` SIE). Fuera de este slice: `notassie`/`floor()`, `TipoEvaluacion`, `audit_log`, promedios materializados.
+- **Composición UI (v2.18):** la matriz “una evaluación × nómina” de `DD-UC-018` permanece válida como contrato de API; la experiencia primaria del `PROFESOR` pasa a la planilla **estudiantes × todas las evaluaciones del periodo** definida en `FSD-UC-022`, que **reutiliza** este motor (`CalculoNotas`) y las mismas invariantes de rango/periodo.
 - **Criterios de aceptación:**
 
 ```gherkin
@@ -874,11 +876,98 @@ Escenario: Rechazo de SYSADMIN combinado con rol de tenant
 
 ---
 
+### 4.6.12 FSD-UC-022 — Planilla del Profesor por Curso/Paralelo/Materia
+
+- **Trazabilidad:** `PRD-US-031`, `PRD-REQ-032`, `BR-001`/`BR-019`/`BR-020`/`BR-022`, `ADR-0013`, `ADR-0014`, `ADR-0026` — Design Doc / `PR-IMPL` **pendientes** (siguiente correlativo libre al diseñar).
+- **Actor principal:** Profesor (`PROFESOR`).
+- **Actores secundarios:** Admin (override operativo de la misma planilla, opcional en el Design Doc).
+- **Precondiciones:**
+  - Tenant activo; existe una `GestionEscolar` `ACTIVA` visible al Profesor (`FSD-UC-012` A2).
+  - El Profesor tiene al menos una `AsignacionMateriaProfesor` (materia × curso × paralelo) (`FSD-UC-018` / `BR-022`).
+  - Existen `Evaluacion` `ACTIVA` del periodo en curso (creadas vía `FSD-UC-015`); si no hay ninguna, la planilla muestra solo la columna Estudiante + Promedio vacío.
+- **Disparador:** El Profesor inicia sesión (o navega a su consola académica) y debe cargar/consultar notas del periodo.
+- **Relación con UCs existentes:**
+  - **Sustituye** como UX primaria de carga de notas la landing `/academico/mis-materias` → evaluaciones → matriz por evaluación (`FSD-UC-015`/`016` UI).
+  - **No reemplaza** el dominio: crea/anula evaluaciones sigue en `FSD-UC-015`; persistencia y `CalculoNotas` siguen en `FSD-UC-016` (sin cálculo en frontend, `BR-008`/`BR-020`).
+- **Flujo principal:**
+  1. **Landing — grilla de asignaciones del Profesor**
+     - `GET` de asignaciones del `userId` del JWT (p. ej. extensión de `GET /api/v1/materias/mias` o endpoint dedicado `GET /api/v1/profesores/me/asignaciones`), una fila por (`cursoId`, `paraleloId`, `materiaId`).
+     - Columnas de la grilla (`p-table`, `ADR-0026`):
+       | Columna | Contenido |
+       |---------|-----------|
+       | **Curso** | Concatenación `curso.nombre` + `" "` + `paralelo.nombre` (ej. `"Primero de Primaria A"`). Sin columnas separadas de grado y paralelo. |
+       | **Materia** | `materia.nombre` que imparte en ese curso/paralelo. |
+       | **Acciones** | Acción **Ingresar** (única acción de fila). |
+     - Filtros/paginación: reutilizar el patrón `q`/`page`/`size` si el volumen lo requiere (mismo criterio que otros listados).
+  2. **Ingresar** navega a la **página de planilla del curso** para esa tripleta (`cursoId` + `paraleloId` + `materiaId`), con el periodo de evaluación activo:
+     - Si existe **exactamente un** periodo `ABIERTO` en la gestión activa → se selecciona implícitamente (mismo criterio que `FSD-UC-015`/`DD-UC-021` para Profesor).
+     - Si hay 0 o >1 `ABIERTO` → selector de periodo visible (sin selector de gestión).
+  3. **Planilla — grilla estudiantes × evaluaciones**
+     - `GET` de planilla (endpoint de composición a definir en Design Doc; p. ej. `GET /api/v1/materias/{materiaId}/planilla?cursoId=&paraleloId=&periodoId=`): nómina de estudiantes con inscripción `ACTIVA` en ese curso/paralelo de la gestión activa ∩ materia asignada; columnas de evaluaciones `ACTIVA` del periodo (orden: `seccion.orden`, luego `fecha`, luego `nombre`); y `nota_periodo` provisional por fila.
+     - Columnas de la grilla:
+       | Columna | Contenido |
+       |--------|-----------|
+       | **Estudiante** | Nombre completo (la identidad de escritura/exportación sigue siendo `rude` en backend; la UI puede mostrar nombre + RUDE sin usarlo como clave de POST). |
+       | **Una columna por `Evaluacion` ACTIVA** | Encabezado = nombre de la evaluación (opcionalmente subencabezado con sección / `puntajeMaximo`). Celda = nota existente o vacía. |
+       | **Promedio** (última, solo lectura) | `nota_periodo` provisional del estudiante en esa materia y periodo, calculada **solo** por `CalculoNotas` (`FSD-UC-016` / `BR-020`). Se actualiza tras cada persistencia exitosa (on-read o respuesta del PUT). |
+     - Agrupación visual por sección del trimestre (Ser/Saber/…) es opcional en UI; el orden de columnas **MUST** respetar el orden de secciones de la plantilla.
+  4. **Edición inline de notas (sin botones Agregar/Editar/Guardar por celda)**
+     - Cada celda de evaluación es editable **in-place** (input numérico / `p-inputnumber`) mientras el periodo esté `ABIERTO` y la evaluación `ACTIVA`.
+     - **No** existe botón “Agregar nota”, “Editar nota” ni “Guardar” por fila/celda. El usuario escribe o modifica el valor directamente.
+     - Persistencia: al **blur** de la celda o tecla **Enter**, el cliente envía un upsert de esa celda (lote de un ítem o API de celda única) reutilizando el contrato de `FSD-UC-016` (`PUT .../calificaciones` o delta equivalente documentado en el Design Doc). Valor vacío → limpia/no persiste nota (`null`).
+     - Validación de rango `[0, puntajeMaximo]` en UX (ayuda) + rechazo servidor `422 E_RANGO_INVALIDO` (`FSD-UC-016` A2). Error mostrado **inline** en la celda; no se pierde el resto de la planilla.
+     - Navegación teclado: Enter avanza a la celda de la fila siguiente de la misma evaluación (mismo precedente que `DD-UC-032`).
+  5. Si el periodo **no** está `ABIERTO`, todas las celdas de nota son **solo lectura**; se muestra aviso; cualquier intento de escritura → `422 E_PERIODO_NO_ABIERTO`.
+- **Flujos alternativos / excepciones:**
+  - **A1 — Sin asignaciones:** grilla de landing vacía con mensaje “No tiene cursos/materias asignados.”
+  - **A2 — Sin gestión activa:** mismo tratamiento que `FSD-UC-015`/`DD-UC-021` (`gestionActivaNoEncontrada`).
+  - **A3 — Tripleta inexistente / no asignada al Profesor / otro tenant:** HTTP 404 (`E_MATERIA_NO_ENCONTRADA` o código de planilla dedicado); nunca 403 con filtrado cruzado.
+  - **A4 — Valor fuera de rango:** HTTP 422 `E_RANGO_INVALIDO` (celda).
+  - **A5 — Estudiante fuera de nómina:** HTTP 422 `E_ESTUDIANTE_NO_INSCRITO`.
+  - **A6 — Evaluación `ANULADA`:** no aparece como columna; notas históricas de anuladas no se editan en esta planilla.
+- **Postcondiciones:** Calificaciones upserted vía dominio de `FSD-UC-016`; columna Promedio refleja `nota_periodo` provisional actualizada; sin cálculo de promedio en el frontend.
+- **Reglas de negocio aplicables:** BR-001 (solo materias asignadas), BR-019 (escala por sección), BR-020 (`CalculoNotas`), BR-022 (materia con profesor).
+- **Fuera de este slice:** alta/anulación de evaluaciones (permanece en `FSD-UC-015`); exportación SIE (`FSD-UC-004`); `audit_log` / inmutabilidad diferidos (`ADR-0025` §3.7); centralizador oficial.
+- **Criterios de aceptación:**
+
+```gherkin
+Escenario: Landing del Profesor muestra curso concatenado, materia e Ingresar
+  Dado un Profesor autenticado con asignación Materia="Matemáticas" en Curso="Primero de Primaria" Paralelo="A"
+  Cuando abre su consola académica
+  Entonces ve una grilla con una fila cuyo Curso es "Primero de Primaria A"
+    Y Materia es "Matemáticas"
+    Y Acciones ofrece "Ingresar"
+    Y no es la landing principal el listado plano "Mis materias"
+
+Escenario: Planilla con columnas de evaluaciones y promedio
+  Dado el mismo Profesor en periodo ABIERTO con evaluaciones ACTIVA "Quiz 1" (Saber) y "Tarea 1" (Hacer)
+  Cuando pulsa Ingresar en esa fila
+  Entonces ve una grilla cuya primera columna es Estudiante
+    Y existen columnas "Quiz 1" y "Tarea 1"
+    Y la última columna es Promedio (solo lectura)
+    Y no hay botones Agregar nota ni Editar nota por celda
+
+Escenario: Carga inline sin botón Guardar
+  Dado la planilla abierta en periodo ABIERTO
+  Cuando el Profesor escribe 40 en la celda de "Quiz 1" del estudiante Juan y sale de la celda (blur)
+  Entonces el sistema persiste la nota vía el contrato de FSD-UC-016
+    Y el Promedio de esa fila se actualiza con CalculoNotas
+    Y no se requirió pulsar Guardar ni Editar
+
+Escenario: Rango inválido en celda
+  Dado puntajeMaximo de "Quiz 1" = 45
+  Cuando el Profesor escribe 46 y sale de la celda
+  Entonces el sistema rechaza con E_RANGO_INVALIDO
+    Y muestra el error en la celda sin persistir 46
+```
+
+---
+
 ## 5. Reglas de negocio ⚡🔧
 
 | ID | Regla | Tipo | Origen | Casos de uso afectados |
 |----|-------|------|--------|------------------------|
-| BR-001 | El Docente escribe únicamente en las materias que tiene asignadas. Verificación en cada request mediante `asignacion_docente`. | validación / política | `PRD-REQ-001`, DA-01 | FSD-UC-001, FSD-UC-005 |
+| BR-001 | El Docente escribe únicamente en las materias que tiene asignadas. Verificación en cada request mediante `asignacion_docente`. | validación / política | `PRD-REQ-001`, DA-01 | FSD-UC-001, FSD-UC-005, FSD-UC-022 |
 | BR-002 | Ningún valor fuera del rango paramétrico de la dimensión puede persistirse. La validación ocurre antes del `INSERT`. | validación | `PRD-REQ-006`, DA-02 | FSD-UC-001 |
 | BR-003 | ~~El criterio de truncado de decimales es `floor` (piso), no redondeo estándar ni bancario. `floor(64.666) = 64`.~~ **Superado por `ADR-0025` (propuesta, 10/11/2026):** todo redondeo del producto vivo es `round` HALF_UP (`ADR-0013` §3.4). No hay `floor()`. | cálculo | `PRD-REQ-010`, DA-02 | FSD-UC-003 |
 | BR-004 | La vinculación al SIE es exclusivamente por RUDE. Ningún payload puede usar nombre, apellido ni posición de lista. | política + normativa SIE | `PRD-REQ-012`, Ministerio de Educación Bolivia | FSD-UC-004 |
@@ -903,8 +992,8 @@ Escenario: Rechazo de SYSADMIN combinado con rol de tenant
 | BR-016 | Toda `GestionEscolar` requiere nombre, fecha de inicio, fecha de fin y estado (`PLANIFICACION`/`ACTIVA`/`CERRADA`). Al crearla se siembran 3 periodos y 4 secciones (`ADR-0013`). | validación | BRD BR-016 | FSD-UC-012 |
 | BR-017 | El número de `PeriodoEvaluacion` es configurable (N ≥ 1, seed = 3). Apertura **no secuencial** desde `ADR-0014` (el Admin puede abrir/cerrar cualquier periodo en cualquier orden); solo se conserva la invariante de no-solape de fechas. | arquitectura | BRD BR-017, `ADR-0013`, `ADR-0014` | FSD-UC-013 |
 | BR-018 | Plantilla de `SeccionEvaluacion` **por gestión** (nombre, orden, `nota`); Σ `nota` = 100 (invariante de integridad conservada). Editable **en cualquier momento** desde `ADR-0014` (freeze sticky eliminado). Defaults Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10. | arquitectura | BRD BR-018, `ADR-0013`, `ADR-0014` | FSD-UC-014 |
-| BR-019 | Toda `Evaluacion` de una materia usa una sección de la plantilla y se califica en `[0, seccion.nota]`. | arquitectura | BRD BR-019, `ADR-0013` | FSD-UC-015 |
-| BR-020 | `nota_seccion = (Σ / n)` a 2 decimales; `nota_periodo = round(Σ secciones)` a entero HALF_UP; `promedio_gestion = round((Σ periodos_o_cero) / N)` visible `PROVISIONAL`. Sin `floor()` en el genérico. | cálculo | BRD BR-020, `ADR-0013` | FSD-UC-016 |
+| BR-019 | Toda `Evaluacion` de una materia usa una sección de la plantilla y se califica en `[0, seccion.nota]`. | arquitectura | BRD BR-019, `ADR-0013` | FSD-UC-015, FSD-UC-022 |
+| BR-020 | `nota_seccion = (Σ / n)` a 2 decimales; `nota_periodo = round(Σ secciones)` a entero HALF_UP; `promedio_gestion = round((Σ periodos_o_cero) / N)` visible `PROVISIONAL`. Sin `floor()` en el genérico. | cálculo | BRD BR-020, `ADR-0013` | FSD-UC-016, FSD-UC-022 |
 | BR-021 | Un `Curso` puede tener uno o más `Paralelo`; `Materia` e `Inscripcion` referencian siempre un `Curso` y, cuando aplica, un `Paralelo` válidos. | validación | BRD BR-021 | FSD-UC-017 |
 | BR-022 | Ninguna `Evaluacion` puede registrarse sobre una `Materia` sin `Profesor` asignado. | validación | BRD BR-022 | FSD-UC-018, FSD-UC-019 |
 | BR-023 | `Estudiante` e `Inscripcion` son entidades independientes; el historial académico de un estudiante se reconstruye a través de todas sus `Inscripcion` en distintas `GestionEscolar`. | arquitectura | BRD BR-023 | FSD-UC-020 |
@@ -1364,6 +1453,10 @@ Paso 13 → audit_log entry + notificación
 | `/director/autorizaciones` | FSD-UC-005 — bandeja de solicitudes del Docente + formulario de autorización | Director |
 | `/director/indicadores` | FSD-UC-010 — dashboard con vistas trimestral y anual diferenciadas | Director |
 | `/director/centralizadores` | FSD-UC-003 — visualización del centralizador por curso (PROVISIONAL / OFICIAL) | Director |
+| `/academico/mis-cursos` (o equivalente) | FSD-UC-022 — landing Profesor: grilla Curso (nombre+paralelo) / Materia / Ingresar | Profesor |
+| `/academico/mis-cursos/.../planilla` (o equivalente) | FSD-UC-022 — planilla estudiantes × evaluaciones del periodo + Promedio; edición inline | Profesor |
+
+> **Nota (v2.18):** las rutas `/docente/materias*` del Perfil Bolivia SIE (§9 histórico) y `/academico/mis-materias` (`FSD-UC-015`) dejan de ser la UX primaria de carga de notas del Profesor; la entrada canónica pasa a `FSD-UC-022`. Las rutas exactas se fijan en el Design Doc.
 
 ### 9.1 Trazabilidad con M2 (UI/UX) ⚡🔧
 
@@ -1487,6 +1580,7 @@ Paso 13 → audit_log entry + notificación
 | **Paralelo** *(genérico, `ADR-0009`)* | Subdivisión de un `Curso` (ej. "A", "B", "C"). Un curso puede tener uno o más paralelos. |
 | **Inscripción** *(genérico, `ADR-0009`)* | Vínculo entre un `Estudiante` y una `GestionEscolar`/`Curso`/`Paralelo` concretos, con fecha y estado. El historial académico de un estudiante se reconstruye a través de todas sus inscripciones. |
 | **Asesor** *(nuevo, `ADR-0009`)* | Rol de tenant con acceso de solo lectura al avance académico de un `Curso`/`Paralelo` asignado; sin permisos de escritura sobre calificaciones ni nóminas. |
+| **Planilla del Profesor** *(nuevo, `FSD-UC-022`)* | Vista curso-céntrica del Profesor: landing por asignación (Curso concatenado con Paralelo + Materia + Ingresar) y grilla de estudiantes × evaluaciones del periodo con edición inline y columna Promedio (`nota_periodo` vía `CalculoNotas`). |
 
 ---
 
@@ -1513,6 +1607,7 @@ Paso 13 → audit_log entry + notificación
 | v2.15 | 12/09/2026 | Rodrigo Aspeti | **`ADR-0014`** (relaja `ADR-0013` §3.1.4/3.1.5/§3.2.2): `FSD-UC-012` (§4.6.2) gana actor secundario de solo lectura (Secretaria/Profesor/Asesor), nuevo `PATCH /gestiones-escolares/{id}` (nombre/fechas) y A2 de visibilidad `ACTIVA`-only (404 para roles no-`ADMIN` sobre una gestión no activa). `FSD-UC-013` (§4.6.3) elimina A2/A3 (`E_PERIODO_NO_SECUENCIAL`/`E_PERIODOS_INMUTABLES`): apertura ya no es secuencial, sin freeze de N/datos; se conserva A1 `E_PERIODOS_SOLAPADOS` y A4→A2 `E_PERIODO_UNICO`. `FSD-UC-014` (§4.6.4) elimina A3 (`E_SECCIONES_INMUTABLES`, freeze sticky); se conservan A1 `E_PESO_INVALIDO` y A2 `E_SUMA_SECCIONES_INVALIDA`. `BR-017`/`BR-018` (§5.1) reescritas para reflejar la relajación, conservando explícitamente las invariantes de integridad del motor de cálculo. Trazado a `DD-UC-019`/`PR-IMPL-019` (backend + UI fullstack, ejecutado). Sin cambios en `FSD-UC-015`/`016` (`CalculoNotas`/`CalificacionEvaluacion` intactos). |
 | v2.16 | 29/09/2026 | Rodrigo Aspeti | **`DD-UC-029` / `PR-IMPL-029`**: nota de realización en `FSD-UC-009` (§4.5). Parámetros por sección del periodo (`GET`/`PUT .../parametros`) e inmutables fuera de `PENDIENTE`; al abrir, `E_PARAMETROS_INCOMPLETOS` y `E_MATERIA_SIN_DOCENTE`. T-004/T-005 marcadas en el delta genérico. No restaura la apertura secuencial (`ADR-0014`). Cierre por centralizador, notificación y `audit_log` siguen fuera. |
 | v2.17 | 10/11/2026 | G-EduSync | **`ADR-0025` (propuesta) + `DD-UC-031` / `PR-IMPL-031`**: se reconcilia el Perfil Bolivia SIE con el modelo genérico. Notas de realización en `FSD-UC-001` (§4.1, absorbido por `FSD-UC-016`), `FSD-UC-003` (§4.2, reducido a la nota final de periodo, sin `floor()`), `FSD-UC-004` (§4.3, reescrito: el SIE recibe `rude` + materia + periodo + nota final entera; solo periodo `CERRADO`; clave `rude+materia_id+periodo_id`; `EXCLUIDO_NOTA_INCOMPLETA`), `FSD-UC-005` (§4.4, **diferido**: inmutabilidad y correcciones) y `FSD-UC-009` (§4.5, el cierre por centralizador ya no es requisito). `BR-003`, `BR-008` y `RB-08` marcadas superadas. Sin código en este turno. |
+| v2.18 | 10/11/2026 | G-EduSync | Nuevo **`FSD-UC-022`** (§4.6.12): planilla del Profesor por Curso/Paralelo/Materia. Landing en grilla (Curso = `curso.nombre` + paralelo, Materia, acción Ingresar); planilla estudiantes × evaluaciones del periodo + columna Promedio (`nota_periodo` vía `CalculoNotas`); edición inline sin botones Agregar/Editar/Guardar por celda. Notas de realización en `FSD-UC-015`/`016` y filas nuevas en §9. Trazado a `PRD-US-031`/`PRD-REQ-032`. Sin código ni Design Doc en este bump. |
 
 ---
 

@@ -23,7 +23,7 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión** | v2.4 |
+| **Versión** | v2.5 |
 | **Fecha** | 10/11/2026 |
 | **Product Manager / Autor** | Rodrigo Aspeti — Dev Lead / PM EduSync |
 | **Revisores** | Docente + Tech Lead + QA |
@@ -672,6 +672,7 @@ Escenario: Promedio de gestión visible con periodos incompletos
 | PRD-US-022 | Como Admin, quiero una plantilla de secciones a nivel de Gestión Escolar (nombre + nota en puntos que suman 100), sembrada con Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10, inmutable cuando un periodo ya está ABIERTO | Must | 9 | 6 | §5.9.1 |
 | PRD-US-023 | Como Profesor, quiero registrar una o más evaluaciones en cada sección de mi materia, todas en la escala `[0, nota]` de esa sección (si Saber = 45, todas son 0–45) | Must | 8 | 5 | §5.9.2 |
 | PRD-US-024 | Como Admin, quiero que el sistema calcule automáticamente nota de sección = promedio simple, nota de periodo = suma de secciones redondeada a entero, y promedio de gestión = suma/N visible en PROVISIONAL | Must | 9 | 6 | §5.9.3 |
+| PRD-US-031 | Como Profesor, quiero ver al entrar mis cursos en una grilla (Curso+Paralelo, Materia, Ingresar) y, al ingresar, cargar notas en una planilla de estudiantes × evaluaciones del trimestre con promedio al final, editando cada celda sin botones Agregar/Editar | Must | 9 | 6 | §5.9.4 |
 
 #### 5.9.1 Criterios PRD-US-022
 
@@ -711,6 +712,22 @@ Escenario: Nota de periodo como suma de promedios de sección
 
 Nota: el modelo genérico usa round HALF_UP (2 decimales en sección, entero en periodo/gestión).
 floor() está retirado del producto vivo (ADR-0025, propuesta): el SIE recibe la nota final de periodo con round. Ver ADR-0013.
+```
+
+#### 5.9.4 Criterios PRD-US-031
+
+```gherkin
+Escenario: Landing por curso, no por lista plana de materias
+  Dado un Profesor con Matemáticas en "Primero de Primaria" paralelo "A"
+  Cuando inicia sesión y abre su consola
+  Entonces ve una grilla con Curso = "Primero de Primaria A", Materia = "Matemáticas" y acción Ingresar
+
+Escenario: Planilla inline sin botones de alta/edición de nota
+  Dado el Profesor en la planilla de esa asignación con periodo ABIERTO y dos evaluaciones activas
+  Cuando escribe una nota válida en una celda y sale de ella (blur o Enter)
+  Entonces la nota se persiste
+    Y la columna Promedio (última) se actualiza con el motor de dominio
+    Y no hubo botones Agregar nota / Editar nota / Guardar por celda
 ```
 
 ---
@@ -875,6 +892,7 @@ Escenario: Usuario restablece su contraseña
 | PRD-REQ-029 | El sistema debe permitir el CRUD de Profesores y su asignación a Materias, Cursos y Paralelos | PRD-US-026 | Must |
 | PRD-REQ-030 | El sistema debe permitir el CRUD independiente de Estudiantes y la gestión de sus Inscripciones (Gestión Escolar, Curso, Paralelo, fecha, estado), manteniendo su historial académico | PRD-US-027, PRD-US-028 | Must |
 | PRD-REQ-031 | El sistema debe permitir el CRUD de Usuarios y la asignación de **uno o más roles simultáneos** (SysAdmin/Admin/Secretaria/Asesor/Profesor), su activación/desactivación y el restablecimiento de contraseña. El rol SysAdmin no se combina con ningún rol de tenant y nunca tiene tenant asignado (`ADR-0010`) | PRD-US-029, PRD-US-030 | Must |
+| PRD-REQ-032 | El sistema debe ofrecer al Profesor una landing de asignaciones en grilla (Curso = nombre del curso/grado concatenado con el paralelo, Materia, acción Ingresar) y una planilla por asignación con filas de estudiantes, columnas por evaluación del periodo, columna final de promedio (`nota_periodo` vía motor de dominio) y edición inline de notas sin botones Agregar/Editar/Guardar por celda | PRD-US-031 | Must |
 
 > **Pendiente de definición (`ADR-0009` §3):** ninguno de los PRD-REQ-021..031 incluye todavía requisitos de auditoría/inmutabilidad equivalentes a PRD-REQ-018 (audit_log) ni de secuencialidad equivalente a PRD-REQ-005; se añadirán cuando se resuelva la gobernanza de los módulos nuevos.
 >
@@ -1042,6 +1060,7 @@ Escenario: Usuario restablece su contraseña
 | PRD-REQ-029 | BR-022 | — | `ADR-0009` | FSD-UC-019 |
 | PRD-REQ-030 | BR-023 | — | `ADR-0009` | FSD-UC-020 |
 | PRD-REQ-031 | BR-024 | — | `ADR-0009`, `ADR-0010` | FSD-UC-021 |
+| PRD-REQ-032 | BR-019, BR-020, BR-001 | — | `ADR-0013`, `ADR-0026` | FSD-UC-022 |
 
 ---
 
@@ -1086,6 +1105,7 @@ Escenario: Usuario restablece su contraseña
 | v2.2 | 14/07/2026 | Rodrigo Aspeti | Refinamiento del modelo de roles (`ADR-0010`): PRD-US-029 y PRD-REQ-031 pasan de "asignación de rol" (uno) a **multi-rol** (uno o más roles simultáneos), con la invariante de que SysAdmin nunca se combina con un rol de tenant. Nuevo escenario Gherkin en §5.11.1 (multi-rol). Sin cambios en el resto de épicas/requisitos. |
 | v2.3 | 21/08/2026 | Rodrigo Aspeti | `ADR-0013`: E8/E9 (PRD-US-021..024, PRD-REQ-023..026) alineados al modelo genérico (seed 3+4, plantilla por gestión, escala `[0, nota]`, promedio simple, `round` entero, promedio de gestión `/ N` `PROVISIONAL`, apertura secuencial). Sin cambio en E1–E7 ni Perfil Bolivia SIE. |
 | v2.4 | 10/11/2026 | G-EduSync | `ADR-0025` (propuesta): `PRD-US-011` y `PRD-REQ-010` marcadas superadas (sin `floor` ni centralizador oficial); el SIE recibe la nota final entera de cada periodo (`FSD-UC-004`, `DD-UC-031`). E5 (inmutabilidad, correcciones) pasa a implementación diferida. Nota de vigencia en §0.1; BRD de referencia v3.3. Sin IDs nuevos. |
+| v2.5 | 10/11/2026 | G-EduSync | Nueva `PRD-US-031` / `PRD-REQ-032` (E9): planilla del Profesor por curso/paralelo/materia con edición inline. Trazado a `FSD-UC-022` (`docs/product/FSD.md` v2.18). Sin cambio de motor de cálculo. |
 
 ---
 

@@ -68,6 +68,15 @@ public class UpsertCalificacionesService implements UpsertCalificacionesUseCase 
       Optional<CalificacionEvaluacion> existente =
           calificacionEvaluacionRepositoryPort.buscarPorEvaluacionEstudianteYTenant(
               evaluacion.getId(), estudianteId, command.tenantId());
+
+      // DD-UC-033: valor null → clear de celda (borra si existía; no-op si no).
+      if (item.valor() == null) {
+        existente.ifPresent(
+            actual ->
+                calificacionEvaluacionRepositoryPort.eliminar(actual.getId(), command.tenantId()));
+        continue;
+      }
+
       if (existente.isPresent()) {
         CalificacionEvaluacion actual = existente.get();
         actual.actualizarValor(item.valor(), evaluacion.getPuntajeMaximo());

@@ -13,20 +13,23 @@ public class GuardrailEntradaAgenteAgenteTest {
 
     @Test
     @Tag("agente")
-    void telefonoBolivianoBloquea() {
-        ResultadoGuardrailEntrada r = guardrail.revisar("telefono boliviano 6xxxxxxx");
-        assertThat(r.ok()).isFalse();
+    void telefonoBolivianoSeEnmascaraYSigue() {
+        // ADR-0021: teléfono BO se enmascara; solo inyección/tarjeta bloquean.
+        ResultadoGuardrailEntrada r = guardrail.revisar("telefono boliviano 71234567");
+        assertThat(r.ok()).isTrue();
         assertThat(r.hallazgos()).contains("telefono");
         assertThat(r.preguntaLimpia()).contains("[TELEFONO]");
+        assertThat(r.preguntaLimpia()).doesNotContain("71234567");
     }
 
     @Test
     @Tag("agente")
-    void ciConLetrasBloquea() {
+    void ciConLetrasSeEnmascaraYSigue() {
         ResultadoGuardrailEntrada r = guardrail.revisar("ci 1234567 LP");
-        assertThat(r.ok()).isFalse();
+        assertThat(r.ok()).isTrue();
         assertThat(r.hallazgos()).contains("ci");
         assertThat(r.preguntaLimpia()).contains("[CI]");
+        assertThat(r.preguntaLimpia()).doesNotContain("1234567");
     }
 
     @Test

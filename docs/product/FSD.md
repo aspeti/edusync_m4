@@ -24,7 +24,7 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.18 |
+| **Versión del documento** | v2.19 |
 | **Fecha** | 10/11/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
@@ -878,7 +878,8 @@ Escenario: Rechazo de SYSADMIN combinado con rol de tenant
 
 ### 4.6.12 FSD-UC-022 — Planilla del Profesor por Curso/Paralelo/Materia
 
-- **Trazabilidad:** `PRD-US-031`, `PRD-REQ-032`, `BR-001`/`BR-019`/`BR-020`/`BR-022`, `ADR-0013`, `ADR-0014`, `ADR-0026` — Design Doc / `PR-IMPL` **pendientes** (siguiente correlativo libre al diseñar).
+- **Trazabilidad:** `PRD-US-031`, `PRD-REQ-032`, `BR-001`/`BR-019`/`BR-020`/`BR-022`, `ADR-0013`, `ADR-0014`, `ADR-0026` — `DD-UC-033` / `PR-IMPL-033` (**ejecutados** 10/11/2026); issue GitHub `#21`.
+- **Implementación:** `GET /profesores/me/asignaciones`, `GET /materias/{id}/planilla`, PUT calificaciones con `valor: null` (clear); UI `/academico/mis-cursos` + `/academico/mis-cursos/planilla`.
 - **Actor principal:** Profesor (`PROFESOR`).
 - **Actores secundarios:** Admin (override operativo de la misma planilla, opcional en el Design Doc).
 - **Precondiciones:**
@@ -1608,6 +1609,7 @@ Paso 13 → audit_log entry + notificación
 | v2.16 | 29/09/2026 | Rodrigo Aspeti | **`DD-UC-029` / `PR-IMPL-029`**: nota de realización en `FSD-UC-009` (§4.5). Parámetros por sección del periodo (`GET`/`PUT .../parametros`) e inmutables fuera de `PENDIENTE`; al abrir, `E_PARAMETROS_INCOMPLETOS` y `E_MATERIA_SIN_DOCENTE`. T-004/T-005 marcadas en el delta genérico. No restaura la apertura secuencial (`ADR-0014`). Cierre por centralizador, notificación y `audit_log` siguen fuera. |
 | v2.17 | 10/11/2026 | G-EduSync | **`ADR-0025` (propuesta) + `DD-UC-031` / `PR-IMPL-031`**: se reconcilia el Perfil Bolivia SIE con el modelo genérico. Notas de realización en `FSD-UC-001` (§4.1, absorbido por `FSD-UC-016`), `FSD-UC-003` (§4.2, reducido a la nota final de periodo, sin `floor()`), `FSD-UC-004` (§4.3, reescrito: el SIE recibe `rude` + materia + periodo + nota final entera; solo periodo `CERRADO`; clave `rude+materia_id+periodo_id`; `EXCLUIDO_NOTA_INCOMPLETA`), `FSD-UC-005` (§4.4, **diferido**: inmutabilidad y correcciones) y `FSD-UC-009` (§4.5, el cierre por centralizador ya no es requisito). `BR-003`, `BR-008` y `RB-08` marcadas superadas. Sin código en este turno. |
 | v2.18 | 10/11/2026 | G-EduSync | Nuevo **`FSD-UC-022`** (§4.6.12): planilla del Profesor por Curso/Paralelo/Materia. Landing en grilla (Curso = `curso.nombre` + paralelo, Materia, acción Ingresar); planilla estudiantes × evaluaciones del periodo + columna Promedio (`nota_periodo` vía `CalculoNotas`); edición inline sin botones Agregar/Editar/Guardar por celda. Notas de realización en `FSD-UC-015`/`016` y filas nuevas en §9. Trazado a `PRD-US-031`/`PRD-REQ-032`. Sin código ni Design Doc en este bump. |
+| v2.19 | 10/11/2026 | G-EduSync | **`FSD-UC-022` implementado** (`DD-UC-033` / `PR-IMPL-033` ejecutados): endpoints + UI Mis cursos/planilla; null-clear; redirect PROFESOR. |
 
 ---
 

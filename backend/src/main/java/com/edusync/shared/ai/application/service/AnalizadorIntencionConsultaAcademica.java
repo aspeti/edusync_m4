@@ -27,7 +27,9 @@ public class AnalizadorIntencionConsultaAcademica {
     private static final Pattern NOTAS_DE =
             Pattern.compile("notas de (.+)$");
     private static final Pattern MATERIAS_TIENE =
-            Pattern.compile("(?:que )?materias (?:tiene|tiene asignadas) (.+)$");
+            Pattern.compile("(?:que )?materias (?:tiene asignadas?|tiene) (.+)$");
+    private static final Pattern TITULO_PERSONA =
+            Pattern.compile("^(?:(?:el|la)\\s+)?(?:profesor(?:a)?|estudiante|alumno(?:a)?)\\s+");
     private static final Pattern ALUMNOS_EN =
             Pattern.compile("(?:que )?(?:alumnos|estudiantes) (?:estan|están|hay) en (.+)$");
     private static final Pattern ALUMNOS_DE =
@@ -108,8 +110,9 @@ public class AnalizadorIntencionConsultaAcademica {
         }
         m = MATERIAS_TIENE.matcher(n);
         if (m.find()) {
+            String sujeto = limpiarTituloPersona(m.group(1).trim());
             return Optional.of(new IntencionConsultaAcademica(
-                    IntencionConsultaAcademica.Operacion.MATERIAS_ESTUDIANTE, m.group(1).trim(), null, null, null, null));
+                    IntencionConsultaAcademica.Operacion.MATERIAS_ESTUDIANTE, sujeto, null, null, null, null));
         }
         m = ALUMNOS_EN.matcher(n);
         if (m.find()) {
@@ -166,6 +169,11 @@ public class AnalizadorIntencionConsultaAcademica {
             return Optional.of(new IntencionConsultaAcademica(op, null, resto, null, null, null));
         }
         return Optional.empty();
+    }
+
+    private static String limpiarTituloPersona(String texto) {
+        String limpio = texto.replaceAll("[?¿!.]+$", "").trim();
+        return TITULO_PERSONA.matcher(limpio).replaceFirst("").trim();
     }
 
     static boolean pareceCursoParalelo(String texto) {

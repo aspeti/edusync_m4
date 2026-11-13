@@ -16,6 +16,8 @@ import com.edusync.academico.application.port.in.ListarProfesoresDisponiblesUseC
 import com.edusync.academico.application.port.in.MateriaFiltro;
 import com.edusync.academico.application.port.in.ObtenerMateriaVisibleUseCase;
 import com.edusync.academico.application.port.in.ObtenerNotaProvisionalUseCase;
+import com.edusync.academico.application.port.in.ObtenerPlanillaMateriaUseCase;
+import com.edusync.academico.application.port.in.PlanillaMateriaVista;
 import com.edusync.academico.application.service.EtiquetasAcademicas;
 import com.edusync.academico.domain.AsignacionMateriaCurso;
 import com.edusync.academico.domain.AsignacionMateriaProfesor;
@@ -70,6 +72,7 @@ public class MateriaController {
   private final ListarMateriasAsignadasUseCase listarMateriasAsignadasUseCase;
   private final ListarEvaluacionesUseCase listarEvaluacionesUseCase;
   private final ObtenerNotaProvisionalUseCase obtenerNotaProvisionalUseCase;
+  private final ObtenerPlanillaMateriaUseCase obtenerPlanillaMateriaUseCase;
   private final EtiquetasAcademicas etiquetasAcademicas;
   private final TenantContextProvider tenantContextProvider;
 
@@ -196,6 +199,35 @@ public class MateriaController {
     return ResponseEntity.ok(asignaciones);
   }
 
+  @GetMapping("/{id}/planilla")
+  @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR')")
+  @Operation(
+      summary = "Planilla estudiantes × evaluaciones del periodo",
+      description = "DD-UC-033 / FSD-UC-022. notaPeriodo solo vía CalculoNotas.")
+  @ApiResponse(responseCode = "200", description = "Planilla")
+  @ApiResponse(
+      responseCode = "404",
+      description = "E_MATERIA_NO_ENCONTRADA / E_PERIODO_NO_ENCONTRADO / E_PLANILLA_NO_ENCONTRADA")
+  public ResponseEntity<PlanillaMateriaResponse> planilla(
+      @PathVariable UUID id,
+      @RequestParam UUID cursoId,
+      @RequestParam UUID paraleloId,
+      @RequestParam UUID periodoId,
+      Authentication authentication) {
+    PlanillaMateriaVista vista =
+        obtenerPlanillaMateriaUseCase.obtener(
+            tenantActual(),
+            id,
+            cursoId,
+            paraleloId,
+            periodoId,
+            ActorSeguridad.id(authentication),
+            ActorSeguridad.veTodasLasMaterias(authentication),
+            ActorSeguridad.esAdmin(authentication)
+                || !ActorSeguridad.veTodasLasMaterias(authentication));
+    return ResponseEntity.ok(aResponse(vista));
+  }
+
   @GetMapping("/{id}/estudiantes/{estudianteId}/nota-provisional")
   @PreAuthorize("hasAnyRole('ADMIN','SECRETARIA','PROFESOR')")
   @Operation(
@@ -229,7 +261,8 @@ public class MateriaController {
               "E_PARALELO_NO_ENCONTRADO",
               "E_PROFESOR_NO_ENCONTRADO",
               "E_ESTUDIANTE_NO_ENCONTRADO",
-              "E_PERIODO_NO_ENCONTRADO" ->
+              "E_PERIODO_NO_ENCONTRADO",
+              "E_PLANILLA_NO_ENCONTRADA" ->
               HttpStatus.NOT_FOUND;
           case "E_ESTUDIANTE_NO_INSCRITO" -> HttpStatus.UNPROCESSABLE_CONTENT;
           default -> HttpStatus.CONFLICT;
@@ -283,6 +316,43 @@ public class MateriaController {
         evaluacion.getPuntajeMaximo(),
         evaluacion.getDescripcion(),
         evaluacion.getEstado().name());
+  }
+
+  private PlanillaMateriaResponse aResponse(PlanillaMateriaVista vista) {
+    return new PlanillaMateriaResponse(
+        vista.materiaId(),
+        vista.materiaNombre(),
+        vista.cursoId(),
+        vista.cursoNombre(),
+        vista.paraleloId(),
+        vista.paraleloNombre(),
+        vista.cursoEtiqueta(),
+        vista.periodoId(),
+        vista.periodoNombre(),
+        vista.periodoEstado(),
+        vista.editable(),
+        vista.columnas().stream()
+            .map(
+                c ->
+                    new PlanillaMateriaResponse.Columna(
+                        c.evaluacionId(),
+                        c.nombre(),
+                        c.seccionEvaluacionId(),
+                        c.seccionNombre(),
+                        c.seccionOrden(),
+                        c.puntajeMaximo(),
+                        c.fecha()))
+            .toList(),
+        vista.filas().stream()
+            .map(
+                f ->
+                    new PlanillaMateriaResponse.Fila(
+                        f.estudianteId(),
+                        f.nombreCompleto(),
+                        f.rude(),
+                        f.notas(),
+                        f.notaPeriodo()))
+            .toList());
   }
 
   private NotaProvisionalResponse aResponse(CalculoNotas.NotaProvisional nota) {

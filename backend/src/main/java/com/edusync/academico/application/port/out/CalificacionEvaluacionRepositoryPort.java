@@ -1,6 +1,7 @@
 package com.edusync.academico.application.port.out;
 
 import com.edusync.academico.domain.CalificacionEvaluacion;
+import com.edusync.academico.domain.CalificacionEvaluacionId;
 import com.edusync.academico.domain.EstudianteId;
 import com.edusync.academico.domain.EvaluacionId;
 import java.util.Collection;
@@ -25,4 +26,7 @@ public interface CalificacionEvaluacionRepositoryPort {
 
   List<CalificacionEvaluacion> listarPorEvaluacionesEstudianteYTenant(
       Collection<EvaluacionId> evaluacionIds, EstudianteId estudianteId, UUID tenantId);
+
+  /** Elimina la calificación si existe (clear de celda, {@code DD-UC-033}). */
+  void eliminar(CalificacionEvaluacionId id, UUID tenantId);
 }

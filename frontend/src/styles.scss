@@ -5,3 +5,6 @@
 // PR-IMPL-020 (DD-UC-020) — el resto de los estilos siguen embebidos por
 // componente (`styles: [...]`), sin librería de terceros.
 @use './styles/tokens';
+
+// Rediseño Figma módulo Profesor (nodos 774:35346 / 774:37846).
+@use './styles/figma-profesor';

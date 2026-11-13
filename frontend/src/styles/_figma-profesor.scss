@@ -1,0 +1,543 @@
+// Estilos compartidos del rediseño Figma del módulo Profesor
+// (Lista de Cursos 774:35346 · Registro de Calificaciones 774:37846).
+// Solo usa tokens `--fg-*` de _tokens.scss.
+
+.fg-page {
+  font-family: var(--fg-font-family);
+  color: var(--fg-on-surface);
+  margin: calc(var(--space-md) * -1);
+  min-height: 100%;
+  background: var(--fg-surface-container);
+}
+
+.fg-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  background: var(--fg-surface-container);
+  border-bottom: 1px solid var(--fg-outline-soft);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--fg-on-surface-variant);
+  font-weight: 600;
+
+  a,
+  button {
+    all: unset;
+    cursor: pointer;
+    color: inherit;
+  }
+  .sep {
+    width: 4px;
+    height: 7px;
+    flex: none;
+  }
+  .actual {
+    color: var(--fg-primary);
+    font-weight: 700;
+  }
+}
+
+.fg-main {
+  max-width: 1536px;
+  padding: 32px 32px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: var(--fg-surface);
+}
+
+.fg-h1 {
+  margin: 0;
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 800;
+  letter-spacing: -0.75px;
+  color: var(--fg-primary);
+}
+.fg-sub {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--fg-on-surface-variant);
+}
+.fg-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.fg-btn {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--fg-radius-xs);
+  background: var(--fg-surface-container-highest);
+  color: var(--fg-primary);
+  font: 700 14px/20px var(--fg-font-family);
+  cursor: pointer;
+
+  &[disabled] {
+    color: var(--fg-disabled);
+    cursor: not-allowed;
+  }
+  &:focus-visible {
+    outline: 2px solid var(--fg-primary);
+    outline-offset: 2px;
+  }
+}
+
+/* Tarjetas de resumen */
+.fg-stats {
+  display: grid;
+  gap: 24px;
+  padding: 8px 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.fg-stat {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 79px;
+  padding: 16px;
+  background: var(--fg-surface-container);
+  border-radius: var(--fg-radius-md);
+
+  .ico {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 34px;
+    border-radius: var(--fg-radius-sm);
+    background: var(--fg-surface);
+    color: var(--fg-primary);
+  }
+  .body {
+    flex: 1;
+    min-width: 0;
+  }
+  .top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .num {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 800;
+    color: var(--fg-primary);
+  }
+  .label {
+    font-size: 10px;
+    line-height: 15px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    text-transform: uppercase;
+    color: var(--fg-on-surface-variant);
+  }
+  .hint {
+    font-size: 10px;
+    line-height: 15px;
+    color: var(--fg-on-surface-variant);
+  }
+}
+
+/* Barra de filtros */
+.fg-filters {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--fg-surface-container);
+  border-radius: var(--fg-radius-md);
+  flex-wrap: wrap;
+
+  .search {
+    position: relative;
+    flex: 1 1 300px;
+    min-width: 200px;
+
+    svg {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--fg-on-surface-variant);
+      pointer-events: none;
+    }
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 10px 16px 11px 44px;
+      border: 0;
+      border-radius: var(--fg-radius-sm);
+      background: var(--fg-surface);
+      font: 400 14px/20px var(--fg-font-family);
+      color: var(--fg-on-surface);
+      &::placeholder {
+        color: var(--fg-placeholder);
+      }
+      &:focus-visible {
+        outline: 2px solid var(--fg-primary);
+      }
+    }
+  }
+  select {
+    appearance: none;
+    padding: 10px 40px 10px 16px;
+    border: 0;
+    border-radius: var(--fg-radius-sm);
+    background-color: var(--fg-surface);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 9 6'><path d='M1 1l3.5 3.5L8 1' fill='none' stroke='%23434750' stroke-width='1.5'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    font: 500 14px/20px var(--fg-font-family);
+    color: var(--fg-on-surface);
+    cursor: pointer;
+  }
+  .chip {
+    padding: 9px 13px;
+    border: 1px solid var(--fg-info-border);
+    border-radius: var(--fg-radius-sm);
+    background: var(--fg-info-bg);
+    font: 800 10px/15px var(--fg-font-family);
+    text-transform: uppercase;
+    color: var(--fg-primary);
+  }
+}
+
+/* Contenedor de tabla */
+.fg-table-card {
+  overflow: hidden;
+  background: var(--fg-surface);
+  border: 1px solid var(--fg-outline-soft);
+  border-radius: var(--fg-radius-md);
+  box-shadow: var(--fg-shadow-table);
+}
+.fg-table-scroll {
+  overflow: auto;
+}
+.fg-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 32px 12px;
+  background: var(--fg-surface-container);
+  border-top: 1px solid var(--fg-outline-soft);
+  font-size: 11px;
+  line-height: 16.5px;
+  font-weight: 500;
+  color: var(--fg-on-surface-variant);
+}
+
+/* Tabla de cursos (PrimeNG p-table con skin Figma) */
+.fg-table.p-datatable {
+  .p-datatable-thead > tr > th {
+    padding: 16px 16px 17px;
+    background: var(--fg-surface-container-high);
+    border: 0;
+    border-bottom: 1px solid var(--fg-outline-soft);
+    font: 700 10px/15px var(--fg-font-family);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--fg-on-surface-variant);
+  }
+  .p-datatable-tbody > tr > td {
+    padding: 17px 16px 16px;
+    border: 0;
+    border-top: 1px solid var(--fg-row-divider);
+    background: var(--fg-surface);
+    font: 400 14px/20px var(--fg-font-family);
+    color: var(--fg-on-surface);
+  }
+  .p-datatable-thead > tr > th:first-child,
+  .p-datatable-tbody > tr > td:first-child {
+    padding-left: 32px;
+  }
+  .p-datatable-thead > tr > th:last-child,
+  .p-datatable-tbody > tr > td:last-child {
+    padding-right: 32px;
+  }
+  .ta-center {
+    text-align: center;
+  }
+  .ta-right {
+    text-align: right;
+  }
+  .grado {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+    color: var(--fg-primary);
+    &::before {
+      content: '';
+      width: 6px;
+      height: 24px;
+      border-radius: var(--fg-radius-pill);
+      background: var(--fg-bar-accent);
+    }
+  }
+  .badge {
+    display: inline-block;
+    padding: 2.5px 8px;
+    border-radius: var(--fg-radius-pill);
+    background: var(--fg-chip-bg);
+    font: 600 12px/16px var(--fg-font-family);
+    color: var(--fg-chip-text);
+  }
+  .materia {
+    font-weight: 700;
+    color: var(--fg-link);
+  }
+  .accion {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font: 700 11px/16.5px var(--fg-font-family);
+    color: var(--fg-primary);
+    &:focus-visible {
+      outline: 2px solid var(--fg-primary);
+      outline-offset: 2px;
+    }
+  }
+}
+
+/* Tarjetas de resumen de la planilla (774:37863) */
+.fg-stats--planilla {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0;
+
+  .card {
+    display: flex;
+    min-height: 70px;
+    padding: 17px;
+    background: var(--fg-surface-container);
+    border: 1px solid var(--fg-outline-variant);
+    border-radius: var(--fg-radius-md);
+    box-sizing: border-box;
+  }
+  .progreso {
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 800;
+      color: var(--fg-primary);
+      .t {
+        font-size: 10px;
+        line-height: 15px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .v {
+        font-size: 14px;
+        line-height: 20px;
+      }
+    }
+    .track {
+      height: 8px;
+      border-radius: var(--fg-radius-pill);
+      background: var(--fg-surface-container-highest);
+      overflow: hidden;
+    }
+    .fill {
+      height: 100%;
+      min-width: 5px;
+      border-radius: var(--fg-radius-pill);
+      background: var(--fg-primary);
+    }
+  }
+  .resumen {
+    grid-column: span 2;
+    align-items: center;
+    justify-content: space-around;
+    gap: 16px;
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .dot {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--fg-radius-pill);
+      color: var(--fg-primary);
+    }
+    .dot--ok {
+      background: var(--fg-success-bg);
+    }
+    .dot--warn {
+      background: var(--fg-warn-bg);
+    }
+    .n {
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 800;
+      color: var(--fg-on-surface);
+    }
+    .l {
+      font-size: 9px;
+      line-height: 13.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--fg-on-surface-variant);
+    }
+    .div {
+      width: 1px;
+      height: 32px;
+      background: var(--fg-outline-variant);
+    }
+  }
+  .estado {
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: var(--fg-primary);
+    border-color: var(--fg-primary);
+    color: var(--fg-on-primary);
+    .l {
+      font-size: 9px;
+      line-height: 13.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--fg-on-primary-muted);
+    }
+    .n {
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 700;
+      color: var(--fg-on-primary);
+    }
+  }
+}
+
+/* Grilla de notas (774:34010 CursoTablaNotas) */
+.fg-grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-family: var(--fg-font-family);
+
+  th,
+  td {
+    box-sizing: border-box;
+    border-right: 1px solid var(--fg-outline-variant);
+  }
+  thead th {
+    background: var(--fg-surface-container-high);
+    font: 700 10px/normal var(--fg-font-family);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--fg-on-surface-variant);
+    text-align: center;
+    padding: 9px 8px;
+    .sub {
+      display: block;
+      margin-top: 2px;
+      font: 400 7px/normal var(--fg-font-family);
+      letter-spacing: 1px;
+      text-transform: none;
+      opacity: 0.6;
+    }
+  }
+  thead tr.eval th {
+    background: var(--fg-header-subtle);
+    font-size: 9px;
+    padding: 6px 4px;
+    min-width: 48px;
+  }
+  thead th.nombre {
+    text-align: left;
+    padding: 0 17px 0 16px;
+  }
+  thead th.promedio {
+    background: var(--fg-primary);
+    color: var(--fg-on-primary);
+    font-size: 12px;
+    border-right: 0;
+    min-width: 8rem;
+    .sub {
+      opacity: 0.8;
+      text-transform: uppercase;
+    }
+  }
+  tbody td {
+    background: var(--fg-surface);
+    padding: 4px 0 4.5px;
+    text-align: center;
+  }
+  tbody td.nombre {
+    padding: 12px 24px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .nombre {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    min-width: 18rem;
+  }
+  tbody td.nombre .n {
+    margin-right: 7px;
+    font: 400 11px/normal var(--fg-font-family);
+    color: var(--fg-on-surface);
+  }
+  tbody td.nombre .nom {
+    font: 700 12px/16px var(--fg-font-family);
+    color: var(--fg-link);
+  }
+  tbody td.nombre small {
+    display: block;
+    margin-left: 22px;
+    font: 400 10px/14px var(--fg-font-family);
+    color: var(--fg-on-surface-variant);
+  }
+  tbody td.prom {
+    border-right: 0;
+    font: 800 14px/20px var(--fg-font-family);
+    color: var(--fg-primary);
+  }
+  .nota-input {
+    width: 3rem;
+    padding: 8px 4px;
+    border: 0;
+    background: transparent;
+    text-align: center;
+    font: 500 12px/16px var(--fg-font-family);
+    color: var(--fg-on-surface);
+    box-shadow: none;
+    &:focus {
+      outline: 2px solid var(--fg-primary);
+      outline-offset: -2px;
+      background: var(--fg-surface-container);
+    }
+    &.p-invalid {
+      outline: 2px solid var(--color-danger-text);
+    }
+  }
+  .celda-error {
+    display: block;
+    font: 400 9px/12px var(--fg-font-family);
+    color: var(--color-danger-text);
+  }
+}

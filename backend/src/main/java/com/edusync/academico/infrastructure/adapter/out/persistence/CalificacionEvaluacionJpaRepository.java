@@ -17,4 +17,6 @@ interface CalificacionEvaluacionJpaRepository
 
   List<CalificacionEvaluacionJpaEntity> findByEvaluacionIdInAndEstudianteIdAndTenantId(
       Collection<UUID> evaluacionIds, UUID estudianteId, UUID tenantId);
+
+  void deleteByIdAndTenantId(UUID id, UUID tenantId);
 }

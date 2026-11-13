@@ -9,5 +9,8 @@ import java.util.UUID;
 
 public record UpsertCalificacionesRequest(@NotEmpty @Valid List<Item> items) {
 
-  public record Item(@NotNull UUID estudianteId, @NotNull BigDecimal valor) {}
+  /**
+   * {@code valor} nullable: {@code null} borra la calificación de la celda ({@code DD-UC-033}).
+   */
+  public record Item(@NotNull UUID estudianteId, BigDecimal valor) {}
 }

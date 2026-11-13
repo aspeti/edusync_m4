@@ -1,7 +1,7 @@
 # PROMPT_MAPPING — EduSync
 
 > Catálogo de prompts usados para producir cada artefacto del proyecto EduSync (formato `PR-<AREA>-NNN`).
-> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.56`.
+> IDs: `ARCH` / `BRD` / `MRD` / `PRD` / `FSD` / `LFSD` / `UC` / `ADR` / `AUD` / `INF` / `DIAG` / `SKILL` / `C4` / `DTI` / `HEX` / `DTO` / `POC` / `ROADMAP` / `APORTES` / `VFINAL` / `IMPL`. Versión activa: `v2.58`.
 > Cada prompt sigue la estructura de `plantillas/plantillas1/PROMPT_TEMPLATE.md`.
 > Archivos individuales en `prompts/PR-*.md`.
 > Este documento es la fuente de verdad del ecosistema de prompts del proyecto.
@@ -85,6 +85,7 @@
 | PR-IMPL-030 | `docs/design/DD-UC-030.md` + `docs/prompts/impl/PR-IMPL-030.md` — RAG vectorial del camino PROCESO (embeddings en memoria) | generación | `dev-agent` | Sonnet | 02/10/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-030.md` | Cita textual; sin Chroma ni pgvector; léxico de `DD-UC-028` solo si el embedding falla; ejecución pendiente |
 | PR-IMPL-031 | `docs/design/DD-UC-031.md` + `docs/prompts/impl/PR-IMPL-031.md` — módulo `notassie`: exportación asíncrona e idempotente de la nota final de periodo al SIE | generación | `dev-agent` | Sonnet | 10/11/2026 | Aprobado (prompt) | `docs/prompts/impl/PR-IMPL-031.md` | Sin `floor()`; clave `rude+materia_id+periodo_id`; primera dependencia `resilience4j-circuitbreaker`; ejecutar solo con `ADR-0025` *Aceptada* |
 | PR-IMPL-032 | `docs/design/DD-UC-032.md` + `docs/prompts/impl/PR-IMPL-032.md` — base de PrimeNG 21.x (tema EduSync) y migración de la matriz de calificaciones a `p-table` | generación | `dev-agent` | Sonnet | 10/11/2026 | Ejecutado | `docs/prompts/impl/PR-IMPL-032.md` | `primeng` 21.1.10; sin AG Grid; `ng build` verde; 12/12 tests utilidad; prueba manual ≥ 45 estudiantes pendiente |
+| PR-IMPL-033 | `docs/design/DD-UC-033.md` + `docs/prompts/impl/PR-IMPL-033.md` — planilla Profesor por Curso (`FSD-UC-022`): landing Mis cursos + planilla inline | generación | `dev-agent` | Sonnet | 10/11/2026 | Ejecutado | `docs/prompts/impl/PR-IMPL-033.md` | `FSD-UC-022` completo backend+UI; `PlanillaProfesorIntegrationTest` + `ModularityTests` verde; `ng build` verde; issue #21 |
 | PR-ADR-012 | `docs/adr/0025-sie-recibe-nota-final-de-periodo-y-retiro-de-floor.md` — un solo motor `round`, el SIE recibe la nota final de periodo | generación | `arch-agent` | Sonnet | 10/11/2026 | Aprobado | `prompts/PR-ADR-012.md` | ADR en estado *Propuesta*; enmienda `ADR-0005` (clave) y `ADR-0013` (`floor()`); diferidos listados en §3.7 |
 | PR-ADR-013 | `docs/adr/0026-primeng-libreria-de-componentes-frontend.md` — PrimeNG 21.x como única librería de UI | generación | `arch-agent` | Sonnet | 10/11/2026 | Aprobado | `prompts/PR-ADR-013.md` | ADR *Aceptada*; enmienda `ADR-0015`; AG Grid descartado |
 | PR-ADR-011 | `docs/adr/0024-rag-vectorial-camino-proceso.md` — embeddings del proveedor ya configurado para PROCESO | generación | `arch-agent` | Sonnet | 02/10/2026 | Aprobado | `prompts/PR-ADR-011.md` | Alternativa D; no supersede a `ADR-0021` ni a `ADR-0023` |
@@ -266,6 +267,7 @@ flowchart TD
         IMPL030["PR-IMPL-030\nRAG vectorial\ncamino PROCESO"]
         IMPL031["PR-IMPL-031\nExportacion SIE\nnota final de periodo"]
         IMPL032["PR-IMPL-032\nPrimeNG tema EduSync\nmatriz p-table"]
+        IMPL033["PR-IMPL-033\nPlanilla Profesor\npor Curso FSD-UC-022"]
     end
     FSD --> IMPL001
     HEX --> IMPL001
@@ -351,6 +353,10 @@ flowchart TD
     IMPL018 --> IMPL032
     IMPL020 --> IMPL032
     ADR --> IMPL032
+    IMPL018 --> IMPL033
+    IMPL032 --> IMPL033
+    FSD --> IMPL033
+    ADR --> IMPL033
 ```
 
 ---
@@ -360,7 +366,7 @@ flowchart TD
 | Agente | Prompts asignados | Responsabilidad principal | Artefactos generados |
 |--------|-------------------|--------------------------|----------------------|
 | `docs-agent` | PR-ARCH-001, PR-ARCH-002, PR-BRD-001, PR-BRD-002, PR-MRD-001, PR-PRD-001, PR-FSD-001, PR-LFSD-001, PR-SKILL-001, PR-SKILL-002, PR-SKILL-003, PR-DTI-001, PR-DTI-SEAMS-001, PR-POC-001, PR-POC-002, PR-ROADMAP-001, PR-APORTES-001, PR-VFINAL-001, PR-INF-001 | Producir y mantener toda la cadena documental del proyecto (BRD → MRD → PRD → FSD → LFSD → AGENTS.md → Skills → POCs → roadmap → aportes → aliases vFinal); versionar y consolidar ante nuevos artefactos funcionales, de bajo nivel, configuración de agentes, evidencia de pruebas de concepto, hoja de ruta de release, informe de aportes individuales y snapshots congelados de entrega | `.md` en `docs/`, `docs/fsd/`; LFSD en `docs/LFSD-EduSync.md`; Skills en `.cursor/skills/` y `.claude/skills/`; DTI y analisis de seams en `docs/DTI.md`; POCs en `docs/pocs/`; roadmap canónico en `docs/roadmap.md`; aportes por release en `docs/aportes/release-<x.y.z>.md`; aliases `_vFinal.md` en `docs/brd/`, `docs/mrd/`, `docs/prd/`, `docs/fsd/` |
-| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006, PR-IMPL-007, PR-IMPL-008, PR-IMPL-009, PR-IMPL-010, PR-IMPL-011, PR-IMPL-012, PR-IMPL-013, PR-IMPL-014, PR-IMPL-015, PR-IMPL-016, PR-IMPL-017, PR-IMPL-018, PR-IMPL-019, PR-IMPL-020, PR-IMPL-022, PR-IMPL-023, PR-IMPL-024, PR-IMPL-025, PR-IMPL-026, PR-IMPL-027, PR-IMPL-028, PR-IMPL-029, PR-IMPL-030, PR-IMPL-031, PR-IMPL-032 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
+| `dev-agent` | PR-UC-001..UC-010, PR-DTO-001, PR-IMPL-001, PR-IMPL-002, PR-IMPL-003, PR-IMPL-004, PR-IMPL-005, PR-IMPL-006, PR-IMPL-007, PR-IMPL-008, PR-IMPL-009, PR-IMPL-010, PR-IMPL-011, PR-IMPL-012, PR-IMPL-013, PR-IMPL-014, PR-IMPL-015, PR-IMPL-016, PR-IMPL-017, PR-IMPL-018, PR-IMPL-019, PR-IMPL-020, PR-IMPL-022, PR-IMPL-023, PR-IMPL-024, PR-IMPL-025, PR-IMPL-026, PR-IMPL-027, PR-IMPL-028, PR-IMPL-029, PR-IMPL-030, PR-IMPL-031, PR-IMPL-032, PR-IMPL-033 | Generar contratos de UC, DTOs por capa hexagonal, código de dominio y pruebas unitarias; desde `release/3.0.0`, materializar los `DD-UC-NNN` de `docs/design/` como código real (esqueleto de proyecto, features, UI Angular) vía prompts `PR-IMPL-NNN` | Código en `backend/`, `frontend/`, `infra/`; contratos en `docs/prompts/impl/` (área `IMPL`) y `prompts/` (resto de áreas); DTOs en `docs/dtos_EduSync.md` |
 | `arch-agent` | PR-ADR-001..005, PR-ADR-006, PR-ADR-007, PR-ADR-008, PR-ADR-010, PR-ADR-011, PR-ADR-012, PR-ADR-013, PR-C4-001, PR-C4-002, PR-C4-003, PR-C4-004, PR-C4-005, PR-C4-006, PR-HEX-001 | Evaluar alternativas, diseñar arquitectura hexagonal y documentar decisiones arquitectónicas | ADRs en `docs/adr/`; diagramas C4 (Levels 1/2/3 + Deployment AWS) en `docs/diagrams/` con `.md` espejo (IG-09); arquitectura hexagonal en `docs/arquitectura_hexagonal_EduSync.md` |
 | `qa-agent` | PR-AUD-001 | Verificar invariantes, trazabilidad y cobertura de pruebas | Reportes en `docs/qa/` |
 | `process-agent` | PR-DIAG-001, PR-DIAG-002 | Modelar workflows y diagramas de estado de actores institucionales (Docente, Director) garantizando consistencia con UCs | Diagramas `.mmd` y especificaciones `.md` en `docs/diagramas/` |
@@ -4479,6 +4485,49 @@ AGENTS.md §4. dtp-sync al cerrar.
 
 ---
 
+### PR-IMPL-033 — Planilla Profesor por Curso (FSD-UC-022)
+
+```markdown
+# Role
+Eres un Senior Full-Stack Engineer de EduSync (Java 25 / Spring Boot 4.1 /
+Modulith / Angular 21 + PrimeNG 21) que implementa vertical slices hexagonales
+sin violar CalculoNotas ni RLS.
+
+# Task
+Implementa docs/design/DD-UC-033.md §2: GET /profesores/me/asignaciones,
+GET /materias/{id}/planilla, PUT calificaciones con valor null (clear),
+UI mis-cursos + planilla inline (blur/Enter), redirect PROFESOR a /academico/mis-cursos.
+
+# Context
+- Documentos: DD-UC-033, FSD-UC-022, DD-UC-018, DD-UC-032, ADR-0013, ADR-0026, issue #21.
+- Stack: Java 25, Boot 4.1.0, Angular 21, PrimeNG 21.1.x, PostgreSQL 15 RLS.
+- Restricciones: promedios solo en CalculoNotas; sin floor(); sin PII/rude/notas
+  en logs; conservar /mis-materias como secundario; sin docs/baseline/**.
+
+# Reasoning
+1. Ruta me antes de {id} en profesores.
+2. Tests planilla + null-clear antes de UI.
+3. Autosave 1 ítem; notaPeriodo solo del servidor.
+
+# Stop condition
+mvn test verde (ModularityTests). ng build verde. dtp-sync al cerrar.
+
+# Output
+backend academico (use cases + REST), frontend mis-cursos/planilla, rutas/shell/login,
+tests. DoD DD-UC-033 y prompt → Ejecutado.
+
+# Invariants
+- Un solo motor CalculoNotas (round HALF_UP).
+- 404 cross-tenant. Sin cálculo de promedio en TS.
+- Sin botones Agregar/Editar/Guardar por celda.
+
+# Failure modes
+- E_CALCULO_EN_FRONTEND / E_FLOOR / E_MIAS_REUSADO_MAL / E_RUTA_ME_CAPTURADA /
+  E_BASELINE_TOCADO / E_PII_EN_LOGS: rechazar o revertir.
+```
+
+---
+
 ## Invariantes globales del ecosistema de prompts
 
 | # | Invariante | Aplica a |
@@ -4598,6 +4647,7 @@ AGENTS.md §4. dtp-sync al cerrar.
 | Design Doc `DD-UC-031` §1/§2 + `ADR-0005` + `ADR-0013` + `docs/product/FSD.md` §4.1–§4.5 | `DD-UC-031, ADR-0005, ADR-0013, FSD-UC-001, FSD-UC-003, FSD-UC-004, FSD-UC-005` | PR-ADR-012 | `arch-agent` | `ADR-0025` (un solo motor `round`; el SIE recibe la nota final de periodo) — **Propuesta** | `docs/adr/0025-sie-recibe-nota-final-de-periodo-y-retiro-de-floor.md`, `prompts/PR-ADR-012.md` |
 | Design Doc `DD-UC-032` + `ADR-0026` + `ADR-0015` + `ADR-0008` + `docs/product/FSD.md` (`FSD-UC-016`) | `DD-UC-032, ADR-0026, ADR-0015, ADR-0008, FSD-UC-016, DD-UC-018` | PR-IMPL-032 | `dev-agent` | Base de PrimeNG y matriz de calificaciones con `p-table` — **ejecutado** 10/11/2026 (`ng build` verde; 12/12 tests utilidad) | `docs/design/DD-UC-032.md`, `docs/prompts/impl/PR-IMPL-032.md`, `frontend/src/app/core/ui/edusync-theme.ts`, `frontend/src/app/features/academico/evaluacion-calificaciones.page.ts` |
 | Design Doc `DD-UC-032` §1/§2 + `ADR-0015` + `ADR-0008` | `DD-UC-032, ADR-0015, ADR-0008, FSD-UC-016` | PR-ADR-013 | `arch-agent` | `ADR-0026` (PrimeNG como única librería de UI) — **Aceptada** | `docs/adr/0026-primeng-libreria-de-componentes-frontend.md`, `prompts/PR-ADR-013.md` |
+| Design Doc `DD-UC-033` + `FSD-UC-022` + `ADR-0013` + `ADR-0026` + issue #21 | `DD-UC-033, FSD-UC-022, PRD-US-031, ADR-0013, ADR-0026, DD-UC-018, DD-UC-032` | PR-IMPL-033 | `dev-agent` | Planilla Profesor por Curso — **ejecutado** 10/11/2026 | `docs/design/DD-UC-033.md`, `docs/prompts/impl/PR-IMPL-033.md`, `ProfesorMeController`, `planilla-curso.page.ts` |
 | Design Doc `DD-UC-030` + `ADR-0021` + `ADR-0023` | `DD-UC-030, ADR-0021, ADR-0023` | PR-ADR-011 | `arch-agent` | `ADR-0024` (embeddings en memoria para PROCESO) — **Aprobado** | `docs/adr/0024-rag-vectorial-camino-proceso.md`, `prompts/PR-ADR-011.md` |
 
 ---
@@ -4683,3 +4733,5 @@ AGENTS.md §4. dtp-sync al cerrar.
 | v2.54 | 10/11/2026 | G-EduSync | `PR-IMPL-031` + `PR-ADR-012` (`DD-UC-031`, `ADR-0025` *Propuesta*): exportación de la nota final de periodo al SIE sobre el modelo genérico; `floor()` retirado; inmutabilidad, correcciones y `audit_log` diferidos. Prompt aprobado, ejecución pendiente. Índice, flowchart (`IMPL031`), matriz `dev-agent`/`arch-agent`, contratos y trazabilidad. Invariante global `IG-02`/`IG-03` anotados. Total 71 → 73. |
 | v2.55 | 10/11/2026 | G-EduSync | `PR-IMPL-032` + `PR-ADR-013` (`DD-UC-032`, `ADR-0026` *Propuesta*): PrimeNG 21.x como única librería de UI; matriz de calificaciones a `p-table`; AG Grid descartado. Prompt aprobado, ejecución pendiente. Índice, flowchart (`IMPL032`), matriz `dev-agent`/`arch-agent`, contratos y trazabilidad. Total 73 → 75. |
 | v2.56 | 10/11/2026 | G-EduSync | **Ejecución de `PR-IMPL-032`** + `ADR-0026` *Aceptada*: PrimeNG 21.1.10, tema EduSync, matriz `p-table`. `ng build` verde; 12/12 tests utilidad. Sin filas nuevas (75 contratos). |
+| v2.57 | 10/11/2026 | G-EduSync | `PR-IMPL-033` (`DD-UC-033`, `FSD-UC-022`): planilla Profesor por Curso — landing Mis cursos + planilla inline. Prompt aprobado, ejecución pendiente. Índice, flowchart (`IMPL033`), matriz `dev-agent`, contrato y trazabilidad. Issue #21. Total 75 → 76. |
+| v2.58 | 10/11/2026 | G-EduSync | **Ejecución de `PR-IMPL-033`**: `FSD-UC-022` completo backend+UI. Estado fila → Ejecutado. Trazabilidad actualizada. Sin filas nuevas (76 contratos). |

@@ -65,6 +65,11 @@ class CalificacionEvaluacionRepositoryAdapter implements CalificacionEvaluacionR
         .toList();
   }
 
+  @Override
+  public void eliminar(CalificacionEvaluacionId id, UUID tenantId) {
+    jpaRepository.deleteByIdAndTenantId(id.valor(), tenantId);
+  }
+
   private CalificacionEvaluacionJpaEntity persistir(CalificacionEvaluacion calificacion) {
     Instant ahora = Instant.now();
     Optional<CalificacionEvaluacionJpaEntity> existente =

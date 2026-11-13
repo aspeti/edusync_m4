@@ -128,6 +128,20 @@ export const routes: Routes = [
           import('./features/academico/cursos-list.page').then((m) => m.CursosListPage),
       },
       {
+        path: 'academico/mis-cursos/planilla',
+        canActivate: [roleGuard],
+        data: { roles: ['PROFESOR', 'ADMIN'] },
+        loadComponent: () =>
+          import('./features/academico/planilla-curso.page').then((m) => m.PlanillaCursoPage),
+      },
+      {
+        path: 'academico/mis-cursos',
+        canActivate: [roleGuard],
+        data: { roles: ['PROFESOR', 'ADMIN'] },
+        loadComponent: () =>
+          import('./features/academico/mis-cursos-list.page').then((m) => m.MisCursosListPage),
+      },
+      {
         path: 'academico/mis-materias',
         canActivate: [roleGuard],
         data: { roles: ['PROFESOR'] },

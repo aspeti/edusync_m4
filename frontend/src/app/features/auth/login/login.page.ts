@@ -258,7 +258,7 @@ export class LoginPage implements OnInit {
         } else if (roles.includes('ADMIN')) {
           this.router.navigate(['/usuarios']);
         } else if (roles.includes('PROFESOR')) {
-          this.router.navigate(['/academico/mis-materias']);
+          this.router.navigate(['/academico/mis-cursos']);
         } else {
           this.router.navigate(['/home']);
         }

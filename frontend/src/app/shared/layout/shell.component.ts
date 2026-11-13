@@ -100,7 +100,10 @@ export class ShellComponent {
       );
     }
     if (this.auth.hasRole('PROFESOR')) {
-      links.push({ label: 'Mis materias', routerLink: '/academico/mis-materias' });
+      links.push(
+        { label: 'Mis cursos', routerLink: '/academico/mis-cursos' },
+        { label: 'Mis materias', routerLink: '/academico/mis-materias' },
+      );
     }
     if (
       this.auth.hasRole('ADMIN') ||

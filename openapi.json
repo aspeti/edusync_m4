@@ -1,0 +1,5019 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "contact" : {
+      "name" : "G-EduSync",
+      "url" : "https://github.com/aspeti/edusync_m4"
+    },
+    "description" : "Plataforma SaaS multi-tenant de gestión académica EduSync — monolito modular (ADR-0011). Contrato generado desde el código con springdoc y versionado en openapi.json (release 8.2.0).",
+    "license" : {
+      "name" : "Uso académico — Maestría en Ingeniería de Sistemas"
+    },
+    "title" : "EduSync API",
+    "version" : "8.2.0"
+  },
+  "servers" : [ {
+    "url" : "http://localhost:8080",
+    "description" : "Desarrollo local"
+  } ],
+  "security" : [ {
+    "bearerAuth" : [ ]
+  } ],
+  "tags" : [ {
+    "name" : "Academico"
+  }, {
+    "name" : "AI"
+  }, {
+    "name" : "Autenticacion"
+  }, {
+    "description" : "Alta y gestion de Tenants y Suscripciones (DD-UC-003, solo SYSADMIN)",
+    "name" : "Plataforma"
+  }, {
+    "description" : "CRUD administrativo de Usuarios y Roles (DD-UC-005, solo ADMIN)",
+    "name" : "Usuarios"
+  } ],
+  "paths" : {
+    "/api/v1/ai/agente" : {
+      "post" : {
+        "operationId" : "consultar_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AgenteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgenteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Consultar el sistema academico en lenguaje natural (ReAct + tools de solo lectura)",
+        "tags" : [ "AI" ]
+      }
+    },
+    "/api/v1/ai/chat" : {
+      "post" : {
+        "operationId" : "chat",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChatResponse"
+                }
+              }
+            },
+            "description" : "Respuesta del modelo"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChatResponse"
+                }
+              }
+            },
+            "description" : "Validacion de entrada fallida"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChatResponse"
+                }
+              }
+            },
+            "description" : "Sin autenticacion"
+          },
+          "502" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChatResponse"
+                }
+              }
+            },
+            "description" : "Ollama no disponible (E_LLM_NO_DISPONIBLE)"
+          },
+          "503" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ChatResponse"
+                }
+              }
+            },
+            "description" : "AI deshabilitado (E_AI_DESHABILITADO)"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Enviar un prompt al LLM y obtener la respuesta",
+        "tags" : [ "AI" ]
+      }
+    },
+    "/api/v1/ai/consultar-usuario" : {
+      "post" : {
+        "description" : "Extrae el nombre buscado (generar -> validar -> reintentar -> fallar controlado) y busca coincidencias en el tenant del usuario autenticado. Nunca expone passwordHash ni datos de otro tenant; cualquier usuario autenticado del tenant puede invocarlo.",
+        "operationId" : "consultarUsuario",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TextoLibreRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UsuarioResumenResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Coincidencias encontradas (puede ser una lista vacia)"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UsuarioResumenResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Validacion de entrada fallida"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UsuarioResumenResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Sin autenticacion"
+          },
+          "502" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UsuarioResumenResponse"
+                  }
+                }
+              }
+            },
+            "description" : "LLM no disponible o no cumplio el esquema tras varios intentos"
+          },
+          "503" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UsuarioResumenResponse"
+                  }
+                }
+              }
+            },
+            "description" : "AI deshabilitado (E_AI_DESHABILITADO)"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Consultar usuarios del tenant a partir de una pregunta en texto libre",
+        "tags" : [ "AI" ]
+      }
+    },
+    "/api/v1/auth/login" : {
+      "post" : {
+        "description" : "Unico endpoint publico del modulo identidad; el resto exige Bearer JWT.",
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description" : "Login exitoso, devuelve el JWT"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description" : "Validacion de entrada fallida"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description" : "Credenciales invalidas"
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description" : "Tenant suspendido o vencido (BR-014)"
+          }
+        },
+        "summary" : "Iniciar sesion",
+        "tags" : [ "Autenticacion" ]
+      }
+    },
+    "/api/v1/auth/restablecer-password/confirmar" : {
+      "post" : {
+        "description" : "Publico; requiere un token vigente (FSD-UC-021, flujo alternativo A2).",
+        "operationId" : "confirmar",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ConfirmarResetRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Contrasena actualizada"
+          },
+          "410" : {
+            "description" : "Token usado o expirado (E_ENLACE_INVALIDO)"
+          }
+        },
+        "summary" : "Confirmar el restablecimiento de contrasena",
+        "tags" : [ "Autenticacion" ]
+      }
+    },
+    "/api/v1/consultas-academicas/consultar" : {
+      "post" : {
+        "operationId" : "consultar",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ConsultarAcademicoRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConsultaAcademicaResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Consulta académica parametrizable (solo lectura)",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/consultas-academicas/entidades/curso-paralelo" : {
+      "get" : {
+        "operationId" : "cursoParalelo",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResolucionEntidadResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Resolver un curso+paralelo (ej. 1ro A)",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/consultas-academicas/entidades/estudiantes" : {
+      "get" : {
+        "operationId" : "estudiantes",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResolucionEntidadResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Resolver estudiantes por nombre (sin RUDE)",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/consultas-academicas/entidades/materias" : {
+      "get" : {
+        "operationId" : "materias",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResolucionEntidadResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Resolver materias por nombre",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/consultas-academicas/entidades/periodos" : {
+      "get" : {
+        "operationId" : "periodos",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResolucionEntidadResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Resolver periodos/trimestres de la gestión ACTIVA",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/consultas-academicas/entidades/profesores" : {
+      "get" : {
+        "operationId" : "profesores",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResolucionEntidadResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Resolver profesores por nombre",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/cursos" : {
+      "get" : {
+        "description" : "Scoped al tenant del Admin autenticado (DD-UC-010 §2). Filtros y paginacion opcionales (DD-UC-007): sin query params, page=0 y size=20 por defecto.",
+        "operationId" : "listar_5",
+        "parameters" : [ {
+          "description" : "Coincide con nombre (contains, case-insensitive)",
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : null,
+            "description" : "Coincide con nombre (contains, case-insensitive)"
+          }
+        }, {
+          "description" : "Indice de pagina, base 0 (default 0)",
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Indice de pagina, base 0 (default 0)"
+          }
+        }, {
+          "description" : "Tamano de pagina, 1-100 (default 20)",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Tamano de pagina, 1-100 (default 20)"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseCursoResponse"
+                }
+              }
+            },
+            "description" : "Pagina de Cursos"
+          }
+        },
+        "summary" : "Listar Cursos del tenant (filtrable y paginado)",
+        "tags" : [ "Academico" ]
+      },
+      "post" : {
+        "description" : "FSD-UC-017, paso 1.",
+        "operationId" : "crear_6",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearCursoRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CursoResponse"
+                }
+              }
+            },
+            "description" : "Curso creado"
+          }
+        },
+        "summary" : "Crear un Curso",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/cursos/{id}/paralelos" : {
+      "get" : {
+        "description" : "Sin paginar (DD-UC-010 §2: cardinalidad acotada).",
+        "operationId" : "listarParalelos",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ParaleloResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Lista de Paralelos"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ParaleloResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Curso inexistente o de otro tenant (E_CURSO_NO_ENCONTRADO)"
+          }
+        },
+        "summary" : "Listar los Paralelos de un Curso",
+        "tags" : [ "Academico" ]
+      },
+      "post" : {
+        "description" : "FSD-UC-017, paso 2.",
+        "operationId" : "crearParalelo",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearParaleloRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ParaleloResponse"
+                }
+              }
+            },
+            "description" : "Paralelo creado"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ParaleloResponse"
+                }
+              }
+            },
+            "description" : "Curso inexistente o de otro tenant (E_CURSO_NO_ENCONTRADO)"
+          }
+        },
+        "summary" : "Crear un Paralelo dentro de un Curso",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/estudiantes" : {
+      "get" : {
+        "operationId" : "listar_4",
+        "parameters" : [ {
+          "description" : "Coincide con nombreCompleto (contains) o rude (exacto), case-insensitive",
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : null,
+            "description" : "Coincide con nombreCompleto (contains) o rude (exacto), case-insensitive"
+          }
+        }, {
+          "description" : "Filtra por estado",
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : null,
+            "description" : "Filtra por estado",
+            "enum" : [ "ACTIVO", "INACTIVO" ]
+          }
+        }, {
+          "description" : "Indice de pagina, base 0 (default 0)",
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Indice de pagina, base 0 (default 0)"
+          }
+        }, {
+          "description" : "Tamano de pagina, 1-100 (default 20)",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Tamano de pagina, 1-100 (default 20)"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseEstudianteResponse"
+                }
+              }
+            },
+            "description" : "Pagina de Estudiantes"
+          }
+        },
+        "summary" : "Listar Estudiantes del tenant (filtrable y paginado)",
+        "tags" : [ "Academico" ]
+      },
+      "post" : {
+        "description" : "FSD-UC-020, paso 1. rude obligatorio unico por tenant.",
+        "operationId" : "crear_5",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearEstudianteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EstudianteResponse"
+                }
+              }
+            },
+            "description" : "Estudiante creado"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EstudianteResponse"
+                }
+              }
+            },
+            "description" : "RUDE duplicado en el tenant (E_RUDE_DUPLICADO)"
+          }
+        },
+        "summary" : "Crear un Estudiante",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/estudiantes/{id}" : {
+      "get" : {
+        "operationId" : "obtener_4",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EstudianteResponse"
+                }
+              }
+            },
+            "description" : "Estudiante"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EstudianteResponse"
+                }
+              }
+            },
+            "description" : "Estudiante inexistente o de otro tenant (E_ESTUDIANTE_NO_ENCONTRADO)"
+          }
+        },
+        "summary" : "Obtener un Estudiante por id",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/estudiantes/{id}/inscripciones" : {
+      "get" : {
+        "operationId" : "listarInscripciones",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/InscripcionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Lista de inscripciones"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/InscripcionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Estudiante inexistente o de otro tenant (E_ESTUDIANTE_NO_ENCONTRADO)"
+          }
+        },
+        "summary" : "Listar inscripciones (historial) de un Estudiante",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/evaluaciones" : {
+      "post" : {
+        "description" : "puntajeMaximo = seccion.nota (nunca del cliente).",
+        "operationId" : "crear_4",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearEvaluacionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluacionResponse"
+                }
+              }
+            },
+            "description" : "Evaluacion creada"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluacionResponse"
+                }
+              }
+            },
+            "description" : "Materia/periodo/seccion no encontrados"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_MATERIA_SIN_PROFESOR"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_PERIODO_NO_ABIERTO / E_SECCION_NO_PERTENECE_A_GESTION"
+          }
+        },
+        "summary" : "Crear una Evaluacion",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/evaluaciones/{id}" : {
+      "get" : {
+        "operationId" : "obtener_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluacionResponse"
+                }
+              }
+            },
+            "description" : "Evaluacion"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_EVALUACION_NO_ENCONTRADA"
+          }
+        },
+        "summary" : "Obtener una Evaluacion por id",
+        "tags" : [ "Academico" ]
+      },
+      "patch" : {
+        "operationId" : "actualizar_3",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ActualizarEvaluacionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluacionResponse"
+                }
+              }
+            },
+            "description" : "Evaluacion actualizada"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_EVALUACION_NO_ENCONTRADA"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_PERIODO_NO_ABIERTO / E_EVALUACION_YA_ANULADA"
+          }
+        },
+        "summary" : "Actualizar nombre, fecha o descripcion",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/evaluaciones/{id}/calificaciones" : {
+      "get" : {
+        "operationId" : "listarCalificaciones",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CalificacionFilaResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Filas de nomina"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CalificacionFilaResponse"
+                  }
+                }
+              }
+            },
+            "description" : "E_EVALUACION_NO_ENCONTRADA"
+          }
+        },
+        "summary" : "Nomina + calificaciones de una evaluacion (DD-UC-018)",
+        "tags" : [ "Academico" ]
+      },
+      "put" : {
+        "operationId" : "upsertCalificaciones",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpsertCalificacionesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CalificacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Calificaciones guardadas"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CalificacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Evaluacion/materia no encontrada"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CalificacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "E_MATERIA_SIN_CURSO / E_MATERIA_SIN_PROFESOR"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CalificacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Rango / no inscrito / periodo / no activa"
+          }
+        },
+        "summary" : "Upsert batch de calificaciones (FSD-UC-016 / DD-UC-018)",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/evaluaciones/{id}/estado" : {
+      "patch" : {
+        "operationId" : "anular",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CambiarEstadoEvaluacionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluacionResponse"
+                }
+              }
+            },
+            "description" : "Evaluacion anulada"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_EVALUACION_NO_ENCONTRADA"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_PERIODO_NO_ABIERTO / E_EVALUACION_YA_ANULADA"
+          }
+        },
+        "summary" : "Anular una Evaluacion (baja logica)",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/gestiones-escolares" : {
+      "get" : {
+        "description" : "Scoped al tenant del actor autenticado (DD-UC-008 §2). Exclusivo ADMIN (DD-UC-021): el resto de roles nunca lista ni elige una Gestion Escolar, usa GET .../activa. Filtros y paginacion opcionales (DD-UC-007): sin query params, page=0 y size=20 por defecto.",
+        "operationId" : "listar_3",
+        "parameters" : [ {
+          "description" : "Coincide con nombre (contains, case-insensitive)",
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : null,
+            "description" : "Coincide con nombre (contains, case-insensitive)"
+          }
+        }, {
+          "description" : "Filtra por estado",
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : null,
+            "description" : "Filtra por estado",
+            "enum" : [ "PLANIFICACION", "ACTIVA", "CERRADA" ]
+          }
+        }, {
+          "description" : "Indice de pagina, base 0 (default 0)",
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Indice de pagina, base 0 (default 0)"
+          }
+        }, {
+          "description" : "Tamano de pagina, 1-100 (default 20)",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Tamano de pagina, 1-100 (default 20)"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseGestionEscolarResponse"
+                }
+              }
+            },
+            "description" : "Pagina de Gestiones Escolares"
+          }
+        },
+        "summary" : "Listar Gestiones Escolares del tenant (filtrable y paginado)",
+        "tags" : [ "Academico" ]
+      },
+      "post" : {
+        "description" : "Nace en PLANIFICACION y siembra 3 trimestres PENDIENTE y 4 secciones (FSD-UC-012/013/014, ADR-0013).",
+        "operationId" : "crear_3",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearGestionEscolarRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GestionEscolarResponse"
+                }
+              }
+            },
+            "description" : "Gestion Escolar creada"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GestionEscolarResponse"
+                }
+              }
+            },
+            "description" : "fechaFin no posterior a fechaInicio (E_FECHAS_INVALIDAS)"
+          }
+        },
+        "summary" : "Crear una Gestion Escolar",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/gestiones-escolares/activa" : {
+      "get" : {
+        "description" : "DD-UC-021: punto de entrada para SECRETARIA/PROFESOR/ASESOR, que nunca listan ni eligen una Gestion Escolar por id. Declarado antes de /{id}.",
+        "operationId" : "obtenerActiva",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GestionEscolarResponse"
+                }
+              }
+            },
+            "description" : "Gestion Escolar ACTIVA"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GestionEscolarResponse"
+                }
+              }
+            },
+            "description" : "E_GESTION_ESCOLAR_NO_ENCONTRADA (ninguna gestion ACTIVA)"
+          }
+        },
+        "summary" : "Obtener la Gestion Escolar actual (unica ACTIVA del tenant)",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/gestiones-escolares/activa/periodos" : {
+      "get" : {
+        "description" : "DD-UC-021. Sin paginar.",
+        "operationId" : "listarPeriodosDeActiva",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Lista de periodos"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "E_GESTION_ESCOLAR_NO_ENCONTRADA (ninguna gestion ACTIVA)"
+          }
+        },
+        "summary" : "Listar periodos de la Gestion Escolar actual",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/gestiones-escolares/activa/secciones" : {
+      "get" : {
+        "description" : "DD-UC-021. Sin paginar.",
+        "operationId" : "listarSeccionesDeActiva",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Lista de secciones"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "E_GESTION_ESCOLAR_NO_ENCONTRADA (ninguna gestion ACTIVA)"
+          }
+        },
+        "summary" : "Listar secciones de la Gestion Escolar actual",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/gestiones-escolares/{id}" : {
+      "get" : {
+        "description" : "DD-UC-015/020: exclusivo ADMIN.",
+        "operationId" : "obtener",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GestionEscolarResponse"
+                }
+              }
+            },
+            "description" : "Gestion Escolar"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GestionEscolarResponse"
+                }
+              }
+            },
+            "description" : "E_GESTION_ESCOLAR_NO_ENCONTRADA"
+          }
+        },
+        "summary" : "Obtener una Gestion Escolar por id",
+        "tags" : [ "Academico" ]
+      },
+      "patch" : {
+        "description" : "DD-UC-019: campos nulos conservan el valor actual. Sin restriccion de estado (ADMIN puede editar en cualquier momento, PLANIFICACION/ACTIVA/CERRADA).",
+        "operationId" : "actualizar_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ActualizarGestionEscolarRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GestionEscolarResponse"
+                }
+              }
+            },
+            "description" : "Gestion Escolar actualizada"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GestionEscolarResponse"
+                }
+              }
+            },
+            "description" : "E_GESTION_ESCOLAR_NO_ENCONTRADA"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GestionEscolarResponse"
+                }
+              }
+            },
+            "description" : "fechaFin no posterior a fechaInicio (E_FECHAS_INVALIDAS)"
+          }
+        },
+        "summary" : "Actualizar nombre y/o fechas de una Gestion Escolar",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/gestiones-escolares/{id}/estado" : {
+      "patch" : {
+        "description" : "PLANIFICACION/ACTIVA/CERRADA (FSD-UC-012, pasos 3-4). DD-UC-019: ADMIN puede transicionar a cualquier estado desde cualquier estado, sin maquina de estados restringida.",
+        "operationId" : "cambiarEstado_3",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CambiarEstadoGestionEscolarRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GestionEscolarResponse"
+                }
+              }
+            },
+            "description" : "Estado actualizado"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GestionEscolarResponse"
+                }
+              }
+            },
+            "description" : "Gestion Escolar inexistente o de otro tenant (E_GESTION_ESCOLAR_NO_ENCONTRADA)"
+          }
+        },
+        "summary" : "Cambiar el estado de una Gestion Escolar",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/gestiones-escolares/{id}/periodos" : {
+      "get" : {
+        "description" : "DD-UC-021: exclusivo ADMIN. Sin paginar, ordenados por orden.",
+        "operationId" : "listarPeriodos",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Lista de periodos"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "E_GESTION_ESCOLAR_NO_ENCONTRADA"
+          }
+        },
+        "summary" : "Listar periodos de una Gestion Escolar",
+        "tags" : [ "Academico" ]
+      },
+      "post" : {
+        "operationId" : "crearPeriodo",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearPeriodoEvaluacionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "Periodo creado"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_GESTION_ESCOLAR_NO_ENCONTRADA"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_FECHAS_INVALIDAS / E_PERIODOS_SOLAPADOS"
+          }
+        },
+        "summary" : "Agregar un periodo a una Gestion Escolar",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/gestiones-escolares/{id}/secciones" : {
+      "get" : {
+        "description" : "DD-UC-021: exclusivo ADMIN. Sin paginar, ordenadas por orden.",
+        "operationId" : "listarSecciones",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Lista de secciones"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "E_GESTION_ESCOLAR_NO_ENCONTRADA"
+          }
+        },
+        "summary" : "Listar secciones de una Gestion Escolar",
+        "tags" : [ "Academico" ]
+      },
+      "post" : {
+        "operationId" : "crearSeccion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearSeccionEvaluacionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "Seccion creada"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_GESTION_ESCOLAR_NO_ENCONTRADA"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA"
+          }
+        },
+        "summary" : "Agregar una seccion a una Gestion Escolar (la suma resultante debe ser 100)",
+        "tags" : [ "Academico" ]
+      },
+      "put" : {
+        "operationId" : "reemplazarSecciones",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReemplazarSeccionesEvaluacionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Plantilla reemplazada"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "E_GESTION_ESCOLAR_NO_ENCONTRADA"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA"
+          }
+        },
+        "summary" : "Reemplazar la plantilla de secciones (operacion canonica, Σ nota = 100)",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/inscripciones" : {
+      "post" : {
+        "description" : "FSD-UC-020, pasos 2-3. Nace ACTIVA. A1: 409 E_INSCRIPCION_DUPLICADA.",
+        "operationId" : "crear_2",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearInscripcionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/InscripcionResponse"
+                }
+              }
+            },
+            "description" : "Inscripcion creada"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/InscripcionResponse"
+                }
+              }
+            },
+            "description" : "Padre inexistente o de otro tenant"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/InscripcionResponse"
+                }
+              }
+            },
+            "description" : "Estudiante ya inscrito en esa Gestion Escolar"
+          }
+        },
+        "summary" : "Crear una Inscripcion",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/materias" : {
+      "get" : {
+        "operationId" : "listar_2",
+        "parameters" : [ {
+          "description" : "Coincide con nombre (contains, case-insensitive)",
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : null,
+            "description" : "Coincide con nombre (contains, case-insensitive)"
+          }
+        }, {
+          "description" : "Indice de pagina, base 0 (default 0)",
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Indice de pagina, base 0 (default 0)"
+          }
+        }, {
+          "description" : "Tamano de pagina, 1-100 (default 20)",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Tamano de pagina, 1-100 (default 20)"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseMateriaResponse"
+                }
+              }
+            },
+            "description" : "Pagina de Materias"
+          }
+        },
+        "summary" : "Listar Materias del tenant (filtrable y paginado)",
+        "tags" : [ "Academico" ]
+      },
+      "post" : {
+        "description" : "FSD-UC-018, paso 1.",
+        "operationId" : "crear_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearMateriaRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MateriaResponse"
+                }
+              }
+            },
+            "description" : "Materia creada"
+          }
+        },
+        "summary" : "Crear una Materia",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/materias/mias" : {
+      "get" : {
+        "description" : "DD-UC-017. Declarado antes de /{id}.",
+        "operationId" : "listarMias",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MateriaResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Lista de Materias"
+          }
+        },
+        "summary" : "Materias asignadas al usuario autenticado",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/materias/profesores-disponibles" : {
+      "get" : {
+        "operationId" : "listarProfesoresDisponibles",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ProfesorResumenResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Lista de profesores"
+          }
+        },
+        "summary" : "Catalogo de profesores activos del tenant",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/materias/{id}" : {
+      "get" : {
+        "operationId" : "obtener_3",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MateriaResponse"
+                }
+              }
+            },
+            "description" : "Materia"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MateriaResponse"
+                }
+              }
+            },
+            "description" : "Materia inexistente, de otro tenant o no asignada al Profesor"
+          }
+        },
+        "summary" : "Obtener una Materia por id",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/materias/{id}/asignaciones-curso" : {
+      "get" : {
+        "operationId" : "listarAsignacionesCurso",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AsignacionCursoResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Listar asignaciones Curso/Paralelo de una Materia",
+        "tags" : [ "Academico" ]
+      },
+      "post" : {
+        "description" : "FSD-UC-018, paso 2.",
+        "operationId" : "crearAsignacionCurso",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearAsignacionCursoRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AsignacionCursoResponse"
+                }
+              }
+            },
+            "description" : "Asignacion creada"
+          }
+        },
+        "summary" : "Asignar la Materia a un Curso/Paralelo",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/materias/{id}/asignaciones-profesor" : {
+      "get" : {
+        "operationId" : "listarAsignacionesProfesor",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AsignacionProfesorResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Listar asignaciones Profesor de una Materia",
+        "tags" : [ "Academico" ]
+      },
+      "post" : {
+        "description" : "FSD-UC-018, paso 3. A1: 409 E_MATERIA_SIN_CURSO.",
+        "operationId" : "crearAsignacionProfesor",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearAsignacionProfesorRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AsignacionProfesorResponse"
+                }
+              }
+            },
+            "description" : "Asignacion creada"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AsignacionProfesorResponse"
+                }
+              }
+            },
+            "description" : "Falta asignacion curso previa (E_MATERIA_SIN_CURSO)"
+          }
+        },
+        "summary" : "Asignar un Profesor a la Materia",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/materias/{id}/estudiantes/{estudianteId}/nota-provisional" : {
+      "get" : {
+        "description" : "FSD-UC-016 / DD-UC-018. Motor CalculoNotas (round HALF_UP, sin floor).",
+        "operationId" : "notaProvisional",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "estudianteId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "query",
+          "name" : "periodoId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NotaProvisionalResponse"
+                }
+              }
+            },
+            "description" : "Vista PROVISIONAL"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NotaProvisionalResponse"
+                }
+              }
+            },
+            "description" : "Materia/estudiante/periodo no encontrado"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NotaProvisionalResponse"
+                }
+              }
+            },
+            "description" : "E_ESTUDIANTE_NO_INSCRITO"
+          }
+        },
+        "summary" : "Nota provisional de un estudiante en la materia",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/materias/{id}/evaluaciones" : {
+      "get" : {
+        "description" : "Filtro opcional periodoId. Incluye ANULADA.",
+        "operationId" : "listarEvaluaciones",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "query",
+          "name" : "periodoId",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/EvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Lista de evaluaciones"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/EvaluacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "E_MATERIA_NO_ENCONTRADA"
+          }
+        },
+        "summary" : "Listar evaluaciones de una Materia",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/materias/{id}/planilla" : {
+      "get" : {
+        "description" : "DD-UC-033 / FSD-UC-022. notaPeriodo solo vía CalculoNotas.",
+        "operationId" : "planilla",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "query",
+          "name" : "cursoId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "query",
+          "name" : "paraleloId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "query",
+          "name" : "periodoId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PlanillaMateriaResponse"
+                }
+              }
+            },
+            "description" : "Planilla"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PlanillaMateriaResponse"
+                }
+              }
+            },
+            "description" : "E_MATERIA_NO_ENCONTRADA / E_PERIODO_NO_ENCONTRADO / E_PLANILLA_NO_ENCONTRADA"
+          }
+        },
+        "summary" : "Planilla estudiantes × evaluaciones del periodo",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/periodos-evaluacion/{id}" : {
+      "delete" : {
+        "operationId" : "eliminar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Eliminado"
+          },
+          "404" : {
+            "description" : "E_PERIODO_NO_ENCONTRADO"
+          },
+          "422" : {
+            "description" : "E_PERIODO_UNICO"
+          }
+        },
+        "summary" : "Eliminar un periodo (solo si todos estan PENDIENTE y N>1)",
+        "tags" : [ "Academico" ]
+      },
+      "patch" : {
+        "operationId" : "actualizar_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ActualizarPeriodoEvaluacionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "Periodo actualizado"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_PERIODO_NO_ENCONTRADO"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_FECHAS_INVALIDAS / E_PERIODOS_SOLAPADOS"
+          }
+        },
+        "summary" : "Actualizar nombre y fechas de un periodo",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/periodos-evaluacion/{id}/estado" : {
+      "patch" : {
+        "description" : "DD-UC-019: ADMIN puede abrir/cerrar cualquier periodo en cualquier orden.",
+        "operationId" : "cambiarEstado_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CambiarEstadoPeriodoEvaluacionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "Estado actualizado"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_PERIODO_NO_ENCONTRADO"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_MATERIA_SIN_DOCENTE (al abrir)"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PeriodoEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_SUMA_SECCIONES_INVALIDA / E_PARAMETROS_INCOMPLETOS (al abrir)"
+          }
+        },
+        "summary" : "Cambiar el estado de un periodo",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/periodos-evaluacion/{id}/parametros" : {
+      "get" : {
+        "description" : "DD-UC-029. Exclusivo ADMIN.",
+        "operationId" : "listarParametros",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ParametroPeriodoResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Parametros del periodo"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ParametroPeriodoResponse"
+                  }
+                }
+              }
+            },
+            "description" : "E_PERIODO_NO_ENCONTRADO"
+          }
+        },
+        "summary" : "Listar parametros de un periodo",
+        "tags" : [ "Academico" ]
+      },
+      "put" : {
+        "description" : "DD-UC-029 / BR-007.",
+        "operationId" : "guardarParametros",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GuardarParametrosPeriodoRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ParametroPeriodoResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Parametros guardados"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ParametroPeriodoResponse"
+                  }
+                }
+              }
+            },
+            "description" : "E_PERIODO_NO_ENCONTRADO / E_SECCION_NO_ENCONTRADA"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ParametroPeriodoResponse"
+                  }
+                }
+              }
+            },
+            "description" : "E_PARAMETROS_INMUTABLES / E_PARAMETROS_INCOMPLETOS / E_RANGO_INVALIDO / E_REGLA_NO_SOPORTADA"
+          }
+        },
+        "summary" : "Reemplazar parametros de un periodo PENDIENTE",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/plataforma/tenants" : {
+      "get" : {
+        "description" : "Consola SysAdmin (DD-UC-004 §2). Filtros y paginacion opcionales (DD-UC-007): sin query params, comportamiento identico al listado completo previo (page=0, size=20).",
+        "operationId" : "listar_1",
+        "parameters" : [ {
+          "description" : "Coincide con nombre (contains, case-insensitive)",
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : null,
+            "description" : "Coincide con nombre (contains, case-insensitive)"
+          }
+        }, {
+          "description" : "Filtra por estado",
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : null,
+            "description" : "Filtra por estado",
+            "enum" : [ "ACTIVO", "SUSPENDIDO", "VENCIDO" ]
+          }
+        }, {
+          "description" : "Indice de pagina, base 0 (default 0)",
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Indice de pagina, base 0 (default 0)"
+          }
+        }, {
+          "description" : "Tamano de pagina, 1-100 (default 20)",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Tamano de pagina, 1-100 (default 20)"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseTenantResponse"
+                }
+              }
+            },
+            "description" : "Pagina de Tenants"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseTenantResponse"
+                }
+              }
+            },
+            "description" : "Sin autenticacion"
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseTenantResponse"
+                }
+              }
+            },
+            "description" : "Rol insuficiente (requiere SYSADMIN)"
+          }
+        },
+        "summary" : "Listar Tenants (filtrable y paginado)",
+        "tags" : [ "Plataforma" ]
+      },
+      "post" : {
+        "description" : "Crea el Tenant en estado ACTIVO (FSD-UC-011, paso 1).",
+        "operationId" : "registrar",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegistrarTenantRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TenantResponse"
+                }
+              }
+            },
+            "description" : "Tenant creado"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TenantResponse"
+                }
+              }
+            },
+            "description" : "fechaVencimientoSuscripcion ausente (E_SUSCRIPCION_INCOMPLETA)"
+          }
+        },
+        "summary" : "Registrar un nuevo Tenant",
+        "tags" : [ "Plataforma" ]
+      }
+    },
+    "/api/v1/plataforma/tenants/{id}/admins" : {
+      "post" : {
+        "description" : "Llamada separada de POST /tenants (FSD-UC-011, paso 3; DD-UC-003 §3, alternativa C).",
+        "operationId" : "crearAdmin",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearAdminTenantRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminCreadoResponse"
+                }
+              }
+            },
+            "description" : "Usuario ADMIN creado"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminCreadoResponse"
+                }
+              }
+            },
+            "description" : "Tenant inexistente (E_TENANT_NO_ENCONTRADO)"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminCreadoResponse"
+                }
+              }
+            },
+            "description" : "Email ya registrado (E_EMAIL_EN_USO)"
+          }
+        },
+        "summary" : "Crear el primer ADMIN de un Tenant",
+        "tags" : [ "Plataforma" ]
+      }
+    },
+    "/api/v1/plataforma/tenants/{id}/estado" : {
+      "patch" : {
+        "description" : "ACTIVO/SUSPENDIDO/VENCIDO manual (FSD-UC-011, paso 4).",
+        "operationId" : "cambiarEstado_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CambiarEstadoTenantRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TenantResponse"
+                }
+              }
+            },
+            "description" : "Estado actualizado"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TenantResponse"
+                }
+              }
+            },
+            "description" : "Tenant inexistente (E_TENANT_NO_ENCONTRADO)"
+          }
+        },
+        "summary" : "Cambiar el estado de un Tenant",
+        "tags" : [ "Plataforma" ]
+      }
+    },
+    "/api/v1/profesores" : {
+      "get" : {
+        "operationId" : "listar_6",
+        "parameters" : [ {
+          "description" : "Coincide con nombreCompleto o email (contains, case-insensitive)",
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : null,
+            "description" : "Coincide con nombreCompleto o email (contains, case-insensitive)"
+          }
+        }, {
+          "description" : "Filtra por estado activo/inactivo",
+          "in" : "query",
+          "name" : "activo",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : null,
+            "description" : "Filtra por estado activo/inactivo"
+          }
+        }, {
+          "description" : "Indice de pagina, base 0 (default 0)",
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Indice de pagina, base 0 (default 0)"
+          }
+        }, {
+          "description" : "Tamano de pagina, 1-100 (default 20)",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Tamano de pagina, 1-100 (default 20)"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseProfesorResponse"
+                }
+              }
+            },
+            "description" : "Pagina de profesores"
+          }
+        },
+        "summary" : "Listar profesores del tenant (filtrable y paginado)",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/profesores/me/asignaciones" : {
+      "get" : {
+        "operationId" : "listarAsignaciones_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MisAsignacionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Lista de asignaciones (puede estar vacía)"
+          }
+        },
+        "summary" : "Asignaciones del Profesor autenticado (landing Mis cursos)",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/profesores/{id}" : {
+      "get" : {
+        "operationId" : "obtener_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProfesorResponse"
+                }
+              }
+            },
+            "description" : "Profesor"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProfesorResponse"
+                }
+              }
+            },
+            "description" : "Profesor inexistente, sin rol o de otro tenant (E_PROFESOR_NO_ENCONTRADO)"
+          }
+        },
+        "summary" : "Obtener un profesor por id",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/profesores/{id}/asignaciones" : {
+      "get" : {
+        "operationId" : "listarAsignaciones",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AsignacionProfesorVistaResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Lista de asignaciones enriquecida"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AsignacionProfesorVistaResponse"
+                  }
+                }
+              }
+            },
+            "description" : "Profesor inexistente, sin rol o de otro tenant (E_PROFESOR_NO_ENCONTRADO)"
+          }
+        },
+        "summary" : "Listar asignaciones Materia/Curso/Paralelo de un profesor",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/secciones-evaluacion/{id}" : {
+      "patch" : {
+        "operationId" : "actualizar",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ActualizarSeccionEvaluacionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "Seccion actualizada"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_SECCION_NO_ENCONTRADA"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SeccionEvaluacionResponse"
+                }
+              }
+            },
+            "description" : "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA"
+          }
+        },
+        "summary" : "Actualizar nombre y/o nota de una seccion",
+        "tags" : [ "Academico" ]
+      }
+    },
+    "/api/v1/usuarios" : {
+      "get" : {
+        "description" : "Scoped al tenant del Admin autenticado (DD-UC-005 §1). Filtros y paginacion opcionales (DD-UC-007): sin query params, comportamiento identico al listado completo previo (page=0, size=20).",
+        "operationId" : "listar",
+        "parameters" : [ {
+          "description" : "Coincide con nombreCompleto o email (contains, case-insensitive)",
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : null,
+            "description" : "Coincide con nombreCompleto o email (contains, case-insensitive)"
+          }
+        }, {
+          "description" : "Filtra por estado activo/inactivo",
+          "in" : "query",
+          "name" : "activo",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : null,
+            "description" : "Filtra por estado activo/inactivo"
+          }
+        }, {
+          "description" : "Filtra usuarios que tengan este rol",
+          "in" : "query",
+          "name" : "rol",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : null,
+            "description" : "Filtra usuarios que tengan este rol",
+            "enum" : [ "SYSADMIN", "ADMIN", "SECRETARIA", "ASESOR", "PROFESOR" ]
+          }
+        }, {
+          "description" : "Indice de pagina, base 0 (default 0)",
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Indice de pagina, base 0 (default 0)"
+          }
+        }, {
+          "description" : "Tamano de pagina, 1-100 (default 20)",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : null,
+            "description" : "Tamano de pagina, 1-100 (default 20)"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseUsuarioResponse"
+                }
+              }
+            },
+            "description" : "Pagina de usuarios"
+          }
+        },
+        "summary" : "Listar usuarios del tenant (filtrable y paginado)",
+        "tags" : [ "Usuarios" ]
+      },
+      "post" : {
+        "description" : "Alta multi-rol (FSD-UC-021, pasos 1-2; ADR-0010).",
+        "operationId" : "crear",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CrearUsuarioRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UsuarioResponse"
+                }
+              }
+            },
+            "description" : "Usuario creado"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UsuarioResponse"
+                }
+              }
+            },
+            "description" : "Email ya registrado (E_EMAIL_EN_USO)"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UsuarioResponse"
+                }
+              }
+            },
+            "description" : "Roles vacios o rol incompatible (E_INVARIANTE_ROL_VIOLADA)"
+          }
+        },
+        "summary" : "Crear un usuario del tenant",
+        "tags" : [ "Usuarios" ]
+      }
+    },
+    "/api/v1/usuarios/{id}/estado" : {
+      "patch" : {
+        "description" : "FSD-UC-021, paso 4.",
+        "operationId" : "cambiarEstado",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CambiarEstadoRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UsuarioResponse"
+                }
+              }
+            },
+            "description" : "Estado actualizado"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UsuarioResponse"
+                }
+              }
+            },
+            "description" : "Usuario inexistente o de otro tenant (E_USUARIO_NO_ENCONTRADO)"
+          }
+        },
+        "summary" : "Activar o desactivar un usuario",
+        "tags" : [ "Usuarios" ]
+      }
+    },
+    "/api/v1/usuarios/{id}/restablecer-password" : {
+      "post" : {
+        "description" : "FSD-UC-021, paso 5. Entrega real de notificacion pendiente (DD-UC-005 §1, placeholder log-only).",
+        "operationId" : "iniciarRestablecimiento",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "202" : {
+            "description" : "Restablecimiento iniciado"
+          },
+          "404" : {
+            "description" : "Usuario inexistente o de otro tenant (E_USUARIO_NO_ENCONTRADO)"
+          }
+        },
+        "summary" : "Iniciar el restablecimiento de contrasena de un usuario",
+        "tags" : [ "Usuarios" ]
+      }
+    },
+    "/api/v1/usuarios/{id}/roles" : {
+      "patch" : {
+        "description" : "FSD-UC-021, paso 3.",
+        "operationId" : "actualizarRoles",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ActualizarRolesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UsuarioResponse"
+                }
+              }
+            },
+            "description" : "Roles actualizados"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UsuarioResponse"
+                }
+              }
+            },
+            "description" : "Usuario inexistente o de otro tenant (E_USUARIO_NO_ENCONTRADO)"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UsuarioResponse"
+                }
+              }
+            },
+            "description" : "Roles vacios o rol incompatible (E_INVARIANTE_ROL_VIOLADA)"
+          }
+        },
+        "summary" : "Modificar los roles vigentes de un usuario",
+        "tags" : [ "Usuarios" ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "ActualizarEvaluacionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "descripcion" : {
+            "type" : "string"
+          },
+          "fecha" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "nombre" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Prueba escrita 1 (recuperatorio)",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        }
+      },
+      "ActualizarGestionEscolarRequest" : {
+        "type" : "object",
+        "properties" : {
+          "fechaFin" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "fechaInicio" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "nombre" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ActualizarPeriodoEvaluacionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "fechaFin" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "fechaInicio" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "nombre" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ActualizarRolesRequest" : {
+        "type" : "object",
+        "properties" : {
+          "roles" : {
+            "type" : "array",
+            "default" : "",
+            "example" : [ "ADMIN", "SECRETARIA" ],
+            "items" : {
+              "type" : "string"
+            },
+            "minItems" : 1,
+            "uniqueItems" : true
+          }
+        },
+        "required" : [ "roles" ]
+      },
+      "ActualizarSeccionEvaluacionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "nombre" : {
+            "type" : "string"
+          },
+          "nota" : {
+            "type" : "number"
+          }
+        }
+      },
+      "AdminCreadoResponse" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "usuarioId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
+      "AgenteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "confirmed" : {
+            "type" : "boolean",
+            "default" : false,
+            "description" : "Si true, ejecuta una tool write pendiente. Default false."
+          },
+          "contexto" : {
+            "$ref" : "#/components/schemas/ContextoConsultaAgente"
+          },
+          "history" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TurnoHistorialAgente"
+            }
+          },
+          "pregunta" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "¿Cuántos cursos hay en esta gestión?",
+            "maxLength" : 4000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "pregunta" ]
+      },
+      "AgenteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "agente" : {
+            "type" : "string"
+          },
+          "camino" : {
+            "type" : "string"
+          },
+          "confirmacionRequerida" : {
+            "type" : "boolean"
+          },
+          "contexto" : {
+            "$ref" : "#/components/schemas/ContextoConsultaAgente"
+          },
+          "fuente" : {
+            "type" : "string"
+          },
+          "herramientasUsadas" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "respuesta" : {
+            "type" : "string"
+          },
+          "steps" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PasoTrazaAgente"
+            }
+          },
+          "turnos" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "AsignacionCursoResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cursoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "cursoNombre" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "materiaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloNombre" : {
+            "type" : "string"
+          }
+        }
+      },
+      "AsignacionProfesorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cursoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "cursoNombre" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "materiaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloNombre" : {
+            "type" : "string"
+          },
+          "profesorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
+      "AsignacionProfesorVistaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cursoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "cursoNombre" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "materiaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "materiaNombre" : {
+            "type" : "string"
+          },
+          "paraleloId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloNombre" : {
+            "type" : "string"
+          }
+        }
+      },
+      "CalificacionFilaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "estudianteId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombreCompleto" : {
+            "type" : "string"
+          },
+          "rude" : {
+            "type" : "string"
+          },
+          "valor" : {
+            "type" : "number"
+          }
+        }
+      },
+      "CalificacionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "estudianteId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "evaluacionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "valor" : {
+            "type" : "number"
+          }
+        }
+      },
+      "CambiarEstadoEvaluacionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "estado" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "ANULADA",
+            "minLength" : 1,
+            "pattern" : "ANULADA"
+          }
+        },
+        "required" : [ "estado" ]
+      },
+      "CambiarEstadoGestionEscolarRequest" : {
+        "type" : "object",
+        "properties" : {
+          "estado" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "ACTIVA",
+            "minLength" : 1,
+            "pattern" : "PLANIFICACION|ACTIVA|CERRADA"
+          }
+        },
+        "required" : [ "estado" ]
+      },
+      "CambiarEstadoPeriodoEvaluacionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "estado" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "ABIERTO",
+            "minLength" : 1,
+            "pattern" : "PENDIENTE|ABIERTO|CERRADO"
+          }
+        },
+        "required" : [ "estado" ]
+      },
+      "CambiarEstadoRequest" : {
+        "type" : "object",
+        "properties" : {
+          "activo" : {
+            "type" : "boolean",
+            "default" : false,
+            "example" : false
+          }
+        }
+      },
+      "CambiarEstadoTenantRequest" : {
+        "type" : "object",
+        "properties" : {
+          "estado" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "SUSPENDIDO",
+            "minLength" : 1,
+            "pattern" : "ACTIVO|SUSPENDIDO|VENCIDO"
+          }
+        },
+        "required" : [ "estado" ]
+      },
+      "ChatRequest" : {
+        "type" : "object",
+        "properties" : {
+          "prompt" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Explica en una frase que es EduSync",
+            "maxLength" : 8000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "prompt" ]
+      },
+      "ChatResponse" : {
+        "type" : "object",
+        "properties" : {
+          "modelo" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "llama3.1:latest"
+          },
+          "respuesta" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "EduSync es una plataforma SaaS..."
+          }
+        }
+      },
+      "Columna" : {
+        "type" : "object",
+        "properties" : {
+          "evaluacionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "fecha" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "nombre" : {
+            "type" : "string"
+          },
+          "puntajeMaximo" : {
+            "type" : "number"
+          },
+          "seccionEvaluacionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "seccionNombre" : {
+            "type" : "string"
+          },
+          "seccionOrden" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "ConfirmarResetRequest" : {
+        "type" : "object",
+        "properties" : {
+          "passwordNuevo" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "nueva-contrasena",
+            "maxLength" : 2147483647,
+            "minLength" : 8
+          },
+          "token" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "b3f1c9de-...",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "passwordNuevo", "token" ]
+      },
+      "ConsultaAcademicaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "agregado" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "estado" : {
+            "type" : "string"
+          },
+          "faltantes" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "filas" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FilaConsultaResponse"
+            }
+          },
+          "operacion" : {
+            "type" : "string"
+          },
+          "preguntaAclaracion" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ConsultarAcademicoRequest" : {
+        "type" : "object",
+        "properties" : {
+          "cursoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "estudianteId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "gestionEscolarId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "materiaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "operacion" : {
+            "type" : "string",
+            "enum" : [ "NOTAS", "PROMEDIO", "REPROBADOS", "TOP", "NOMINA", "MATERIAS_ESTUDIANTE" ]
+          },
+          "paraleloId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "periodoEvaluacionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "umbral" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "operacion" ]
+      },
+      "ContextoConsultaAgente" : {
+        "type" : "object",
+        "properties" : {
+          "cursoId" : {
+            "type" : "string"
+          },
+          "estudianteEtiqueta" : {
+            "type" : "string"
+          },
+          "estudianteId" : {
+            "type" : "string"
+          },
+          "materiaEtiqueta" : {
+            "type" : "string"
+          },
+          "materiaId" : {
+            "type" : "string"
+          },
+          "paraleloEtiqueta" : {
+            "type" : "string"
+          },
+          "paraleloId" : {
+            "type" : "string"
+          },
+          "periodoEtiqueta" : {
+            "type" : "string"
+          },
+          "periodoId" : {
+            "type" : "string"
+          },
+          "ultimaOperacion" : {
+            "type" : "string"
+          }
+        }
+      },
+      "CrearAdminTenantRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "default" : "",
+            "example" : "admin@colegio.edu.bo",
+            "minLength" : 1
+          },
+          "nombreCompleto" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Admin del Colegio",
+            "minLength" : 1
+          },
+          "password" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "secreto123",
+            "maxLength" : 2147483647,
+            "minLength" : 8
+          }
+        },
+        "required" : [ "email", "nombreCompleto", "password" ]
+      },
+      "CrearAsignacionCursoRequest" : {
+        "type" : "object",
+        "properties" : {
+          "cursoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "cursoId", "paraleloId" ]
+      },
+      "CrearAsignacionProfesorRequest" : {
+        "type" : "object",
+        "properties" : {
+          "cursoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "profesorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "cursoId", "paraleloId", "profesorId" ]
+      },
+      "CrearCursoRequest" : {
+        "type" : "object",
+        "properties" : {
+          "nombre" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Primero de Primaria",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "nombre" ]
+      },
+      "CrearEstudianteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "datosPersonales" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "estado" : {
+            "type" : "string",
+            "default" : "",
+            "enum" : [ "ACTIVO", "INACTIVO" ],
+            "example" : "ACTIVO"
+          },
+          "nombreCompleto" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Ana Pérez",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "rude" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "12345678901",
+            "maxLength" : 20,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "nombreCompleto", "rude" ]
+      },
+      "CrearEvaluacionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "descripcion" : {
+            "type" : "string"
+          },
+          "fecha" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "materiaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombre" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Prueba escrita 1",
+            "maxLength" : 100,
+            "minLength" : 0
+          },
+          "periodoEvaluacionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "seccionEvaluacionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "fecha", "materiaId", "nombre", "periodoEvaluacionId", "seccionEvaluacionId" ]
+      },
+      "CrearGestionEscolarRequest" : {
+        "type" : "object",
+        "properties" : {
+          "fechaFin" : {
+            "type" : "string",
+            "format" : "date",
+            "default" : "",
+            "example" : "2027-11-30"
+          },
+          "fechaInicio" : {
+            "type" : "string",
+            "format" : "date",
+            "default" : "",
+            "example" : "2027-02-01"
+          },
+          "nombre" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "2027",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "fechaFin", "fechaInicio", "nombre" ]
+      },
+      "CrearInscripcionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "cursoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "estudianteId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "fechaInscripcion" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "gestionEscolarId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "cursoId", "estudianteId", "fechaInscripcion", "gestionEscolarId", "paraleloId" ]
+      },
+      "CrearMateriaRequest" : {
+        "type" : "object",
+        "properties" : {
+          "nombre" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Matemáticas",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "nombre" ]
+      },
+      "CrearParaleloRequest" : {
+        "type" : "object",
+        "properties" : {
+          "nombre" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "A",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "nombre" ]
+      },
+      "CrearPeriodoEvaluacionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "fechaFin" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "fechaInicio" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "nombre" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Bimestre 1",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "fechaFin", "fechaInicio", "nombre" ]
+      },
+      "CrearSeccionEvaluacionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "nombre" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Saber",
+            "minLength" : 1
+          },
+          "nota" : {
+            "type" : "number",
+            "default" : "",
+            "example" : 45.0
+          },
+          "orden" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : "",
+            "example" : 2
+          }
+        },
+        "required" : [ "nombre", "nota", "orden" ]
+      },
+      "CrearUsuarioRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "default" : "",
+            "example" : "marco.rios@colegio.edu.bo",
+            "minLength" : 1
+          },
+          "nombreCompleto" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Marco Rios",
+            "minLength" : 1
+          },
+          "passwordInicial" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "secreto-inicial",
+            "maxLength" : 2147483647,
+            "minLength" : 8
+          },
+          "roles" : {
+            "type" : "array",
+            "default" : "",
+            "example" : [ "ADMIN", "SECRETARIA" ],
+            "items" : {
+              "type" : "string"
+            },
+            "minItems" : 1,
+            "uniqueItems" : true
+          }
+        },
+        "required" : [ "email", "nombreCompleto", "passwordInicial", "roles" ]
+      },
+      "CursoResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombre" : {
+            "type" : "string"
+          }
+        }
+      },
+      "EstudianteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "datosPersonales" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "estado" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombreCompleto" : {
+            "type" : "string"
+          },
+          "rude" : {
+            "type" : "string"
+          }
+        }
+      },
+      "EvaluacionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "descripcion" : {
+            "type" : "string"
+          },
+          "estado" : {
+            "type" : "string"
+          },
+          "fecha" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "materiaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombre" : {
+            "type" : "string"
+          },
+          "periodoEvaluacionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "puntajeMaximo" : {
+            "type" : "number"
+          },
+          "seccionEvaluacionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
+      "Fila" : {
+        "type" : "object",
+        "properties" : {
+          "estudianteId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombreCompleto" : {
+            "type" : "string"
+          },
+          "notaPeriodo" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "notas" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "number"
+            }
+          },
+          "rude" : {
+            "type" : "string"
+          }
+        }
+      },
+      "FilaConsultaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "detalle" : {
+            "type" : "string"
+          },
+          "etiqueta" : {
+            "type" : "string"
+          },
+          "valor" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "GestionEscolarResponse" : {
+        "type" : "object",
+        "properties" : {
+          "estado" : {
+            "type" : "string"
+          },
+          "fechaFin" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "fechaInicio" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombre" : {
+            "type" : "string"
+          }
+        }
+      },
+      "GuardarParametrosPeriodoRequest" : {
+        "type" : "object",
+        "properties" : {
+          "parametros" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            }
+          }
+        },
+        "required" : [ "parametros" ]
+      },
+      "InscripcionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cursoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "cursoNombre" : {
+            "type" : "string"
+          },
+          "estado" : {
+            "type" : "string"
+          },
+          "estudianteId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "fechaInscripcion" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "gestionEscolarId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "gestionNombre" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloNombre" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Item" : {
+        "type" : "object",
+        "properties" : {
+          "rangoMax" : {
+            "type" : "number"
+          },
+          "rangoMin" : {
+            "type" : "number"
+          },
+          "reglaCombinacion" : {
+            "type" : "string"
+          },
+          "seccionEvaluacionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "rangoMax", "rangoMin", "reglaCombinacion", "seccionEvaluacionId" ]
+      },
+      "LoginRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "default" : "",
+            "example" : "sysadmin@edusync.local",
+            "minLength" : 1
+          },
+          "password" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "secreto",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "email", "password" ]
+      },
+      "LoginResponse" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "MatchEntidadResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cursoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "etiqueta" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
+      "MateriaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombre" : {
+            "type" : "string"
+          }
+        }
+      },
+      "MisAsignacionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "asignacionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "cursoEtiqueta" : {
+            "type" : "string"
+          },
+          "cursoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "cursoNombre" : {
+            "type" : "string"
+          },
+          "materiaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "materiaNombre" : {
+            "type" : "string"
+          },
+          "paraleloId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloNombre" : {
+            "type" : "string"
+          }
+        }
+      },
+      "NotaProvisionalResponse" : {
+        "type" : "object",
+        "properties" : {
+          "estado" : {
+            "type" : "string"
+          },
+          "notaPeriodo" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "promedioGestion" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "secciones" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SeccionNotaResponse"
+            }
+          }
+        }
+      },
+      "PageResponseCursoResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CursoResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PageResponseEstudianteResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EstudianteResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PageResponseGestionEscolarResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/GestionEscolarResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PageResponseMateriaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MateriaResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PageResponseProfesorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ProfesorResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PageResponseTenantResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TenantResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PageResponseUsuarioResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UsuarioResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "ParaleloResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cursoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombre" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ParametroPeriodoResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "periodoEvaluacionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "rangoMax" : {
+            "type" : "number"
+          },
+          "rangoMin" : {
+            "type" : "number"
+          },
+          "reglaCombinacion" : {
+            "type" : "string"
+          },
+          "seccionEvaluacionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
+      "PasoTrazaAgente" : {
+        "type" : "object",
+        "properties" : {
+          "exito" : {
+            "type" : "boolean"
+          },
+          "paso" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "tablasFuente" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "toolId" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PeriodoEvaluacionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "estado" : {
+            "type" : "string"
+          },
+          "fechaFin" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "fechaInicio" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "gestionEscolarId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombre" : {
+            "type" : "string"
+          },
+          "orden" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PlanillaMateriaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "columnas" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Columna"
+            }
+          },
+          "cursoEtiqueta" : {
+            "type" : "string"
+          },
+          "cursoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "cursoNombre" : {
+            "type" : "string"
+          },
+          "editable" : {
+            "type" : "boolean"
+          },
+          "filas" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Fila"
+            }
+          },
+          "materiaId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "materiaNombre" : {
+            "type" : "string"
+          },
+          "paraleloId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "paraleloNombre" : {
+            "type" : "string"
+          },
+          "periodoEstado" : {
+            "type" : "string"
+          },
+          "periodoId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "periodoNombre" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ProfesorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "activo" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombreCompleto" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ProfesorResumenResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombreCompleto" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ReemplazarSeccionesEvaluacionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "secciones" : {
+            "type" : "array",
+            "default" : "",
+            "description" : "Plantilla completa; orden = posicion 1-based del array",
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            }
+          }
+        },
+        "required" : [ "secciones" ]
+      },
+      "RegistrarTenantRequest" : {
+        "type" : "object",
+        "properties" : {
+          "fechaInicioSuscripcion" : {
+            "type" : "string",
+            "format" : "date",
+            "default" : "",
+            "example" : "2026-01-01"
+          },
+          "fechaVencimientoSuscripcion" : {
+            "type" : "string",
+            "format" : "date",
+            "default" : "",
+            "example" : "2026-12-31"
+          },
+          "nombre" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Unidad Educativa Ejemplo",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "fechaInicioSuscripcion", "nombre" ]
+      },
+      "ResolucionEntidadResponse" : {
+        "type" : "object",
+        "properties" : {
+          "estado" : {
+            "type" : "string"
+          },
+          "matches" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MatchEntidadResponse"
+            }
+          },
+          "tipo" : {
+            "type" : "string"
+          }
+        }
+      },
+      "SeccionEvaluacionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "gestionEscolarId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombre" : {
+            "type" : "string"
+          },
+          "nota" : {
+            "type" : "number"
+          },
+          "orden" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "SeccionNotaResponse" : {
+        "type" : "object",
+        "properties" : {
+          "estado" : {
+            "type" : "string"
+          },
+          "nombre" : {
+            "type" : "string"
+          },
+          "notaSeccion" : {
+            "type" : "number"
+          },
+          "seccionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
+      "TenantResponse" : {
+        "type" : "object",
+        "properties" : {
+          "estado" : {
+            "type" : "string"
+          },
+          "fechaInicioSuscripcion" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "fechaVencimientoSuscripcion" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombre" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TextoLibreRequest" : {
+        "type" : "object",
+        "properties" : {
+          "prompt" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Hola, no recuerdo el correo de un profesor que se llama Roberto, ¿pueden confirmarme si existe en el sistema?",
+            "maxLength" : 2000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "prompt" ]
+      },
+      "TurnoHistorialAgente" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string"
+          }
+        }
+      },
+      "UpsertCalificacionesRequest" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "items" ]
+      },
+      "UsuarioResponse" : {
+        "type" : "object",
+        "properties" : {
+          "activo" : {
+            "type" : "boolean"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nombreCompleto" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            },
+            "uniqueItems" : true
+          }
+        }
+      },
+      "UsuarioResumenResponse" : {
+        "type" : "object",
+        "properties" : {
+          "activo" : {
+            "type" : "boolean",
+            "default" : false,
+            "example" : true
+          },
+          "email" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "roberto.fernandez@colegio.edu.bo"
+          },
+          "nombreCompleto" : {
+            "type" : "string",
+            "default" : "",
+            "example" : "Roberto Fernandez"
+          },
+          "roles" : {
+            "type" : "array",
+            "default" : "",
+            "example" : [ "PROFESOR" ],
+            "items" : {
+              "type" : "string"
+            },
+            "uniqueItems" : true
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "bearerAuth" : {
+        "bearerFormat" : "JWT",
+        "scheme" : "bearer",
+        "type" : "http"
+      }
+    }
+  }
+}

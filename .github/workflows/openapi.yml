@@ -1,0 +1,99 @@
+name: OpenAPI contract
+
+# Demo 2 / release 8.2.0: el contrato se genera desde el código (springdoc), se versiona
+# como openapi.json y cada PR verifica (1) drift contra lo que genera el código y
+# (2) lint con Spectral. oasdiff (cambios incompatibles) es opcional y no bloquea.
+
+on:
+  pull_request:
+    branches: [main, master, develop, "release/**"]
+  push:
+    branches: [master, "release/**"]
+
+concurrency:
+  group: openapi-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Drift + Spectral
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: edusync
+          POSTGRES_USER: edusync
+          POSTGRES_PASSWORD: edusync_dev_local
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U edusync -d edusync"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: edusync
+      DB_USER: edusync
+      DB_PASSWORD: edusync_dev_local
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Generar contrato desde el código
+        run: ./scripts/export-openapi.sh "$RUNNER_TEMP/openapi.generated.json"
+
+      - name: Drift — openapi.json debe coincidir con el código
+        run: |
+          if [ ! -f openapi.json ]; then
+            echo "::error::Falta openapi.json en la raíz. Ejecute ./scripts/export-openapi.sh y súbalo."
+            exit 1
+          fi
+          if ! diff -u openapi.json "$RUNNER_TEMP/openapi.generated.json"; then
+            echo "::error::openapi.json está desactualizado respecto al código (drift). Regenere con ./scripts/export-openapi.sh y haga commit."
+            exit 1
+          fi
+          echo "Sin drift: openapi.json coincide con el contrato generado."
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Spectral (lint)
+        run: npx --yes @stoplight/spectral-cli@6.15.0 lint openapi.json --ruleset .spectral.yaml --fail-severity=error
+
+      - name: Subir contrato generado
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-generated
+          path: ${{ runner.temp }}/openapi.generated.json
+
+  breaking-changes:
+    name: oasdiff (opcional, no bloquea)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Comparar contra la rama base
+        run: |
+          if ! git cat-file -e "origin/${{ github.base_ref }}:openapi.json" 2>/dev/null; then
+            echo "La rama base aún no tiene openapi.json; se omite oasdiff."
+            exit 0
+          fi
+          git show "origin/${{ github.base_ref }}:openapi.json" > "$RUNNER_TEMP/base.json"
+          docker run --rm -v "$RUNNER_TEMP:/base" -v "$PWD:/head" tufin/oasdiff:latest \
+            breaking /base/base.json /head/openapi.json --fail-on ERR

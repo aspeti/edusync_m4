@@ -1,0 +1,2 @@
+# Intencionalmente vacío: la versión "antes" no excluye nada del contexto
+# (copia target/, .git, etc.), para poder medir el efecto de agregar .dockerignore.

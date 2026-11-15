@@ -1,0 +1,12 @@
+# Lo que no debe entrar al contexto de build (ni a la imagen).
+target
+.git
+.gitignore
+.idea
+*.iml
+.vscode
+.env
+.env.*
+**/*.log
+Dockerfile*
+.dockerignore

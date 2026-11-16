@@ -2,8 +2,8 @@
 producto: "EduSync"
 grupo: "G-EduSync"
 documento: DTP                 # Documento Técnico del Producto (continuación VIVA del DTI)
-version: v1.61                 # versiona la implementación, no el diseño de M4
-fecha: "10/11/2026"
+version: v1.62                 # versiona la implementación, no el diseño de M4
+fecha: "16/11/2026"
 status: vivo                   # vivo | en_revision | publicado-release   (NUNCA "congelado")
 audiencia: dual                # humanos + agentes IA
 baseline_ref:                  # el baseline CONGELADO del que parte este DTP (M4)
@@ -124,6 +124,7 @@ flowchart LR
 | 10/11/2026 | **`FSD-UC-022`** especificado en `docs/product/FSD.md` v2.18 + `PRD-US-031`/`PRD-REQ-032` en `PRD.md` v2.5: planilla del Profesor por Curso/Paralelo/Materia (landing + edición inline). Sin Design Doc ni código | Pedido de producto: UX curso-céntrica en lugar de “Mis materias” como entrada de notas | — (sin ADR: reutiliza `FSD-UC-015`/`016` + `ADR-0026`) | Spec viva; diseño/implementación pendientes | G-EduSync |
 | 10/11/2026 | **`DD-UC-033` + `PR-IMPL-033`** (aprobados): diseño fullstack de `FSD-UC-022` — `GET /profesores/me/asignaciones`, `GET .../planilla`, null-clear en PUT calificaciones, UI Mis cursos + planilla inline. `PROMPT_MAPPING` v2.57. Issue #21. Sin código | Feature-design-doc solicitado sobre issue #21 | — | Ejecución de `PR-IMPL-033` pendiente | G-EduSync |
 | 10/11/2026 | **Ejecución de `PR-IMPL-033`**: `ProfesorMeController` + `GET .../planilla` + null-clear en upsert; UI `mis-cursos` + `planilla-curso` (autosave blur/Enter); redirect PROFESOR → `/academico/mis-cursos`. `PROMPT_MAPPING` v2.58 | Cierre de `FSD-UC-022` backend+UI | — | `PlanillaProfesorIntegrationTest` + `ModularityTests` verde; `ng build` verde | G-EduSync |
+| 16/11/2026 | **Fix classpath OpenAPI**: `GET /v3/api-docs` devolvía 500 (`NoSuchMethodError: Schema.$dynamicRef()`) con la API en Docker. Causa: `spring-ai-starter-model-openai` → `openai-java-core` arrastra `swagger-annotations` (no-Jakarta) 2.2.31, que sombrea `swagger-annotations-jakarta` exigido por springdoc 3.0.3 / `swagger-core-jakarta` 2.2.47. Fix en `backend/pom.xml`: exclusión de `swagger-annotations` + pin `swagger-annotations-jakarta` 2.2.47; regenerado `openapi.json` (sin `default: null` espurio). README actualizado (Compose `postgres`+`api`, URLs OpenAPI). Sin ADR nuevo (compatibilidad bajo `ADR-0012`/`ADR-0017`) | Hallazgo operativo al levantar `infra/docker-compose.yml` y abrir la documentación viva | — | `GET /v3/api-docs` → 200 (53 paths); `/swagger-ui.html` → 200; imagen `api` reconstruida | G-EduSync |
 
 ### A.2 Deltas respecto al DTI vFinal
 
@@ -307,3 +308,4 @@ Estado actual: la cadena existe completa hasta `Design Doc` para `FSD-UC-011`/`F
 | v1.59 | 10/11/2026 | G-EduSync | **`FSD-UC-022`** especificado (`FSD.md` v2.18) + `PRD-US-031`/`PRD-REQ-032` (`PRD.md` v2.5). §A.1 fila. §A.3 nueva fila estado `especificado`. Sin Design Doc/código. Baseline intacto. |
 | v1.60 | 10/11/2026 | G-EduSync | **`DD-UC-033` + `PR-IMPL-033`** aprobados para `FSD-UC-022`. §A.1 fila. §A.3 → `diseñado`. `PROMPT_MAPPING` v2.57. Issue #21. Sin código. Baseline intacto. |
 | v1.61 | 10/11/2026 | G-EduSync | **Ejecución de `PR-IMPL-033`**: `FSD-UC-022` completo backend+UI. §A.1 fila. §A.3 → `completo`. `PROMPT_MAPPING` v2.58. Issue #21. Baseline intacto. |
+| v1.62 | 16/11/2026 | G-EduSync | **Fix `/v3/api-docs` 500** (conflicto swagger Spring AI vs springdoc): pin `swagger-annotations-jakarta` 2.2.47 + exclusión de `swagger-annotations` legacy en `pom.xml`; `openapi.json` regenerado; `README.md` documenta Compose API+Postgres y URLs OpenAPI/Swagger. §A.1 fila. Sin ADR nuevo. Baseline intacto. |

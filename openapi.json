@@ -486,7 +486,6 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "default" : null,
             "description" : "Coincide con nombre (contains, case-insensitive)"
           }
         }, {
@@ -497,7 +496,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Indice de pagina, base 0 (default 0)"
           }
         }, {
@@ -508,7 +506,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Tamano de pagina, 1-100 (default 20)"
           }
         } ],
@@ -658,7 +655,6 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "default" : null,
             "description" : "Coincide con nombreCompleto (contains) o rude (exacto), case-insensitive"
           }
         }, {
@@ -668,7 +664,6 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "default" : null,
             "description" : "Filtra por estado",
             "enum" : [ "ACTIVO", "INACTIVO" ]
           }
@@ -680,7 +675,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Indice de pagina, base 0 (default 0)"
           }
         }, {
@@ -691,7 +685,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Tamano de pagina, 1-100 (default 20)"
           }
         } ],
@@ -1176,7 +1169,6 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "default" : null,
             "description" : "Coincide con nombre (contains, case-insensitive)"
           }
         }, {
@@ -1186,7 +1178,6 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "default" : null,
             "description" : "Filtra por estado",
             "enum" : [ "PLANIFICACION", "ACTIVA", "CERRADA" ]
           }
@@ -1198,7 +1189,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Indice de pagina, base 0 (default 0)"
           }
         }, {
@@ -1209,7 +1199,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Tamano de pagina, 1-100 (default 20)"
           }
         } ],
@@ -1841,7 +1830,6 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "default" : null,
             "description" : "Coincide con nombre (contains, case-insensitive)"
           }
         }, {
@@ -1852,7 +1840,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Indice de pagina, base 0 (default 0)"
           }
         }, {
@@ -1863,7 +1850,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Tamano de pagina, 1-100 (default 20)"
           }
         } ],
@@ -2595,7 +2581,6 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "default" : null,
             "description" : "Coincide con nombre (contains, case-insensitive)"
           }
         }, {
@@ -2605,7 +2590,6 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "default" : null,
             "description" : "Filtra por estado",
             "enum" : [ "ACTIVO", "SUSPENDIDO", "VENCIDO" ]
           }
@@ -2617,7 +2601,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Indice de pagina, base 0 (default 0)"
           }
         }, {
@@ -2628,7 +2611,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Tamano de pagina, 1-100 (default 20)"
           }
         } ],
@@ -2824,7 +2806,6 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "default" : null,
             "description" : "Coincide con nombreCompleto o email (contains, case-insensitive)"
           }
         }, {
@@ -2834,7 +2815,6 @@
           "required" : false,
           "schema" : {
             "type" : "boolean",
-            "default" : null,
             "description" : "Filtra por estado activo/inactivo"
           }
         }, {
@@ -2845,7 +2825,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Indice de pagina, base 0 (default 0)"
           }
         }, {
@@ -2856,7 +2835,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Tamano de pagina, 1-100 (default 20)"
           }
         } ],
@@ -3049,7 +3027,6 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "default" : null,
             "description" : "Coincide con nombreCompleto o email (contains, case-insensitive)"
           }
         }, {
@@ -3059,7 +3036,6 @@
           "required" : false,
           "schema" : {
             "type" : "boolean",
-            "default" : null,
             "description" : "Filtra por estado activo/inactivo"
           }
         }, {
@@ -3069,7 +3045,6 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "default" : null,
             "description" : "Filtra usuarios que tengan este rol",
             "enum" : [ "SYSADMIN", "ADMIN", "SECRETARIA", "ASESOR", "PROFESOR" ]
           }
@@ -3081,7 +3056,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Indice de pagina, base 0 (default 0)"
           }
         }, {
@@ -3092,7 +3066,6 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : null,
             "description" : "Tamano de pagina, 1-100 (default 20)"
           }
         } ],
@@ -3308,7 +3281,6 @@
           },
           "nombre" : {
             "type" : "string",
-            "default" : "",
             "example" : "Prueba escrita 1 (recuperatorio)",
             "maxLength" : 100,
             "minLength" : 0
@@ -3352,7 +3324,6 @@
         "properties" : {
           "roles" : {
             "type" : "array",
-            "default" : "",
             "example" : [ "ADMIN", "SECRETARIA" ],
             "items" : {
               "type" : "string"
@@ -3391,7 +3362,6 @@
         "properties" : {
           "confirmed" : {
             "type" : "boolean",
-            "default" : false,
             "description" : "Si true, ejecuta una tool write pendiente. Default false."
           },
           "contexto" : {
@@ -3405,7 +3375,6 @@
           },
           "pregunta" : {
             "type" : "string",
-            "default" : "",
             "example" : "¿Cuántos cursos hay en esta gestión?",
             "maxLength" : 4000,
             "minLength" : 0
@@ -3583,7 +3552,6 @@
         "properties" : {
           "estado" : {
             "type" : "string",
-            "default" : "",
             "example" : "ANULADA",
             "minLength" : 1,
             "pattern" : "ANULADA"
@@ -3596,7 +3564,6 @@
         "properties" : {
           "estado" : {
             "type" : "string",
-            "default" : "",
             "example" : "ACTIVA",
             "minLength" : 1,
             "pattern" : "PLANIFICACION|ACTIVA|CERRADA"
@@ -3609,7 +3576,6 @@
         "properties" : {
           "estado" : {
             "type" : "string",
-            "default" : "",
             "example" : "ABIERTO",
             "minLength" : 1,
             "pattern" : "PENDIENTE|ABIERTO|CERRADO"
@@ -3622,7 +3588,6 @@
         "properties" : {
           "activo" : {
             "type" : "boolean",
-            "default" : false,
             "example" : false
           }
         }
@@ -3632,7 +3597,6 @@
         "properties" : {
           "estado" : {
             "type" : "string",
-            "default" : "",
             "example" : "SUSPENDIDO",
             "minLength" : 1,
             "pattern" : "ACTIVO|SUSPENDIDO|VENCIDO"
@@ -3645,7 +3609,6 @@
         "properties" : {
           "prompt" : {
             "type" : "string",
-            "default" : "",
             "example" : "Explica en una frase que es EduSync",
             "maxLength" : 8000,
             "minLength" : 0
@@ -3658,12 +3621,10 @@
         "properties" : {
           "modelo" : {
             "type" : "string",
-            "default" : "",
             "example" : "llama3.1:latest"
           },
           "respuesta" : {
             "type" : "string",
-            "default" : "",
             "example" : "EduSync es una plataforma SaaS..."
           }
         }
@@ -3703,14 +3664,12 @@
         "properties" : {
           "passwordNuevo" : {
             "type" : "string",
-            "default" : "",
             "example" : "nueva-contrasena",
             "maxLength" : 2147483647,
             "minLength" : 8
           },
           "token" : {
             "type" : "string",
-            "default" : "",
             "example" : "b3f1c9de-...",
             "minLength" : 1
           }
@@ -3826,19 +3785,16 @@
           "email" : {
             "type" : "string",
             "format" : "email",
-            "default" : "",
             "example" : "admin@colegio.edu.bo",
             "minLength" : 1
           },
           "nombreCompleto" : {
             "type" : "string",
-            "default" : "",
             "example" : "Admin del Colegio",
             "minLength" : 1
           },
           "password" : {
             "type" : "string",
-            "default" : "",
             "example" : "secreto123",
             "maxLength" : 2147483647,
             "minLength" : 8
@@ -3883,7 +3839,6 @@
         "properties" : {
           "nombre" : {
             "type" : "string",
-            "default" : "",
             "example" : "Primero de Primaria",
             "minLength" : 1
           }
@@ -3901,20 +3856,17 @@
           },
           "estado" : {
             "type" : "string",
-            "default" : "",
             "enum" : [ "ACTIVO", "INACTIVO" ],
             "example" : "ACTIVO"
           },
           "nombreCompleto" : {
             "type" : "string",
-            "default" : "",
             "example" : "Ana Pérez",
             "maxLength" : 200,
             "minLength" : 0
           },
           "rude" : {
             "type" : "string",
-            "default" : "",
             "example" : "12345678901",
             "maxLength" : 20,
             "minLength" : 0
@@ -3938,7 +3890,6 @@
           },
           "nombre" : {
             "type" : "string",
-            "default" : "",
             "example" : "Prueba escrita 1",
             "maxLength" : 100,
             "minLength" : 0
@@ -3960,18 +3911,15 @@
           "fechaFin" : {
             "type" : "string",
             "format" : "date",
-            "default" : "",
             "example" : "2027-11-30"
           },
           "fechaInicio" : {
             "type" : "string",
             "format" : "date",
-            "default" : "",
             "example" : "2027-02-01"
           },
           "nombre" : {
             "type" : "string",
-            "default" : "",
             "example" : "2027",
             "minLength" : 1
           }
@@ -4009,7 +3957,6 @@
         "properties" : {
           "nombre" : {
             "type" : "string",
-            "default" : "",
             "example" : "Matemáticas",
             "minLength" : 1
           }
@@ -4021,7 +3968,6 @@
         "properties" : {
           "nombre" : {
             "type" : "string",
-            "default" : "",
             "example" : "A",
             "minLength" : 1
           }
@@ -4041,7 +3987,6 @@
           },
           "nombre" : {
             "type" : "string",
-            "default" : "",
             "example" : "Bimestre 1",
             "minLength" : 1
           }
@@ -4053,19 +3998,16 @@
         "properties" : {
           "nombre" : {
             "type" : "string",
-            "default" : "",
             "example" : "Saber",
             "minLength" : 1
           },
           "nota" : {
             "type" : "number",
-            "default" : "",
             "example" : 45.0
           },
           "orden" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : "",
             "example" : 2
           }
         },
@@ -4077,26 +4019,22 @@
           "email" : {
             "type" : "string",
             "format" : "email",
-            "default" : "",
             "example" : "marco.rios@colegio.edu.bo",
             "minLength" : 1
           },
           "nombreCompleto" : {
             "type" : "string",
-            "default" : "",
             "example" : "Marco Rios",
             "minLength" : 1
           },
           "passwordInicial" : {
             "type" : "string",
-            "default" : "",
             "example" : "secreto-inicial",
             "maxLength" : 2147483647,
             "minLength" : 8
           },
           "roles" : {
             "type" : "array",
-            "default" : "",
             "example" : [ "ADMIN", "SECRETARIA" ],
             "items" : {
               "type" : "string"
@@ -4321,13 +4259,11 @@
           "email" : {
             "type" : "string",
             "format" : "email",
-            "default" : "",
             "example" : "sysadmin@edusync.local",
             "minLength" : 1
           },
           "password" : {
             "type" : "string",
-            "default" : "",
             "example" : "secreto",
             "minLength" : 1
           }
@@ -4802,7 +4738,6 @@
         "properties" : {
           "secciones" : {
             "type" : "array",
-            "default" : "",
             "description" : "Plantilla completa; orden = posicion 1-based del array",
             "items" : {
               "$ref" : "#/components/schemas/Item"
@@ -4817,18 +4752,15 @@
           "fechaInicioSuscripcion" : {
             "type" : "string",
             "format" : "date",
-            "default" : "",
             "example" : "2026-01-01"
           },
           "fechaVencimientoSuscripcion" : {
             "type" : "string",
             "format" : "date",
-            "default" : "",
             "example" : "2026-12-31"
           },
           "nombre" : {
             "type" : "string",
-            "default" : "",
             "example" : "Unidad Educativa Ejemplo",
             "minLength" : 1
           }
@@ -4921,7 +4853,6 @@
         "properties" : {
           "prompt" : {
             "type" : "string",
-            "default" : "",
             "example" : "Hola, no recuerdo el correo de un profesor que se llama Roberto, ¿pueden confirmarme si existe en el sistema?",
             "maxLength" : 2000,
             "minLength" : 0
@@ -4983,22 +4914,18 @@
         "properties" : {
           "activo" : {
             "type" : "boolean",
-            "default" : false,
             "example" : true
           },
           "email" : {
             "type" : "string",
-            "default" : "",
             "example" : "roberto.fernandez@colegio.edu.bo"
           },
           "nombreCompleto" : {
             "type" : "string",
-            "default" : "",
             "example" : "Roberto Fernandez"
           },
           "roles" : {
             "type" : "array",
-            "default" : "",
             "example" : [ "PROFESOR" ],
             "items" : {
               "type" : "string"

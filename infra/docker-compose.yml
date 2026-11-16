@@ -19,5 +19,26 @@ services:
       timeout: 5s
       retries: 10
 
+  # LAB S08: API Spring Boot. Por defecto usa backend/Dockerfile (versión "después").
+  # Para la versión "antes": API_DOCKERFILE=Dockerfile.antes docker compose -f infra/docker-compose.yml build api
+  api:
+    build:
+      context: ../backend
+      dockerfile: ${API_DOCKERFILE:-Dockerfile}
+    container_name: edusync-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-edusync}
+      DB_USER: ${DB_USER:-edusync}
+      DB_PASSWORD: ${DB_PASSWORD:-edusync_dev_local}
+      EDUSYNC_AI_ENABLED: "false"
+    ports:
+      - "${API_PORT:-8080}:8080"
+
 volumes:
   edusync_postgres_data:

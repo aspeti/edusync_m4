@@ -1,0 +1,12 @@
+# LAB S08 — Opción A — versión "ANTES": primer Dockerfile escrito sin optimizar.
+# Una sola etapa: compila y ejecuta en la misma imagen (JDK + Maven + código fuente + caché).
+# Etiquetas flotantes, corre como root, sin .dockerignore efectivo.
+FROM maven:3-eclipse-temurin-25
+
+WORKDIR /app
+COPY . .
+
+RUN mvn -B -DskipTests package
+
+EXPOSE 8080
+CMD ["sh", "-c", "java -jar target/edusync-backend-0.1.0-SNAPSHOT.jar"]

@@ -103,7 +103,6 @@ class EvaluacionIntegrationTest {
         .orElseThrow()
         .id();
 
-    ParametrosPeriodoDePrueba.configurarPorDefecto(restTemplate, adminA, gestionId, t1);
     restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + t1 + "/estado",
         HttpMethod.PATCH,

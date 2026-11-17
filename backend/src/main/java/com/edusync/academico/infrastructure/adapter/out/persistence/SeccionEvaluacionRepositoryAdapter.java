@@ -52,7 +52,9 @@ class SeccionEvaluacionRepositoryAdapter implements SeccionEvaluacionRepositoryP
         seccion.getGestionEscolarId().valor(),
         seccion.getNombre(),
         seccion.getOrden(),
-        seccion.getNota());
+        seccion.getNota(),
+        seccion.getRangoMin(),
+        seccion.getRangoMax());
   }
 
   private SeccionEvaluacion aDominio(SeccionEvaluacionJpaEntity entity) {
@@ -62,6 +64,8 @@ class SeccionEvaluacionRepositoryAdapter implements SeccionEvaluacionRepositoryP
         GestionEscolarId.de(entity.getGestionEscolarId()),
         entity.getNombre(),
         entity.getOrden(),
-        entity.getNota());
+        entity.getNota(),
+        entity.getRangoMin(),
+        entity.getRangoMax());
   }
 }

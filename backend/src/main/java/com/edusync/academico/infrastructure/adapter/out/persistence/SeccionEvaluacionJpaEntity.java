@@ -11,7 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * Entidad JPA de {@code seccion_evaluacion} ({@code V10__academico_seccion_evaluacion.sql}).
+ * Entidad JPA de {@code seccion_evaluacion} ({@code V10} + {@code V14} rangos).
  * Nunca se expone por API.
  */
 @Entity
@@ -38,13 +38,28 @@ public class SeccionEvaluacionJpaEntity {
   @Column(name = "nota", nullable = false, precision = 5, scale = 2)
   private BigDecimal nota;
 
+  @Column(name = "rango_min", nullable = false, precision = 5, scale = 2)
+  private BigDecimal rangoMin;
+
+  @Column(name = "rango_max", nullable = false, precision = 5, scale = 2)
+  private BigDecimal rangoMax;
+
   public SeccionEvaluacionJpaEntity(
-      UUID id, UUID tenantId, UUID gestionEscolarId, String nombre, int orden, BigDecimal nota) {
+      UUID id,
+      UUID tenantId,
+      UUID gestionEscolarId,
+      String nombre,
+      int orden,
+      BigDecimal nota,
+      BigDecimal rangoMin,
+      BigDecimal rangoMax) {
     this.id = id;
     this.tenantId = tenantId;
     this.gestionEscolarId = gestionEscolarId;
     this.nombre = nombre;
     this.orden = orden;
     this.nota = nota;
+    this.rangoMin = rangoMin;
+    this.rangoMax = rangoMax;
   }
 }

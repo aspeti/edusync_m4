@@ -12,5 +12,5 @@ import java.util.UUID;
 public record ReemplazarSeccionesEvaluacionCommand(
     UUID tenantId, UUID gestionEscolarId, List<Item> secciones) {
 
-  public record Item(String nombre, BigDecimal nota) {}
+  public record Item(String nombre, BigDecimal nota, BigDecimal rangoMin, BigDecimal rangoMax) {}
 }

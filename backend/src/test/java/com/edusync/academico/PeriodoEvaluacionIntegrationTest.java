@@ -109,7 +109,6 @@ class PeriodoEvaluacionIntegrationTest {
     UUID t2 = periodos.get(1).id();
     UUID t3 = periodos.get(2).id();
 
-    ParametrosPeriodoDePrueba.configurarPorDefecto(restTemplate, adminA, gestionId, t1);
     ResponseEntity<PeriodoEvaluacionResponse> t1Abierto = restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + t1 + "/estado",
         HttpMethod.PATCH,
@@ -120,7 +119,6 @@ class PeriodoEvaluacionIntegrationTest {
 
     // DD-UC-019: abrir T2 con T1 aun ABIERTO ya no exige secuencialidad (E_PERIODO_NO_SECUENCIAL
     // eliminado; endpoint exclusivamente ADMIN).
-    ParametrosPeriodoDePrueba.configurarPorDefecto(restTemplate, adminA, gestionId, t2);
     ResponseEntity<PeriodoEvaluacionResponse> t2AbiertoSinSecuencia = restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + t2 + "/estado",
         HttpMethod.PATCH,

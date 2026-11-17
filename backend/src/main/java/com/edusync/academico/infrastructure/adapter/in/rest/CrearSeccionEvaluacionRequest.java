@@ -16,5 +16,13 @@ public record CrearSeccionEvaluacionRequest(
 
     @Schema(example = "45.00")
     @NotNull(message = "nota es obligatoria")
-    BigDecimal nota) {
+    BigDecimal nota,
+
+    @Schema(example = "0.00")
+    @NotNull(message = "rangoMin es obligatorio")
+    BigDecimal rangoMin,
+
+    @Schema(example = "45.00")
+    @NotNull(message = "rangoMax es obligatorio")
+    BigDecimal rangoMax) {
 }

@@ -29,6 +29,10 @@
     <testcontainers.version>2.0.5</testcontainers.version>
     <lombok.version>1.18.46</lombok.version>
     <springdoc.version>3.0.3</springdoc.version>
+    <!-- Alineado con swagger-core-jakarta que trae springdoc 3.0.3. Sin esto, Spring AI
+         (openai-java-core + spring-ai-client-chat) mete swagger-annotations(-jakarta) viejos
+         y /v3/api-docs rompe con NoSuchMethodError Schema.$dynamicRef(). -->
+    <swagger-annotations.version>2.2.47</swagger-annotations.version>
     <!-- Spring AI 2.0.x: docs oficiales declaran Boot 4.0.x y 4.1.x (ADR-0017 / PR-IMPL-022).
          2.0.0 publica starters alineados a Boot 4.1.0 — mismo parent que este modulo. -->
     <spring-ai.version>2.0.0</spring-ai.version>
@@ -61,6 +65,11 @@
         <version>${spring-ai.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.swagger.core.v3</groupId>
+        <artifactId>swagger-annotations-jakarta</artifactId>
+        <version>${swagger-annotations.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -145,6 +154,18 @@
     <dependency>
       <groupId>org.springframework.ai</groupId>
       <artifactId>spring-ai-starter-model-openai</artifactId>
+      <exclusions>
+        <!-- openai-java-core trae swagger-annotations (no-jakarta) 2.2.31; sombrea las
+             clases de swagger-annotations-jakarta y rompe springdoc al generar /v3/api-docs. -->
+        <exclusion>
+          <groupId>io.swagger.core.v3</groupId>
+          <artifactId>swagger-annotations</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-annotations-jakarta</artifactId>
     </dependency>
 
     <!-- JWT (login stateless HS256) - DD-UC-002 -->

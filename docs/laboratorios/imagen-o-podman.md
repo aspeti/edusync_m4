@@ -30,6 +30,8 @@ Imagen: `mi-imagen:antes` / `mi-imagen:despues` (Dockerfiles: `backend/Dockerfil
 
 Evidencia cruda: `docs/laboratorios/evidencia/antes.txt` y `docs/laboratorios/evidencia/despues.txt`.
 
+> **Seguimiento (16/11/2026):** tras Spring AI, `/v3/api-docs` puede devolver 500 por conflicto `swagger-annotations` vs `swagger-annotations-jakarta`. Mitigado en `backend/pom.xml` (pin 2.2.47 + exclusión); ver `docs/product/DTP.md` v1.62 y `README.md`.
+
 ### Qué encontré en la imagen de antes
 - **Capas grandes** (`docker image history`): `RUN mvn -B -DskipTests package` (391 MB: compilación más el caché de Maven `~/.m2`), `COPY . .` (170 MB: copia todo el contexto, incluida la carpeta `target/` local), el JDK de la imagen base (265 MB), `apt-get` de la imagen de Maven (104 MB) y el sistema base (117 MB). Para **ejecutar** el servicio solo hacen falta el JRE y el jar; Maven, el JDK completo, el código fuente y el caché sobran.
 - **Espacio desperdiciado** (Dive): 329 MB (efficiency 84.36 %). Casi todo es el jar duplicado: `/app/target/edusync-backend-0.1.0-SNAPSHOT.jar` aparece en dos capas (298 MB desperdiciados) porque el `target/` local se copió con `COPY . .` y luego `mvn package` lo regeneró. También viajaron el `.jar.original`, los reportes de JaCoCo (`target/site/jacoco/...`) y archivos de build, que no deben estar en una imagen de ejecución.

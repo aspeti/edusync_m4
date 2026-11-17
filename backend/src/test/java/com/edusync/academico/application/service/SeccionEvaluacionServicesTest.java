@@ -14,7 +14,6 @@ import com.edusync.academico.application.port.in.ReemplazarSeccionesEvaluacionCo
 import com.edusync.academico.application.port.out.AsignacionMateriaCursoRepositoryPort;
 import com.edusync.academico.application.port.out.AsignacionMateriaProfesorRepositoryPort;
 import com.edusync.academico.application.port.out.GestionEscolarRepositoryPort;
-import com.edusync.academico.application.port.out.ParametroPeriodoRepositoryPort;
 import com.edusync.academico.application.port.out.PeriodoEvaluacionRepositoryPort;
 import com.edusync.academico.application.port.out.SeccionEvaluacionRepositoryPort;
 import com.edusync.academico.domain.EstadoGestionEscolar;
@@ -58,7 +57,6 @@ class SeccionEvaluacionServicesTest {
     cambiarEstadoService = new CambiarEstadoPeriodoEvaluacionService(
         periodoPort,
         seccionPort,
-        mock(ParametroPeriodoRepositoryPort.class),
         mock(AsignacionMateriaCursoRepositoryPort.class),
         mock(AsignacionMateriaProfesorRepositoryPort.class));
   }
@@ -66,32 +64,26 @@ class SeccionEvaluacionServicesTest {
   @Test
   void putRebalanceaPlantillaConSumaCien() {
     when(gestionPort.buscarPorIdYTenant(gestionId, tenantId)).thenReturn(Optional.of(gestionStub()));
-    when(periodoPort.listarPorGestionYTenant(gestionId, tenantId)).thenReturn(List.of(periodoPendiente(1)));
     when(seccionPort.reemplazarPlantilla(eq(gestionId), eq(tenantId), any())).thenAnswer(inv -> inv.getArgument(2));
 
-    List<SeccionEvaluacion> resultado = reemplazarService.reemplazar(new ReemplazarSeccionesEvaluacionCommand(
-        tenantId,
-        gestionId.valor(),
-        List.of(
-            new ReemplazarSeccionesEvaluacionCommand.Item("A", new BigDecimal("60")),
-            new ReemplazarSeccionesEvaluacionCommand.Item("B", new BigDecimal("40")))));
+    List<SeccionEvaluacion> resultado = reemplazarService.reemplazar(put60y40());
 
     assertThat(resultado).hasSize(2);
     assertThat(resultado.get(0).getOrden()).isEqualTo(1);
     assertThat(resultado.get(1).getOrden()).isEqualTo(2);
+    assertThat(resultado.get(0).getRangoMax()).isEqualByComparingTo("60.00");
   }
 
   @Test
   void putConSuma99Rechaza() {
     when(gestionPort.buscarPorIdYTenant(gestionId, tenantId)).thenReturn(Optional.of(gestionStub()));
-    when(periodoPort.listarPorGestionYTenant(gestionId, tenantId)).thenReturn(List.of(periodoPendiente(1)));
 
     assertThatThrownBy(() -> reemplazarService.reemplazar(new ReemplazarSeccionesEvaluacionCommand(
             tenantId,
             gestionId.valor(),
             List.of(
-                new ReemplazarSeccionesEvaluacionCommand.Item("A", new BigDecimal("50")),
-                new ReemplazarSeccionesEvaluacionCommand.Item("B", new BigDecimal("49"))))))
+                item("A", "50"),
+                item("B", "49")))))
         .isInstanceOf(SumaSeccionesInvalidaException.class);
     verify(seccionPort, never()).reemplazarPlantilla(any(), any(), any());
   }
@@ -99,7 +91,6 @@ class SeccionEvaluacionServicesTest {
   @Test
   void putArrayVacioRechaza() {
     when(gestionPort.buscarPorIdYTenant(gestionId, tenantId)).thenReturn(Optional.of(gestionStub()));
-    when(periodoPort.listarPorGestionYTenant(gestionId, tenantId)).thenReturn(List.of());
 
     assertThatThrownBy(() -> reemplazarService.reemplazar(
             new ReemplazarSeccionesEvaluacionCommand(tenantId, gestionId.valor(), List.of())))
@@ -111,21 +102,19 @@ class SeccionEvaluacionServicesTest {
     SeccionEvaluacion saber = seccion("Saber", 2, "45");
     SeccionEvaluacion ser = seccion("Ser", 1, "5");
     when(seccionPort.buscarPorIdYTenant(saber.getId(), tenantId)).thenReturn(Optional.of(saber));
-    when(periodoPort.listarPorGestionYTenant(gestionId, tenantId)).thenReturn(List.of(periodoPendiente(1)));
     when(seccionPort.listarPorGestionYTenant(gestionId, tenantId)).thenReturn(List.of(ser, saber));
 
     assertThatThrownBy(() -> actualizarService.actualizar(new ActualizarSeccionEvaluacionCommand(
-            tenantId, saber.getId().valor(), null, new BigDecimal("40"))))
+            tenantId,
+            saber.getId().valor(),
+            null,
+            new BigDecimal("40"),
+            BigDecimal.ZERO,
+            new BigDecimal("40"))))
         .isInstanceOf(SumaSeccionesInvalidaException.class);
     verify(seccionPort, never()).guardar(any());
   }
 
-  /**
-   * {@code DD-UC-019}: el freeze sticky ({@code E_SECCIONES_INMUTABLES}) se elimino
-   * (endpoint exclusivamente {@code ADMIN}); reemplazar la plantilla de secciones ya no
-   * consulta el estado de los periodos hermanos, sin importar si alguno esta
-   * {@code ABIERTO}/{@code CERRADO}.
-   */
   @Test
   void putYaNoConsultaElEstadoDeLosPeriodosHermanos() {
     when(gestionPort.buscarPorIdYTenant(gestionId, tenantId)).thenReturn(Optional.of(gestionStub()));
@@ -162,17 +151,18 @@ class SeccionEvaluacionServicesTest {
     when(seccionPort.buscarPorIdYTenant(any(), eq(tenantId))).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> actualizarService.actualizar(
-            new ActualizarSeccionEvaluacionCommand(tenantId, UUID.randomUUID(), "X", null)))
+            new ActualizarSeccionEvaluacionCommand(tenantId, UUID.randomUUID(), "X", null, null, null)))
         .isInstanceOf(SeccionNoEncontradaException.class);
   }
 
   private ReemplazarSeccionesEvaluacionCommand put60y40() {
     return new ReemplazarSeccionesEvaluacionCommand(
-        tenantId,
-        gestionId.valor(),
-        List.of(
-            new ReemplazarSeccionesEvaluacionCommand.Item("A", new BigDecimal("60")),
-            new ReemplazarSeccionesEvaluacionCommand.Item("B", new BigDecimal("40"))));
+        tenantId, gestionId.valor(), List.of(item("A", "60"), item("B", "40")));
+  }
+
+  private ReemplazarSeccionesEvaluacionCommand.Item item(String nombre, String nota) {
+    BigDecimal n = new BigDecimal(nota);
+    return new ReemplazarSeccionesEvaluacionCommand.Item(nombre, n, BigDecimal.ZERO, n);
   }
 
   private GestionEscolar gestionStub() {
@@ -182,28 +172,20 @@ class SeccionEvaluacionServicesTest {
   }
 
   private PeriodoEvaluacion periodoPendiente(int orden) {
-    return periodo("Trimestre " + orden, orden, EstadoPeriodoEvaluacion.PENDIENTE);
-  }
-
-  private PeriodoEvaluacion periodo(String nombre, int orden, EstadoPeriodoEvaluacion estado) {
     return PeriodoEvaluacion.reconstruir(
         PeriodoEvaluacionId.nueva(),
         tenantId,
         gestionId,
-        nombre,
+        "Trimestre " + orden,
         LocalDate.of(2027, 2, 1),
         LocalDate.of(2027, 5, 1),
         orden,
-        estado);
+        EstadoPeriodoEvaluacion.PENDIENTE);
   }
 
   private SeccionEvaluacion seccion(String nombre, int orden, String nota) {
+    BigDecimal n = new BigDecimal(nota);
     return SeccionEvaluacion.reconstruir(
-        SeccionEvaluacionId.nueva(),
-        tenantId,
-        gestionId,
-        nombre,
-        orden,
-        new BigDecimal(nota));
+        SeccionEvaluacionId.nueva(), tenantId, gestionId, nombre, orden, n, BigDecimal.ZERO, n);
   }
 }

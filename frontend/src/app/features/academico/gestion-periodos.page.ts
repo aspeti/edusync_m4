@@ -2,51 +2,22 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
 import { MessageModule } from 'primeng/message';
 import { GestionEscolarResponse } from './gestion-escolar.model';
 import { PeriodoEvaluacionResponse } from './periodo-evaluacion.model';
-import { SeccionEvaluacionResponse } from './seccion-evaluacion.model';
 import { ApiBase } from '../../core/api/api-base';
 import { AuthService } from '../../core/auth/auth.service';
 
-interface ParametroPeriodoResponse {
-  id: string;
-  periodoEvaluacionId: string;
-  seccionEvaluacionId: string;
-  rangoMin: number;
-  rangoMax: number;
-  reglaCombinacion: string;
-}
-
-interface FilaParametro {
-  seccionEvaluacionId: string;
-  nombre: string;
-  nota: number;
-  rangoMin: number;
-  rangoMax: number;
-}
-
-/** Periodos de Gestión (DD-UC-015/019) — UI PrimeNG (ADR-0026). */
+/** Periodos de Gestión (DD-UC-015/034) — UI PrimeNG (ADR-0026/0027). Sin parámetros por periodo. */
 @Component({
   selector: 'app-gestion-periodos-page',
   standalone: true,
-  imports: [
-    FormsModule,
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    InputNumberModule,
-    DialogModule,
-    TagModule,
-    MessageModule,
-  ],
+  imports: [FormsModule, TableModule, ButtonModule, InputTextModule, DialogModule, TagModule, MessageModule],
   template: `
     <div class="page">
       <p-button label="← Volver a Gestión Escolar" [link]="true" (onClick)="volver()" />
@@ -123,6 +94,15 @@ interface FilaParametro {
                       (onClick)="cambiarEstado(periodo, 'CERRADO')"
                     />
                   }
+                  @if (periodo.estado !== 'PENDIENTE') {
+                    <p-button
+                      label="Volver a pendiente"
+                      [link]="true"
+                      size="small"
+                      [disabled]="saving()"
+                      (onClick)="cambiarEstado(periodo, 'PENDIENTE')"
+                    />
+                  }
                   <p-button
                     label="Eliminar"
                     [link]="true"
@@ -134,60 +114,6 @@ interface FilaParametro {
                 </td>
               }
             </tr>
-            @if (esAdmin()) {
-              <tr>
-                <td [attr.colspan]="6">
-                  <div class="box">
-                    <strong>Parámetros — {{ periodo.nombre }}</strong>
-                    <p class="hint">
-                      Regla fija: PROMEDIO_SIMPLE. El máximo de cada fila no puede superar la nota de la
-                      sección.
-                    </p>
-                    @for (fila of filasParametro(periodo.id); track fila.seccionEvaluacionId) {
-                      <div class="param-row">
-                        <span class="param-name">{{ fila.nombre }} (nota {{ fila.nota }})</span>
-                        <label class="field">
-                          Mínimo
-                          <p-inputnumber
-                            [ngModel]="fila.rangoMin"
-                            [name]="'min-' + periodo.id + fila.seccionEvaluacionId"
-                            (ngModelChange)="actualizarRango(periodo.id, fila.seccionEvaluacionId, 'min', $event)"
-                            [disabled]="periodo.estado !== 'PENDIENTE' || saving()"
-                            [useGrouping]="false"
-                          />
-                        </label>
-                        <label class="field">
-                          Máximo
-                          <p-inputnumber
-                            [ngModel]="fila.rangoMax"
-                            [name]="'max-' + periodo.id + fila.seccionEvaluacionId"
-                            (ngModelChange)="actualizarRango(periodo.id, fila.seccionEvaluacionId, 'max', $event)"
-                            [disabled]="periodo.estado !== 'PENDIENTE' || saving()"
-                            [useGrouping]="false"
-                          />
-                        </label>
-                      </div>
-                    }
-                    @if (periodo.estado === 'PENDIENTE') {
-                      <p-button
-                        label="Guardar parámetros"
-                        size="small"
-                        [disabled]="saving()"
-                        (onClick)="guardarParametros(periodo)"
-                      />
-                    } @else {
-                      <p-button
-                        label="Volver a pendiente"
-                        size="small"
-                        [outlined]="true"
-                        [disabled]="saving()"
-                        (onClick)="cambiarEstado(periodo, 'PENDIENTE')"
-                      />
-                    }
-                  </div>
-                </td>
-              </tr>
-            }
           </ng-template>
           <ng-template #emptymessage>
             <tr>
@@ -271,11 +197,6 @@ interface FilaParametro {
         color: var(--color-text-secondary);
         font-size: var(--font-size-small);
       }
-      .hint {
-        margin: var(--space-xs) 0 var(--space-sm);
-        font-size: var(--font-size-small);
-        color: var(--color-text-secondary);
-      }
       .block-msg {
         display: block;
         margin: var(--space-md) 0;
@@ -294,17 +215,6 @@ interface FilaParametro {
       }
       .box h3 {
         margin-top: 0;
-      }
-      .param-row {
-        display: flex;
-        gap: var(--space-sm);
-        align-items: end;
-        margin-bottom: var(--space-xs);
-        flex-wrap: wrap;
-      }
-      .param-name {
-        min-width: 10rem;
-        font-size: var(--font-size-small);
       }
       .inline-form {
         display: flex;
@@ -333,11 +243,9 @@ interface FilaParametro {
     `,
   ],
 })
-
 export class GestionPeriodosPage implements OnInit {
   gestion = signal<GestionEscolarResponse | null>(null);
   periodos = signal<PeriodoEvaluacionResponse[]>([]);
-  filasPorPeriodo = signal<Record<string, FilaParametro[]>>({});
   loading = signal(true);
   notFound = signal(false);
   errorMsg = signal<string | null>(null);
@@ -396,7 +304,7 @@ export class GestionPeriodosPage implements OnInit {
           .subscribe({
             next: (periodos) => {
               this.periodos.set(periodos);
-              this.cargarParametros(periodos);
+              this.loading.set(false);
             },
             error: (err: HttpErrorResponse) => this.alErrorCarga(err),
           });
@@ -419,44 +327,6 @@ export class GestionPeriodosPage implements OnInit {
           this.nuevoNombre = '';
           this.nuevaFechaInicio = '';
           this.nuevaFechaFin = '';
-          this.saving.set(false);
-          this.cargar();
-        },
-        error: (err: HttpErrorResponse) => {
-          this.errorMsg.set(this.mensajeError(err));
-          this.saving.set(false);
-        },
-      });
-  }
-
-  filasParametro(periodoId: string): FilaParametro[] {
-    return this.filasPorPeriodo()[periodoId] ?? [];
-  }
-
-  actualizarRango(periodoId: string, seccionId: string, campo: 'min' | 'max', valor: number): void {
-    this.filasPorPeriodo.update((actual) => ({
-      ...actual,
-      [periodoId]: (actual[periodoId] ?? []).map((fila) =>
-        fila.seccionEvaluacionId === seccionId
-          ? { ...fila, ...(campo === 'min' ? { rangoMin: valor } : { rangoMax: valor }) }
-          : fila,
-      ),
-    }));
-  }
-
-  guardarParametros(periodo: PeriodoEvaluacionResponse): void {
-    this.saving.set(true);
-    this.errorMsg.set(null);
-    const parametros = this.filasParametro(periodo.id).map((fila) => ({
-      seccionEvaluacionId: fila.seccionEvaluacionId,
-      rangoMin: fila.rangoMin,
-      rangoMax: fila.rangoMax,
-      reglaCombinacion: 'PROMEDIO_SIMPLE',
-    }));
-    this.http
-      .put(`${ApiBase.BASE}/periodos-evaluacion/${periodo.id}/parametros`, { parametros })
-      .subscribe({
-        next: () => {
           this.saving.set(false);
           this.cargar();
         },
@@ -555,17 +425,8 @@ export class GestionPeriodosPage implements OnInit {
     if (codigo === 'E_FECHAS_INVALIDAS') {
       return 'La fecha de fin debe ser posterior a la de inicio.';
     }
-    if (codigo === 'E_PARAMETROS_INCOMPLETOS') {
-      return 'Faltan parámetros para las secciones vigentes del periodo.';
-    }
-    if (codigo === 'E_PARAMETROS_INMUTABLES') {
-      return 'Los parámetros solo se editan mientras el periodo está pendiente.';
-    }
     if (codigo === 'E_RANGO_INVALIDO') {
-      return 'El rango no es válido para la sección.';
-    }
-    if (codigo === 'E_REGLA_NO_SOPORTADA') {
-      return 'La regla de combinación no está soportada.';
+      return 'Hay secciones con rango inválido. Revise Secciones de Evaluación.';
     }
     if (codigo === 'E_MATERIA_SIN_DOCENTE') {
       return 'Hay materias con curso asignado sin profesor.';
@@ -574,48 +435,5 @@ export class GestionPeriodosPage implements OnInit {
       return 'La suma de las notas de las secciones debe ser 100.';
     }
     return 'No se pudo completar la operación.';
-  }
-
-  private cargarParametros(periodos: PeriodoEvaluacionResponse[]): void {
-    if (!this.esAdmin() || periodos.length === 0) {
-      this.filasPorPeriodo.set({});
-      this.loading.set(false);
-      return;
-    }
-    forkJoin({
-      secciones: this.http.get<SeccionEvaluacionResponse[]>(
-        `${ApiBase.BASE}/gestiones-escolares/${this.gestionId}/secciones`,
-      ),
-      parametros: forkJoin(
-        periodos.map((periodo) =>
-          this.http.get<ParametroPeriodoResponse[]>(
-            `${ApiBase.BASE}/periodos-evaluacion/${periodo.id}/parametros`,
-          ),
-        ),
-      ),
-    }).subscribe({
-      next: ({ secciones, parametros }) => {
-        const filas: Record<string, FilaParametro[]> = {};
-        periodos.forEach((periodo, indice) => {
-          const guardados = parametros[indice] ?? [];
-          filas[periodo.id] = secciones.map((seccion) => {
-            const existente = guardados.find((item) => item.seccionEvaluacionId === seccion.id);
-            return {
-              seccionEvaluacionId: seccion.id,
-              nombre: seccion.nombre,
-              nota: seccion.nota,
-              rangoMin: existente?.rangoMin ?? 0,
-              rangoMax: existente?.rangoMax ?? seccion.nota,
-            };
-          });
-        });
-        this.filasPorPeriodo.set(filas);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.errorMsg.set('Error al cargar los parámetros.');
-        this.loading.set(false);
-      },
-    });
   }
 }

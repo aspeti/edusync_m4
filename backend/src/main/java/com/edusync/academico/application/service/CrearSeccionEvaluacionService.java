@@ -37,7 +37,9 @@ public class CrearSeccionEvaluacionService implements CrearSeccionEvaluacionUseC
         gestionId,
         command.nombre(),
         command.orden(),
-        command.nota());
+        command.nota(),
+        command.rangoMin(),
+        command.rangoMax());
 
     List<SeccionEvaluacion> resultantes = new ArrayList<>(existentes);
     resultantes.add(seccion);

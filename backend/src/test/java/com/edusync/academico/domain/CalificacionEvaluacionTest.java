@@ -18,6 +18,7 @@ class CalificacionEvaluacionTest {
             EvaluacionId.nueva(),
             EstudianteId.nueva(),
             new BigDecimal("35"),
+            BigDecimal.ZERO,
             new BigDecimal("45"));
     assertThat(c.getValor()).isEqualByComparingTo("35.00");
   }
@@ -32,6 +33,7 @@ class CalificacionEvaluacionTest {
                     EvaluacionId.nueva(),
                     EstudianteId.nueva(),
                     new BigDecimal("46"),
+                    BigDecimal.ZERO,
                     new BigDecimal("45")))
         .isInstanceOf(RangoCalificacionInvalidoException.class)
         .extracting(ex -> ((RangoCalificacionInvalidoException) ex).getErrorCode())
@@ -47,8 +49,9 @@ class CalificacionEvaluacionTest {
             EvaluacionId.nueva(),
             EstudianteId.nueva(),
             new BigDecimal("10"),
+            BigDecimal.ZERO,
             new BigDecimal("45"));
-    c.actualizarValor(new BigDecimal("40"), new BigDecimal("45"));
+    c.actualizarValor(new BigDecimal("40"), BigDecimal.ZERO, new BigDecimal("45"));
     assertThat(c.getValor()).isEqualByComparingTo("40.00");
   }
 }

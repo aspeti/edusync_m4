@@ -82,13 +82,16 @@ public class CrearGestionEscolarService implements CrearGestionEscolarUseCase {
 
   private void sembrarSecciones(GestionEscolar gestionEscolar) {
     for (int i = 0; i < SECCIONES_NOMBRE.length; i++) {
+      BigDecimal nota = SECCIONES_NOTA[i];
       SeccionEvaluacion seccion = SeccionEvaluacion.crear(
           SeccionEvaluacionId.nueva(),
           gestionEscolar.getTenantId(),
           gestionEscolar.getId(),
           SECCIONES_NOMBRE[i],
           i + 1,
-          SECCIONES_NOTA[i]);
+          nota,
+          BigDecimal.ZERO,
+          nota);
       seccionEvaluacionRepositoryPort.guardar(seccion);
     }
   }

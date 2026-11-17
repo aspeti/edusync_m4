@@ -5,5 +5,10 @@ import java.util.UUID;
 
 /** Campos opcionales: los nulos conservan el valor actual. */
 public record ActualizarSeccionEvaluacionCommand(
-    UUID tenantId, UUID seccionId, String nombre, BigDecimal nota) {
+    UUID tenantId,
+    UUID seccionId,
+    String nombre,
+    BigDecimal nota,
+    BigDecimal rangoMin,
+    BigDecimal rangoMax) {
 }

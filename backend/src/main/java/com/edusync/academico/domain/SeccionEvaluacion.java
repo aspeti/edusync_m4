@@ -7,9 +7,10 @@ import java.util.UUID;
 import lombok.Getter;
 
 /**
- * Aggregate independiente de {@link GestionEscolar} ({@code DD-UC-016}, {@code FSD-UC-014}):
- * una seccion de la plantilla de la gestion (no del periodo). {@code nota} es el peso en
- * puntos ({@code ADR-0013}); la suma 100 y el freeze se validan en aplicacion.
+ * Aggregate independiente de {@link GestionEscolar} ({@code DD-UC-016}/{@code DD-UC-034},
+ * {@code FSD-UC-014}): plantilla de la gestion (no del periodo). {@code nota} es el peso /
+ * escala del motor ({@code ADR-0013}); {@code rangoMin}/{@code rangoMax} delimitan la carga
+ * de calificaciones ({@code ADR-0027}).
  *
  * <p>Lombok solo {@code @Getter} (mismo criterio que {@link PeriodoEvaluacion}).
  */
@@ -25,6 +26,8 @@ public final class SeccionEvaluacion {
   private String nombre;
   private int orden;
   private BigDecimal nota;
+  private BigDecimal rangoMin;
+  private BigDecimal rangoMax;
 
   private SeccionEvaluacion(
       SeccionEvaluacionId id,
@@ -32,13 +35,17 @@ public final class SeccionEvaluacion {
       GestionEscolarId gestionEscolarId,
       String nombre,
       int orden,
-      BigDecimal nota) {
+      BigDecimal nota,
+      BigDecimal rangoMin,
+      BigDecimal rangoMax) {
     this.id = id;
     this.tenantId = tenantId;
     this.gestionEscolarId = gestionEscolarId;
     this.nombre = nombre;
     this.orden = orden;
     this.nota = nota;
+    this.rangoMin = rangoMin;
+    this.rangoMax = rangoMax;
   }
 
   public static SeccionEvaluacion crear(
@@ -47,7 +54,9 @@ public final class SeccionEvaluacion {
       GestionEscolarId gestionEscolarId,
       String nombre,
       int orden,
-      BigDecimal nota) {
+      BigDecimal nota,
+      BigDecimal rangoMin,
+      BigDecimal rangoMax) {
     Objects.requireNonNull(id, "id no puede ser nulo");
     Objects.requireNonNull(tenantId, "tenantId no puede ser nulo");
     Objects.requireNonNull(gestionEscolarId, "gestionEscolarId no puede ser nulo");
@@ -56,7 +65,9 @@ public final class SeccionEvaluacion {
     if (orden < 1) {
       throw new IllegalArgumentException("orden debe ser >= 1");
     }
-    return new SeccionEvaluacion(id, tenantId, gestionEscolarId, nombreNormalizado, orden, notaNormalizada);
+    BigDecimal[] rangos = validarRangos(rangoMin, rangoMax, notaNormalizada);
+    return new SeccionEvaluacion(
+        id, tenantId, gestionEscolarId, nombreNormalizado, orden, notaNormalizada, rangos[0], rangos[1]);
   }
 
   public static SeccionEvaluacion reconstruir(
@@ -65,13 +76,19 @@ public final class SeccionEvaluacion {
       GestionEscolarId gestionEscolarId,
       String nombre,
       int orden,
-      BigDecimal nota) {
-    return new SeccionEvaluacion(id, tenantId, gestionEscolarId, nombre, orden, nota);
+      BigDecimal nota,
+      BigDecimal rangoMin,
+      BigDecimal rangoMax) {
+    return new SeccionEvaluacion(
+        id, tenantId, gestionEscolarId, nombre, orden, nota, rangoMin, rangoMax);
   }
 
-  public void actualizar(String nombre, BigDecimal nota) {
+  public void actualizar(String nombre, BigDecimal nota, BigDecimal rangoMin, BigDecimal rangoMax) {
     this.nombre = validarNombre(nombre);
     this.nota = validarNota(nota);
+    BigDecimal[] rangos = validarRangos(rangoMin, rangoMax, this.nota);
+    this.rangoMin = rangos[0];
+    this.rangoMax = rangos[1];
   }
 
   private static String validarNombre(String nombre) {
@@ -92,5 +109,19 @@ public final class SeccionEvaluacion {
       throw new PesoInvalidoException();
     }
     return nota.setScale(2, RoundingMode.HALF_UP);
+  }
+
+  /** @return {@code [rangoMin, rangoMax]} normalizados */
+  private static BigDecimal[] validarRangos(BigDecimal rangoMin, BigDecimal rangoMax, BigDecimal nota) {
+    Objects.requireNonNull(rangoMin, "rangoMin no puede ser nulo");
+    Objects.requireNonNull(rangoMax, "rangoMax no puede ser nulo");
+    BigDecimal min = rangoMin.setScale(2, RoundingMode.HALF_UP);
+    BigDecimal max = rangoMax.setScale(2, RoundingMode.HALF_UP);
+    if (min.compareTo(BigDecimal.ZERO) < 0
+        || max.compareTo(min) <= 0
+        || max.compareTo(nota) > 0) {
+      throw new ParametroRangoInvalidoException();
+    }
+    return new BigDecimal[] {min, max};
   }
 }

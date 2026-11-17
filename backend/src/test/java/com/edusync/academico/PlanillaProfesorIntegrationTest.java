@@ -260,7 +260,6 @@ class PlanillaProfesorIntegrationTest {
   }
 
   private void abrirPeriodo(HttpHeaders admin, UUID gestionId, UUID periodoId) {
-    ParametrosPeriodoDePrueba.configurarPorDefecto(restTemplate, admin, gestionId, periodoId);
     restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + periodoId + "/estado",
         HttpMethod.PATCH,

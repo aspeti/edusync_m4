@@ -11,7 +11,6 @@ import com.edusync.academico.application.port.in.CrearPeriodoEvaluacionCommand;
 import com.edusync.academico.application.port.out.AsignacionMateriaCursoRepositoryPort;
 import com.edusync.academico.application.port.out.AsignacionMateriaProfesorRepositoryPort;
 import com.edusync.academico.application.port.out.GestionEscolarRepositoryPort;
-import com.edusync.academico.application.port.out.ParametroPeriodoRepositoryPort;
 import com.edusync.academico.application.port.out.PeriodoEvaluacionRepositoryPort;
 import com.edusync.academico.application.port.out.SeccionEvaluacionRepositoryPort;
 import com.edusync.academico.domain.EstadoPeriodoEvaluacion;
@@ -35,7 +34,6 @@ class PeriodoEvaluacionServicesTest {
   private GestionEscolarRepositoryPort gestionPort;
   private PeriodoEvaluacionRepositoryPort periodoPort;
   private SeccionEvaluacionRepositoryPort seccionPort;
-  private ParametroPeriodoRepositoryPort parametroPort;
   private AsignacionMateriaCursoRepositoryPort cursoPort;
   private CrearPeriodoEvaluacionService crearService;
   private CambiarEstadoPeriodoEvaluacionService cambiarEstadoService;
@@ -49,13 +47,11 @@ class PeriodoEvaluacionServicesTest {
     gestionPort = mock(GestionEscolarRepositoryPort.class);
     periodoPort = mock(PeriodoEvaluacionRepositoryPort.class);
     seccionPort = mock(SeccionEvaluacionRepositoryPort.class);
-    parametroPort = mock(ParametroPeriodoRepositoryPort.class);
     cursoPort = mock(AsignacionMateriaCursoRepositoryPort.class);
     crearService = new CrearPeriodoEvaluacionService(gestionPort, periodoPort);
     cambiarEstadoService = new CambiarEstadoPeriodoEvaluacionService(
         periodoPort,
         seccionPort,
-        parametroPort,
         cursoPort,
         mock(AsignacionMateriaProfesorRepositoryPort.class));
     eliminarService = new EliminarPeriodoEvaluacionService(periodoPort);
@@ -164,34 +160,29 @@ class PeriodoEvaluacionServicesTest {
   }
 
   private void stubApertura(PeriodoEvaluacion periodo) {
-    List<com.edusync.academico.domain.SeccionEvaluacion> secciones = seccionesValidas();
-    when(seccionPort.listarPorGestionYTenant(periodo.getGestionEscolarId(), tenantId)).thenReturn(secciones);
-    when(parametroPort.listarPorPeriodoYTenant(periodo.getId(), tenantId)).thenReturn(secciones.stream()
-        .map(seccion -> com.edusync.academico.domain.ParametroPeriodo.crear(
-            com.edusync.academico.domain.ParametroPeriodoId.nueva(),
-            tenantId,
-            periodo.getId(),
-            seccion.getId(),
-            java.math.BigDecimal.ZERO,
-            seccion.getNota(),
-            com.edusync.academico.domain.ReglaCombinacionPeriodo.PROMEDIO_SIMPLE))
-        .toList());
+    when(seccionPort.listarPorGestionYTenant(periodo.getGestionEscolarId(), tenantId))
+        .thenReturn(seccionesValidas());
     when(cursoPort.listarPorTenant(tenantId)).thenReturn(List.of());
   }
 
   private List<com.edusync.academico.domain.SeccionEvaluacion> seccionesValidas() {
     return List.of(
-        com.edusync.academico.domain.SeccionEvaluacion.reconstruir(
-            com.edusync.academico.domain.SeccionEvaluacionId.nueva(),
-            tenantId, gestionId, "Ser", 1, new java.math.BigDecimal("5")),
-        com.edusync.academico.domain.SeccionEvaluacion.reconstruir(
-            com.edusync.academico.domain.SeccionEvaluacionId.nueva(),
-            tenantId, gestionId, "Saber", 2, new java.math.BigDecimal("45")),
-        com.edusync.academico.domain.SeccionEvaluacion.reconstruir(
-            com.edusync.academico.domain.SeccionEvaluacionId.nueva(),
-            tenantId, gestionId, "Hacer", 3, new java.math.BigDecimal("40")),
-        com.edusync.academico.domain.SeccionEvaluacion.reconstruir(
-            com.edusync.academico.domain.SeccionEvaluacionId.nueva(),
-            tenantId, gestionId, "Autoevaluación", 4, new java.math.BigDecimal("10")));
+        seccion("Ser", 1, "5"),
+        seccion("Saber", 2, "45"),
+        seccion("Hacer", 3, "40"),
+        seccion("Autoevaluación", 4, "10"));
+  }
+
+  private com.edusync.academico.domain.SeccionEvaluacion seccion(String nombre, int orden, String nota) {
+    java.math.BigDecimal n = new java.math.BigDecimal(nota);
+    return com.edusync.academico.domain.SeccionEvaluacion.reconstruir(
+        com.edusync.academico.domain.SeccionEvaluacionId.nueva(),
+        tenantId,
+        gestionId,
+        nombre,
+        orden,
+        n,
+        java.math.BigDecimal.ZERO,
+        n);
   }
 }

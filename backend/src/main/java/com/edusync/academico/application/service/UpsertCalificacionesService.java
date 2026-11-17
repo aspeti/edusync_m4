@@ -5,6 +5,7 @@ import com.edusync.academico.application.port.in.UpsertCalificacionesUseCase;
 import com.edusync.academico.application.port.out.CalificacionEvaluacionRepositoryPort;
 import com.edusync.academico.application.port.out.EvaluacionRepositoryPort;
 import com.edusync.academico.application.port.out.PeriodoEvaluacionRepositoryPort;
+import com.edusync.academico.application.port.out.SeccionEvaluacionRepositoryPort;
 import com.edusync.academico.domain.CalificacionEvaluacion;
 import com.edusync.academico.domain.CalificacionEvaluacionId;
 import com.edusync.academico.domain.EstadoEvaluacion;
@@ -18,6 +19,8 @@ import com.edusync.academico.domain.Materia;
 import com.edusync.academico.domain.PeriodoEvaluacion;
 import com.edusync.academico.domain.PeriodoNoAbiertoException;
 import com.edusync.academico.domain.PeriodoNoEncontradoException;
+import com.edusync.academico.domain.SeccionEvaluacion;
+import com.edusync.academico.domain.SeccionNoEncontradaException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +34,7 @@ public class UpsertCalificacionesService implements UpsertCalificacionesUseCase 
 
   private final EvaluacionRepositoryPort evaluacionRepositoryPort;
   private final PeriodoEvaluacionRepositoryPort periodoEvaluacionRepositoryPort;
+  private final SeccionEvaluacionRepositoryPort seccionEvaluacionRepositoryPort;
   private final CalificacionEvaluacionRepositoryPort calificacionEvaluacionRepositoryPort;
   private final MateriaAccesoService materiaAccesoService;
   private final NominaMateriaService nominaMateriaService;
@@ -59,6 +63,11 @@ public class UpsertCalificacionesService implements UpsertCalificacionesUseCase 
       throw new EvaluacionNoActivaException();
     }
 
+    SeccionEvaluacion seccion =
+        seccionEvaluacionRepositoryPort
+            .buscarPorIdYTenant(evaluacion.getSeccionEvaluacionId(), command.tenantId())
+            .orElseThrow(SeccionNoEncontradaException::new);
+
     List<CalificacionEvaluacion> resultado = new ArrayList<>();
     for (UpsertCalificacionesCommand.Item item : command.items()) {
       EstudianteId estudianteId = EstudianteId.de(item.estudianteId());
@@ -79,7 +88,7 @@ public class UpsertCalificacionesService implements UpsertCalificacionesUseCase 
 
       if (existente.isPresent()) {
         CalificacionEvaluacion actual = existente.get();
-        actual.actualizarValor(item.valor(), evaluacion.getPuntajeMaximo());
+        actual.actualizarValor(item.valor(), seccion.getRangoMin(), seccion.getRangoMax());
         resultado.add(calificacionEvaluacionRepositoryPort.guardar(actual));
       } else {
         CalificacionEvaluacion nueva =
@@ -89,7 +98,8 @@ public class UpsertCalificacionesService implements UpsertCalificacionesUseCase 
                 evaluacion.getId(),
                 estudianteId,
                 item.valor(),
-                evaluacion.getPuntajeMaximo());
+                seccion.getRangoMin(),
+                seccion.getRangoMax());
         resultado.add(calificacionEvaluacionRepositoryPort.guardar(nueva));
       }
     }

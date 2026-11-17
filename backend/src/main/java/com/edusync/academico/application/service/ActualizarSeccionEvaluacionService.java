@@ -27,7 +27,9 @@ public class ActualizarSeccionEvaluacionService implements ActualizarSeccionEval
 
     String nombre = command.nombre() != null ? command.nombre() : seccion.getNombre();
     BigDecimal nota = command.nota() != null ? command.nota() : seccion.getNota();
-    seccion.actualizar(nombre, nota);
+    BigDecimal rangoMin = command.rangoMin() != null ? command.rangoMin() : seccion.getRangoMin();
+    BigDecimal rangoMax = command.rangoMax() != null ? command.rangoMax() : seccion.getRangoMax();
+    seccion.actualizar(nombre, nota, rangoMin, rangoMax);
 
     List<SeccionEvaluacion> hermanas = seccionEvaluacionRepositoryPort.listarPorGestionYTenant(
         seccion.getGestionEscolarId(), command.tenantId());

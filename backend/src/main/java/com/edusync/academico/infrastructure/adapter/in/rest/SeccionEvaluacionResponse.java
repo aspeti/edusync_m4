@@ -4,5 +4,11 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 public record SeccionEvaluacionResponse(
-    UUID id, UUID gestionEscolarId, String nombre, int orden, BigDecimal nota) {
+    UUID id,
+    UUID gestionEscolarId,
+    String nombre,
+    int orden,
+    BigDecimal nota,
+    BigDecimal rangoMin,
+    BigDecimal rangoMax) {
 }

@@ -24,8 +24,8 @@
 |-------|-------|
 | **Producto** | EduSync |
 | **Grupo** | G-EduSync |
-| **Versión del documento** | v2.19 |
-| **Fecha** | 10/11/2026 |
+| **Versión del documento** | v2.20 |
+| **Fecha** | 16/11/2026 |
 | **Autores** | Rodrigo Aspeti — Dev Lead / PM |
 | **Revisores** | Docente + 1 grupo par |
 | **Estado** | En revisión |
@@ -110,7 +110,7 @@ Todo el ciclo queda sellado en un `audit_log` append-only inalterable, con aisla
 | T-001 | Setup multitenant: configurar RLS en PostgreSQL + inyección de `tenant_id` en SecurityContext de Spring | FSD-UC-001 | — | PR-ARCH-001 | pendiente |
 | T-002 | Módulo de Autenticación: JWT issue/validate + RBAC con Spring Security | FSD-UC-001 | T-001 | PR-UC-001 | pendiente |
 | T-003 | CRUD Gestión Académica + 3 periodos + validación de apertura secuencial | FSD-UC-009 | T-002 | PR-UC-009 | cubierto por `FSD-UC-012`/`013`; la apertura secuencial queda anulada por `ADR-0014` |
-| T-004 | Motor de parámetros: tabla `parametro_academico` + API de configuración por periodo | FSD-UC-009 | T-003 | PR-UC-009 | ejecutado como `parametro_periodo` (`DD-UC-029`); el peso sigue en `SeccionEvaluacion.nota` |
+| T-004 | Motor de parámetros: rangos configurables sin redespliegue | FSD-UC-009 / FSD-UC-014 | T-003 | PR-UC-009 | **enmendado `ADR-0027`**: `rangoMin`/`rangoMax` en `SeccionEvaluacion` (retirado `parametro_periodo` de `DD-UC-029`); peso = `nota` |
 | T-005 | Asignación docente-materia + verificación de cobertura antes de apertura | FSD-UC-009 | T-003 | PR-UC-009 | asignación en `FSD-UC-018`; cobertura al abrir ejecutada en `DD-UC-029` |
 | T-006 | Endpoint POST /calificaciones con validación paramétrica en tiempo real | FSD-UC-001 | T-004, T-005 | PR-UC-001 | pendiente |
 | T-007 | Motor de consolidación: PROMEDIO_SIMPLE + floor + estado PROVISIONAL/OFICIAL | FSD-UC-003 | T-006 | PR-UC-003 | pendiente |
@@ -507,11 +507,11 @@ Escenario: Apertura secuencial válida
     Y los docentes reciben notificación
 ```
 
-> **Realización vigente (`DD-UC-029` / `PR-IMPL-029`, 29/09/2026).** El flujo clásico de arriba no se reimplementa como modelo paralelo. La gestión y los periodos viven en `POST /api/v1/gestiones-escolares` y `PATCH /api/v1/periodos-evaluacion/{id}/estado` (`FSD-UC-012`/`013`). `BR-006`/`RB-05` y el escenario de apertura secuencial siguen anulados por `ADR-0014`. Lo que este caso de uso añade:
+> **Realización vigente (enmienda `ADR-0027` / `DD-UC-034`, 16/11/2026; supersede el panel de `DD-UC-029`).** El flujo clásico de arriba no se reimplementa como modelo paralelo. La gestión y los periodos viven en `POST /api/v1/gestiones-escolares` y `PATCH /api/v1/periodos-evaluacion/{id}/estado` (`FSD-UC-012`/`013`). `BR-006`/`RB-05` y el escenario de apertura secuencial siguen anulados por `ADR-0014`.
 >
-> - `GET`/`PUT /api/v1/periodos-evaluacion/{id}/parametros` (`ADMIN`). El `PUT` reemplaza el conjunto: una fila por sección vigente, `rangoMin` ≥ 0, `rangoMax` > `rangoMin` y `rangoMax` ≤ `seccion.nota`, regla solo `PROMEDIO_SIMPLE` (`422 E_REGLA_NO_SOPORTADA` si no). No hay seed automático.
-> - Fuera de `PENDIENTE` el `PUT` responde `422 E_PARAMETROS_INMUTABLES` (`BR-007`). Volver el periodo a `PENDIENTE` vuelve a habilitarlo. Nombres, fechas y la plantilla de secciones siguen editables (`ADR-0014`).
-> - Abrir exige parámetros completos (`422 E_PARAMETROS_INCOMPLETOS`), suma de secciones = 100 y que toda materia con curso asignado tenga profesor (`409 E_MATERIA_SIN_DOCENTE`). Cerrar o volver a `PENDIENTE` no exige esos gates.
+> - Los rangos de calificación **ya no** se configuran por periodo. `rangoMin` / `rangoMax` son propiedades de `SeccionEvaluacion` (plantilla de la gestión; ver `FSD-UC-014`). La UI de Periodos **solo** muestra nombre, inicio, fin, estado y acciones.
+> - `GET`/`PUT /api/v1/periodos-evaluacion/{id}/parametros` y el aggregate `ParametroPeriodo` quedan **retirados** (`ADR-0027`). La regla de combinación sigue siendo `PROMEDIO_SIMPLE` (fija en el motor, `FSD-UC-016`).
+> - Abrir un periodo exige: plantilla de secciones con Σ `nota` = 100 y rangos válidos en cada sección (`rangoMin` ≥ 0, `rangoMax` > `rangoMin`, `rangoMax` ≤ `nota`), más cobertura docente (`409 E_MATERIA_SIN_DOCENTE`). Ya **no** aplica `E_PARAMETROS_INCOMPLETOS` / `E_PARAMETROS_INMUTABLES` por periodo.
 > - Quedan fuera: cierre por centralizadores, notificación a docentes, `audit_log`, `floor()` y las reglas `SUMA`/`MEJOR_N`.
 >
 > **Actualización `ADR-0025` (propuesta, 10/11/2026).** El «cierre por centralizadores» ya no es un requisito: para habilitar la exportación al SIE basta con que el periodo esté `CERRADO` (`PATCH .../estado`, `ADR-0014`). No hay cierre de materia por docente. La notificación a docentes y el `audit_log` siguen diferidos.
@@ -579,24 +579,27 @@ Escenario: Bloqueo de acceso por tenant vencido
 
 ### 4.6.3 FSD-UC-013 — Configuración de Periodos de Evaluación
 
-- **Trazabilidad:** `PRD-REQ-023`, `PRD-US-021`, `ADR-0013`, `ADR-0014`, `DD-UC-015`, `DD-UC-019`, `PR-IMPL-015`, `PR-IMPL-019`
+- **Trazabilidad:** `PRD-REQ-023`, `PRD-US-021`, `ADR-0013`, `ADR-0014`, `ADR-0027`, `DD-UC-015`, `DD-UC-019`, `DD-UC-034`, `PR-IMPL-015`, `PR-IMPL-019`, `PR-IMPL-034`
 - **Actor principal:** Admin
 - **Actores secundarios (solo lectura, vía `FSD-UC-012` A2):** Secretaria, Profesor, Asesor — solo si la `GestionEscolar` padre está `ACTIVA`.
 - **Precondiciones:** `GestionEscolar` existente (seed de 3 periodos al crear, `FSD-UC-012`).
 - **Disparador:** El Admin ajusta los periodos de su `GestionEscolar`.
 - **Flujo principal:**
   1. `GET /api/v1/gestiones-escolares/{id}` y `GET /api/v1/gestiones-escolares/{id}/periodos` (ADMIN, o SECRETARIA/PROFESOR/ASESOR si la gestión es `ACTIVA`; lista ordenada por `orden`, sin paginar).
-  2. `POST /api/v1/gestiones-escolares/{id}/periodos` con `{nombre, fechaInicio, fechaFin}` (N ≥ 1; `orden` = max+1). Cada periodo nace `PENDIENTE`. **Sin restricción de N/datos congelados** (`ADR-0014`, revierte A3).
+  2. `POST /api/v1/gestiones-escolares/{id}/periodos` con `{nombre, fechaInicio, fechaFin}` (N ≥ 1; `orden` = max+1). Cada periodo nace `PENDIENTE` y **reutiliza** la plantilla de secciones ya configurada (`ADR-0027`; sin parámetros propios).
   3. `PATCH /api/v1/periodos-evaluacion/{id}` `{nombre?, fechaInicio?, fechaFin?}` y `DELETE` — sin restricción de estado de los periodos hermanos (`ADR-0014`).
-  4. `PATCH /api/v1/periodos-evaluacion/{id}/estado` con `{estado: PENDIENTE|ABIERTO|CERRADO}`: **cualquier transición es válida desde cualquier estado** (`ADR-0014`, revierte A2 y la secuencialidad); el Admin puede abrir/cerrar/reabrir periodos en cualquier orden.
+  4. `PATCH /api/v1/periodos-evaluacion/{id}/estado` con `{estado: PENDIENTE|ABIERTO|CERRADO}`: **cualquier transición es válida desde cualquier estado** (`ADR-0014`); el Admin puede abrir/cerrar/reabrir periodos en cualquier orden.
+  5. **UI:** tabla con nombre, inicio, fin, estado y acciones **únicamente**. Rangos mín/máx se editan en Secciones (`FSD-UC-014`).
 - **Flujos alternativos / excepciones:**
   - **A1 — Periodos con fechas solapadas:** HTTP 422 `E_PERIODOS_SOLAPADOS` (invariante de integridad, **conservada** por `ADR-0014`).
   - **A2 — Último periodo:** HTTP 422 `E_PERIODO_UNICO` al `DELETE` del último (invariante de integridad, **conservada**).
-  - **A3 — Plantilla de secciones inválida:** HTTP 422 `E_SUMA_SECCIONES_INVALIDA` al pasar a `ABIERTO` si no hay secciones o Σ `nota` ≠ 100 (`FSD-UC-014`; invariante de integridad, **conservada**).
+  - **A3 — Plantilla de secciones inválida:** HTTP 422 `E_SUMA_SECCIONES_INVALIDA` al pasar a `ABIERTO` si no hay secciones o Σ `nota` ≠ 100; `E_RANGO_INVALIDO` si alguna sección tiene rangos inconsistentes (`FSD-UC-014` / `ADR-0027`).
+  - **A4 — Materia sin docente:** HTTP 409 `E_MATERIA_SIN_DOCENTE` al pasar a `ABIERTO` si alguna materia con curso asignado no tiene profesor (conservado de `DD-UC-029`).
   - Gestión o periodo inexistente / otro tenant / gestión no visible para el rol (`FSD-UC-012` A2): HTTP 404 `E_GESTION_ESCOLAR_NO_ENCONTRADA` / `E_PERIODO_NO_ENCONTRADO`.
-  - ⚠️ **Eliminados por `ADR-0014`** (ya no existen en el sistema): `E_PERIODO_NO_SECUENCIAL` (apertura no secuencial) y `E_PERIODOS_INMUTABLES` (N/datos congelados con un periodo `ABIERTO`).
-- **Postcondiciones:** `GestionEscolar` con N `PeriodoEvaluacion` ordenados.
-- **Reglas de negocio aplicables:** BR-017, `ADR-0014`.
+  - ⚠️ **Eliminados por `ADR-0014`:** `E_PERIODO_NO_SECUENCIAL`, `E_PERIODOS_INMUTABLES`.
+  - ⚠️ **Retirados por `ADR-0027`:** panel/API de parámetros por periodo (`E_PARAMETROS_INCOMPLETOS` / `E_PARAMETROS_INMUTABLES`).
+- **Postcondiciones:** `GestionEscolar` con N `PeriodoEvaluacion` ordenados; todos comparten la misma plantilla de secciones.
+- **Reglas de negocio aplicables:** BR-017, `ADR-0014`, `ADR-0027`.
 - **Criterios de aceptación:**
 
 ```gherkin
@@ -621,40 +624,58 @@ Escenario: Secretaria no ve una gestión en PLANIFICACION
 
 ### 4.6.4 FSD-UC-014 — Configuración de Secciones de Evaluación
 
-- **Trazabilidad:** `PRD-REQ-024`, `PRD-US-022`, `ADR-0013`, `ADR-0014`, `DD-UC-016`, `DD-UC-019`, `PR-IMPL-016`, `PR-IMPL-019`
+- **Trazabilidad:** `PRD-REQ-024`, `PRD-US-022`, `ADR-0013`, `ADR-0014`, `ADR-0027`, `DD-UC-016`, `DD-UC-019`, `DD-UC-034`, `PR-IMPL-016`, `PR-IMPL-019`, `PR-IMPL-034`
 - **Actor principal:** Admin
 - **Actores secundarios (solo lectura, vía `FSD-UC-012` A2):** Secretaria, Profesor, Asesor — solo si la `GestionEscolar` padre está `ACTIVA`.
 - **Precondiciones:** `GestionEscolar` existente (seed de 4 secciones al crear, `FSD-UC-012`).
-- **Disparador:** El Admin ajusta la plantilla de secciones **de la gestión** (no de cada periodo).
+- **Disparador:** El Admin ajusta la plantilla de secciones **de la gestión** (no de cada periodo). Esa plantilla incluye peso (`nota`) y rangos de carga (`rangoMin` / `rangoMax`).
 - **Flujo principal:**
-  1. `GET /api/v1/gestiones-escolares/{id}/secciones` (ADMIN, o SECRETARIA/PROFESOR/ASESOR si la gestión es `ACTIVA`; lista ordenada por `orden`, sin paginar).
-  2. `PUT /api/v1/gestiones-escolares/{id}/secciones` con `{secciones:[{nombre, nota}]}` — **reemplazo atómico** de la plantilla (`orden` = índice 1-based; M ≥ 1; Σ `nota` = 100.00), **sin restricción de estado de los periodos** (`ADR-0014`, revierte el freeze sticky de A3). Operación canónica de rebalanceo.
-  3. `POST /api/v1/gestiones-escolares/{id}/secciones` con `{nombre, orden, nota}` y `PATCH /api/v1/secciones-evaluacion/{id}` `{nombre?, nota?}` — tras la mutación la suma **debe** seguir = 100; sin restricción de estado de los periodos (`ADR-0014`).
+  1. `GET /api/v1/gestiones-escolares/{id}/secciones` (ADMIN, o SECRETARIA/PROFESOR/ASESOR si la gestión es `ACTIVA`; lista ordenada por `orden`, sin paginar). Cada ítem expone `nombre`, `orden`, `nota`, `rangoMin`, `rangoMax`.
+  2. `PUT /api/v1/gestiones-escolares/{id}/secciones` con `{secciones:[{nombre, nota, rangoMin, rangoMax}]}` — **reemplazo atómico** de la plantilla (`orden` = índice 1-based; M ≥ 1; Σ `nota` = 100.00), **sin restricción de estado de los periodos** (`ADR-0014`). Operación canónica de rebalanceo.
+  3. `POST /api/v1/gestiones-escolares/{id}/secciones` con `{nombre, orden, nota, rangoMin, rangoMax}` y `PATCH /api/v1/secciones-evaluacion/{id}` `{nombre?, nota?, rangoMin?, rangoMax?}` — tras la mutación la suma **debe** seguir = 100; sin restricción de estado de los periodos (`ADR-0014`).
+  4. **UI Periodos** (`FSD-UC-013`): solo nombre, inicio, fin, estado y acciones. **No** edita rangos.
+  5. **UI Secciones**: edita `nombre`, `nota`, `rangoMin`, `rangoMax` (fuente única de verdad para todos los periodos).
+- **Semántica de campos (`ADR-0027`):**
+  - `nota` — peso de la sección en el 100 del periodo **y** escala del motor (`puntajeMaximo` de evaluaciones = `nota`).
+  - `rangoMin` / `rangoMax` — rango **permitido al cargar** una calificación en esa sección; invariantes: `rangoMin` ≥ 0, `rangoMax` > `rangoMin`, `rangoMax` ≤ `nota`. Defaults al seed: `rangoMin = 0`, `rangoMax = nota`.
 - **Flujos alternativos / excepciones:**
   - **A1 — `nota` fuera de (0, 100]:** HTTP 422 `E_PESO_INVALIDO` (invariante de integridad, **conservada**).
   - **A2 — Suma de `nota` ≠ 100 (o plantilla vacía):** HTTP 422 `E_SUMA_SECCIONES_INVALIDA` (invariante de integridad, **conservada**). También al abrir un periodo si la plantilla está vacía o no suma 100.
+  - **A3 — Rango inválido:** HTTP 422 `E_RANGO_INVALIDO` si `rangoMin`/`rangoMax` violan las invariantes de la sección.
   - Gestión o sección inexistente / otro tenant / gestión no visible para el rol (`FSD-UC-012` A2): HTTP 404 `E_GESTION_ESCOLAR_NO_ENCONTRADA` / `E_SECCION_NO_ENCONTRADA`.
   - ⚠️ **Eliminado por `ADR-0014`** (ya no existe en el sistema): `E_SECCIONES_INMUTABLES` (freeze sticky con algún periodo `ABIERTO`/`CERRADO`).
-- **Postcondiciones:** Plantilla de secciones compartida por todos los periodos de la gestión.
-- **Reglas de negocio aplicables:** BR-018, `ADR-0014`.
-- **Datos de entrada (POST item):** `{ "nombre": "string", "orden": "integer", "nota": "decimal" }`
+  - ⚠️ **Retirado por `ADR-0027`:** configuración de rangos vía `ParametroPeriodo` / UI de Periodos (`DD-UC-029`).
+- **Postcondiciones:** Plantilla de secciones (peso + rangos) compartida por todos los periodos de la gestión.
+- **Reglas de negocio aplicables:** BR-018, BR-019, `ADR-0014`, `ADR-0027`.
+- **Datos de entrada (POST/PUT item):** `{ "nombre": "string", "orden?": "integer", "nota": "decimal", "rangoMin": "decimal", "rangoMax": "decimal" }`
 - **Criterios de aceptación:**
 
 ```gherkin
-Escenario: Seed Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10
+Escenario: Seed Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10 con rangos [0, nota]
   Cuando el Admin crea una GestionEscolar
   Entonces existen 4 secciones cuya suma de nota es 100
+    Y cada sección tiene rangoMin = 0 y rangoMax = nota
     Y aplican a todos los periodos de esa gestión
 
 Escenario: El Admin edita secciones con un periodo ABIERTO (ADR-0014)
   Dado Trimestre 1 ABIERTO
   Cuando el Admin cambia la nota de Saber de 45 a 40 y Hacer de 40 a 45
+    Y ajusta rangoMax de Saber a 40
   Entonces el sistema responde 200 y la plantilla queda actualizada
 
 Escenario: La suma de secciones sigue siendo obligatoria
   Dado la plantilla vigente suma 100
   Cuando el Admin intenta guardar una plantilla que suma 95
   Entonces el sistema responde 422 E_SUMA_SECCIONES_INVALIDA
+
+Escenario: rangoMax no puede superar nota
+  Cuando el Admin guarda Saber con nota = 45 y rangoMax = 50
+  Entonces el sistema responde 422 E_RANGO_INVALIDO
+
+Escenario: Periodos no editan rangos
+  Dado la pantalla de Periodos de una gestión
+  Entonces solo se muestran nombre, inicio, fin, estado y acciones
+    Y no hay controles de rangoMin ni rangoMax
 ```
 
 ---
@@ -992,8 +1013,8 @@ Escenario: Rango inválido en celda
 | BR-015 | El SysAdmin administra usuarios `ADMIN` de cada tenant sin acceso a los datos académicos del tenant. | política de aislamiento | BRD BR-015 | FSD-UC-011 |
 | BR-016 | Toda `GestionEscolar` requiere nombre, fecha de inicio, fecha de fin y estado (`PLANIFICACION`/`ACTIVA`/`CERRADA`). Al crearla se siembran 3 periodos y 4 secciones (`ADR-0013`). | validación | BRD BR-016 | FSD-UC-012 |
 | BR-017 | El número de `PeriodoEvaluacion` es configurable (N ≥ 1, seed = 3). Apertura **no secuencial** desde `ADR-0014` (el Admin puede abrir/cerrar cualquier periodo en cualquier orden); solo se conserva la invariante de no-solape de fechas. | arquitectura | BRD BR-017, `ADR-0013`, `ADR-0014` | FSD-UC-013 |
-| BR-018 | Plantilla de `SeccionEvaluacion` **por gestión** (nombre, orden, `nota`); Σ `nota` = 100 (invariante de integridad conservada). Editable **en cualquier momento** desde `ADR-0014` (freeze sticky eliminado). Defaults Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10. | arquitectura | BRD BR-018, `ADR-0013`, `ADR-0014` | FSD-UC-014 |
-| BR-019 | Toda `Evaluacion` de una materia usa una sección de la plantilla y se califica en `[0, seccion.nota]`. | arquitectura | BRD BR-019, `ADR-0013` | FSD-UC-015, FSD-UC-022 |
+| BR-018 | Plantilla de `SeccionEvaluacion` **por gestión** (nombre, orden, `nota`, `rangoMin`, `rangoMax`); Σ `nota` = 100. Rangos: `rangoMin` ≥ 0, `rangoMax` > `rangoMin`, `rangoMax` ≤ `nota`. Editable **en cualquier momento** desde `ADR-0014`. Defaults Ser 5 / Saber 45 / Hacer 40 / Autoevaluación 10 con `rangoMin=0`, `rangoMax=nota`. Fuente única para todos los periodos (`ADR-0027`). | arquitectura | BRD BR-018, `ADR-0013`, `ADR-0014`, `ADR-0027` | FSD-UC-014, FSD-UC-009 |
+| BR-019 | Toda `Evaluacion` de una materia usa una sección de la plantilla; `puntajeMaximo` = `seccion.nota`. La calificación del estudiante se valida en `[seccion.rangoMin, seccion.rangoMax]` (`E_RANGO_INVALIDO` si no). | arquitectura | BRD BR-019, `ADR-0013`, `ADR-0027` | FSD-UC-015, FSD-UC-016, FSD-UC-022 |
 | BR-020 | `nota_seccion = (Σ / n)` a 2 decimales; `nota_periodo = round(Σ secciones)` a entero HALF_UP; `promedio_gestion = round((Σ periodos_o_cero) / N)` visible `PROVISIONAL`. Sin `floor()` en el genérico. | cálculo | BRD BR-020, `ADR-0013` | FSD-UC-016, FSD-UC-022 |
 | BR-021 | Un `Curso` puede tener uno o más `Paralelo`; `Materia` e `Inscripcion` referencian siempre un `Curso` y, cuando aplica, un `Paralelo` válidos. | validación | BRD BR-021 | FSD-UC-017 |
 | BR-022 | Ninguna `Evaluacion` puede registrarse sobre una `Materia` sin `Profesor` asignado. | validación | BRD BR-022 | FSD-UC-018, FSD-UC-019 |
@@ -1190,7 +1211,9 @@ erDiagram
 | **SeccionEvaluacion** | `gestion_escolar_id` | UUID (FK) | sí | plantilla de la gestión, no del periodo (`ADR-0013`) | sistema |
 | **SeccionEvaluacion** | `nombre` | VARCHAR(50) | sí | ej. "Saber" | Admin |
 | **SeccionEvaluacion** | `orden` | INTEGER | sí | ≥ 1 | Admin |
-| **SeccionEvaluacion** | `nota` | DECIMAL(5,2) | sí | > 0; Σ `nota` de la gestión = 100 | Admin |
+| **SeccionEvaluacion** | `nota` | DECIMAL(5,2) | sí | > 0; Σ `nota` de la gestión = 100; peso y escala del motor | Admin |
+| **SeccionEvaluacion** | `rango_min` | DECIMAL(5,2) | sí | ≥ 0; piso al cargar calificación (`ADR-0027`) | Admin |
+| **SeccionEvaluacion** | `rango_max` | DECIMAL(5,2) | sí | > `rango_min` y ≤ `nota`; techo al cargar calificación | Admin |
 | **Evaluacion** | `id` | UUID | sí | — | sistema |
 | **Evaluacion** | `materia_id` | UUID (FK) | sí | — | Profesor |
 | **Evaluacion** | `periodo_evaluacion_id` | UUID (FK) | sí | — | Profesor |
@@ -1203,7 +1226,7 @@ erDiagram
 | **CalificacionEvaluacion** | `id` | UUID | sí | — | sistema |
 | **CalificacionEvaluacion** | `evaluacion_id` | UUID (FK) | sí | — | Profesor |
 | **CalificacionEvaluacion** | `estudiante_id` | UUID (FK) | sí | — | Profesor |
-| **CalificacionEvaluacion** | `valor` | DECIMAL(5,2) | sí | en `[0, seccion.nota]` | Profesor |
+| **CalificacionEvaluacion** | `valor` | DECIMAL(5,2) | sí | en `[seccion.rango_min, seccion.rango_max]` (`ADR-0027`) | Profesor |
 | **Curso** | `id` | UUID | sí | — | sistema |
 | **Curso** | `tenant_id` | UUID (FK) | sí | RLS | sistema |
 | **Curso** | `nombre` | VARCHAR(100) | sí | ej. "Primero de Primaria" | Admin |
@@ -1610,6 +1633,7 @@ Paso 13 → audit_log entry + notificación
 | v2.17 | 10/11/2026 | G-EduSync | **`ADR-0025` (propuesta) + `DD-UC-031` / `PR-IMPL-031`**: se reconcilia el Perfil Bolivia SIE con el modelo genérico. Notas de realización en `FSD-UC-001` (§4.1, absorbido por `FSD-UC-016`), `FSD-UC-003` (§4.2, reducido a la nota final de periodo, sin `floor()`), `FSD-UC-004` (§4.3, reescrito: el SIE recibe `rude` + materia + periodo + nota final entera; solo periodo `CERRADO`; clave `rude+materia_id+periodo_id`; `EXCLUIDO_NOTA_INCOMPLETA`), `FSD-UC-005` (§4.4, **diferido**: inmutabilidad y correcciones) y `FSD-UC-009` (§4.5, el cierre por centralizador ya no es requisito). `BR-003`, `BR-008` y `RB-08` marcadas superadas. Sin código en este turno. |
 | v2.18 | 10/11/2026 | G-EduSync | Nuevo **`FSD-UC-022`** (§4.6.12): planilla del Profesor por Curso/Paralelo/Materia. Landing en grilla (Curso = `curso.nombre` + paralelo, Materia, acción Ingresar); planilla estudiantes × evaluaciones del periodo + columna Promedio (`nota_periodo` vía `CalculoNotas`); edición inline sin botones Agregar/Editar/Guardar por celda. Notas de realización en `FSD-UC-015`/`016` y filas nuevas en §9. Trazado a `PRD-US-031`/`PRD-REQ-032`. Sin código ni Design Doc en este bump. |
 | v2.19 | 10/11/2026 | G-EduSync | **`FSD-UC-022` implementado** (`DD-UC-033` / `PR-IMPL-033` ejecutados): endpoints + UI Mis cursos/planilla; null-clear; redirect PROFESOR. |
+| v2.20 | 16/11/2026 | G-EduSync | **`ADR-0027` + `DD-UC-034` / `PR-IMPL-034` (aprobados, ejecución pendiente):** `rangoMin`/`rangoMax` pasan a propiedades de `SeccionEvaluacion` (`FSD-UC-014`); UI Periodos sin panel de parámetros; se retira `ParametroPeriodo` (`DD-UC-029`). Nota de realización de `FSD-UC-009` enmendada; `BR-018`/`BR-019` y diccionario §6.3.2 actualizados. |
 
 ---
 

@@ -7,13 +7,9 @@ import java.util.UUID;
 import lombok.Getter;
 
 /**
- * Aggregate independiente ({@code DD-UC-018}, {@code FSD-UC-016}): nota de un
- * {@link Estudiante} en una {@link Evaluacion}. Unicidad de negocio
- * {@code (evaluacionId, estudianteId)} del tenant. Nombre deliberado
- * {@code CalificacionEvaluacion} (diccionario FSD §6.3.2) para no colisionar con
- * {@code Calificacion} del Perfil Bolivia SIE.
- *
- * <p>Lombok solo {@code @Getter} (mismo criterio que {@link Evaluacion}).
+ * Aggregate independiente ({@code DD-UC-018}/{@code DD-UC-034}, {@code FSD-UC-016}):
+ * nota de un {@link Estudiante} en una {@link Evaluacion}. El valor se valida en
+ * {@code [seccion.rangoMin, seccion.rangoMax]} ({@code ADR-0027}).
  */
 @Getter
 public final class CalificacionEvaluacion {
@@ -43,13 +39,14 @@ public final class CalificacionEvaluacion {
       EvaluacionId evaluacionId,
       EstudianteId estudianteId,
       BigDecimal valor,
-      BigDecimal puntajeMaximo) {
+      BigDecimal rangoMin,
+      BigDecimal rangoMax) {
     Objects.requireNonNull(id, "id no puede ser nulo");
     Objects.requireNonNull(tenantId, "tenantId no puede ser nulo");
     Objects.requireNonNull(evaluacionId, "evaluacionId no puede ser nulo");
     Objects.requireNonNull(estudianteId, "estudianteId no puede ser nulo");
     return new CalificacionEvaluacion(
-        id, tenantId, evaluacionId, estudianteId, validarValor(valor, puntajeMaximo));
+        id, tenantId, evaluacionId, estudianteId, validarValor(valor, rangoMin, rangoMax));
   }
 
   public static CalificacionEvaluacion reconstruir(
@@ -61,17 +58,20 @@ public final class CalificacionEvaluacion {
     return new CalificacionEvaluacion(id, tenantId, evaluacionId, estudianteId, valor);
   }
 
-  public void actualizarValor(BigDecimal nuevoValor, BigDecimal puntajeMaximo) {
-    this.valor = validarValor(nuevoValor, puntajeMaximo);
+  public void actualizarValor(BigDecimal nuevoValor, BigDecimal rangoMin, BigDecimal rangoMax) {
+    this.valor = validarValor(nuevoValor, rangoMin, rangoMax);
   }
 
-  private static BigDecimal validarValor(BigDecimal valor, BigDecimal puntajeMaximo) {
+  private static BigDecimal validarValor(BigDecimal valor, BigDecimal rangoMin, BigDecimal rangoMax) {
     Objects.requireNonNull(valor, "valor no puede ser nulo");
-    Objects.requireNonNull(puntajeMaximo, "puntajeMaximo no puede ser nulo");
+    Objects.requireNonNull(rangoMin, "rangoMin no puede ser nulo");
+    Objects.requireNonNull(rangoMax, "rangoMax no puede ser nulo");
     BigDecimal normalizado = valor.setScale(2, RoundingMode.HALF_UP);
-    BigDecimal max = puntajeMaximo.setScale(2, RoundingMode.HALF_UP);
-    if (normalizado.compareTo(BigDecimal.ZERO) < 0 || normalizado.compareTo(max) > 0) {
-      throw new RangoCalificacionInvalidoException("[0, " + max.toPlainString() + "]");
+    BigDecimal min = rangoMin.setScale(2, RoundingMode.HALF_UP);
+    BigDecimal max = rangoMax.setScale(2, RoundingMode.HALF_UP);
+    if (normalizado.compareTo(min) < 0 || normalizado.compareTo(max) > 0) {
+      throw new RangoCalificacionInvalidoException(
+          "[" + min.toPlainString() + ", " + max.toPlainString() + "]");
     }
     return normalizado;
   }

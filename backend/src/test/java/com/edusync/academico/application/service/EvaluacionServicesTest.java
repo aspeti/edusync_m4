@@ -189,7 +189,7 @@ class EvaluacionServicesTest {
   private void stubSeccion(GestionEscolarId gestion, BigDecimal nota) {
     when(seccionPort.buscarPorIdYTenant(seccionId, tenantId))
         .thenReturn(Optional.of(SeccionEvaluacion.crear(
-            seccionId, tenantId, gestion, "Saber", 2, nota)));
+            seccionId, tenantId, gestion, "Saber", 2, nota, BigDecimal.ZERO, nota)));
   }
 
   private Materia materia() {

@@ -225,7 +225,8 @@ public class GestionEscolarController {
   public ResponseEntity<List<SeccionEvaluacionResponse>> reemplazarSecciones(
       @PathVariable UUID id, @Valid @RequestBody ReemplazarSeccionesEvaluacionRequest request) {
     List<ReemplazarSeccionesEvaluacionCommand.Item> items = request.secciones().stream()
-        .map(item -> new ReemplazarSeccionesEvaluacionCommand.Item(item.nombre(), item.nota()))
+        .map(item -> new ReemplazarSeccionesEvaluacionCommand.Item(
+            item.nombre(), item.nota(), item.rangoMin(), item.rangoMax()))
         .toList();
     List<SeccionEvaluacionResponse> secciones = reemplazarSeccionesEvaluacionUseCase
         .reemplazar(new ReemplazarSeccionesEvaluacionCommand(tenantActual(), id, items))
@@ -244,7 +245,13 @@ public class GestionEscolarController {
   public ResponseEntity<SeccionEvaluacionResponse> crearSeccion(
       @PathVariable UUID id, @Valid @RequestBody CrearSeccionEvaluacionRequest request) {
     SeccionEvaluacion seccion = crearSeccionEvaluacionUseCase.crear(new CrearSeccionEvaluacionCommand(
-        tenantActual(), id, request.nombre(), request.orden(), request.nota()));
+        tenantActual(),
+        id,
+        request.nombre(),
+        request.orden(),
+        request.nota(),
+        request.rangoMin(),
+        request.rangoMax()));
     return ResponseEntity.status(HttpStatus.CREATED).body(aSeccionResponse(seccion));
   }
 
@@ -291,7 +298,8 @@ public class GestionEscolarController {
           "E_PERIODOS_SOLAPADOS",
           "E_PERIODO_UNICO",
           "E_PESO_INVALIDO",
-          "E_SUMA_SECCIONES_INVALIDA" -> HttpStatus.UNPROCESSABLE_CONTENT;
+          "E_SUMA_SECCIONES_INVALIDA",
+          "E_RANGO_INVALIDO" -> HttpStatus.UNPROCESSABLE_CONTENT;
       default -> HttpStatus.CONFLICT;
     };
     return ResponseEntity.status(status).body(new ErrorResponse(ex.getErrorCode(), ex.getMessage()));
@@ -327,6 +335,8 @@ public class GestionEscolarController {
         seccion.getGestionEscolarId().valor(),
         seccion.getNombre(),
         seccion.getOrden(),
-        seccion.getNota());
+        seccion.getNota(),
+        seccion.getRangoMin(),
+        seccion.getRangoMax());
   }
 }

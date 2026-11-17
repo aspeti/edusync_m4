@@ -40,7 +40,9 @@ public class ReemplazarSeccionesEvaluacionService implements ReemplazarSecciones
           gestionId,
           item.nombre(),
           orden++,
-          item.nota()));
+          item.nota(),
+          item.rangoMin(),
+          item.rangoMax()));
     }
     SeccionEvaluacionPolitica.exigirSumaCien(nuevas);
     return seccionEvaluacionRepositoryPort.reemplazarPlantilla(gestionId, command.tenantId(), nuevas);

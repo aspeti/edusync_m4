@@ -12,7 +12,7 @@ import { SeccionEvaluacionDraft, SeccionEvaluacionResponse } from './seccion-eva
 import { ApiBase } from '../../core/api/api-base';
 import { AuthService } from '../../core/auth/auth.service';
 
-/** Secciones de Gestión (DD-UC-016/019) — UI PrimeNG (ADR-0026). */
+/** Secciones de Gestión (DD-UC-016/034) — UI PrimeNG (ADR-0026/0027). */
 @Component({
   selector: 'app-gestion-secciones-page',
   standalone: true,
@@ -45,7 +45,7 @@ import { AuthService } from '../../core/auth/auth.service';
         <p-table
           [value]="filas()"
           [loading]="loading()"
-          [tableStyle]="{ 'min-width': '30rem' }"
+          [tableStyle]="{ 'min-width': '40rem' }"
           styleClass="p-datatable-sm"
         >
           <ng-template #header>
@@ -53,6 +53,8 @@ import { AuthService } from '../../core/auth/auth.service';
               <th>#</th>
               <th>Nombre</th>
               <th>Nota</th>
+              <th>Mínimo</th>
+              <th>Máximo</th>
               @if (esAdmin()) {
                 <th></th>
               }
@@ -78,6 +80,26 @@ import { AuthService } from '../../core/auth/auth.service';
                   [disabled]="!esAdmin() || saving()"
                   [min]="0.01"
                   [max]="100"
+                  [maxFractionDigits]="2"
+                  [useGrouping]="false"
+                />
+              </td>
+              <td>
+                <p-inputnumber
+                  [ngModel]="fila.rangoMin"
+                  (ngModelChange)="actualizarFila(i, 'rangoMin', $event)"
+                  [disabled]="!esAdmin() || saving()"
+                  [min]="0"
+                  [maxFractionDigits]="2"
+                  [useGrouping]="false"
+                />
+              </td>
+              <td>
+                <p-inputnumber
+                  [ngModel]="fila.rangoMax"
+                  (ngModelChange)="actualizarFila(i, 'rangoMax', $event)"
+                  [disabled]="!esAdmin() || saving()"
+                  [min]="0"
                   [maxFractionDigits]="2"
                   [useGrouping]="false"
                 />
@@ -118,7 +140,7 @@ import { AuthService } from '../../core/auth/auth.service';
   styles: [
     `
       .page {
-        max-width: 800px;
+        max-width: 960px;
         margin: 0 auto;
       }
       .meta {
@@ -183,19 +205,29 @@ export class GestionSeccionesPage implements OnInit {
     return Math.abs(this.suma() - 100) < 0.005 && this.filas().every((f) => (f.nombre ?? '').trim().length > 0);
   }
 
-  actualizarFila(index: number, campo: 'nombre' | 'nota', valor: string | number | null): void {
+  actualizarFila(
+    index: number,
+    campo: 'nombre' | 'nota' | 'rangoMin' | 'rangoMax',
+    valor: string | number | null,
+  ): void {
     const actual = [...this.filas()];
     if (campo === 'nombre') {
       actual[index] = { ...actual[index], nombre: String(valor ?? '') };
     } else {
       const n = valor === '' || valor === null ? null : Number(valor);
-      actual[index] = { ...actual[index], nota: n };
+      actual[index] = { ...actual[index], [campo]: n };
+      if (campo === 'nota' && n != null) {
+        const fila = actual[index];
+        if (fila.rangoMax == null || fila.rangoMax > n) {
+          actual[index] = { ...fila, rangoMax: n };
+        }
+      }
     }
     this.filas.set(actual);
   }
 
   anadirFila(): void {
-    this.filas.set([...this.filas(), { nombre: '', nota: null }]);
+    this.filas.set([...this.filas(), { nombre: '', nota: null, rangoMin: 0, rangoMax: null }]);
   }
 
   quitarFila(index: number): void {
@@ -206,14 +238,19 @@ export class GestionSeccionesPage implements OnInit {
     this.saving.set(true);
     this.errorMsg.set(null);
     this.okMsg.set(null);
-    const secciones = this.filas().map((f) => ({ nombre: f.nombre.trim(), nota: Number(f.nota) }));
+    const secciones = this.filas().map((f) => ({
+      nombre: f.nombre.trim(),
+      nota: Number(f.nota),
+      rangoMin: Number(f.rangoMin ?? 0),
+      rangoMax: Number(f.rangoMax ?? f.nota),
+    }));
     this.http
       .put<SeccionEvaluacionResponse[]>(`${ApiBase.BASE}/gestiones-escolares/${this.gestionId}/secciones`, {
         secciones,
       })
       .subscribe({
         next: (lista) => {
-          this.filas.set(lista.map((s) => ({ nombre: s.nombre, nota: Number(s.nota) })));
+          this.filas.set(lista.map((s) => this.aDraft(s)));
           this.okMsg.set('Plantilla guardada.');
           this.saving.set(false);
         },
@@ -235,7 +272,7 @@ export class GestionSeccionesPage implements OnInit {
           .get<SeccionEvaluacionResponse[]>(`${ApiBase.BASE}/gestiones-escolares/${this.gestionId}/secciones`)
           .subscribe({
             next: (secciones) => {
-              this.filas.set(secciones.map((s) => ({ nombre: s.nombre, nota: Number(s.nota) })));
+              this.filas.set(secciones.map((s) => this.aDraft(s)));
               this.loading.set(false);
             },
             error: (err: HttpErrorResponse) => this.alErrorCarga(err),
@@ -243,6 +280,15 @@ export class GestionSeccionesPage implements OnInit {
       },
       error: (err: HttpErrorResponse) => this.alErrorCarga(err),
     });
+  }
+
+  private aDraft(s: SeccionEvaluacionResponse): SeccionEvaluacionDraft {
+    return {
+      nombre: s.nombre,
+      nota: Number(s.nota),
+      rangoMin: Number(s.rangoMin),
+      rangoMax: Number(s.rangoMax),
+    };
   }
 
   private alErrorCarga(err: HttpErrorResponse): void {
@@ -255,6 +301,9 @@ export class GestionSeccionesPage implements OnInit {
     const codigo = err.error?.codigo as string | undefined;
     if (codigo === 'E_SUMA_SECCIONES_INVALIDA') return 'La suma de nota debe ser exactamente 100.';
     if (codigo === 'E_PESO_INVALIDO') return 'Cada nota debe estar entre 0 (excluido) y 100.';
+    if (codigo === 'E_RANGO_INVALIDO') {
+      return 'El rango no es válido (mín ≥ 0, máx > mín, máx ≤ nota).';
+    }
     return 'No se pudo guardar la plantilla.';
   }
 }

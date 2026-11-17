@@ -2330,7 +2330,7 @@
             "description" : "E_PERIODO_UNICO"
           }
         },
-        "summary" : "Eliminar un periodo (solo si todos estan PENDIENTE y N>1)",
+        "summary" : "Eliminar un periodo (solo si N>1)",
         "tags" : [ "Academico" ]
       },
       "patch" : {
@@ -2392,7 +2392,7 @@
     },
     "/api/v1/periodos-evaluacion/{id}/estado" : {
       "patch" : {
-        "description" : "DD-UC-019: ADMIN puede abrir/cerrar cualquier periodo en cualquier orden.",
+        "description" : "DD-UC-019/034: ADMIN puede abrir/cerrar cualquier periodo; rangos viven en secciones.",
         "operationId" : "cambiarEstado_2",
         "parameters" : [ {
           "in" : "path",
@@ -2452,121 +2452,10 @@
                 }
               }
             },
-            "description" : "E_SUMA_SECCIONES_INVALIDA / E_PARAMETROS_INCOMPLETOS (al abrir)"
+            "description" : "E_SUMA_SECCIONES_INVALIDA / E_RANGO_INVALIDO (al abrir)"
           }
         },
         "summary" : "Cambiar el estado de un periodo",
-        "tags" : [ "Academico" ]
-      }
-    },
-    "/api/v1/periodos-evaluacion/{id}/parametros" : {
-      "get" : {
-        "description" : "DD-UC-029. Exclusivo ADMIN.",
-        "operationId" : "listarParametros",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/ParametroPeriodoResponse"
-                  }
-                }
-              }
-            },
-            "description" : "Parametros del periodo"
-          },
-          "404" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/ParametroPeriodoResponse"
-                  }
-                }
-              }
-            },
-            "description" : "E_PERIODO_NO_ENCONTRADO"
-          }
-        },
-        "summary" : "Listar parametros de un periodo",
-        "tags" : [ "Academico" ]
-      },
-      "put" : {
-        "description" : "DD-UC-029 / BR-007.",
-        "operationId" : "guardarParametros",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/GuardarParametrosPeriodoRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/ParametroPeriodoResponse"
-                  }
-                }
-              }
-            },
-            "description" : "Parametros guardados"
-          },
-          "404" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/ParametroPeriodoResponse"
-                  }
-                }
-              }
-            },
-            "description" : "E_PERIODO_NO_ENCONTRADO / E_SECCION_NO_ENCONTRADA"
-          },
-          "422" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/ParametroPeriodoResponse"
-                  }
-                }
-              }
-            },
-            "description" : "E_PARAMETROS_INMUTABLES / E_PARAMETROS_INCOMPLETOS / E_RANGO_INVALIDO / E_REGLA_NO_SOPORTADA"
-          }
-        },
-        "summary" : "Reemplazar parametros de un periodo PENDIENTE",
         "tags" : [ "Academico" ]
       }
     },
@@ -3009,10 +2898,10 @@
                 }
               }
             },
-            "description" : "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA"
+            "description" : "E_PESO_INVALIDO / E_SUMA_SECCIONES_INVALIDA / E_RANGO_INVALIDO"
           }
         },
-        "summary" : "Actualizar nombre y/o nota de una seccion",
+        "summary" : "Actualizar nombre, nota y/o rangos de una seccion",
         "tags" : [ "Academico" ]
       }
     },
@@ -3341,6 +3230,12 @@
             "type" : "string"
           },
           "nota" : {
+            "type" : "number"
+          },
+          "rangoMax" : {
+            "type" : "number"
+          },
+          "rangoMin" : {
             "type" : "number"
           }
         }
@@ -4009,9 +3904,17 @@
             "type" : "integer",
             "format" : "int32",
             "example" : 2
+          },
+          "rangoMax" : {
+            "type" : "number",
+            "example" : 45.0
+          },
+          "rangoMin" : {
+            "type" : "number",
+            "example" : 0.0
           }
         },
-        "required" : [ "nombre", "nota", "orden" ]
+        "required" : [ "nombre", "nota", "orden", "rangoMax", "rangoMin" ]
       },
       "CrearUsuarioRequest" : {
         "type" : "object",
@@ -4181,18 +4084,6 @@
           }
         }
       },
-      "GuardarParametrosPeriodoRequest" : {
-        "type" : "object",
-        "properties" : {
-          "parametros" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/Item"
-            }
-          }
-        },
-        "required" : [ "parametros" ]
-      },
       "InscripcionResponse" : {
         "type" : "object",
         "properties" : {
@@ -4237,21 +4128,21 @@
       "Item" : {
         "type" : "object",
         "properties" : {
+          "nombre" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "nota" : {
+            "type" : "number"
+          },
           "rangoMax" : {
             "type" : "number"
           },
           "rangoMin" : {
             "type" : "number"
-          },
-          "reglaCombinacion" : {
-            "type" : "string"
-          },
-          "seccionEvaluacionId" : {
-            "type" : "string",
-            "format" : "uuid"
           }
         },
-        "required" : [ "rangoMax", "rangoMin", "reglaCombinacion", "seccionEvaluacionId" ]
+        "required" : [ "nombre", "nota", "rangoMax", "rangoMin" ]
       },
       "LoginRequest" : {
         "type" : "object",
@@ -4574,32 +4465,6 @@
           }
         }
       },
-      "ParametroPeriodoResponse" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "periodoEvaluacionId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "rangoMax" : {
-            "type" : "number"
-          },
-          "rangoMin" : {
-            "type" : "number"
-          },
-          "reglaCombinacion" : {
-            "type" : "string"
-          },
-          "seccionEvaluacionId" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        }
-      },
       "PasoTrazaAgente" : {
         "type" : "object",
         "properties" : {
@@ -4804,6 +4669,12 @@
           "orden" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "rangoMax" : {
+            "type" : "number"
+          },
+          "rangoMin" : {
+            "type" : "number"
           }
         }
       },

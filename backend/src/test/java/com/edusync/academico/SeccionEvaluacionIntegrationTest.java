@@ -91,6 +91,10 @@ class SeccionEvaluacionIntegrationTest {
         .containsExactly("Ser", "Saber", "Hacer", "Autoevaluación");
     assertThat(seed.stream().map(SeccionEvaluacionResponse::nota).reduce(BigDecimal.ZERO, BigDecimal::add))
         .isEqualByComparingTo("100.00");
+    assertThat(seed).allSatisfy(s -> {
+      assertThat(s.rangoMin()).isEqualByComparingTo("0.00");
+      assertThat(s.rangoMax()).isEqualByComparingTo(s.nota());
+    });
 
     ResponseEntity<List<SeccionEvaluacionResponse>> putOk = restTemplate.exchange(
         "/api/v1/gestiones-escolares/" + gestionId + "/secciones",
@@ -127,7 +131,6 @@ class SeccionEvaluacionIntegrationTest {
 
     List<PeriodoEvaluacionResponse> periodos = listarPeriodos(gestionId, adminA);
     UUID t1 = periodos.get(0).id();
-    ParametrosPeriodoDePrueba.configurarPorDefecto(restTemplate, adminA, gestionId, t1);
     restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + t1 + "/estado",
         HttpMethod.PATCH,
@@ -180,7 +183,6 @@ class SeccionEvaluacionIntegrationTest {
         new ParameterizedTypeReference<List<SeccionEvaluacionResponse>>() {});
 
     List<PeriodoEvaluacionResponse> periodos = listarPeriodos(gestionId, admin);
-    ParametrosPeriodoDePrueba.configurarPorDefecto(restTemplate, admin, gestionId, periodos.get(0).id());
     ResponseEntity<PeriodoEvaluacionResponse> abierto = restTemplate.exchange(
         "/api/v1/periodos-evaluacion/" + periodos.get(0).id() + "/estado",
         HttpMethod.PATCH,
@@ -194,7 +196,8 @@ class SeccionEvaluacionIntegrationTest {
   }
 
   private ReemplazarSeccionesEvaluacionRequest.Item item(String nombre, String nota) {
-    return new ReemplazarSeccionesEvaluacionRequest.Item(nombre, new BigDecimal(nota));
+    BigDecimal n = new BigDecimal(nota);
+    return new ReemplazarSeccionesEvaluacionRequest.Item(nombre, n, BigDecimal.ZERO, n);
   }
 
   private List<SeccionEvaluacionResponse> listarSecciones(UUID gestionId, HttpHeaders headers) {

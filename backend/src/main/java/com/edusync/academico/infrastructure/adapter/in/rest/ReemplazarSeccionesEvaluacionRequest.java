@@ -15,6 +15,8 @@ public record ReemplazarSeccionesEvaluacionRequest(
 
   public record Item(
       @NotBlank(message = "nombre es obligatorio") String nombre,
-      @NotNull(message = "nota es obligatoria") BigDecimal nota) {
+      @NotNull(message = "nota es obligatoria") BigDecimal nota,
+      @NotNull(message = "rangoMin es obligatorio") BigDecimal rangoMin,
+      @NotNull(message = "rangoMax es obligatorio") BigDecimal rangoMax) {
   }
 }
